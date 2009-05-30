@@ -27,16 +27,16 @@ typedef struct {
 	int fd;
 	char *host;
 	char *port;
-	boolean server;
-	boolean connected;
+	bool server;
+	bool connected;
 } Socket;
 
 Socket *createClientSocket(char *host, char *port);
-boolean connectSocket(Socket *s);
-boolean disconnectSocket(Socket *s);
-boolean freeSocket(Socket *s);
+bool connectSocket(Socket *s);
+bool disconnectSocket(Socket *s);
+bool freeSocket(Socket *s);
 
-boolean socketWriteRaw(Socket *s, void *buffer, int size);
+bool socketWriteRaw(Socket *s, void *buffer, int size);
 int socketReadRaw(Socket *s, void *buffer, int size);
 
 #endif

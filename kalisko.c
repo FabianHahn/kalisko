@@ -18,6 +18,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef WIN32
+#include <winsock.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include "log.h"
@@ -33,6 +36,15 @@ int main(int argc, char **argv)
 {
 	initHooks();
 	initLog();
+
+#ifdef WIN32
+    WSADATA wsaData;
+
+    if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
+        logError("WSAStartup failed");
+        exit(EXIT_FAILURE);
+    }
+#endif
 
 	HOOK_ATTACH(log, log);
 
@@ -52,6 +64,10 @@ int main(int argc, char **argv)
 	}
 
 	freeSocket(sock);
+
+#ifdef WIN32
+	WSACleanup();
+#endif
 
 	freeHooks();
 

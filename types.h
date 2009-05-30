@@ -21,6 +21,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-typedef enum {false, true} boolean;
+typedef enum {false, true} bool;
 
 #endif

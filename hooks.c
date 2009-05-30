@@ -54,7 +54,7 @@ void freeHooks()
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-boolean addHook(const char *hook_name)
+bool addHook(const char *hook_name)
 {
 	if(g_hash_table_lookup_extended(hooks, hook_name, NULL, NULL)) { // A hook with that name already exists
 		return false;
@@ -72,7 +72,7 @@ boolean addHook(const char *hook_name)
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-boolean delHook(const char *hook_name)
+bool delHook(const char *hook_name)
 {
 	GList *hook;
 
@@ -97,7 +97,7 @@ boolean delHook(const char *hook_name)
  * @param custom_data	custom data to pass to the hook listener when triggered
  * @result				true if successful
  */
-boolean attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
+bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 
@@ -127,7 +127,7 @@ boolean attachToHook(const char *hook_name, HookListener *listener, void *custom
  * @param custom_data	custom data passed to the hook listener when called
  * @result				true if successful
  */
-boolean detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
+bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 

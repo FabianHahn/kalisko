@@ -42,9 +42,19 @@ if not core.GetOption('clean'):
 			Exit(1)
 			
 	elif conf.env['PLATFORM'] == 'win32':
+		conf.env.Append(LIBS = ['ws2_32'])
+		
 		if not conf.CheckCHeader('windows.h'):
 			print('Error: Could not find windows.h header file!')
 			Exit(1)	
+			
+		if not conf.CheckLibWithHeader('ws2_32', 'winsock2.h', 'c'):
+			print('Error: Could not find ws2_32 and the corresponding winsock.h header file!')
+			Exit(1)
+			
+		if not conf.CheckCHeader('Ws2tcpip.h'):
+			print('Error: Could not find Ws2tcpip.h header file!')
+			Exit(1)		
 
 	core = conf.Finish()
 

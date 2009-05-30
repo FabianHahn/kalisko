@@ -18,11 +18,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef WIN32
+#include <winsock2.h> // recv, send, getaddrinfo, socket, connect
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#include <ws2tcpip.h> // getaddrinfo, addrinfo, freeaddrinfo
+#elif
+#include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
+#include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
+#endif
 #include <stdlib.h> // malloc, free
 #include <unistd.h> // close
 #include <sys/types.h> // recv, send, getaddrinfo, socket, connect
-#include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
-#include <netdb.h> // getaddrinfo
 #include <errno.h> // errno, EINTR
 #include <assert.h> // assert
 #include <string.h> // strerror, strdup
@@ -56,7 +63,7 @@ Socket *createClientSocket(char *host, char *port)
  * @param s			the socket to connect
  * @result			true if successful, false on error
  */
-boolean connectSocket(Socket *s)
+bool connectSocket(Socket *s)
 {
 	if(s->connected) {
 		logError("Cannot connect already connected socket %d", s->fd);
@@ -104,10 +111,14 @@ boolean connectSocket(Socket *s)
  * @param s			the socket to disconnect
  * @result			true if successful, false on error
  */
-boolean disconnectSocket(Socket *s)
+bool disconnectSocket(Socket *s)
 {
 	if(s->connected) {
+#ifdef WIN32
+		if(closesocket(s->fd) != 0) {
+#else
 		if(close(s->fd) != 0) {
+#endif
 			logSystemError("Failed to close socket %d", s->fd);
 			return false;
 		}
@@ -127,7 +138,7 @@ boolean disconnectSocket(Socket *s)
  * @param s			the socket to free
  * @result			true if successful, false on error
  */
-boolean freeSocket(Socket *s)
+bool freeSocket(Socket *s)
 {
 	if(s->connected) {
 		if(!disconnectSocket(s)) {
@@ -150,7 +161,7 @@ boolean freeSocket(Socket *s)
  * @param size			the buffer's size
  * @result				true if successful, false on error
  */
-boolean socketWriteRaw(Socket *s, void *buffer, int size)
+bool socketWriteRaw(Socket *s, void *buffer, int size)
 {
 	int left = size;
 	int ret;

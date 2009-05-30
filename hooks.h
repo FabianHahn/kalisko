@@ -37,10 +37,10 @@ typedef struct
 
 void initHooks();
 void freeHooks();
-boolean addHook(const char *hook_name);
-boolean delHook(const char *hook_name);
-boolean attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
-boolean detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
+bool addHook(const char *hook_name);
+bool delHook(const char *hook_name);
+bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
+bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
 int triggerHook(const char *hook_name, ...);
 
 // Wrapper macros for hooks

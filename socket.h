@@ -18,63 +18,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include "log.h"
-#include "socket.h"
-#include "hooks.h"
+#ifndef SOCKET_H
+#define SOCKET_H
 
-HOOK_LISTENER(log);
+#include "types.h"
 
-#define BUF 4096
-#define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
+typedef struct {
+	int fd;
+	char *host;
+	char *port;
+	boolean server;
+	boolean connected;
+} Socket;
 
-int main(int argc, char **argv)
-{
-	initHooks();
-	initLog();
+Socket *createClientSocket(char *host, char *port);
+boolean connectSocket(Socket *s);
+boolean disconnectSocket(Socket *s);
+boolean freeSocket(Socket *s);
 
-	HOOK_ATTACH(log, log);
+boolean socketWriteRaw(Socket *s, void *buffer, int size);
+int socketReadRaw(Socket *s, void *buffer, int size);
 
-	Socket *sock = createClientSocket("www.kalisko.org", "http");
-	connectSocket(sock);
-
-	socketWriteRaw(sock, REQUEST, sizeof(REQUEST));
-
-	while(sock->connected) {
-		char buffer[BUF];
-
-		memset(buffer, 0, BUF);
-
-		socketReadRaw(sock, buffer, BUF);
-
-		printf("%s", buffer);
-	}
-
-	freeSocket(sock);
-
-	freeHooks();
-
-	return EXIT_SUCCESS;
-}
-
-HOOK_LISTENER(log) // this will be removed as soon as we have a real log module
-{
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
-
-	switch(type) {
-		case LOG_ERROR:
-			fprintf(stderr, "(error) %s\n", message);
-		break;
-		case LOG_WARNING:
-			fprintf(stderr, "(warning) %s\n", message);
-		break;
-		case LOG_INFO:
-			fprintf(stderr, "(info) %s\n", message);
-		break;
-		case LOG_DEBUG:
-			fprintf(stderr, "(debug) %s\n", message);
-		break;
-	}
-}
+#endif

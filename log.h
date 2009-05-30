@@ -18,63 +18,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include "log.h"
-#include "socket.h"
-#include "hooks.h"
+#ifndef LOG_H
+#define LOG_H
 
-HOOK_LISTENER(log);
+#include <errno.h> // errno
+#include <string.h> // strerror
+#include <stdarg.h> // __VA_ARGS__
+
+typedef enum {LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR} LogType;
+
+void initLog();
+void logMessage(LogType type, char *message, ...);
+#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
+#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
+#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
+#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
+#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
 
 #define BUF 4096
-#define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
 
-int main(int argc, char **argv)
-{
-	initHooks();
-	initLog();
-
-	HOOK_ATTACH(log, log);
-
-	Socket *sock = createClientSocket("www.kalisko.org", "http");
-	connectSocket(sock);
-
-	socketWriteRaw(sock, REQUEST, sizeof(REQUEST));
-
-	while(sock->connected) {
-		char buffer[BUF];
-
-		memset(buffer, 0, BUF);
-
-		socketReadRaw(sock, buffer, BUF);
-
-		printf("%s", buffer);
-	}
-
-	freeSocket(sock);
-
-	freeHooks();
-
-	return EXIT_SUCCESS;
-}
-
-HOOK_LISTENER(log) // this will be removed as soon as we have a real log module
-{
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
-
-	switch(type) {
-		case LOG_ERROR:
-			fprintf(stderr, "(error) %s\n", message);
-		break;
-		case LOG_WARNING:
-			fprintf(stderr, "(warning) %s\n", message);
-		break;
-		case LOG_INFO:
-			fprintf(stderr, "(info) %s\n", message);
-		break;
-		case LOG_DEBUG:
-			fprintf(stderr, "(debug) %s\n", message);
-		break;
-	}
-}
+#endif

@@ -23,7 +23,7 @@
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #include <ws2tcpip.h> // getaddrinfo, addrinfo, freeaddrinfo
-#elif
+#else
 #include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
 #include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
 #endif

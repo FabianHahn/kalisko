@@ -18,15 +18,23 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
 #include "log.h"
 #include "memory_alloc.h"
 
+/**
+ * Allocate a block of memory on the heap
+ *
+ * @param size		the amount of memory to allocate
+ * @result			a pointer to the heap block allocated
+ */
 void *allocateMemory(int size)
 {
 	void *mem = malloc(size);
 
 	if(mem == NULL) {
 		logError("Failed to allocate %d more bytes of memory", size);
+		exit(EXIT_FAILURE);
 	}
 
 	return mem;

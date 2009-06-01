@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include "hooks.h"
 #include "types.h"
+#include "memory_alloc.h"
 
 static gboolean freeList(void *hook_name, void *list, void *user_data);
 
@@ -105,7 +106,7 @@ bool attachToHook(const char *hook_name, HookListener *listener, void *custom_da
 		return false;
 	}
 
-	HookListenerEntry *entry = malloc(sizeof(HookListenerEntry));
+	HookListenerEntry *entry = allocateObject(HookListenerEntry);
 
 	entry->listener = listener;
 	entry->custom_data = custom_data;

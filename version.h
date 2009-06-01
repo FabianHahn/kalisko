@@ -18,24 +18,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef VERSION_H
+#define VERSION_H
 
-#include <errno.h> // errno
-#include <string.h> // strerror
-#include <stdarg.h> // __VA_ARGS__
-#include "types.h"
+typedef struct {
+	int major;
+	int minor;
+	int patch;
+	int revision;
+} version;
 
-typedef enum {LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR} LogType;
-
-void initLog();
-void logMessage(LogType type, char *message, ...);
-#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
-#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
-#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
-#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
-#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
-
-#define BUF 4096
+version *createVersion(int major, int minor, int patch, int revision);
+void freeVersion(version *ver);
+int compareVersions(version *a, version *b);
 
 #endif

@@ -18,24 +18,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef MEMORY_ALLOC_H
+#define MEMORY_ALLOC_H
 
-#include <errno.h> // errno
-#include <string.h> // strerror
-#include <stdarg.h> // __VA_ARGS__
-#include "types.h"
+#include <stdlib.h> // malloc, free
 
-typedef enum {LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR} LogType;
+#define allocateObject(TYPE) allocateMemory(sizeof(TYPE))
+#define allocateObjects(TYPE, COUNT) allocateMemory(sizeof(TYPE) * COUNT)
 
-void initLog();
-void logMessage(LogType type, char *message, ...);
-#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
-#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
-#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
-#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
-#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
-
-#define BUF 4096
+void *allocateMemory(int size);
 
 #endif

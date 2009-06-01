@@ -36,6 +36,7 @@
 #include "log.h"
 #include "types.h"
 #include "socket.h"
+#include "memory_alloc.h"
 
 /**
  * Create a client socket
@@ -46,7 +47,7 @@
  */
 Socket *createClientSocket(char *host, char *port)
 {
-	Socket *s = malloc(sizeof(Socket));
+	Socket *s = allocateObject(Socket);
 
 	s->fd = -1;
 	s->host = strdup(host);

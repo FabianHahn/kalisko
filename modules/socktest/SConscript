@@ -1,0 +1,3 @@
+Import('module')
+	
+module.SharedLibrary('../socktest', Glob('*.c'))

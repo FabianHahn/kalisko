@@ -5,8 +5,8 @@ ccflags = ['-std=gnu99', '-Wall', '-pipe']
 modsdir = 'modules'
 
 # Start of actual makefile
-core = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.'])
-modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.'])
+core = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#.'])
 
 # Build modes
 if ARGUMENTS.get('debug') == '0':
@@ -22,8 +22,9 @@ if ARGUMENTS.get('verbose') != '1':
 	modtpl.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
 	modtpl.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
 
-# Add glib support to core
-core.ParseConfig('pkg-config --cflags --libs glib-2.0')	
+# Add glib support
+core.ParseConfig('pkg-config --cflags --libs glib-2.0')
+modtpl.ParseConfig('pkg-config --cflags --libs glib-2.0')	
 
 # Core configure checks
 if not core.GetOption('clean'):

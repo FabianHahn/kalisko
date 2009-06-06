@@ -26,10 +26,10 @@ typedef struct {
 	int minor;
 	int patch;
 	int revision;
-} version;
+} Version;
 
-version *createVersion(int major, int minor, int patch, int revision);
-void freeVersion(version *ver);
-int compareVersions(version *a, version *b);
+Version *createVersion(int major, int minor, int patch, int revision);
+void freeVersion(Version *ver);
+int compareVersions(Version *a, Version *b);
 
 #endif

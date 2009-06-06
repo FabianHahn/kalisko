@@ -24,72 +24,27 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "log.h"
-#include "socket.h"
 #include "hooks.h"
 #include "module.h"
+#include "modules/socket/socket.h"
 
 HOOK_LISTENER(log);
-
-#define BUF 4096
-#define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
-
-static void testSocket();
 
 int main(int argc, char **argv)
 {
 	initHooks();
 	initLog();
 
-#ifdef WIN32
-    WSADATA wsaData;
-
-    if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
-        logError("WSAStartup failed");
-        exit(EXIT_FAILURE);
-    }
-#endif
-
 	HOOK_ATTACH(log, log);
 
 	initModules();
 
-	// testSocket
-
-	requestModule("test");
-	requestModule("test2");
-	revokeModule("test");
-
-	logInfo("Program would run now, shutting down!");
+	requestModule("socktest");
 
 	freeModules();
-
-#ifdef WIN32
-	WSACleanup();
-#endif
-
 	freeHooks();
 
 	return EXIT_SUCCESS;
-}
-
-static void testSocket()
-{
-	Socket *sock = createClientSocket("www.kalisko.org", "http");
-	connectSocket(sock);
-
-	socketWriteRaw(sock, REQUEST, sizeof(REQUEST));
-
-	while(sock->connected) {
-		char buffer[BUF];
-
-		memset(buffer, 0, BUF);
-
-		socketReadRaw(sock, buffer, BUF);
-
-		printf("%s", buffer);
-	}
-
-	freeSocket(sock);
 }
 
 HOOK_LISTENER(log) // this will be removed as soon as we have a real log module

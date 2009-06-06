@@ -18,6 +18,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include <assert.h>
 #include <stdlib.h>
 #include <glib.h>
@@ -25,12 +30,25 @@
 #include "module.h"
 #include "memory_alloc.h"
 
+#define MODULE_PATH "modules/"
+
+#ifdef WIN32
+#define MODULE_PREFIX ""
+#define MODULE_SUFFIX ".dll"
+#else
+#define MODULE_PREFIX "lib"
+#define MODULE_SUFFIX ".so"
+#endif
+
 static GHashTable *modules;
 static GHashTable *root_set;
 
 static bool needModule(char *name, GHashTable *parent);
 static void unneedModule(void *name_p, void *mod_p, void *data);
 static gboolean unneedModuleWrapper(void *name_p, void *mod_p, void *data);
+static void *getLibraryFunction(Module *mod, char *funcname);
+static bool loadDynamicLibrary(Module *mod, bool lazy);
+static void unloadDynamicLibrary(Module *mod);
 
 /**
  * Initializes the modules data structures
@@ -84,7 +102,7 @@ bool requestModule(char *name)
  */
 bool revokeModule(char *name)
 {
-	module *mod = g_hash_table_lookup(root_set, name);
+	Module *mod = g_hash_table_lookup(root_set, name);
 
 	if(mod == NULL) {
 		logError("Cannot revoke unrequested module %s", name);
@@ -106,6 +124,80 @@ bool revokeModule(char *name)
 }
 
 /**
+ * Fetches a function from a dynamic library of a module
+ *
+ * @param mod			the module
+ * @param funcname		the name of the function to fetch
+ * @result				the function or NULL if not found
+ */
+static void *getLibraryFunction(Module *mod, char *funcname)
+{
+	void *func;
+
+#ifdef WIN32
+
+#else
+	if((func = dlsym(mod->handle, funcname)) == NULL) {
+#endif
+		logError("Function %s doesn't exist in library %s", funcname, mod->name);
+		return NULL;
+	}
+
+	return func;
+}
+
+/**
+ * Loads the shared library associated with a module
+ *
+ * @param mod			the module
+ * @param lazy			should the library be loaded lazily?
+ * @result				true if successful, false on error
+ */
+static bool loadDynamicLibrary(Module *mod, bool lazy)
+{
+	logDebug("Loading dynamic library %s of module %s", mod->dlname, mod->name);
+
+#ifdef WIN32
+
+#else
+	int mode;
+
+	if(lazy) {
+		mode = RTLD_LAZY;
+	} else {
+		mode = RTLD_NOW | RTLD_GLOBAL | RTLD_DEEPBIND;
+	}
+
+	if((mod->handle = dlopen(mod->dlname, mode)) == NULL) {
+		logError("Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+		return false;
+	}
+#endif
+
+	return true;
+}
+
+/**
+ * Unloads the dynamic library associated with a module
+ *
+ * @param mod			the module
+ */
+static void unloadDynamicLibrary(Module *mod)
+{
+	logDebug("Unloading dynamic library %s of module %s", mod->dlname, mod->name);
+
+#ifdef WIN32
+
+#else
+	if(dlclose(mod->handle) != 0) {
+		logError("Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+	}
+#endif
+
+	mod->handle = NULL;
+}
+
+/**
  * Tells a module it's needed or load it if it isn't loaded yet
  *
  * @param name		the module's name
@@ -114,7 +206,7 @@ bool revokeModule(char *name)
  */
 static bool needModule(char *name, GHashTable *parent)
 {
-	module *mod = g_hash_table_lookup(modules, name);
+	Module *mod = g_hash_table_lookup(modules, name);
 
 	if(mod != NULL) {
 		mod->rc++;
@@ -122,31 +214,46 @@ static bool needModule(char *name, GHashTable *parent)
 	} else {
 		logInfo("Unloaded module %s needed, loading...", name);
 
-		mod = allocateObject(module);
+		mod = allocateObject(Module);
 
 		mod->name = strdup(name);
 		mod->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
 		mod->rc = 1;
 		mod->loaded = false;
 
+		GString *libname = g_string_new(mod->name);
+		g_string_prepend(libname, MODULE_PREFIX);
+		g_string_prepend(libname, MODULE_PATH);
+		g_string_append(libname, MODULE_SUFFIX);
+		mod->dlname = libname->str;
+		g_string_free(libname, FALSE);
+
 		g_hash_table_insert(modules, mod->name, mod);
 
-		// TODO fetch actual dependencies instead of this hardcoded placeholder
-
-		GList *deplist = NULL;
-
-		if(strcmp(name, "test") == 0) {
-			deplist = g_list_append(deplist, "dep1");
-		} else if(strcmp(name, "dep1") == 0) {
-			deplist = g_list_append(deplist, "dep2");
-		} else if(strcmp(name, "test2") == 0) {
-			deplist = g_list_append(deplist, "dep2");
+		// Lazy-load dynamic library
+		if(!loadDynamicLibrary(mod, true)) {
+			free(mod->name);
+			free(mod->dlname);
+			free(mod);
+			return false;
 		}
 
+		// Fetch dependencies
+		ModuleDepender *depends_func;
+		if((depends_func = getLibraryFunction(mod, "module_depends")) == NULL) {
+			free(mod->name);
+			free(mod->dlname);
+			free(mod);
+			return false;
+		}
+
+		GList *deplist = depends_func();
+
+		// Load dependencies
 		for(GList *iter = deplist; iter != NULL; iter = iter->next) {
 			logDebug("Module %s depends on %s, needing...", mod->name, iter->data);
 
-			module *depmod = g_hash_table_lookup(modules, iter->data);
+			Module *depmod = g_hash_table_lookup(modules, iter->data);
 
 			if(depmod != NULL && !depmod->loaded) {
 				logError("Circular dependency on module %s, requested by %s", iter->data, mod->name);
@@ -161,7 +268,35 @@ static bool needModule(char *name, GHashTable *parent)
 			}
 		}
 
-		// TODO actually load the module
+		g_list_free(deplist);
+
+		// Unload lazy loaded dynamic library
+		unloadDynamicLibrary(mod);
+
+		// Load dynamic library
+		if(!loadDynamicLibrary(mod, false)) {
+			free(mod->name);
+			free(mod->dlname);
+			free(mod);
+			return false;
+		}
+
+		// Check library functions
+		if(getLibraryFunction(mod, "module_init") == NULL || getLibraryFunction(mod, "module_finalize") == NULL) {
+			free(mod->name);
+			free(mod->dlname);
+			free(mod);
+			return false;
+		}
+
+		// Call module initializer
+		logDebug("Initializing module %s", mod->name);
+		ModuleInitializer *init_func = getLibraryFunction(mod, "module_init");
+		if(!init_func()) {
+			logError("Failed to initialize module %s\n");
+			unneedModule(mod->name, mod, NULL);
+			return false;
+		}
 
 		mod->loaded = true; // finished loading
 
@@ -182,7 +317,7 @@ static bool needModule(char *name, GHashTable *parent)
  */
 static void unneedModule(void *name, void *mod_p, void *data)
 {
-	module *mod = mod_p;
+	Module *mod = mod_p;
 
 	assert(mod != NULL);
 	assert(strcmp(name, mod->name) == 0);
@@ -199,7 +334,13 @@ static void unneedModule(void *name, void *mod_p, void *data)
 	// Module is obsolete
 	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
 
-	// TODO actual unloading mechanism
+	// Call module finalizer
+	logDebug("Finalizing module %s", mod->name);
+	ModuleFinalizer *finalize_func = getLibraryFunction(mod, "module_finalize");
+	finalize_func();
+
+	// Unload dynamic library
+	unloadDynamicLibrary(mod);
 
 	if(!g_hash_table_remove(modules, mod->name)) {
 		logError("Failed to remove %s from modules table", mod->name);

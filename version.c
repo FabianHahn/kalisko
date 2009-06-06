@@ -30,9 +30,9 @@
  * @param revision	the version's revision number
  * @result			the created version
  */
-version *createVersion(int major, int minor, int patch, int revision)
+Version *createVersion(int major, int minor, int patch, int revision)
 {
-	version *ver = allocateObject(version);
+	Version *ver = allocateObject(Version);
 	ver->major = major;
 	ver->minor = minor;
 	ver->patch = patch;
@@ -46,7 +46,7 @@ version *createVersion(int major, int minor, int patch, int revision)
  *
  * @param ver		the version to free
  */
-void freeVersion(version *ver)
+void freeVersion(Version *ver)
 {
 	free(ver);
 }
@@ -58,7 +58,7 @@ void freeVersion(version *ver)
  * @param b			the second version to compare
  * @result			positive if a > b, zero if a == b, negative if a < b
  */
-int compareVersions(version *a, version *b)
+int compareVersions(Version *a, Version *b)
 {
 	if(a->major == b->major) {
 		if(a->minor == b->minor) {

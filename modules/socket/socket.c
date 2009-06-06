@@ -27,6 +27,7 @@
 #include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
 #include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
 #endif
+#include <glib.h> // GList
 #include <stdlib.h> // malloc, free
 #include <unistd.h> // close
 #include <sys/types.h> // recv, send, getaddrinfo, socket, connect
@@ -37,6 +38,33 @@
 #include "types.h"
 #include "socket.h"
 #include "memory_alloc.h"
+#include "module.h"
+
+bool module_init()
+{
+#ifdef WIN32
+    WSADATA wsaData;
+
+    if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
+        logError("WSAStartup failed");
+        return false;
+    }
+#endif
+
+	return true;
+}
+
+void module_finalize()
+{
+#ifdef WIN32
+	WSACleanup();
+#endif
+}
+
+GList *module_depends()
+{
+	return NULL;
+}
 
 /**
  * Create a client socket

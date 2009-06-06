@@ -27,12 +27,17 @@
 
 typedef struct {
 	char *name;
-	version *ver;
+	char *dlname;
+	Version *ver;
 	void *handle;
 	int rc;
 	GHashTable *dependencies;
 	bool loaded;
-} module;
+} Module;
+
+typedef bool (ModuleInitializer)();
+typedef void (ModuleFinalizer)();
+typedef GList *(ModuleDepender)();
 
 void initModules();
 void freeModules();

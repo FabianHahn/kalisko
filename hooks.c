@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -102,8 +103,9 @@ API bool delHook(const char *hook_name)
 API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
+	char *hook_own_name;
 
-	if(!g_hash_table_lookup_extended(hooks, hook_name, NULL, (void **) &hook)) { // A hook with that name doesn't exist
+	if(!g_hash_table_lookup_extended(hooks, hook_name, (void **) &hook_own_name, (void **) &hook)) { // A hook with that name doesn't exist
 		return false;
 	}
 
@@ -116,7 +118,7 @@ API bool attachToHook(const char *hook_name, HookListener *listener, void *custo
 	hook = g_list_prepend(hook, entry);
 
 	// Update the hook entry in the hooks table
-	g_hash_table_replace(hooks, (void *) hook_name, hook);
+	g_hash_table_replace(hooks, (void *) hook_own_name, hook);
 
 	return true;
 }
@@ -132,8 +134,9 @@ API bool attachToHook(const char *hook_name, HookListener *listener, void *custo
 API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
+	char *hook_own_name;
 
-	if(!g_hash_table_lookup_extended(hooks, hook_name, NULL, (void **) &hook)) { // A hook with that name doesn't exist
+	if(!g_hash_table_lookup_extended(hooks, hook_name, (void **) &hook_own_name, (void **) &hook)) { // A hook with that name doesn't exist
 		return false;
 	}
 
@@ -149,7 +152,7 @@ API bool detachFromHook(const char *hook_name, HookListener *listener, void *cus
 			hook = g_list_remove(hook, entry);
 
 			// Update the hook entry in the hooks table
-			g_hash_table_replace(hooks, (void *) hook_name, hook);
+			g_hash_table_replace(hooks, (void *) hook_own_name, hook);
 
 			free(entry);
 

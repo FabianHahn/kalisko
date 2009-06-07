@@ -20,13 +20,14 @@
 
 #include <stdio.h> // vsnprintf
 #include <stdarg.h> // va_list, va_start
+#include "api.h"
 #include "log.h"
 #include "hooks.h"
 
 /**
  * Inits logging
  */
-void initLog()
+API void initLog()
 {
 	HOOK_ADD(log);
 }
@@ -37,7 +38,7 @@ void initLog()
  * @param type		the type of the log message
  * @param message	printf-like message to log
  */
-void logMessage(LogType type, char *message, ...)
+API void logMessage(LogType type, char *message, ...)
 {
 	va_list va;
 	char buffer[BUF];

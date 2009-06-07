@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "api.h"
 #include "hooks.h"
 #include "types.h"
 #include "memory_alloc.h"
@@ -32,7 +33,7 @@ static GHashTable *hooks;
 /**
  * Initializes the hooks data structures
  */
-void initHooks()
+API void initHooks()
 {
 	hooks = g_hash_table_new(&g_str_hash, &g_str_equal);
 }
@@ -40,7 +41,7 @@ void initHooks()
 /**
  * Frees the hooks data structures
  */
-void freeHooks()
+API void freeHooks()
 {
 	// Remove all keys and free them
 	g_hash_table_foreach_remove(hooks, &freeList, NULL);
@@ -55,7 +56,7 @@ void freeHooks()
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-bool addHook(const char *hook_name)
+API bool addHook(const char *hook_name)
 {
 	if(g_hash_table_lookup_extended(hooks, hook_name, NULL, NULL)) { // A hook with that name already exists
 		return false;
@@ -73,7 +74,7 @@ bool addHook(const char *hook_name)
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-bool delHook(const char *hook_name)
+API bool delHook(const char *hook_name)
 {
 	GList *hook;
 
@@ -98,7 +99,7 @@ bool delHook(const char *hook_name)
  * @param custom_data	custom data to pass to the hook listener when triggered
  * @result				true if successful
  */
-bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
+API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 
@@ -128,7 +129,7 @@ bool attachToHook(const char *hook_name, HookListener *listener, void *custom_da
  * @param custom_data	custom data passed to the hook listener when called
  * @result				true if successful
  */
-bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
+API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 
@@ -165,7 +166,7 @@ bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_
  * @param hook_name		the name of the hook
  * @result				the number of listeners notified, -1 if hook not found
  */
-int triggerHook(const char *hook_name, ...)
+API int triggerHook(const char *hook_name, ...)
 {
 	GList *hook;
 

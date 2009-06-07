@@ -1,26 +1,30 @@
 #include <memory.h>
 #include <stdio.h>
 #include <glib.h>
+
+#include "dll.h"
 #include "modules/socket/socket.h"
+
+#include "api.h"
 
 static void testSocket();
 
 #define BUF 4096
 #define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
 
-bool module_init()
+API bool module_init()
 {
 	testSocket();
 
 	return true;
 }
 
-void module_finalize()
+API void module_finalize()
 {
 
 }
 
-GList *module_depends()
+API GList *module_depends()
 {
 	return g_list_append(NULL, "socket");
 }

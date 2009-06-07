@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include "api.h"
 #include "log.h"
 #include "memory_alloc.h"
 
@@ -28,7 +29,7 @@
  * @param size		the amount of memory to allocate
  * @result			a pointer to the heap block allocated
  */
-void *allocateMemory(int size)
+API void *allocateMemory(int size)
 {
 	void *mem = malloc(size);
 

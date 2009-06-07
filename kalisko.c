@@ -23,10 +23,10 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#include "api.h"
 #include "log.h"
 #include "hooks.h"
 #include "module.h"
-#include "modules/socket/socket.h"
 
 HOOK_LISTENER(log);
 
@@ -66,4 +66,6 @@ HOOK_LISTENER(log) // this will be removed as soon as we have a real log module
 			fprintf(stderr, "(debug) %s\n", message);
 		break;
 	}
+
+	fflush(stderr);
 }

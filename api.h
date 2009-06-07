@@ -18,31 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MODULE_H
-#define MODULE_H
+#ifdef API
+#undef API
+#endif
 
-#include <glib.h>
-#include "version.h"
-#include "types.h"
-
-typedef struct {
-	char *name;
-	char *dlname;
-	Version *ver;
-	void *handle;
-	int rc;
-	GHashTable *dependencies;
-	bool loaded;
-	bool skip_reload;
-} Module;
-
-typedef bool (ModuleInitializer)();
-typedef void (ModuleFinalizer)();
-typedef GList *(ModuleDepender)();
-
-API void initModules();
-API void freeModules();
-API bool requestModule(char *name);
-API bool revokeModule(char *name);
-
+#ifdef WIN32
+#define API __declspec(dllexport)
+#else
+#define API
 #endif

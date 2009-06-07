@@ -31,12 +31,11 @@ typedef struct {
 	bool connected;
 } Socket;
 
-Socket *createClientSocket(char *host, char *port);
-bool connectSocket(Socket *s);
-bool disconnectSocket(Socket *s);
-bool freeSocket(Socket *s);
-
-bool socketWriteRaw(Socket *s, void *buffer, int size);
-int socketReadRaw(Socket *s, void *buffer, int size);
+API Socket *createClientSocket(char *host, char *port);
+API bool connectSocket(Socket *s);
+API bool disconnectSocket(Socket *s);
+API bool freeSocket(Socket *s);
+API bool socketWriteRaw(Socket *s, void *buffer, int size);
+API int socketReadRaw(Socket *s, void *buffer, int size);
 
 #endif

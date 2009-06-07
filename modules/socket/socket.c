@@ -21,7 +21,7 @@
 #ifdef WIN32
 #include <winsock2.h> // recv, send, getaddrinfo, socket, connect
 #undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
+#define _WIN32_WINNT 0x0502
 #include <ws2tcpip.h> // getaddrinfo, addrinfo, freeaddrinfo
 #else
 #include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
@@ -34,13 +34,17 @@
 #include <errno.h> // errno, EINTR
 #include <assert.h> // assert
 #include <string.h> // strerror, strdup
+
+#include "dll.h"
 #include "log.h"
 #include "types.h"
-#include "socket.h"
 #include "memory_alloc.h"
 #include "module.h"
 
-bool module_init()
+#include "api.h"
+#include "socket.h"
+
+API bool module_init()
 {
 #ifdef WIN32
     WSADATA wsaData;
@@ -54,14 +58,14 @@ bool module_init()
 	return true;
 }
 
-void module_finalize()
+API void module_finalize()
 {
 #ifdef WIN32
 	WSACleanup();
 #endif
 }
 
-GList *module_depends()
+API GList *module_depends()
 {
 	return NULL;
 }
@@ -73,7 +77,7 @@ GList *module_depends()
  * @param buffer	the port to connect to
  * @result			the created socket
  */
-Socket *createClientSocket(char *host, char *port)
+API Socket *createClientSocket(char *host, char *port)
 {
 	Socket *s = allocateObject(Socket);
 
@@ -92,7 +96,7 @@ Socket *createClientSocket(char *host, char *port)
  * @param s			the socket to connect
  * @result			true if successful, false on error
  */
-bool connectSocket(Socket *s)
+API bool connectSocket(Socket *s)
 {
 	if(s->connected) {
 		logError("Cannot connect already connected socket %d", s->fd);
@@ -140,7 +144,7 @@ bool connectSocket(Socket *s)
  * @param s			the socket to disconnect
  * @result			true if successful, false on error
  */
-bool disconnectSocket(Socket *s)
+API bool disconnectSocket(Socket *s)
 {
 	if(s->connected) {
 #ifdef WIN32
@@ -167,7 +171,7 @@ bool disconnectSocket(Socket *s)
  * @param s			the socket to free
  * @result			true if successful, false on error
  */
-bool freeSocket(Socket *s)
+API bool freeSocket(Socket *s)
 {
 	if(s->connected) {
 		if(!disconnectSocket(s)) {
@@ -190,7 +194,7 @@ bool freeSocket(Socket *s)
  * @param size			the buffer's size
  * @result				true if successful, false on error
  */
-bool socketWriteRaw(Socket *s, void *buffer, int size)
+API bool socketWriteRaw(Socket *s, void *buffer, int size)
 {
 	int left = size;
 	int ret;
@@ -230,7 +234,7 @@ bool socketWriteRaw(Socket *s, void *buffer, int size)
  * @param size			the buffer's size
  * @result				number of bytes read, 0 on error
  */
-int socketReadRaw(Socket *s, void *buffer, int size)
+API int socketReadRaw(Socket *s, void *buffer, int size)
 {
 	int ret;
 

@@ -19,6 +19,8 @@
  */
 
 #ifdef WIN32
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0502
 #include <windows.h>
 #else
 #include <dlfcn.h>
@@ -26,6 +28,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <glib.h>
+#include "api.h"
 #include "log.h"
 #include "module.h"
 #include "memory_alloc.h"
@@ -53,16 +56,22 @@ static void unloadDynamicLibrary(Module *mod);
 /**
  * Initializes the modules data structures
  */
-void initModules()
+API void initModules()
 {
 	modules = g_hash_table_new(&g_str_hash, &g_str_equal);
 	root_set = g_hash_table_new(&g_str_hash, &g_str_equal);
+
+#ifdef WIN32
+	if(!SetDllDirectory(MODULE_PATH)) {
+		logError("Failed to set DLL directory to %s", MODULE_PATH);
+	}
+#endif
 }
 
 /**
  * Frees the modules data structures
  */
-void freeModules()
+API void freeModules()
 {
 	logInfo("Revoking all modules...");
 	g_hash_table_foreach_remove(root_set, &unneedModuleWrapper, NULL);
@@ -82,7 +91,7 @@ void freeModules()
  * @param name		the module's name
  * @result			true if successful, false on error
  */
-bool requestModule(char *name)
+API bool requestModule(char *name)
 {
 	if(g_hash_table_lookup(root_set, name) != NULL) {
 		logError("Cannot request already requested module %s", name);
@@ -100,7 +109,7 @@ bool requestModule(char *name)
  * @param name		the module to revoke
  * @result			true if successful, false on error
  */
-bool revokeModule(char *name)
+API bool revokeModule(char *name)
 {
 	Module *mod = g_hash_table_lookup(root_set, name);
 
@@ -135,11 +144,11 @@ static void *getLibraryFunction(Module *mod, char *funcname)
 	void *func;
 
 #ifdef WIN32
-
+	if((func = GetProcAddress(mod->handle, funcname)) == NULL) {
 #else
 	if((func = dlsym(mod->handle, funcname)) == NULL) {
 #endif
-		logError("Function %s doesn't exist in library %s", funcname, mod->name);
+		logError("Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
 		return NULL;
 	}
 
@@ -155,10 +164,20 @@ static void *getLibraryFunction(Module *mod, char *funcname)
  */
 static bool loadDynamicLibrary(Module *mod, bool lazy)
 {
+	if(mod->skip_reload) {
+		mod->skip_reload = false;
+		return true;
+	}
+
 	logDebug("Loading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
+	if((mod->handle = LoadLibrary(mod->dlname)) == NULL) {
+		logError("Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, GetLastError());
+		return false;
+	}
 
+	mod->skip_reload = true; // Windows can't do more than lazy loading, so skip next reload
 #else
 	int mode;
 
@@ -184,10 +203,16 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
  */
 static void unloadDynamicLibrary(Module *mod)
 {
+	if(mod->skip_reload) {
+		return;
+	}
+
 	logDebug("Unloading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
-
+	if(FreeLibrary(mod->handle) == 0) {
+		logError("Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, GetLastError());
+	}
 #else
 	if(dlclose(mod->handle) != 0) {
 		logError("Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
@@ -218,6 +243,7 @@ static bool needModule(char *name, GHashTable *parent)
 
 		mod->name = strdup(name);
 		mod->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
+		mod->skip_reload = false;
 		mod->rc = 1;
 		mod->loaded = false;
 

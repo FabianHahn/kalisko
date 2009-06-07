@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "api.h"
 #include "version.h"
 #include "memory_alloc.h"
 
@@ -30,7 +31,7 @@
  * @param revision	the version's revision number
  * @result			the created version
  */
-Version *createVersion(int major, int minor, int patch, int revision)
+API Version *createVersion(int major, int minor, int patch, int revision)
 {
 	Version *ver = allocateObject(Version);
 	ver->major = major;
@@ -46,7 +47,7 @@ Version *createVersion(int major, int minor, int patch, int revision)
  *
  * @param ver		the version to free
  */
-void freeVersion(Version *ver)
+API void freeVersion(Version *ver)
 {
 	free(ver);
 }
@@ -58,7 +59,7 @@ void freeVersion(Version *ver)
  * @param b			the second version to compare
  * @result			positive if a > b, zero if a == b, negative if a < b
  */
-int compareVersions(Version *a, Version *b)
+API int compareVersions(Version *a, Version *b)
 {
 	if(a->major == b->major) {
 		if(a->minor == b->minor) {

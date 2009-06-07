@@ -28,8 +28,8 @@
 
 typedef enum {LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR} LogType;
 
-void initLog();
-void logMessage(LogType type, char *message, ...);
+API void initLog();
+API void logMessage(LogType type, char *message, ...);
 #define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
 #define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
 #define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);

@@ -35,13 +35,13 @@ typedef struct
 	void *custom_data; // Custom data to pass to the function when triggered
 } HookListenerEntry;
 
-void initHooks();
-void freeHooks();
-bool addHook(const char *hook_name);
-bool delHook(const char *hook_name);
-bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
-bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
-int triggerHook(const char *hook_name, ...);
+API void initHooks();
+API void freeHooks();
+API bool addHook(const char *hook_name);
+API bool delHook(const char *hook_name);
+API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
+API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
+API int triggerHook(const char *hook_name, ...);
 
 // Wrapper macros for hooks
 #define HOOK_LISTENER_NAME(LISTENER) _hook_listener_ ## LISTENER

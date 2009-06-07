@@ -28,8 +28,8 @@ typedef struct {
 	int revision;
 } Version;
 
-Version *createVersion(int major, int minor, int patch, int revision);
-void freeVersion(Version *ver);
-int compareVersions(Version *a, Version *b);
+API Version *createVersion(int major, int minor, int patch, int revision);
+API void freeVersion(Version *ver);
+API int compareVersions(Version *a, Version *b);
 
 #endif

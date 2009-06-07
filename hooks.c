@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>

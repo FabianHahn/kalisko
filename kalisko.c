@@ -28,44 +28,18 @@
 #include "hooks.h"
 #include "module.h"
 
-HOOK_LISTENER(log);
-
 int main(int argc, char **argv)
 {
 	initHooks();
 	initLog();
 
-	HOOK_ATTACH(log, log);
-
 	initModules();
 
+	requestModule("log_default");
 	requestModule("socktest");
 
 	freeModules();
 	freeHooks();
 
 	return EXIT_SUCCESS;
-}
-
-HOOK_LISTENER(log) // this will be removed as soon as we have a real log module
-{
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
-
-	switch(type) {
-		case LOG_ERROR:
-			fprintf(stderr, "(error) %s\n", message);
-		break;
-		case LOG_WARNING:
-			fprintf(stderr, "(warning) %s\n", message);
-		break;
-		case LOG_INFO:
-			fprintf(stderr, "(info) %s\n", message);
-		break;
-		case LOG_DEBUG:
-			fprintf(stderr, "(debug) %s\n", message);
-		break;
-	}
-
-	fflush(stderr);
 }

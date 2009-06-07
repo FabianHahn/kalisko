@@ -24,17 +24,28 @@
 #include <errno.h> // errno
 #include <string.h> // strerror
 #include <stdarg.h> // __VA_ARGS__
+#include <time.h> // time
 #include "types.h"
 
-typedef enum {LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR} LogType;
+/**
+ * Enumeration of the four standard log levels.
+ */
+typedef enum
+{
+	LOG_DEBUG, /** Information needed for debugging function. */
+	LOG_INFO,  /** Verbose information what a function do. */
+	LOG_WARNING, /** The function has an unexpected state but can go on with the work. */
+	LOG_ERROR /** The function has an unexpected state and can not end the work. */
+} LogType;
 
 API void initLog();
-API void logMessage(LogType type, char *message, ...);
-#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
-#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
-#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
-#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
-#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
+API void logMessage(time_t time, LogType type, char *message, ...);
+
+#define logSystemError(MESSAGE, ...) logMessage(time(NULL), LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
+#define logError(...) logMessage(time(NULL), LOG_ERROR, __VA_ARGS__);
+#define logWarning(...) logMessage(time(NULL), LOG_WARNING, __VA_ARGS__);
+#define logInfo(...) logMessage(time(NULL), LOG_INFO, __VA_ARGS__);
+#define logDebug(...) logMessage(time(NULL), LOG_DEBUG, __VA_ARGS__);
 
 #define BUF 4096
 

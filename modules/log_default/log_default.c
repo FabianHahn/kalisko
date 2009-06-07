@@ -68,18 +68,18 @@ HOOK_LISTENER(log)
 
 	switch(type) {
 		case LOG_ERROR:
-			fprintf(stdout, "%s ERROR: %s\n", timeString, message);
+			fprintf(stderr, "%s ERROR: %s\n", timeString, message);
 		break;
 		case LOG_WARNING:
-			fprintf(stdout, "%s WARNING: %s\n", timeString, message);
+			fprintf(stderr, "%s WARNING: %s\n", timeString, message);
 		break;
 		case LOG_INFO:
-			fprintf(stdout, "%s INFO: %s\n", timeString, message);
+			fprintf(stderr, "%s INFO: %s\n", timeString, message);
 		break;
 		case LOG_DEBUG:
-			fprintf(stdout, "%s DEBUG: %s\n", timeString, message);
+			fprintf(stderr, "%s DEBUG: %s\n", timeString, message);
 		break;
 	}
 
-	fflush(stdout);
+	fflush(stderr);
 }

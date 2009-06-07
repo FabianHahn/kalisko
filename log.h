@@ -39,13 +39,47 @@ typedef enum
 } LogType;
 
 API void initLog();
-API void logMessage(time_t time, LogType type, char *message, ...);
+API void logMessage(LogType type, char *message, ...);
 
-#define logSystemError(MESSAGE, ...) logMessage(time(NULL), LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
-#define logError(...) logMessage(time(NULL), LOG_ERROR, __VA_ARGS__);
-#define logWarning(...) logMessage(time(NULL), LOG_WARNING, __VA_ARGS__);
-#define logInfo(...) logMessage(time(NULL), LOG_INFO, __VA_ARGS__);
-#define logDebug(...) logMessage(time(NULL), LOG_DEBUG, __VA_ARGS__);
+/**
+ * Logs a system error (strerror).
+ *
+ * @see logMessage
+ * @param MESSAGE	printf-like message to log, the strerror result will be added automaticly
+ */
+#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
+
+/**
+ * Logs a message as an error.
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
+
+/**
+ * Logs a message as a warning.
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
+
+/**
+ * Logs a message as an info.
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
+
+/**
+ * Logs a message as a debug information
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
 
 #define BUF 4096
 

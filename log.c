@@ -37,11 +37,10 @@ API void initLog()
 /**
  * Creates a new log message and distribute it over the hook "log".
  *
- * @param time		the time the event occured
  * @param type		the type of the log message
  * @param message	printf-like message to log
  */
-API void logMessage(time_t time, LogType type, char *message, ...)
+API void logMessage(LogType type, char *message, ...)
 {
 	va_list va;
 	char buffer[BUF];
@@ -49,5 +48,5 @@ API void logMessage(time_t time, LogType type, char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, BUF, message, va);
 
-	HOOK_TRIGGER(log, time, type, buffer);
+	HOOK_TRIGGER(log, type, buffer);
 }

@@ -36,6 +36,12 @@ typedef struct
 	void *custom_data; // Custom data to pass to the function when triggered
 } HookListenerEntry;
 
+typedef struct
+{
+	char *hook_name;
+	int num_listeners;
+} HookStatsEntry;
+
 API void initHooks();
 API void freeHooks();
 API bool addHook(const char *hook_name);
@@ -43,6 +49,8 @@ API bool delHook(const char *hook_name);
 API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
 API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
 API int triggerHook(const char *hook_name, ...);
+API GList *getHookStats();
+API void freeHookStats(GList *hook_stats);
 
 // Wrapper macros for hooks
 #define HOOK_LISTENER_NAME(LISTENER) _hook_listener_ ## LISTENER

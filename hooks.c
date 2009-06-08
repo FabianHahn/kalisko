@@ -27,6 +27,7 @@
 #include "types.h"
 #include "memory_alloc.h"
 
+static void addHookStatsEntry(void *key, void *value, void *data);
 static gboolean freeList(void *hook_name, void *list, void *user_data);
 
 static GHashTable *hooks;
@@ -195,6 +196,57 @@ API int triggerHook(const char *hook_name, ...)
 	}
 
 	return counter;
+}
+
+/**
+ * Retrieves statistics about hooks
+ *
+ * @see freeHookStats
+ * @return					a list of HookStatsEntry structs
+ */
+API GList *getHookStats()
+{
+	GList *result = NULL;
+
+	g_hash_table_foreach(hooks, &addHookStatsEntry, &result);
+
+	return result;
+}
+
+/**
+ * Frees hook stats retrieved by getHookStats
+ *
+ * @see getHookStats
+ * @param hook_stats		a list of HookStatsEntry structs
+ */
+API void freeHookStats(GList *hook_stats)
+{
+	for(GList *iter = hook_stats; iter != NULL; iter = iter->next) {
+		free(iter->data);
+	}
+
+	g_list_free(hook_stats);
+}
+
+/**
+ * A GHFunc to add a HookStatsEntry
+ *
+ * @see getHookStats
+ * @param key			the name of the hook
+ * @param value			the hook's listener list
+ * @param data			a pointer to the stats list
+ */
+static void addHookStatsEntry(void *key, void *value, void *data)
+{
+	char *name = key;
+	GList *listeners = value;
+	GList **list = data;
+
+	HookStatsEntry *entry = allocateObject(HookStatsEntry);
+	entry->hook_name = name;
+	entry->num_listeners = g_list_length(listeners);
+
+	*list = g_list_append(*list, entry);
 }
 
 /**

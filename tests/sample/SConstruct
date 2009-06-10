@@ -1,0 +1,48 @@
+import os
+
+# Config section
+ccflags = ['-std=gnu99', '-Wall', '-pipe']
+
+# Start of actual makefile
+test = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#.'])
+
+# Build modes
+if ARGUMENTS.get('debug') == '0':
+	test.Append(CCFLAGS = ['-O2'])
+else:
+	test.Append(CCFLAGS = ['-g'])
+
+if ARGUMENTS.get('verbose') != '1':
+	test.Replace(CCCOMSTR = 'Compiling object: $TARGET')
+	test.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
+
+# Add glib support
+test.ParseConfig('pkg-config --cflags --libs glib-2.0')
+test.Append(CCFLAGS = ['-I../../'])
+
+# test configure checks
+if not test.GetOption('clean'):
+	conf = Configure(test)
+	
+	for depmod in conf.env['LIBS']:
+		if not conf.CheckLib(depmod):
+			print('Error: Could not find library ' + depmod + '!')
+			Exit(1)
+
+	if conf.env['PLATFORM'] == 'posix':
+		if not conf.CheckLibWithHeader('dl', 'dlfcn.h', 'c'):
+			print('Error: Could not find libdl and the corresponding dlfcn.h header file!')
+			Exit(1)
+			
+	elif conf.env['PLATFORM'] == 'win32':
+		conf.env.Append(LINKFLAGS = ['-Wl,--out-implib,libkalisko.a'])
+		
+		if not conf.CheckCHeader('windows.h'):
+			print('Error: Could not find windows.h header file!')
+			Exit(1)	
+
+	test = conf.Finish()
+
+# Build test
+test_sample = test.Program('test_sample', [x for x in Glob('../../*.c') if not x.name == 'kalisko.c'] + Glob('*.c') + Glob('../../modules/sample/*.c'))

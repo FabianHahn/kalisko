@@ -55,7 +55,7 @@ API GList *module_depends()
 }
 
 // This is a function that's exported to the global scope, hence it needs the API marker
-API void foo()
+API int add(int a, int b)
 {
-
+	return a+b;
 }

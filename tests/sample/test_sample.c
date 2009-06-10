@@ -1,5 +1,5 @@
 /**
- * @file sample.h
+ * @file test_sample.c
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -18,11 +18,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdio.h>
+#include <glib.h>
 
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#include "api.h"
+#include "modules/sample/sample.h"
 
-// Declaration of a function exported to the global scope, must also have the API marker
-API int add();
+static void test_add (void)
+{
+	   g_assert_cmpint (add(1, 2), ==, 1 + 2);
+}
 
-#endif
+int main(int argc, char **argv)
+{
+	g_test_init (&argc, &argv, NULL);
+	g_test_add_func ("/modules/sample/add", test_add);
+	return g_test_run();
+}
+

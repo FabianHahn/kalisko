@@ -1,0 +1,25 @@
+Import('core')
+
+# Core configure checks
+if not core.GetOption('clean'):
+	conf = Configure(core)
+	
+	if conf.env['PLATFORM'] == 'posix':
+		conf.env.Append(LIBS = ['dl'])
+	elif conf.env['PLATFORM'] == 'win32':		
+		if not conf.CheckCHeader('windows.h'):
+			print('Error: Could not find windows.h header file!')
+			Exit(1)
+	
+	for depmod in conf.env['LIBS']:
+		if not conf.CheckLib(depmod):
+			print('Error: Could not find library ' + depmod + '!')
+			Exit(1)
+
+	core = conf.Finish()
+	
+# Build core
+kalisko = core.Program('kalisko', Glob('*.c'))
+
+if core['PLATFORM'] == 'win32': # also clean libkalisko.a file
+	core.Clean(kalisko, 'libkalisko.a')

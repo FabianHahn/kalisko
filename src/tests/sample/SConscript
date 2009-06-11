@@ -1,0 +1,5 @@
+Import('test')
+Import('corefiles')
+
+test.Append(CPPPATH = ['#src/modules/sample'])
+test.Program('../../sample', corefiles + Glob('../../modules/sample/*.c') + Glob('*.c'))

@@ -24,7 +24,11 @@
 #endif
 
 #ifdef WIN32
+#ifndef NO_DLL_IMPORT
 #define API __declspec(dllimport)
+#else
+#define API __declspec(dllexport)
+#endif
 #else
 #define API
 #endif

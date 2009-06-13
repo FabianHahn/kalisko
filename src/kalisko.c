@@ -18,10 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#ifdef WIN32
-#include <winsock.h>
-#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include "api.h"

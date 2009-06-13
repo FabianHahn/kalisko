@@ -2,13 +2,18 @@ Import('module')
 
 if not module.GetOption('clean'):
 	conf = Configure(module)
-
-	if conf.env['PLATFORM'] == 'win32':
+	
+	if conf.env['PLATFORM'] == 'posix':
+		conf.env.Append(CPPPATH = ['/usr/include/python2.6/'])
+		conf.env.Append(LIBPATH = ['/usr/lib/python2.6/config/'])
+	elif conf.env['PLATFORM'] == 'win32':
 		# List module dependencies here, use 'kalisko' for the core
 		conf.env.Append(LIBS = ['kalisko'])
 		
+	if not conf.CheckLib('python2.6'):
+		print('Error: Could not find library python2.6!')
+		Exit(1)		
+		
 	module = conf.Finish()
-module.Append(LIBS = ['-lpython2.6'])
-module.Append(CCFLAGS = ['-I/usr/include/python2.6/'])
-module.Append(CCFLAGS = ['-L/usr/lib/python2.6/config/'])
+
 module.SharedLibrary('../mod_python', Glob('*.c'))

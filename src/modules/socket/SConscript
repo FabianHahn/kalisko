@@ -4,7 +4,6 @@ if not module.GetOption('clean'):
 	conf = Configure(module)
 
 	if conf.env['PLATFORM'] == 'win32':
-		conf.env.Append(LIBS = ['ws2_32'])
 		if not conf.CheckLibWithHeader('ws2_32', 'winsock2.h', 'c'):
 			print('Error: Could not find ws2_32 and the corresponding winsock2.h header file!')
 			Exit(1)

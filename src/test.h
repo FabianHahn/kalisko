@@ -1,5 +1,5 @@
 /**
- * @file sample.c
+ * @file test.h
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -18,28 +18,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <glib.h>
+#ifndef TEST_H
+#define TEST_H
 
-#include "dll.h"
-#include "test.h"
-#include "modules/sample/sample.h"
+#include "types.h"
 
-#include "api.h"
+API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...);
 
-TEST_CASE(add);
+#define TEST_SUITE_BEGIN(SUITE) API void module_finalize() { } \
+	API bool module_init() \
+	{ \
+		char *testsuite = #SUITE;
 
-TEST_SUITE_BEGIN(sample)
-	TEST_CASE_ADD(add);
-TEST_SUITE_END
+#define TEST_SUITE_END return true; \
+	}
 
-TEST_CASE(add)
-{
-	TEST_ASSERT(add(1, 1) == 2);
+#define TEST_CASE_NAME(CASE) _test_case_ ## CASE
+#define TEST_CASE_ADD(CASE) TEST_CASE_NAME(CASE)(testsuite, #CASE)
 
-	TEST_PASS;
-}
+#define TEST_CASE(CASE) static void TEST_CASE_NAME(CASE)(char *testsuite, char *testcase)
 
-API GList *module_depends()
-{
-	return g_list_append(NULL, "sample");
-}
+#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Assertion failed: " #EXPR); }
+
+#define TEST_PASS reportTestResult(testsuite, testcase, true, NULL); return
+#define TEST_FAIL(ERROR, ...) reportTestResult(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
+
+#endif

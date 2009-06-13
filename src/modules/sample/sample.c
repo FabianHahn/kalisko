@@ -26,6 +26,7 @@
 // Next, headers from other modules or the core follow
 #include "hooks.h"
 #include "log.h"
+#include "types.h"
 
 // api.h must be included before own headers and definitions that could be called from other modules
 #include "api.h"
@@ -38,7 +39,6 @@
 API bool module_init()
 {
 	logInfo("This is a log message from the sample module. Hi there!");
-	printf("Hello world\n");
 	HOOK_ADD(sample);
 
 	return true;

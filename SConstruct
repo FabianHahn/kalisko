@@ -4,11 +4,11 @@ import os
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
-core = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+coretpl = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
 modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'])
 
 # Add glib support
-core.ParseConfig('pkg-config --cflags --libs glib-2.0')
+coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')
 modtpl.ParseConfig('pkg-config --cflags --libs glib-2.0')
 
 buildtests = True
@@ -16,43 +16,32 @@ buildtests = True
 # Build modes
 if ARGUMENTS.get('debug') == '0' or ARGUMENTS.get('release') == '1':
 	prefix = 'bin/release'
-	core.Append(CCFLAGS = ['-O2'])
-	core.VariantDir(prefix, 'src', 0)
+	coretpl.Append(CCFLAGS = ['-O2'])
+	coretpl.VariantDir(prefix, 'src', 0)
 	modtpl.Append(CCFLAGS = ['-O2'])
 	modtpl.VariantDir(prefix, 'src', 0)
-	if modtpl['PLATFORM'] == 'win32':
-		modtpl.Append(LIBPATH = ['#bin/release', '#bin/release/modules'])
 	buildtests = False
 else:
 	prefix = 'bin/debug'
-	core.Append(CCFLAGS = ['-g'])
-	core.VariantDir(prefix, 'src', 0)
+	coretpl.Append(CCFLAGS = ['-g'])
+	coretpl.VariantDir(prefix, 'src', 0)
+	coretpl.VariantDir('bin/test', 'src', 0)
 	modtpl.Append(CCFLAGS = ['-g'])
-	testtpl = modtpl.Clone()
-	testtpl.VariantDir('bin/test', 'src', 0)
-	testtpl.Append(CPPDEFINES = ['NO_DLL_IMPORT'])
 	modtpl.VariantDir(prefix, 'src', 0)
-	if modtpl['PLATFORM'] == 'win32':
-		modtpl.Append(LIBPATH = ['#bin/debug', '#bin/debug/modules'])	
+	modtpl.VariantDir('bin/test', 'src', 0)
 	
 if ARGUMENTS.get('verbose') != '1':
-	core.Replace(CCCOMSTR = 'Compiling object: $TARGET')
-	core.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
+	coretpl.Replace(CCCOMSTR = 'Compiling object: $TARGET')
+	coretpl.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
 	modtpl.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
 	modtpl.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
-	if buildtests:
-		testtpl.Replace(CCCOMSTR = 'Compiling object: $TARGET')
-		testtpl.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
-
-# OS-specific global options
-if core['PLATFORM'] == 'posix':
-	if buildtests:
-		testtpl.Append(LIBS = ['dl'])
-elif core['PLATFORM'] == 'win32':
-	core.Append(LINKFLAGS = ['-Wl,--out-implib,' + prefix + '/libkalisko.a'])	
 
 # Build core
-SConscript(os.path.join(prefix, 'SConscript'), 'core')
+core = coretpl.Clone()
+if coretpl['PLATFORM'] == 'win32':
+	core.Append(LINKFLAGS = ['-Wl,--out-implib,' + prefix + '/libkalisko.a'])
+corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'test.c']
+SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
 
 # Build modules
 modules = os.listdir('src/modules')
@@ -62,17 +51,32 @@ for moddir in modules:
 		if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 			# Build module
 			module = modtpl.Clone()
+			if modtpl['PLATFORM'] == 'win32':
+				module.Append(LIBPATH = ['#' + prefix, '#' + prefix + '/modules'])
 			SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), 'module')
+			if buildtests:
+				module = modtpl.Clone()
+				if modtpl['PLATFORM'] == 'win32':
+					module.Append(LIBPATH = ['#bin/test', '#bin/test/modules'])
+				SConscript(os.path.join('bin/test', 'modules', moddir, 'SConscript'), 'module')
 
 # Build tests
 if buildtests:
-	corefiles = [x for x in testtpl.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
+	# Build tester core
+	core = coretpl.Clone()
+	if coretpl['PLATFORM'] == 'win32':
+		core.Append(LINKFLAGS = ['-Wl,--out-implib,bin/test/libkalisko.a'])	
+	corefiles = [x for x in core.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
+	SConscript('bin/test/SConscript', ['core', 'corefiles'])
 
+	# Build test cases
 	tests = os.listdir('src/tests')
 	
 	for testdir in tests:
 		if os.path.isdir(os.path.join('src/tests', testdir)):
 			if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 				# Build test
-				test = testtpl.Clone()
-				SConscript(os.path.join('bin/test/tests', testdir, 'SConscript'), ['test','corefiles'])
+				test = modtpl.Clone()
+				if modtpl['PLATFORM'] == 'win32':
+					test.Append(LIBPATH = ['#bin/test', '#bin/test/modules'])				
+				SConscript(os.path.join('bin/test/tests', testdir, 'SConscript'), 'test')

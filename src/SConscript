@@ -1,6 +1,7 @@
 Import('core')
+Import('corefiles')
 
-# Core configure checks
+# core configure checks
 if not core.GetOption('clean'):
 	conf = Configure(core)
 	
@@ -19,7 +20,7 @@ if not core.GetOption('clean'):
 	core = conf.Finish()
 	
 # Build core
-kalisko = core.Program('kalisko', Glob('*.c'))
+prog = core.Program('kalisko', corefiles)
 
 if core['PLATFORM'] == 'win32': # also clean libkalisko.a file
-	core.Clean(kalisko, 'libkalisko.a')
+	core.Clean(prog, 'libkalisko.a')

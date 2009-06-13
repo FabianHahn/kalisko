@@ -1,5 +1,11 @@
 import os
 
+# Build exclude list
+exclude = []
+for key, value in ARGLIST:
+	if key == 'exclude':
+		exclude = exclude + [value]
+
 # Config section
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
@@ -47,7 +53,7 @@ SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
 modules = os.listdir('src/modules')
 
 for moddir in modules:
-	if os.path.isdir(os.path.join('src/modules', moddir)):
+	if os.path.isdir(os.path.join('src/modules', moddir)) and not moddir in exclude:
 		if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 			# Build module
 			module = modtpl.Clone()
@@ -73,7 +79,7 @@ if buildtests:
 	tests = os.listdir('src/tests')
 	
 	for testdir in tests:
-		if os.path.isdir(os.path.join('src/tests', testdir)):
+		if os.path.isdir(os.path.join('src/tests', testdir)) and not moddir in exclude:
 			if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 				# Build test
 				test = modtpl.Clone()

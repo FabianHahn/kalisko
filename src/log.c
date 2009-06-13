@@ -44,10 +44,10 @@ API void initLog()
 API void logMessage(LogType type, char *message, ...)
 {
 	va_list va;
-	char buffer[BUF];
+	char buffer[LOG_BUFFER];
 
 	va_start(va, message);
-	vsnprintf(buffer, BUF, message, va);
+	vsnprintf(buffer, LOG_BUFFER, message, va);
 
 	HOOK_TRIGGER(log, type, buffer);
 }

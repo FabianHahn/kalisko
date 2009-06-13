@@ -86,6 +86,9 @@ API void logMessage(LogType type, char *message, ...);
  */
 #define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
 
-#define BUF 4096
+/**
+ * The buffer size for log messages.
+ */
+#define LOG_BUFFER 4096
 
 #endif

@@ -168,6 +168,7 @@ API bool detachFromHook(const char *hook_name, HookListener *listener, void *cus
  * Triggers a hook and notifies all its listeners
  *
  * @param hook_name		the name of the hook
+ * @param ...			the data to pass to the listeners
  * @result				the number of listeners notified, -1 if hook not found
  */
 API int triggerHook(const char *hook_name, ...)

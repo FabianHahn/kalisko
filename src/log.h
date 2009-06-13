@@ -50,7 +50,7 @@ API void logMessage(LogType type, char *message, ...);
  * Logs a system error (strerror).
  *
  * @see logMessage
- * @param MESSAGE	printf-like message to log, the strerror result will be added automaticly
+ * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
 #define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
 
@@ -87,8 +87,8 @@ API void logMessage(LogType type, char *message, ...);
 #define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
 
 /**
- * The buffer size for log messages.
+ * The maximal length for a log message.
  */
-#define LOG_BUFFER 4096
+#define LOG_MSG_MAXLEN 4096
 
 #endif

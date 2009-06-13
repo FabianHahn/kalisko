@@ -1,0 +1,14 @@
+Import('module')
+
+if not module.GetOption('clean'):
+	conf = Configure(module)
+
+	if conf.env['PLATFORM'] == 'win32':
+		# List module dependencies here, use 'kalisko' for the core
+		conf.env.Append(LIBS = ['kalisko'])
+		
+	module = conf.Finish()
+module.Append(LIBS = ['-lpython2.6'])
+module.Append(CCFLAGS = ['-I/usr/include/python2.6/'])
+module.Append(CCFLAGS = ['-L/usr/lib/python2.6/config/'])
+module.SharedLibrary('../mod_python', Glob('*.c'))

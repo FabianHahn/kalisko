@@ -25,16 +25,16 @@
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#include <unistd.h> // readlink
 #endif
 #include <assert.h>
 #include <stdlib.h>
 #include <glib.h>
 #include "api.h"
 #include "log.h"
-#include "module.h"
 #include "memory_alloc.h"
-
-#define MODULE_PATH "modules/"
+#include "util.h"
+#include "module.h"
 
 #ifdef WIN32
 #define MODULE_PREFIX ""
@@ -44,8 +44,11 @@
 #define MODULE_SUFFIX ".so"
 #endif
 
+#define MODULE_RELPATH "/modules/"
+
 static GHashTable *modules;
 static GHashTable *root_set;
+static char *modpath;
 
 static bool needModule(char *name, GHashTable *parent);
 static void unneedModule(void *name_p, void *mod_p, void *data);
@@ -62,9 +65,19 @@ API void initModules()
 	modules = g_hash_table_new(&g_str_hash, &g_str_equal);
 	root_set = g_hash_table_new(&g_str_hash, &g_str_equal);
 
+	char *execpath = getExecutablePath();
+
+	GString *temp = g_string_new(execpath);
+	g_string_append(temp, MODULE_RELPATH);
+
+	modpath = temp->str;
+
+	g_string_free(temp, FALSE);
+	free(execpath);
+
 #ifdef WIN32
-	if(!SetDllDirectory(MODULE_PATH)) {
-		logError("Failed to set DLL directory to %s", MODULE_PATH);
+	if(!SetDllDirectory(modpath)) {
+		logError("Failed to set DLL directory to %s", modpath);
 	}
 #endif
 }
@@ -84,6 +97,8 @@ API void freeModules()
 
 	g_hash_table_destroy(root_set);
 	g_hash_table_destroy(modules);
+
+	free(modpath);
 }
 
 /**
@@ -174,7 +189,7 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 
 #ifdef WIN32
 	if((mod->handle = LoadLibrary(mod->dlname)) == NULL) {
-		logError("Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, GetLastError());
+		logError("Failed to load dynamic library %s of module %s", mod->dlname, mod->name);
 		return false;
 	}
 
@@ -212,7 +227,7 @@ static void unloadDynamicLibrary(Module *mod)
 
 #ifdef WIN32
 	if(FreeLibrary(mod->handle) == 0) {
-		logError("Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, GetLastError());
+		logError("Failed to unload dynamic library %s of module %s", mod->dlname, mod->name);
 	}
 #else
 	if(dlclose(mod->handle) != 0) {
@@ -250,7 +265,7 @@ static bool needModule(char *name, GHashTable *parent)
 
 		GString *libname = g_string_new(mod->name);
 		g_string_prepend(libname, MODULE_PREFIX);
-		g_string_prepend(libname, MODULE_PATH);
+		g_string_prepend(libname, modpath);
 		g_string_append(libname, MODULE_SUFFIX);
 		mod->dlname = libname->str;
 		g_string_free(libname, FALSE);
@@ -259,6 +274,7 @@ static bool needModule(char *name, GHashTable *parent)
 
 		// Lazy-load dynamic library
 		if(!loadDynamicLibrary(mod, true)) {
+			g_hash_table_remove(modules, mod->name);
 			free(mod->name);
 			free(mod->dlname);
 			free(mod);
@@ -268,6 +284,7 @@ static bool needModule(char *name, GHashTable *parent)
 		// Fetch dependencies
 		ModuleDepender *depends_func;
 		if((depends_func = getLibraryFunction(mod, "module_depends")) == NULL) {
+			g_hash_table_remove(modules, mod->name);
 			free(mod->name);
 			free(mod->dlname);
 			free(mod);
@@ -302,17 +319,13 @@ static bool needModule(char *name, GHashTable *parent)
 
 		// Load dynamic library
 		if(!loadDynamicLibrary(mod, false)) {
-			free(mod->name);
-			free(mod->dlname);
-			free(mod);
+			unneedModule(mod->name, mod, NULL);
 			return false;
 		}
 
 		// Check library functions
 		if(getLibraryFunction(mod, "module_init") == NULL || getLibraryFunction(mod, "module_finalize") == NULL) {
-			free(mod->name);
-			free(mod->dlname);
-			free(mod);
+			unneedModule(mod->name, mod, NULL);
 			return false;
 		}
 

@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -28,6 +29,7 @@
 #include "hooks.h"
 #include "module.h"
 #include "types.h"
+#include "util.h"
 #include "test.h"
 
 static int passed = 0;
@@ -44,10 +46,14 @@ int main(int argc, char **argv)
 
 	printf("Running test cases...\n");
 
+	char *execpath = getExecutablePath();
+	GString *testdir = g_string_new(execpath);
+	g_string_append(testdir, "/tests");
+
 	DIR *tests;
 
-	if((tests = opendir("tests")) == NULL) {
-		fprintf(stderr, "Error: Could not open tests dir.");
+	if((tests = opendir(testdir->str)) == NULL) {
+		fprintf(stderr, "Error: Could not open tests dir.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -58,13 +64,14 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		GString *entry = g_string_new("tests/");
+		GString *entry = g_string_new(testdir->str);
+		g_string_append(entry, "/");
 		g_string_append(entry, node->d_name);
 
 		struct stat properties;
 
 		if(stat(entry->str, &properties) == -1) {
-			fprintf(stderr, "Error: Could not stat %s", entry->str);
+			fprintf(stderr, "Error: Could not stat %s\n", entry->str);
 			return EXIT_FAILURE;
 		}
 
@@ -79,6 +86,9 @@ int main(int argc, char **argv)
 			g_string_free(modname, TRUE);
 		}
 	}
+
+	g_string_free(testdir, TRUE);
+	free(execpath);
 
 	freeModules();
 

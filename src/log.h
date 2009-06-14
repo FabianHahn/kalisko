@@ -52,7 +52,7 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
-#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, "%s: " MESSAGE, strerror(errno), ##__VA_ARGS__)
+#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
 
 /**
  * Logs a message as an error.

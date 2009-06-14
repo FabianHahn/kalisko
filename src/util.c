@@ -47,12 +47,12 @@ API char *getExecutablePath()
 	char execpath[BUF];
 
 #ifdef WIN32
-	if((length = GetModuleFileName(NULL, execpath, BUF)) == 0) {
+	if((length = GetModuleFileName(NULL, execpath, BUF - 1)) == 0) {
 		logError("Failed to determine executable path");
 		return NULL;
 	}
 #else
-	if((length = readlink("/proc/self/exe", execpath, BUF)) < 0) {
+	if((length = readlink("/proc/self/exe", execpath, BUF - 1)) < 0) {
 		logSystemError("Failed to determine executable path");
 		return NULL;
 	} else if(length >= BUF) {

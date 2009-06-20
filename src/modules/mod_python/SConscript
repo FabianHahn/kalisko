@@ -1,19 +1,31 @@
+def checkPythonLibExists():
+	if not conf.CheckLib('python26'):
+			print('Error: Could not find library python2.6!')
+			Exit(1)
+			
 Import('module')
 
 if not module.GetOption('clean'):
 	conf = Configure(module)
 	
 	if conf.env['PLATFORM'] == 'posix':
-		conf.env.Append(CPPPATH = ['/usr/include/python2.6/'])
-		conf.env.Append(LIBPATH = ['/usr/lib/python2.6/config/'])
+		conf.ParseConfig('python-config --cflags')
+		checkPythonLibExists()
 	elif conf.env['PLATFORM'] == 'win32':
-		# List module dependencies here, use 'kalisko' for the core
-		conf.env.Append(LIBS = ['kalisko'])
-		
-	if not conf.CheckLib('python2.6'):
-		print('Error: Could not find library python2.6!')
-		Exit(1)		
-		
+		import _winreg
+		import os
+		try:
+			pyRegistryInstallPath = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Python\PythonCore\2.6\InstallPath")
+			pyInstallPath = value = _winreg.QueryValue(pyRegistryInstallPath, "") # Gets the "(Default)" value from registry
+			
+			conf.env.Append(CPPPATH = [os.path.join(pyInstallPath, 'include')])
+			conf.env.Append(LIBPATH = [os.path.join(pyInstallPath, 'libs')])
+			checkPythonLibExists()
+			conf.env.Append(LIBS = ['kalisko', 'python26'])
+		except Exception, (error):
+			print('Error: Could not find installation path of Python: %s' % (error))
+			Exit(1)
+			
 	module = conf.Finish()
 
 module.SharedLibrary('../mod_python', Glob('*.c'))

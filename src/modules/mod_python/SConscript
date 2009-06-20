@@ -1,30 +1,32 @@
-def checkPythonLibExists():
-	if not conf.CheckLib('python26'):
-			print('Error: Could not find library python2.6!')
-			Exit(1)
-			
 Import('module')
 
 if not module.GetOption('clean'):
 	conf = Configure(module)
 	
 	if conf.env['PLATFORM'] == 'posix':
-		conf.ParseConfig('python-config --cflags')
-		checkPythonLibExists()
+		conf.env.ParseConfig('python-config --cflags')
+		if not conf.CheckLib('python2.6'):
+				print('Error: Could not find library python2.6!')
+				Exit(1)
 	elif conf.env['PLATFORM'] == 'win32':
 		import _winreg
 		import os
 		try:
 			pyRegistryInstallPath = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Python\PythonCore\2.6\InstallPath")
-			pyInstallPath = value = _winreg.QueryValue(pyRegistryInstallPath, "") # Gets the "(Default)" value from registry
-			
+			pyInstallPath = _winreg.QueryValue(pyRegistryInstallPath, "") # Gets the "(Default)" value from registry
 			conf.env.Append(CPPPATH = [os.path.join(pyInstallPath, 'include')])
 			conf.env.Append(LIBPATH = [os.path.join(pyInstallPath, 'libs')])
-			checkPythonLibExists()
-			conf.env.Append(LIBS = ['kalisko', 'python26'])
 		except Exception, (error):
-			print('Error: Could not find installation path of Python: %s' % (error))
+			print('Error: Could not find Python\'s installation path. Error: %s' % (error))
 			Exit(1)
+			
+		# Please keep in mind that the lib we use under Windows has a diffrent
+		# name as for other platforms.
+		if not conf.CheckLib('python26'):
+			print('Error: Could not find library python2.6!')
+			Exit(1)
+			
+		conf.env.Append(LIBS = ['kalisko', 'python26'])
 			
 	module = conf.Finish()
 

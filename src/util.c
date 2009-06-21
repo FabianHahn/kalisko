@@ -80,3 +80,13 @@ API char *getExecutablePath()
 
 	return path;
 }
+
+/**
+ * A GDestroyNotify wrapper around g_hash_table_destroy
+ *
+ * @param table		the hash table to destroy
+ */
+API void destroyGHashTable(void *table)
+{
+	g_hash_table_destroy(table);
+}

@@ -22,5 +22,6 @@
 #define UTIL_H
 
 API char *getExecutablePath();
+API void destroyGHashTable(void *table);
 
 #endif

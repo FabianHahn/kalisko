@@ -26,19 +26,30 @@
 #include <stdarg.h>
 #include "types.h"
 
-// Generic hook listener function pointer
+/**
+ * Generic hook listener function pointer
+ */
 typedef void (HookListener)(const char *hook_name, void *custom_data, va_list args);
 
-// Listener entry struct
+/**
+ * Struct to represent a listener entry
+ */
 typedef struct
 {
-	HookListener *listener; // The listener function pointer
-	void *custom_data; // Custom data to pass to the function when triggered
+	/** The listener function pointer */
+	HookListener *listener;
+	/** Custom data to pass to the function when triggered */
+	void *custom_data;
 } HookListenerEntry;
 
+/**
+ * Struct to represent a stats entry
+ */
 typedef struct
 {
+	/** The name of the hook */
 	char *hook_name;
+	/** The number of listeners attached to this hook */
 	int num_listeners;
 } HookStatsEntry;
 

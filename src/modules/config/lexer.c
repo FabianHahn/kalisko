@@ -1,5 +1,5 @@
 /**
- * @file config_lexer.c
+ * @file lexer.c
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -27,11 +27,18 @@
 #include "types.h"
 
 #include "api.h"
-#include "config.h"
-#include "config_parser.h"
-#include "config_lexer.h"
+#include "parse.h"
+#include "parser.h"
+#include "lexer.h"
 
-API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, ConfigFile *config)
+/**
+ * Lexes a token from a config
+ *
+ * @param lval		the lexer value target
+ * @param config	the config to lex
+ * @result			the lexed token
+ */
+API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 {
 	int c;
 	bool escaping = false;
@@ -57,6 +64,7 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, ConfigFile *config)
 			case '{':
 			case '}':
 			case '=':
+			case ',':
 			case '\n':
 				if(reading_string) {
 					if(!string_is_delimited) { // end of undelimited string reached
@@ -162,4 +170,45 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, ConfigFile *config)
 			return 0; // error
 		}
 	}
+}
+
+/**
+ * Lexes a config and dumps the result
+ *
+ * @param config		the config to lex and dump
+ * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ */
+API GString *dumpLex(Config *config)
+{
+	int lexx;
+	YYSTYPE val;
+
+	GString *ret = g_string_new("");
+	g_string_append_printf(ret, "Lexer dump for %s:\n", config->name);
+
+	memset(&val, 0, sizeof(YYSTYPE));
+
+	while((lexx = yylex(&val, config)) != 0) {
+		switch(lexx) {
+			case STRING:
+				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);
+			break;
+			case INTEGER:
+				g_string_append_printf(ret, "<integer=%d> ", val.integer);
+			break;
+			case FLOAT_NUMBER:
+				g_string_append_printf(ret, "<float=%f> ", val.float_number);
+			break;
+			case '\n':
+				g_string_append(ret, "'\\n' ");
+			break;
+			default:
+				g_string_append_printf(ret, "'%c' ", lexx);
+			break;
+		}
+
+		memset(&val, 0, sizeof(YYSTYPE));
+	}
+
+	return ret;
 }

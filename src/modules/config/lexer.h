@@ -1,5 +1,5 @@
 /**
- * @file config_lexer.h
+ * @file lexer.h
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -21,8 +21,10 @@
 #ifndef CONFIG_LEXER_H
 #define CONFIG_LEXER_H
 
-#include "config.h"
+#include <glib.h>
+#include "parse.h"
 
-API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, ConfigFile *config);
+API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config);
+API GString *dumpLex(Config *config) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

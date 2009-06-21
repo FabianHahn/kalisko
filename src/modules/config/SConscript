@@ -11,6 +11,6 @@ if not module.GetOption('clean'):
 		
 	module = conf.Finish()
 
-module.CFile('config_parser.c', 'config_parser.y');
+module.CFile('parser.c', 'parser.y');
 
 module.SharedLibrary('../config', Glob('*.c'))

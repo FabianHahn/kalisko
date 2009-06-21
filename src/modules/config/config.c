@@ -22,13 +22,9 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "memory_alloc.h"
 #include "types.h"
 
 #include "api.h"
-#include "config.h"
-#include "config_parser.h"
-#include "config_lexer.h"
 
 API bool module_init()
 {
@@ -43,32 +39,4 @@ API void module_finalize()
 API GList *module_depends()
 {
 	return NULL;
-}
-
-API char configFileRead(void *config)
-{
-	ConfigFile *cfg = config;
-
-	return fgetc(cfg->file);
-}
-
-API void configFileUnread(void *config, char c)
-{
-	ConfigFile *cfg = config;
-
-	ungetc(c, cfg->file);
-}
-
-API char configStringRead(void *config)
-{
-	ConfigFile *cfg = config;
-
-	return *((char *) cfg->file++);
-}
-
-API void configStringUnread(void *config, char c)
-{
-	ConfigFile *cfg = config;
-
-	cfg->file--;
 }

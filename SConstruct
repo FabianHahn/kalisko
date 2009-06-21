@@ -41,6 +41,7 @@ if ARGUMENTS.get('verbose') != '1':
 	coretpl.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
 	modtpl.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
 	modtpl.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
+	modtpl.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
 
 # Build core
 core = coretpl.Clone()

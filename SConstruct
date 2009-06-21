@@ -11,7 +11,7 @@ ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
 coretpl = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
-modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','--report=all'])
+modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 # Add glib support
 coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')

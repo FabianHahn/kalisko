@@ -1,0 +1,14 @@
+Import('test')
+
+if not test.GetOption('clean'):
+	conf = Configure(test)
+	
+	conf.env.Append(CPPPATH = ['../..']) # for bison
+
+	if conf.env['PLATFORM'] == 'win32':
+		# List module dependencies here, use 'kalisko' for the core
+		conf.env.Append(LIBS = ['kalisko', 'config'])
+		
+	test = conf.Finish()
+
+test.SharedLibrary('../../modules/test_config', Glob('*.c'))

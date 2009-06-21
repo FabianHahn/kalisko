@@ -1,0 +1,87 @@
+/**
+ * @file sample.c
+ * <h3>Copyright</h3>
+ * Copyright (c) 2009, Kalisko Project Leaders
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ *
+ *     @li Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *     @li Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+ *       in the documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <glib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "dll.h"
+#include "test.h"
+#include "memory_alloc.h"
+#include "modules/config/config.h"
+#include "modules/config/config_parser.h"
+#include "modules/config/config_lexer.h"
+
+#include "api.h"
+
+TEST_CASE(lexer);
+
+static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue\nsomeotherkey=\"some\\\\[other \\\"value}\"\nnumber = 42\nfloat  = 3.14159265";
+static int lexer_test_solution_tokens[] = {'[', STRING, ']', '\n', STRING, '=', STRING, '\n', STRING, '=', STRING, '\n', STRING, '=', INTEGER, '\n', STRING, '=', FLOAT_NUMBER};
+static YYSTYPE lexer_test_solution_values[] = {{NULL}, {"section"}, {NULL}, {NULL}, {"somekey"}, {NULL}, {"1337somevalue"}, {NULL}, {"someotherkey"}, {NULL}, {"some\\[other \"value}"}, {NULL}, {"number"}, {NULL}, {.integer = 42}, {NULL}, {"float"}, {NULL}, {.float_number = 3.14159265}};
+
+TEST_SUITE_BEGIN(config)
+	TEST_CASE_ADD(lexer);
+TEST_SUITE_END
+
+TEST_CASE(lexer)
+{
+	int *solution_tokens;
+	YYSTYPE *solution_values;
+	int lexx;
+	YYSTYPE val;
+
+	ConfigFile *config = allocateObject(ConfigFile);
+
+	config->file = lexer_test_input;
+	config->read = &configStringRead;
+	config->unread = &configStringUnread;
+
+	solution_tokens = lexer_test_solution_tokens;
+	solution_values = lexer_test_solution_values;
+
+	memset(&val, 0, sizeof(YYSTYPE));
+
+	while((lexx = yylex(&val, config)) != 0) {
+		TEST_ASSERT(lexx == *(solution_tokens++));
+
+		switch(lexx) {
+			case STRING:
+				TEST_ASSERT(strcmp(val.string, solution_values->string) == 0);
+			break;
+			case INTEGER:
+				TEST_ASSERT(val.integer == solution_values->integer);
+			break;
+			case FLOAT_NUMBER:
+				TEST_ASSERT(val.float_number == solution_values->float_number);
+			break;
+		}
+
+		memset(&val, 0, sizeof(YYSTYPE));
+		solution_values++;
+	}
+
+	TEST_PASS;
+}
+
+API GList *module_depends()
+{
+	return g_list_append(NULL, "config");
+}

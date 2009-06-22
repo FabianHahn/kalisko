@@ -23,8 +23,10 @@
 
 #include <glib.h>
 #include "parse.h"
+#include "parser.h"
 
-API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config);
-API GString *dumpLex(Config *config) G_GNUC_WARN_UNUSED_RESULT;
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config);
+API GString *lexConfigString(char *string);
+API GString *lexConfigFile(char *filename);
 
 #endif

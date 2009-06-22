@@ -19,6 +19,7 @@
  */
 
 %{
+	#include <stdio.h>
 	#include <string.h>
 	#include <glib.h>
 	#include "dll.h"
@@ -29,12 +30,21 @@
 	#include "api.h"
 	#include "parse.h"
 	#include "lexer.h"
-	static void yyerror(Config *config, char *error);
+/*
+	#define YYDEBUG 1
+	#define YYFPRINTF fprintf
+	int yydebug = 1;
+*/
 %}
 
+%locations
 %define api.pure
 %parse-param {Config *config}
 %lex-param {Config *config}
+
+%{
+	void yyerror(YYLTYPE *lloc, Config *config, char *error);
+%}
 
 %token <string> STRING
 %token <integer> INTEGER
@@ -45,43 +55,59 @@
 %type <node> node
 %type <nodes> nodes
 %type <section> section
+%destructor { freeConfigNodeValue($$); } array list value
+%destructor { freeConfigNodeValue($$->value); free($$->key); free($$); } node
+%destructor { g_hash_table_destroy($$); } nodes
+%destructor { free($$->name); g_hash_table_destroy($$->nodes); free($$); } section
 
 %%
 sections:		section
 				{
+					@$.last_line = @1.last_line;
+					@$.last_column = @1.last_column;
 					config->sections = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &destroyGHashTable);
 					g_hash_table_insert(config->sections, $1->name, $1->nodes);
 					free($1);
 				}
 			|	sections section
 				{
+					@$.last_line = @1.last_line;
+					@$.last_column = @1.last_column;
 					g_hash_table_insert(config->sections, $2->name, $2->nodes);
 					free($2);
 				}
 ;
 
-section:		'[' STRING ']' newlines // empty section
+section:		'[' STRING ']' // empty section
 				{
+					@$.last_line = @1.last_line;
+					@$.last_column = @1.last_column;
 					$$ = allocateObject(ConfigSection);
 					$$->name = strdup($2);
 					$$->nodes = g_hash_table_new(&g_str_hash, &g_str_equal);
 				}
-			|	'[' STRING ']' newlines nodes
+			|	'[' STRING ']' nodes
 				{
+					@$.last_line = @1.last_line;
+					@$.last_column = @1.last_column;
 					$$ = allocateObject(ConfigSection);
 					$$->name = strdup($2);
-					$$->nodes = $5;
+					$$->nodes = $4;
 				}
 ;
 
 nodes:		node
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
 				g_hash_table_insert($$, $1->key, $1->value);
 				free($1);
 			}
-		|	nodes node newlines
+		|	nodes node
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				g_hash_table_insert($1, $2->key, $2->value);
 				free($2);
 				$$ = $1;
@@ -90,6 +116,8 @@ nodes:		node
 
 node:	STRING '=' value
 		{
+			@$.last_line = @1.last_line;
+			@$.last_column = @1.last_column;
 			$$ = allocateObject(ConfigNode);
 			$$->key = strdup($1);
 			$$->value = $3;
@@ -98,79 +126,97 @@ node:	STRING '=' value
 
 value:		STRING
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_STRING;
 				$$->content.string = strdup($1);
 			}
 		|	INTEGER
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_INTEGER;
 				$$->content.integer = $1;
 			}
 		|	FLOAT_NUMBER
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_FLOAT_NUMBER;
 				$$->content.float_number = $1;
 			}
 		|	'[' ']'
 			{
+				@$.last_line = @2.last_line;
+				@$.last_column = @2.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_LIST;
 				$$->content.list = NULL;
 			}
 		|	'[' list ']'
 			{
+				@$.last_line = @3.last_line;
+				@$.last_column = @3.last_column;
 				$$ = $2;
 			}
 		|	'{' '}'
 			{
+				@$.last_line = @2.last_line;
+				@$.last_column = @2.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_ARRAY;
 				$$->content.array = g_hash_table_new(&g_str_hash, &g_str_equal);
 			}
 		|	'{' array '}'
 			{
+				@$.last_line = @3.last_line;
+				@$.last_column = @3.last_column;
 				$$ = $2;
 			}
 ;
 
 list:		value // first element of the list
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_LIST;
 				$$->content.list = g_list_append(NULL, $1);
 			}
-		|	list ',' value // the list continues
+		|	list value // the list continues
 			{
-				$1->content.list = g_list_append($1->content.list, $3);
+				@$.last_line = @2.last_line;
+				@$.last_column = @2.last_column;
+				$1->content.list = g_list_append($1->content.list, $2);
 				$$ = $1;
 			}
 ;
 
 array:		node // first element of the array
 			{
+				@$.last_line = @1.last_line;
+				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_ARRAY;
 				$$->content.array = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
 				g_hash_table_insert($$->content.array, $1->key, $1->value);
 				free($1);
 			}
-		|	array ',' node // the array continues
+		|	array node // the array continues
 			{
-				g_hash_table_insert($1->content.array, $3->key, $3->value);
-				free($3);
+				@$.last_line = @2.last_line;
+				@$.last_column = @2.last_column;
+				g_hash_table_insert($1->content.array, $2->key, $2->value);
+				free($2);
 				$$ = $1;
 			}
 ;
-
-newlines:		'\n'
-			|	newlines '\n'
-;
 %%
 
-static void yyerror(Config *config, char *error)
+void yyerror(YYLTYPE *lloc, Config *config, char *error)
 {
-	logError("Syntax error while parsing %s: %s", config->name, error);
+	logError("Parse error in %s at line %d, column %d: %s", config->name, lloc->last_line, lloc->last_column - 1, error);
 }

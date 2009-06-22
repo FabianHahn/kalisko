@@ -48,6 +48,7 @@ API Config *parseConfigFile(char *filename)
 	config->resource = fopen(config->name, "r");
 	config->read = &configFileRead;
 	config->unread = &configFileUnread;
+	config->prelude = 0;
 
 	logInfo("Parsing config file %s", config->name);
 
@@ -78,6 +79,7 @@ API Config *parseConfigString(char *string)
 	config->resource = config->name;
 	config->read = &configStringRead;
 	config->unread = &configStringUnread;
+	config->prelude = 0;
 
 	logInfo("Parsing config string: %s", config->name);
 

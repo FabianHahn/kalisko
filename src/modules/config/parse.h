@@ -112,6 +112,8 @@ typedef struct {
 	ConfigReader *read;
 	/** The config's unreader */
 	ConfigUnreader *unread;
+	/** How many parts of the prelude were already sent */
+	int prelude;
 	/** The config's sections if it's parsed */
 	GHashTable *sections;
 } Config;

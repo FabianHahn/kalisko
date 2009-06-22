@@ -34,11 +34,11 @@
 TEST_CASE(lexer);
 TEST_CASE(parser);
 
-static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue\nsomeotherkey=\"some\\\\[other \\\"value}\"\nnumber = 42\nfloat  = 3.14159265";
-static int lexer_test_solution_tokens[] = {'[', STRING, ']', '\n', STRING, '=', STRING, '\n', STRING, '=', STRING, '\n', STRING, '=', INTEGER, '\n', STRING, '=', FLOAT_NUMBER};
-static YYSTYPE lexer_test_solution_values[] = {{NULL}, {"section"}, {NULL}, {NULL}, {"somekey"}, {NULL}, {"1337somevalue"}, {NULL}, {"someotherkey"}, {NULL}, {"some\\[other \"value}"}, {NULL}, {"number"}, {NULL}, {.integer = 42}, {NULL}, {"float"}, {NULL}, {.float_number = 3.14159265}};
+static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
+static int lexer_test_solution_tokens[] = {'[', STRING, ']', '[', STRING, ']', STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
+static YYSTYPE lexer_test_solution_values[] = {{NULL}, {"default"}, {NULL}, {NULL}, {"section"}, {NULL}, {"somekey"}, {NULL}, {"1337somevalue"}, {"someotherkey"}, {NULL}, {"some\\[other \"value//}"}, {"number"}, {NULL}, {.integer = 42}, {"float"}, {NULL}, {.float_number = 3.14159265}};
 
-static char *parser_test_input = "[firstsection]\n\n[section]\nsomevalue = [13, 18.34, {bird = word, foo = bar}]";
+static char *parser_test_input = "[firstsection]\n\n[section]foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = [13, 18.34, {bird = word, foo = bar}]";
 
 static char _configStringRead(void *config);
 static void _configStringUnread(void *config, char c);
@@ -54,6 +54,7 @@ TEST_CASE(lexer)
 	YYSTYPE *solution_values;
 	int lexx;
 	YYSTYPE val;
+	YYLTYPE loc;
 
 	Config *config = allocateObject(Config);
 
@@ -67,7 +68,7 @@ TEST_CASE(lexer)
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = yylex(&val, config)) != 0) {
+	while((lexx = yylex(&val, &loc, config)) != 0) {
 		TEST_ASSERT(lexx == *(solution_tokens++));
 
 		switch(lexx) {

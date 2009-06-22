@@ -25,11 +25,25 @@
 
 #include "dll.h"
 #include "types.h"
+#include "memory_alloc.h"
+#include "log.h"
 
 #include "api.h"
 #include "parse.h"
 #include "parser.h"
 #include "lexer.h"
+
+/**
+ * Is the char a delimiter?
+ *
+ * @param C		the char to check
+ * @result		true if the char is a delimiter
+ */
+#define IS_DELIMITER(C) (isspace(c) || c == ';' || c == ',')
+
+static GString *dumpLex(Config *config) G_GNUC_WARN_UNUSED_RESULT;
+
+void yyerror(YYLTYPE *lloc, Config *config, char *error); // this can't go into a header because it doesn't have an API export
 
 /**
  * Lexes a token from a config
@@ -38,7 +52,7 @@
  * @param config	the config to lex
  * @result			the lexed token
  */
-API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 {
 	int c;
 	bool escaping = false;
@@ -46,47 +60,89 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 	bool string_is_delimited = false;
 	bool reading_numeric = false;
 	bool numeric_is_float = false;
+	int commenting = 0;
 	char assemble[CONFIG_MAX_STRING_LENGTH];
 	int i = 0;
 
+	if(config->prelude < 3) {
+		config->prelude++;
+
+		switch(config->prelude) {
+			case 1:
+				return '[';
+			break;
+			case 2:
+				lval->string = "default";
+				return STRING;
+			break;
+			case 3:
+				return ']';
+			break;
+		}
+	}
+
 	while(true) {
 		c = config->read(config);
+		lloc->last_column++;
+
+		if(c == '\n') {
+			lloc->last_line++;
+			lloc->last_column = 1;
+			commenting = 0;
+		} else if(commenting >= 2) {
+			if(c != '\0' || c != EOF) {
+				continue; // we're inside a comment
+			}
+		}
+
+		if(c == '(') {
+			c = '['; // allow paren as list delimiter
+		} else if(c == ')') {
+			c = ']'; // allow paren as list delimiter
+		}
 
 		switch(c) {
 			case EOF:
 			case '\0':
-				return 0;
-			break;
 			case '[':
 			case ']':
-			case '(':
-			case ')':
 			case '{':
 			case '}':
 			case '=':
-			case ',':
-			case '\n':
 				if(reading_string) {
 					if(!string_is_delimited) { // end of undelimited string reached
 						assemble[i] = '\0';
 						lval->string = strdup(assemble);
-						config->unread(config, c); // push back to stream
+						if(c != EOF) {
+							config->unread(config, c); // push back to stream
+							lloc->last_column--;
+						}
 						return STRING;
 					} // else just continue reading
 				} else if(reading_numeric) {
 					if(numeric_is_float) { // end of float reached
 						assemble[i] = '\0';
 						lval->float_number = atof(assemble);
-						config->unread(config, c); // push back to stream
+						if(c != EOF) {
+							config->unread(config, c); // push back to stream
+							lloc->last_column--;
+						}
 						return FLOAT_NUMBER;
 					} else { // end of int reached
 						assemble[i] = '\0';
 						lval->integer = atoi(assemble);
-						config->unread(config, c); // push back to stream
+						if(c != EOF) {
+							config->unread(config, c); // push back to stream
+							lloc->last_column--;
+						}
 						return INTEGER;
 					}
 				} else {
-					return c;
+					if(c == EOF) {
+						return 0;
+					} else {
+						return c;
+					}
 				}
 			break;
 		}
@@ -113,8 +169,9 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 				} // else just continue reading
 			} else {
 				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
+					yyerror(lloc, config, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
 					return 0; // error
-				} else if(isspace(c)) { // end of non delimited string reached
+				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
 					assemble[i] = '\0';
 					lval->string = strdup(assemble);
 					return STRING;
@@ -123,11 +180,12 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 		} else if(reading_numeric) {
 			if(c == '.') { // delimiter
 				if(numeric_is_float) {
+					yyerror(lloc, config, "Multiple occurences of delimiter '.' in numeric value");
 					return 0; // error
 				} else {
 					numeric_is_float = true;
 				}
-			} else if(isspace(c)) { // whitespace, end of number
+			} else if(IS_DELIMITER(c)) { // whitespace, end of number
 				if(numeric_is_float) {
 					assemble[i] = '\0';
 					lval->float_number = atof(assemble);
@@ -141,10 +199,18 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 				reading_numeric = false;
 				reading_string = true;
 				config->unread(config, c); // push back to stream
+				lloc->last_column--;
 				continue;
 			}
 		} else { // We're starting to read now!
-			if(isspace(c)) { // whitespace
+			if(c == '/') {
+				commenting++;
+				continue;
+			} else {
+				commenting = 0;
+			}
+
+			if(IS_DELIMITER(c)) { // whitespace
 				continue; // just ignore it
 			} else if(isdigit(c)) { // reading an int or a float number
 				reading_numeric = true;
@@ -154,22 +220,72 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
 				if(c == '"') { // starting a delimited string
 					string_is_delimited = true;
 					continue;
-				} else if(c == '\\') { // escape character not allowed in non-delimited string
+				} else if(c == '\\') {
+					yyerror(lloc, config, "Escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} // else just continue reading the non-delimited string
 			}
 		}
 
 		if(escaping) { // escape character wasn't used
+			yyerror(lloc, config, "Unused escape character '\\'");
 			return 0; // error
 		}
 
 		assemble[i++] = c;
 
 		if(i >= CONFIG_MAX_STRING_LENGTH) {
+			yyerror(lloc, config, "String value exceeded maximum length");
 			return 0; // error
 		}
 	}
+}
+
+/**
+ * Lexes a config string and dumps the result
+ *
+ * @param config		the config string to lex and dump
+ * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ */
+API GString *lexConfigString(char *string)
+{
+	Config *config = allocateObject(Config);
+
+	config->name = string;
+	config->resource = config->name;
+	config->read = &configStringRead;
+	config->unread = &configStringUnread;
+	config->prelude = 0;
+
+	GString *ret = dumpLex(config);
+
+	free(config);
+
+	return ret;
+}
+
+/**
+ * Lexes a config file and dumps the result
+ *
+ * @param filename		the config file to lex and dump
+ * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ */
+API GString *lexConfigFile(char *filename)
+{
+	Config *config = allocateObject(Config);
+
+	config->name = filename;
+	config->resource = fopen(filename, "r");
+	config->read = &configFileRead;
+	config->unread = &configFileUnread;
+	config->prelude = 0;
+
+	GString *ret = dumpLex(config);
+
+	fclose(config->resource);
+	free(config);
+
+	return ret;
 }
 
 /**
@@ -178,17 +294,18 @@ API int yylex(YYSTYPE *lval/*, YYLTYPE *lloc*/, Config *config)
  * @param config		the config to lex and dump
  * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
  */
-API GString *dumpLex(Config *config)
+static GString *dumpLex(Config *config)
 {
 	int lexx;
 	YYSTYPE val;
+	YYLTYPE loc;
 
 	GString *ret = g_string_new("");
 	g_string_append_printf(ret, "Lexer dump for %s:\n", config->name);
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = yylex(&val, config)) != 0) {
+	while((lexx = yylex(&val, &loc, config)) != 0) {
 		switch(lexx) {
 			case STRING:
 				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);

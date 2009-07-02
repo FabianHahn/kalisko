@@ -95,12 +95,6 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 			}
 		}
 
-		if(c == '(') {
-			c = '['; // allow paren as list delimiter
-		} else if(c == ')') {
-			c = ']'; // allow paren as list delimiter
-		}
-
 		switch(c) {
 			case EOF:
 			case '\0':
@@ -108,6 +102,8 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 			case ']':
 			case '{':
 			case '}':
+			case '(':
+			case ')':
 			case '=':
 				if(reading_string) {
 					if(!string_is_delimited) { // end of undelimited string reached

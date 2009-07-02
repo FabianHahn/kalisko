@@ -132,6 +132,11 @@ typedef union {
 } YYSTYPE;
 
 /**
+ * A config writer to write down a config from memory
+ */
+typedef void (ConfigWriter)(Config *config, char *format, ...);
+
+/**
  * A config string's maximum length
  */
 #define CONFIG_MAX_STRING_LENGTH 1024
@@ -140,7 +145,8 @@ API Config *parseConfigFile(char *filename);
 API Config *parseConfigString(char *string);
 API void freeConfig(Config *config);
 API void freeConfigNodeValue(void *value);
-API GString *dumpConfig(Config *config) G_GNUC_WARN_UNUSED_RESULT;
+API void writeConfigFile(char *filename, Config *config);
+API GString *writeConfigGString(Config *config) G_GNUC_WARN_UNUSED_RESULT;
 API char configFileRead(void *config);
 API void configFileUnread(void *config, char c);
 API char configStringRead(void *config);

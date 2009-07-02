@@ -148,7 +148,7 @@ value:		STRING
 				$$->type = CONFIG_FLOAT_NUMBER;
 				$$->content.float_number = $1;
 			}
-		|	'[' ']'
+		|	'(' ')'
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
@@ -156,7 +156,7 @@ value:		STRING
 				$$->type = CONFIG_LIST;
 				$$->content.list = NULL;
 			}
-		|	'[' list ']'
+		|	'(' list ')'
 			{
 				@$.last_line = @3.last_line;
 				@$.last_column = @3.last_column;

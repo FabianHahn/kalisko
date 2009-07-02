@@ -28,11 +28,29 @@
 #include "parser.h"
 #include "lexer.h"
 
+/**
+ * A helper struct that's used to dump configs
+ */
+typedef struct {
+	/** the config to dump */
+	Config *config;
+	/** the config writer to use for dumping */
+	ConfigWriter *writer;
+	/** the current indentation level */
+	int level;
+} ConfigDumpContext;
+
+#define DUMP(FORMAT, ...) context->writer(context->config, FORMAT, ##__VA_ARGS__)
+
 int yyparse(Config *config); // this can't go into a header because it doesn't have an API export
 
+static void dumpConfig(Config *config, ConfigWriter *writer);
+static void configFileWrite(Config *config, char *format, ...);
+static void configGStringWrite(Config *config, char *format, ...);
 static void dumpConfigSection(void *key, void *value, void *data);
 static void dumpConfigNode(void *key_p, void *value_p, void *data);
-static void dumpConfigNodeValue(char *key, ConfigNodeValue *value, GString *dump);
+static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *context);
+static GString *escapeConfigString(char *string);
 
 /**
  * Parses a config file
@@ -138,19 +156,29 @@ API void freeConfigNodeValue(void *value_p)
 }
 
 /**
- * Dumps a parsed config
+ * Writes a config from memory to a file
  *
- * @param config		the config to dump
- * @result				the config's dump as a string, must be freed with g_string_free afterwards
+ * @param filename		the filename to write to
+ * @param config		the config to write
  */
-API GString *dumpConfig(Config *config)
+API void writeConfigFile(char *filename, Config *config)
 {
-	GString *dump = g_string_new("");
-	g_string_append_printf(dump, "Config dump for %s:\n", config->name);
+	config->resource = fopen(filename, "w");
+	dumpConfig(config, &configFileWrite);
+	fclose(config->resource);
+}
 
-	g_hash_table_foreach(config->sections, &dumpConfigSection, dump);
-
-	return dump;
+/**
+ * Writes a config from memory to a GString
+ *
+ * @param config		the config to write
+ * @result				the written config string, must be freed with g_string_free
+ */
+API GString *writeConfigGString(Config *config)
+{
+	config->resource = g_string_new("");
+	dumpConfig(config, &configGStringWrite);
+	return config->resource;
 }
 
 /**
@@ -206,20 +234,72 @@ API void configStringUnread(void *config, char c)
 }
 
 /**
+ * A ConfigWriter function for files
+ *
+ * @param config		the config to to write to
+ * @param format		printf-like string to write
+ */
+static void configFileWrite(Config *config, char *format, ...)
+{
+	va_list va;
+
+	va_start(va, format);
+
+	vfprintf(config->resource, format, va);
+}
+
+/**
+ * Dumps a parsed config from memory to a writer
+ *
+ * @param config		the config to dump
+ * @param writer		the writer where the config should be dumped to
+ */
+static void dumpConfig(Config *config, ConfigWriter *writer)
+{
+	logInfo("Dumping config %s", config->name);
+
+	ConfigDumpContext *context = allocateObject(ConfigDumpContext);
+	context->config = config;
+	context->writer = writer;
+	context->level = 0;
+
+	g_hash_table_foreach(config->sections, &dumpConfigSection, context);
+
+	free(context);
+}
+
+/**
+ * A ConfigWriter function for GStrings
+ *
+ * @param config		the config to to write to
+ * @param format		printf-like string to write
+ */
+static void configGStringWrite(Config *config, char *format, ...)
+{
+	va_list va;
+
+	va_start(va, format);
+
+	g_string_append_vprintf(config->resource, format, va);
+}
+
+/**
  * A GHFunc to dump a config section
  *
  * @param key		the name of the section
  * @param value		the section's nodes
- * @param dump		the dump target string
+ * @param data		the dump's context
  */
 static void dumpConfigSection(void *key, void *value, void *data)
 {
 	char *name = key;
 	GHashTable *nodes = value;
-	GString *dump = data;
+	ConfigDumpContext *context = data;
 
-	g_string_append_printf(dump, "Section \"%s\":\n", name);
-	g_hash_table_foreach(nodes, &dumpConfigNode, dump);
+	if(g_hash_table_size(nodes)) {
+		DUMP("[%s]\n", name);
+		g_hash_table_foreach(nodes, &dumpConfigNode, context);
+	}
 }
 
 /**
@@ -227,53 +307,98 @@ static void dumpConfigSection(void *key, void *value, void *data)
  *
  * @param key		the key of the node
  * @param value		the value of the node
- * @param dump		the dump target string
+ * @param data		the dump's context
  */
 static void dumpConfigNode(void *key_p, void *value_p, void *data)
 {
 	char *key = key_p;
 	ConfigNodeValue *value = value_p;
-	GString *dump = data;
+	ConfigDumpContext *context = data;
 
-	GString *quoted_key = g_string_new("");
-	g_string_append_printf(quoted_key, "\"%s\"", key);
-	dumpConfigNodeValue(quoted_key->str, value, dump);
-	g_string_free(quoted_key, TRUE);
+	for(int i = 0; i < context->level; i++) {
+		DUMP("\t");
+	}
+
+	GString *escaped = escapeConfigString(key);
+
+	DUMP("\"%s\" = ", escaped->str);
+
+	g_string_free(escaped, TRUE);
+
+	dumpConfigNodeValue(value, context);
+
+	DUMP("\n");
 }
 
 /**
  * Dumps a config node value
  *
- * @param key		the key of the parent node
  * @param value		the value of the node
- * @param dump		the dump target string
+ * @param context		the dump's context
  */
-static void dumpConfigNodeValue(char *key, ConfigNodeValue *value, GString *dump)
+static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *context)
 {
+	GString *escaped;
+
 	switch (value->type) {
 		case CONFIG_STRING:
-			g_string_append_printf(dump, "String %s: \"%s\"\n", key,
-			value->content.string);
+			escaped = escapeConfigString(value->content.string);
+
+			DUMP("\"%s\"", escaped->str);
+
+			g_string_free(escaped, TRUE);
 		break;
 		case CONFIG_INTEGER:
-			g_string_append_printf(dump, "Integer %s: %d\n", key,
-			value->content.integer);
+			DUMP("%d", value->content.integer);
 		break;
 		case CONFIG_FLOAT_NUMBER:
-			g_string_append_printf(dump, "Float %s: %f\n", key,
-			value->content.float_number);
+			DUMP("%f", value->content.float_number);
 		break;
 		case CONFIG_LIST:
-			g_string_append_printf(dump, "List %s:\n", key);
+			DUMP("(");
 
 			for (GList *iter = value->content.list; iter != NULL; iter = iter->next) {
-				dumpConfigNodeValue("[list item]", iter->data, dump);
+				dumpConfigNodeValue(iter->data, context);
+
+				if(iter->next != NULL) {
+					DUMP(", ");
+				}
 			}
+
+			DUMP(")");
 		break;
 		case CONFIG_ARRAY:
-			g_string_append_printf(dump, "Array %s:\n", key);
-			g_hash_table_foreach(value->content.array, &dumpConfigNode, dump);
-			g_string_append_printf(dump, "End of array %s\n", key);
+			DUMP("{\n");
+			context->level++;
+			g_hash_table_foreach(value->content.array, &dumpConfigNode, context);
+			context->level--;
+
+			for(int i = 0; i < context->level; i++) {
+				DUMP("\t");
+			}
+
+			DUMP("}");
 		break;
 	}
+}
+
+/**
+ * Escapes a config string for output in a dump
+ *
+ * @param string		the string to escape
+ * @result				the escaped string, must be freed with g_string_free
+ */
+static GString *escapeConfigString(char *string)
+{
+	GString *escaped = g_string_new("");
+
+	for(char *iter = string; *iter != '\0'; iter++) {
+		if(*iter == '"' || *iter == '\\') {
+			g_string_append_printf(escaped, "\\%c", *iter); // escape the character
+		} else {
+			g_string_append_c(escaped, *iter);
+		}
+	}
+
+	return escaped;
 }

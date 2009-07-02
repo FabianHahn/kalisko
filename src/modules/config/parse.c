@@ -37,6 +37,7 @@
 
 int yyparse(Config *config); // this can't go into a header because it doesn't have an API export
 
+static void *getConfigSubpath(ConfigSubtree *parent, char *path);
 static void dumpConfig(Config *config, ConfigWriter *writer);
 static void configFileWrite(Config *config, char *format, ...);
 static void configGStringWrite(Config *config, char *format, ...);
@@ -102,6 +103,22 @@ API Config *parseConfigString(char *string)
 	}
 
 	return config;
+}
+
+/**
+ * Fetches a config subtree by its path
+ *
+ * @param config		the config in which the lookup takes place
+ * @param path			the path to the subtree without a leading / to search, use integers from base 0 for list elements
+ * @result				the config subtree, or NULL if not found
+ */
+API void *getConfigPath(Config *config, char *path)
+{
+	ConfigSubtree *subtree = allocateObject(ConfigSubtree);
+	subtree->type = CONFIG_SECTIONS;
+	subtree->tree = config->sections;
+
+	return getConfigSubpath(subtree, path);
 }
 
 /**
@@ -224,6 +241,145 @@ API void configStringUnread(void *config, char c)
 	Config *cfg = config;
 
 	cfg->resource--;
+}
+
+/**
+ * Fetches a config subtree by its parent tree and its subpath
+ *
+ * @see getConfigPath
+ * @param parent		the parent config tree to search
+ * @param subpath		the subpath to search
+ * @result				the config subtree, or NULL if not found
+ */
+static void *getConfigSubpath(ConfigSubtree *parent, char *subpath)
+{
+	ConfigSubtree *subtree = allocateObject(ConfigSubtree);
+	GString *pathnode = g_string_new("");
+	bool escaping = false;
+	char *iter;
+
+	for(iter = subpath; *iter != '\0'; iter++) {
+		if(*iter == '/') {
+			if(!escaping) {
+				iter++;
+				break;
+			} else {
+				escaping = false;
+			}
+		} else if(*iter == '\\') {
+			if(!escaping) {
+				escaping = true;
+				continue;
+			} else {
+				escaping = false;
+			}
+		}
+
+		if(escaping) { // we're still escaping, that's not possible
+			free(parent);
+			free(subtree);
+			return NULL;
+		}
+
+		g_string_append_c(pathnode, *iter);
+	}
+
+	GHashTable *table;
+	ConfigNodeValue *value;
+	int i;
+
+	switch(parent->type) {
+		case CONFIG_SECTIONS:
+			table = g_hash_table_lookup(parent->tree, pathnode->str);
+
+			if(table == NULL) {
+				subtree->type = CONFIG_NULL;
+				subtree->tree = NULL;
+			} else {
+				subtree->type = CONFIG_NODES;
+				subtree->tree = table;
+			}
+		break;
+		case CONFIG_NODES:
+			value = g_hash_table_lookup(parent->tree, pathnode->str);
+
+			if(value == NULL) {
+				subtree->type = CONFIG_NULL;
+				subtree->tree = NULL;
+			} else {
+				switch(value->type) {
+					case CONFIG_STRING:
+						subtree->type = CONFIG_LEAF_VALUE;
+						subtree->tree = value->content.string;
+					break;
+					case CONFIG_INTEGER:
+					case CONFIG_FLOAT_NUMBER:
+						subtree->type = CONFIG_LEAF_VALUE;
+						subtree->tree = &value->content;
+					break;
+					case CONFIG_ARRAY:
+						subtree->type = CONFIG_NODES;
+						subtree->tree = value->content.array;
+					break;
+					case CONFIG_LIST:
+						subtree->type = CONFIG_VALUES;
+						subtree->tree = value->content.list;
+					break;
+				}
+			}
+		break;
+		case CONFIG_LEAF_VALUE:
+			subtree->type = CONFIG_NULL; // leaves don't have children
+			subtree->tree = NULL;
+		break;
+		case CONFIG_VALUES:
+			i = atoi(pathnode->str);
+
+			if(i >= g_list_length(parent->tree)) { // out of bounds
+				subtree->type = CONFIG_NULL;
+				subtree->tree = NULL;
+			} else {
+				value = g_list_nth_data(parent->tree, i);
+
+				switch(value->type) {
+					case CONFIG_STRING:
+						subtree->type = CONFIG_LEAF_VALUE;
+						subtree->tree = value->content.string;
+					break;
+					case CONFIG_INTEGER:
+					case CONFIG_FLOAT_NUMBER:
+						subtree->type = CONFIG_LEAF_VALUE;
+						subtree->tree = &value->content;
+					break;
+					case CONFIG_ARRAY:
+						subtree->type = CONFIG_NODES;
+						subtree->tree = value->content.array;
+					break;
+					case CONFIG_LIST:
+						subtree->type = CONFIG_VALUES;
+						subtree->tree = value->content.list;
+					break;
+				}
+			}
+		break;
+		case CONFIG_NULL:
+			subtree->type = CONFIG_NULL;
+			subtree->tree = NULL;
+		break;
+	}
+
+	if(*iter == '\0') {
+		void *ret = subtree->tree;
+
+		free(parent);
+		free(subtree);
+
+		return ret;
+	} else {
+		free(parent);
+
+		return getConfigSubpath(subtree, iter);
+	}
 }
 
 /**

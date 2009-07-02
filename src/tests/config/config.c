@@ -33,12 +33,15 @@
 
 TEST_CASE(lexer);
 TEST_CASE(parser);
+TEST_CASE(path);
 
 static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
 static int lexer_test_solution_tokens[] = {'[', STRING, ']', '[', STRING, ']', STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
 static YYSTYPE lexer_test_solution_values[] = {{NULL}, {"default"}, {NULL}, {NULL}, {"section"}, {NULL}, {"somekey"}, {NULL}, {"1337somevalue"}, {"someotherkey"}, {NULL}, {"some\\[other \"value//}"}, {"number"}, {NULL}, {.integer = 42}, {"float"}, {NULL}, {.float_number = 3.14159265}};
 
-static char *parser_test_input = "[firstsection]\n\n[section]foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = [13, 18.34, {bird = word, foo = bar}]";
+static char *parser_test_input = "[firstsection]\n\n[section]foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = (13, 18.34, {bird = word, foo = bar})";
+
+static char *path_test_input = "somekey=(foo bar {foo=bar subarray={bird=word answer=42 emptylist=()}}{}())";
 
 static char _configStringRead(void *config);
 static void _configStringUnread(void *config, char c);
@@ -46,6 +49,7 @@ static void _configStringUnread(void *config, char c);
 TEST_SUITE_BEGIN(config)
 	TEST_CASE_ADD(lexer);
 	TEST_CASE_ADD(parser);
+	TEST_CASE_ADD(path);
 TEST_SUITE_END
 
 TEST_CASE(lexer)
@@ -62,6 +66,7 @@ TEST_CASE(lexer)
 	config->resource = config->name;
 	config->read = &_configStringRead;
 	config->unread = &_configStringUnread;
+	config->prelude = 0;
 
 	solution_tokens = lexer_test_solution_tokens;
 	solution_values = lexer_test_solution_values;
@@ -100,6 +105,23 @@ TEST_CASE(parser)
 	TEST_ASSERT((config = parseConfigString(parser_test_input)) != NULL);
 
 	freeConfig(config);
+
+	TEST_PASS;
+}
+
+TEST_CASE(path)
+{
+	Config *config = parseConfigString(path_test_input);
+	TEST_ASSERT(config != NULL);
+
+	char *bird = getConfigPath(config, "default/somekey/2/subarray/bird");
+	TEST_ASSERT(strcmp(bird, "word") == 0);
+
+	int *answer = getConfigPath(config, "default/somekey/2/subarray/answer");
+	TEST_ASSERT(*answer == 42);
+
+	void *outofbounds = getConfigPath(config, "default/somekey/1337");
+	TEST_ASSERT(outofbounds == NULL);
 
 	TEST_PASS;
 }

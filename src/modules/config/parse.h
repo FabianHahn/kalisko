@@ -149,12 +149,39 @@ typedef struct {
 } ConfigDumpContext;
 
 /**
+ * Enumeration of the config subtree types used for config path lookups
+ */
+typedef enum {
+	/** Sections of the config */
+	CONFIG_SECTIONS,
+	/** Nodes of the config (in a section or an array) */
+	CONFIG_NODES,
+	/** A config string, integer or float value */
+	CONFIG_LEAF_VALUE,
+	/** Values of a config (in a list) */
+	CONFIG_VALUES,
+	/** An invalid location */
+	CONFIG_NULL
+} ConfigSubtreeType;
+
+/**
+ * A config subtree used for config path lookups
+ */
+typedef struct {
+	/** Type of the subtree */
+	ConfigSubtreeType type;
+	/** The subtree */
+	void *tree;
+} ConfigSubtree;
+
+/**
  * A config string's maximum length
  */
 #define CONFIG_MAX_STRING_LENGTH 1024
 
 API Config *parseConfigFile(char *filename);
 API Config *parseConfigString(char *string);
+API void *getConfigPath(Config *config, char *path);
 API void freeConfig(Config *config);
 API void freeConfigNodeValue(void *value);
 API void writeConfigFile(char *filename, Config *config);

@@ -29,17 +29,10 @@
 #include "lexer.h"
 
 /**
- * A helper struct that's used to dump configs
+ * Convenience macro to write to config dumps
+ *
+ * @param FORMAT		printf-like format string
  */
-typedef struct {
-	/** the config to dump */
-	Config *config;
-	/** the config writer to use for dumping */
-	ConfigWriter *writer;
-	/** the current indentation level */
-	int level;
-} ConfigDumpContext;
-
 #define DUMP(FORMAT, ...) context->writer(context->config, FORMAT, ##__VA_ARGS__)
 
 int yyparse(Config *config); // this can't go into a header because it doesn't have an API export

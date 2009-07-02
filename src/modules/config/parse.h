@@ -137,6 +137,18 @@ typedef union {
 typedef void (ConfigWriter)(Config *config, char *format, ...);
 
 /**
+ * A helper struct that's used to dump configs
+ */
+typedef struct {
+	/** the config to dump */
+	Config *config;
+	/** the config writer to use for dumping */
+	ConfigWriter *writer;
+	/** the current indentation level */
+	int level;
+} ConfigDumpContext;
+
+/**
  * A config string's maximum length
  */
 #define CONFIG_MAX_STRING_LENGTH 1024

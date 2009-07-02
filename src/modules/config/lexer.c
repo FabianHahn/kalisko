@@ -72,7 +72,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 				return '[';
 			break;
 			case 2:
-				lval->string = "default";
+				lval->string = strdup("default");
 				return STRING;
 			break;
 			case 3:

@@ -101,16 +101,17 @@ API bool setConfigPath(Config *config, char *path, void *value)
 			i = atoi(key);
 			g_queue_push_nth(getConfigPathSubtree(config, parentpath), value, i);
 			result = true;
+			free(key);
 		break;
 		case CONFIG_LEAF_VALUE: // cannot write into a leaf value
 		case CONFIG_NULL:
 			result = false;
+			free(key);
 		break;
 	}
 
 	// Cleanup
 	free(parentpath);
-	free(key);
 	for(int i = 0; i < array->len - 1; i++) {
 		free(parts[i]);
 	}

@@ -77,7 +77,7 @@ API ConfigSubtreeType getConfigPathType(Config *config, char *path)
  */
 API bool setConfigPath(Config *config, char *path, void *value)
 {
-	bool result;
+	bool result = false;
 	GPtrArray *array = splitConfigPath(path);
 	char **parts = (char **) array->pdata;
 	char *key = parts[array->len - 1];
@@ -128,7 +128,7 @@ API bool setConfigPath(Config *config, char *path, void *value)
  */
 API bool deleteConfigPath(Config *config, char *path)
 {
-	bool result;
+	bool result = false;
 	GPtrArray *array = splitConfigPath(path);
 	char **parts = (char **) array->pdata;
 	char *key = parts[array->len - 1];
@@ -188,8 +188,8 @@ API bool deleteConfigPath(Config *config, char *path)
  */
 static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *parent, bool fetch_value)
 {
-	ConfigSubtreeType subtype;
-	void *subtree;
+	ConfigSubtreeType subtype = CONFIG_NULL;
+	void *subtree = NULL;
 	GString *pathnode = g_string_new("");
 	bool escaping = false;
 	char *iter;

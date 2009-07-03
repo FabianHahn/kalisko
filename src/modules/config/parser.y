@@ -184,13 +184,14 @@ list:		value // first element of the list
 				@$.last_column = @1.last_column;
 				$$ = allocateObject(ConfigNodeValue);
 				$$->type = CONFIG_LIST;
-				$$->content.list = g_list_append(NULL, $1);
+				$$->content.list = g_queue_new();
+				g_queue_push_head($$->content.list, $1);
 			}
 		|	list value // the list continues
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
-				$1->content.list = g_list_append($1->content.list, $2);
+				g_queue_push_tail($1->content.list, $2);
 				$$ = $1;
 			}
 ;

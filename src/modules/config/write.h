@@ -1,5 +1,5 @@
 /**
- * @file lexer.h
+ * @file write.h
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -18,16 +18,27 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_LEXER_H
-#define CONFIG_LEXER_H
+#ifndef CONFIG_WRITE_H
+#define CONFIG_WRITE_H
 
-#include <glib.h>
-#include "config.h"
-#include "parse.h"
-#include "parser.h"
+/**
+ * A config writer to write down a config from memory
+ */
+typedef void (ConfigWriter)(Config *config, char *format, ...);
 
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config);
-API GString *lexConfigString(char *string);
-API GString *lexConfigFile(char *filename);
+/**
+ * A helper struct that's used to dump configs
+ */
+typedef struct {
+	/** the config to dump */
+	Config *config;
+	/** the config writer to use for dumping */
+	ConfigWriter *writer;
+	/** the current indentation level */
+	int level;
+} ConfigDumpContext;
+
+API void writeConfigFile(char *filename, Config *config);
+API GString *writeConfigGString(Config *config) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

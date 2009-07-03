@@ -1,5 +1,5 @@
 /**
- * @file lexer.h
+ * @file path.h
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -18,16 +18,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_LEXER_H
-#define CONFIG_LEXER_H
+#ifndef CONFIG_PATH_H
+#define CONFIG_PATH_H
 
-#include <glib.h>
-#include "config.h"
-#include "parse.h"
-#include "parser.h"
+/**
+ * Enumeration of the config subtree types used for config path lookups
+ */
+typedef enum {
+	/** Sections of the config */
+	CONFIG_SECTIONS,
+	/** Nodes of the config (in a section or an array) */
+	CONFIG_NODES,
+	/** A config string, integer or float value */
+	CONFIG_LEAF_VALUE,
+	/** Values of a config (in a list) */
+	CONFIG_VALUES,
+	/** An invalid location */
+	CONFIG_NULL
+} ConfigSubtreeType;
 
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config);
-API GString *lexConfigString(char *string);
-API GString *lexConfigFile(char *filename);
+/**
+ * A config subtree used for config path lookups
+ */
+typedef struct {
+	/** Type of the subtree */
+	ConfigSubtreeType type;
+	/** The subtree */
+	void *tree;
+} ConfigSubtree;
+
+API void *getConfigPathSubtree(Config *config, char *path);
+API ConfigSubtreeType getConfigPathType(Config *config, char *path);
+API bool setConfigPath(Config *config, char *path, void *value);
+API bool deleteConfigPath(Config *config, char *path);
 
 #endif

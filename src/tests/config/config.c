@@ -28,6 +28,7 @@
 #include "modules/config/parse.h"
 #include "modules/config/parser.h"
 #include "modules/config/lexer.h"
+#include "modules/config/path.h"
 
 #include "api.h"
 
@@ -111,16 +112,49 @@ TEST_CASE(parser)
 
 TEST_CASE(path)
 {
+	ConfigNodeValue *value;
 	Config *config = parseConfigString(path_test_input);
 	TEST_ASSERT(config != NULL);
 
-	char *bird = getConfigPath(config, "default/somekey/2/subarray/bird");
-	TEST_ASSERT(strcmp(bird, "word") == 0);
+	// check some path types
+	TEST_ASSERT(getConfigPathType(config, "") == CONFIG_SECTIONS);
+	TEST_ASSERT(getConfigPathType(config, "default") == CONFIG_NODES);
+	TEST_ASSERT(getConfigPathType(config, "default/somekey") == CONFIG_VALUES);
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/2") == CONFIG_NODES);
 
-	int *answer = getConfigPath(config, "default/somekey/2/subarray/answer");
-	TEST_ASSERT(*answer == 42);
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/bird") == CONFIG_LEAF_VALUE);
+	value = getConfigPathSubtree(config, "default/somekey/2/subarray/bird");
+	TEST_ASSERT(value->type == CONFIG_STRING);
+	TEST_ASSERT(strcmp(getConfigValueContent(value), "word") == 0);
 
-	void *outofbounds = getConfigPath(config, "default/somekey/1337");
+	// change value
+	value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_FLOAT_NUMBER;
+	value->content.float_number = 13.37;
+	TEST_ASSERT(setConfigPath(config, "default/somekey/2/subarray/bird", value));
+
+	// check if correctly changed
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/bird") == CONFIG_LEAF_VALUE);
+	value = getConfigPathSubtree(config, "default/somekey/2/subarray/bird");
+	TEST_ASSERT(value->type == CONFIG_FLOAT_NUMBER);
+	TEST_ASSERT(*((double *) getConfigValueContent(value)) == 13.37);
+
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/answer") == CONFIG_LEAF_VALUE);
+	value = getConfigPathSubtree(config, "default/somekey/2/subarray/answer");
+	TEST_ASSERT(value->type == CONFIG_INTEGER);
+	TEST_ASSERT(*((int *) getConfigValueContent(value)) == 42);
+
+	// delete value
+	TEST_ASSERT(deleteConfigPath(config, "default/somekey/2/subarray/answer"));
+
+	// check if correctly deleted
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/answer") == CONFIG_NULL);
+	void *error = getConfigPathSubtree(config, "default/somekey/2/subarray/answer");
+	TEST_ASSERT(error == NULL);
+
+	// test list out of bounds handling
+	TEST_ASSERT(getConfigPathType(config, "default/somekey/1337") == CONFIG_NULL);
+	void *outofbounds = getConfigPathSubtree(config, "default/somekey/1337");
 	TEST_ASSERT(outofbounds == NULL);
 
 	TEST_PASS;

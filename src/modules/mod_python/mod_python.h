@@ -19,8 +19,8 @@
  */
 
 
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#ifndef MOD_PYTHON_MOD_PYTHON_H
+#define MOD_PYTHON_MOD_PYTHON_H
 
 typedef struct
 {

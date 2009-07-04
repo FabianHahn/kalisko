@@ -19,8 +19,8 @@
  */
 
 
-#ifndef SOCKET_H
-#define SOCKET_H
+#ifndef SOCKET_SOCKET_H
+#define SOCKET_SOCKET_H
 
 #include "types.h"
 

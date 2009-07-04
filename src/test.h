@@ -25,6 +25,11 @@
 
 API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...);
 
+/**
+ * Initializes a test suite
+ *
+ * @param SUITE		the name of the test suite
+ */
 #define TEST_SUITE_BEGIN(SUITE) API void module_finalize() { } \
 	API bool module_init() \
 	{ \
@@ -33,14 +38,44 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 #define TEST_SUITE_END return true; \
 	}
 
+/**
+ * Returns the internal function name of a test case
+ *
+ * @param CASE		the test case's name
+ */
 #define TEST_CASE_NAME(CASE) _test_case_ ## CASE
+
+/**
+ * Adds a test case to a test suite
+ *
+ * @param CASE		the test case's name
+ */
 #define TEST_CASE_ADD(CASE) TEST_CASE_NAME(CASE)(testsuite, #CASE)
 
+/**
+ * Defines a test case
+ *
+ * @param CASE		the test case's name
+ */
 #define TEST_CASE(CASE) static void TEST_CASE_NAME(CASE)(char *testsuite, char *testcase)
 
+/**
+ * Checks if an expression holds, and fails the test case if it doesn't
+ *
+ * @param EXPR		an expression to check
+ */
 #define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Assertion failed: " #EXPR); }
 
+/**
+ * Passes a test case
+ */
 #define TEST_PASS reportTestResult(testsuite, testcase, true, NULL); return
+
+/**
+ * Fails a test case with an error message
+ *
+ * @param ERROR		printf-like error message
+ */
 #define TEST_FAIL(ERROR, ...) reportTestResult(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
 
 #endif

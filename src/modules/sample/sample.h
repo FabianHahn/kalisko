@@ -19,8 +19,8 @@
  */
 
 
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#ifndef SAMPLE_SAMPLE_H
+#define SAMPLE_SAMPLE_H
 
 // Declaration of a function exported to the global scope, must also have the API marker
 API int add();

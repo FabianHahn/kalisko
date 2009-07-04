@@ -51,5 +51,6 @@ API void *getConfigPathSubtree(Config *config, char *path);
 API ConfigSubtreeType getConfigPathType(Config *config, char *path);
 API bool setConfigPath(Config *config, char *path, void *value);
 API bool deleteConfigPath(Config *config, char *path);
+API GPtrArray *splitConfigPath(char *path);
 
 #endif

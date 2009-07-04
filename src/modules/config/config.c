@@ -153,3 +153,98 @@ API GString *escapeConfigString(char *string)
 
 	return escaped;
 }
+
+/**
+ * Creates a string value to be used in a config
+ *
+ * @param string		the content string
+ * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ */
+API ConfigNodeValue *createConfigStringValue(char *string)
+{
+	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_STRING;
+	value->content.string = strdup(string);
+
+	return value;
+}
+
+/**
+ * Creates an integer value to be used in a config
+ *
+ * @param string		the content integer
+ * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ */
+API ConfigNodeValue *createConfigIntegerValue(int integer)
+{
+	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_INTEGER;
+	value->content.integer = integer;
+
+	return value;
+}
+
+/**
+ * Creates a float number value to be used in a config
+ *
+ * @param string		the content float number
+ * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ */
+API ConfigNodeValue *createConfigFloatNumberValue(double float_number)
+{
+	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_FLOAT_NUMBER;
+	value->content.float_number = float_number;
+
+	return value;
+}
+
+/**
+ * Creates a list value to be used in a config
+ *
+ * @param string		the content list or NULL for an empty list
+ * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ */
+API ConfigNodeValue *createConfigListValue(GQueue *list)
+{
+	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_LIST;
+
+	if(list != NULL) {
+		value->content.list = list;
+	} else {
+		value->content.list = g_queue_new();
+	}
+
+	return value;
+}
+
+/**
+ * Creates an array value to be used in a config
+ *
+ * @param string		the content array
+ * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ */
+API ConfigNodeValue *createConfigArrayValue(GHashTable *array)
+{
+	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	value->type = CONFIG_ARRAY;
+
+	if(array != NULL) {
+		value->content.array = array;
+	} else {
+		value->content.array = createConfigNodes();
+	}
+
+	return value;
+}
+
+/**
+ * Creates an empty config nodes table to be used as a section or an array in a config
+ *
+ * @result			the created nodes table, must be freed with g_hash_table_destroy or the config system
+ */
+API GHashTable *createConfigNodes()
+{
+	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
+}

@@ -25,6 +25,7 @@
 #include "dll.h"
 #include "test.h"
 #include "memory_alloc.h"
+#include "modules/config/config.h"
 #include "modules/config/parse.h"
 #include "modules/config/parser.h"
 #include "modules/config/lexer.h"
@@ -34,7 +35,9 @@
 
 TEST_CASE(lexer);
 TEST_CASE(parser);
-TEST_CASE(path);
+TEST_CASE(path_modify);
+TEST_CASE(path_create);
+TEST_CASE(path_split);
 
 static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
 static int lexer_test_solution_tokens[] = {'[', STRING, ']', '[', STRING, ']', STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -44,13 +47,18 @@ static char *parser_test_input = "[firstsection]\n\n[section]foo = \"//bar//\" /
 
 static char *path_test_input = "somekey=(foo bar {foo=bar subarray={bird=word answer=42 emptylist=()}}{}())";
 
+static char *path_split_input = "this/is a \"difficult\"/path\\\\to/split\\/:)";
+static char *path_split_solution[] = {"this", "is a \"difficult\"", "path\\to", "split/:)"};
+
 static char _configStringRead(void *config);
 static void _configStringUnread(void *config, char c);
 
 TEST_SUITE_BEGIN(config)
 	TEST_CASE_ADD(lexer);
 	TEST_CASE_ADD(parser);
-	TEST_CASE_ADD(path);
+	TEST_CASE_ADD(path_modify);
+	TEST_CASE_ADD(path_create);
+	TEST_CASE_ADD(path_split);
 TEST_SUITE_END
 
 TEST_CASE(lexer)
@@ -110,7 +118,7 @@ TEST_CASE(parser)
 	TEST_PASS;
 }
 
-TEST_CASE(path)
+TEST_CASE(path_modify)
 {
 	ConfigNodeValue *value;
 	Config *config = parseConfigString(path_test_input);
@@ -156,6 +164,38 @@ TEST_CASE(path)
 	TEST_ASSERT(getConfigPathType(config, "default/somekey/1337") == CONFIG_NULL);
 	void *outofbounds = getConfigPathSubtree(config, "default/somekey/1337");
 	TEST_ASSERT(outofbounds == NULL);
+
+	TEST_PASS;
+}
+
+TEST_CASE(path_create)
+{
+	Config *config = createConfig("test config");
+
+	TEST_ASSERT(setConfigPath(config, "somesection", createConfigNodes()));
+	TEST_ASSERT(setConfigPath(config, "somesection/string", createConfigStringValue("\"e = mc^2\"")));
+	TEST_ASSERT(setConfigPath(config, "somesection/integer", createConfigIntegerValue(1337)));
+	TEST_ASSERT(setConfigPath(config, "somesection/float number", createConfigFloatNumberValue(3.141)));
+	TEST_ASSERT(setConfigPath(config, "somesection/list", createConfigListValue(NULL)));
+	TEST_ASSERT(setConfigPath(config, "somesection/list/1", createConfigStringValue("the bird is the word")));
+	TEST_ASSERT(setConfigPath(config, "somesection/array", createConfigArrayValue(NULL)));
+	TEST_ASSERT(setConfigPath(config, "somesection/array/some\\/sub\\\\array", createConfigArrayValue(NULL)));
+
+	freeConfig(config);
+
+	TEST_PASS;
+}
+
+TEST_CASE(path_split)
+{
+	GPtrArray *array = splitConfigPath(path_split_input);
+
+	for(int i = 0; i < array->len; i++) {
+		TEST_ASSERT(strcmp(array->pdata[i], path_split_solution[i]) == 0);
+		free(array->pdata[i]);
+	}
+
+	g_ptr_array_free(array, TRUE);
 
 	TEST_PASS;
 }

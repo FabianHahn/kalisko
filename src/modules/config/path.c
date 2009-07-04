@@ -29,8 +29,6 @@
 #include "path.h"
 
 static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *parent, bool fetch_value);
-static GPtrArray *splitConfigPath(char *path);
-
 
 /**
  * Fetches a config subtree by its path
@@ -178,6 +176,57 @@ API bool deleteConfigPath(Config *config, char *path)
 }
 
 /**
+ * Splits a config path by its unescaped delimiter '/'
+ *
+ * @param path		the path to escape
+ * @result			an array of path elements, contents must be freed with free and the array itself with g_ptr_array_free
+ */
+API GPtrArray *splitConfigPath(char *path)
+{
+	GPtrArray *array = g_ptr_array_new();
+	GString *assemble = g_string_new("");
+	char *iter;
+	bool escaping = false;
+
+	for(iter = path; *iter != '\0'; iter++) {
+		if(*iter == '\\') {
+			if(!escaping) {
+				escaping = true;
+				continue;
+			} else {
+				escaping = false;
+			}
+		} else if(*iter == '/') {
+			if(!escaping) {
+				g_ptr_array_add(array, assemble->str);
+				g_string_free(assemble, FALSE);
+				assemble = g_string_new("");
+				continue;
+			} else {
+				escaping = false;
+			}
+		}
+
+		if(escaping) { // still escaping, this should not happen
+			// Cleanup
+			for(int i = 0; i < array->len; i++) {
+				free(array->pdata[i]);
+			}
+			g_ptr_array_free(array, TRUE);
+			g_string_free(assemble, TRUE);
+			return NULL;
+		}
+
+		g_string_append_c(assemble, *iter);
+	}
+
+	g_ptr_array_add(array, assemble->str);
+	g_string_free(assemble, FALSE);
+
+	return array;
+}
+
+/**
  * Fetches a config subtree by its parent tree and its subpath
  *
  * @see getConfigPath
@@ -310,55 +359,4 @@ static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *paren
 	} else {
 		return getConfigSubpath(iter, subtype, subtree, fetch_value);
 	}
-}
-
-/**
- * Splits a config path by its unescaped delimiter '/'
- *
- * @param path		the path to escape
- * @result			an array of path elements, contents must be freed with free and the array itself with g_ptr_array_free
- */
-static GPtrArray *splitConfigPath(char *path)
-{
-	GPtrArray *array = g_ptr_array_new();
-	GString *assemble = g_string_new("");
-	char *iter;
-	bool escaping = false;
-
-	for(iter = path; *iter != '\0'; iter++) {
-		if(*iter == '\\') {
-			if(!escaping) {
-				escaping = true;
-				continue;
-			} else {
-				escaping = false;
-			}
-		} else if(*iter == '/') {
-			if(!escaping) {
-				g_ptr_array_add(array, assemble->str);
-				g_string_free(assemble, FALSE);
-				assemble = g_string_new("");
-				continue;
-			} else {
-				escaping = false;
-			}
-		}
-
-		if(escaping) { // still escaping, this should not happen
-			// Cleanup
-			for(int i = 0; i < array->len; i++) {
-				free(array->pdata[i]);
-			}
-			g_ptr_array_free(array, TRUE);
-			g_string_free(assemble, TRUE);
-			return NULL;
-		}
-
-		g_string_append_c(assemble, *iter);
-	}
-
-	g_ptr_array_add(array, assemble->str);
-	g_string_free(assemble, FALSE);
-
-	return array;
 }

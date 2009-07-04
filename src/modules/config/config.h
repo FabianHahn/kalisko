@@ -122,5 +122,11 @@ API void freeConfig(Config *config);
 API void freeConfigNodeValue(void *value);
 API void *getConfigValueContent(ConfigNodeValue *value);
 API GString *escapeConfigString(char *string);
+API ConfigNodeValue *createConfigStringValue(char *string);
+API ConfigNodeValue *createConfigIntegerValue(int integer);
+API ConfigNodeValue *createConfigFloatNumberValue(double float_number);
+API ConfigNodeValue *createConfigListValue(GQueue *list);
+API ConfigNodeValue *createConfigArrayValue(GHashTable *array);
+API GHashTable *createConfigNodes();
 
 #endif

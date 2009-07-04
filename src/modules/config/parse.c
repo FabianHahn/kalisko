@@ -46,9 +46,16 @@ API Config *parseConfigFile(char *filename)
 	config->unread = &configFileUnread;
 	config->prelude = 0;
 
+	if(config->resource == NULL) {
+		logSystemError("Could not open config file %s", config->name);
+		free(config->name);
+		free(config);
+		return NULL;
+	}
+
 	logInfo("Parsing config file %s", config->name);
 
-	if (yyparse(config) != 0) {
+	if(yyparse(config) != 0) {
 		logError("Parsing config file %s failed", config->name);
 		free(config->name);
 		fclose(config->resource);
@@ -79,7 +86,7 @@ API Config *parseConfigString(char *string)
 
 	logInfo("Parsing config string: %s", config->name);
 
-	if (yyparse(config) != 0) {
+	if(yyparse(config) != 0) {
 		logError("Parsing config string failed");
 		free(config->name);
 		free(config);

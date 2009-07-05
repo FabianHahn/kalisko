@@ -168,7 +168,7 @@ static Config *getUserConfig(void)
 {
 	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS))
 	{
-		gchar *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
+		gchar *dirPath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
 		Config *userConfig = createConfig(USER_CONFIG_FILE_NAME);
@@ -189,7 +189,7 @@ static Config *getUserOverwriteConfig(void)
 {
 	if(!g_file_test(userOverwriteConfigFilePath, G_FILE_TEST_EXISTS))
 	{
-		gchar *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
+		gchar *dirPath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
 		Config *globalConfig = createConfig(USER_OVERWRITE_CONFIG_FILE_NAME);

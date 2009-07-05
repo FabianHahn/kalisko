@@ -18,11 +18,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <glib.h>
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
 #include "memory_alloc.h"
+
+/**
+ * Initializes the memory allocator
+ */
+API void initMemory()
+{
+	GMemVTable *table = allocateObject(GMemVTable);
+
+	table->malloc = &malloc;
+	table->realloc = &realloc;
+	table->free = &free;
+	table->calloc = NULL;
+	table->try_malloc = NULL;
+	table->try_realloc = NULL;
+
+	g_mem_set_vtable(table);
+
+	free(table);
+}
 
 /**
  * Allocate a block of memory on the heap

@@ -23,9 +23,11 @@
 #include "log.h"
 #include "hooks.h"
 #include "module.h"
+#include "memory_alloc.h"
 
 int main(int argc, char **argv)
 {
+	initMemory();
 	initHooks();
 	initLog();
 

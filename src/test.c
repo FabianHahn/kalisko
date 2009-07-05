@@ -31,6 +31,7 @@
 #include "types.h"
 #include "util.h"
 #include "test.h"
+#include "memory_alloc.h"
 
 static int passed = 0;
 static int count = 0;
@@ -39,6 +40,7 @@ static int count = 0;
 
 int main(int argc, char **argv)
 {
+	initMemory();
 	initHooks();
 	initLog();
 

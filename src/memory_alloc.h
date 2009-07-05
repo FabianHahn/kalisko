@@ -27,6 +27,7 @@
 #define allocateObject(TYPE) allocateMemory(sizeof(TYPE))
 #define allocateObjects(TYPE, COUNT) allocateMemory(sizeof(TYPE) * COUNT)
 
+API void initMemory();
 API void *allocateMemory(int size);
 
 #endif

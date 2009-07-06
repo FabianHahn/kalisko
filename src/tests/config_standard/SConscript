@@ -5,8 +5,8 @@ if not test.GetOption('clean'):
 
 	if conf.env['PLATFORM'] == 'win32':
 		# List module dependencies here, use 'kalisko' for the core
-		conf.env.Append(LIBS = ['kalisko', 'config', 'std_config'])
+		conf.env.Append(LIBS = ['kalisko', 'config', 'config_standard'])
 		
 	test = conf.Finish()
 
-test.SharedLibrary('../../modules/test_std_config', Glob('*.c'))
+test.SharedLibrary('../../modules/test_config_standard', Glob('*.c'))

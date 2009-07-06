@@ -18,43 +18,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <glib.h>
-#include <stdio.h>
-#include "dll.h"
-#include "test.h"
-#include "modules/std_config/std_config.h"
+
+#ifndef CONFIG_STANDARD_H_
+#define CONFIG_STANDARD_H_
+
 #include "modules/config/config.h"
-#include "modules/config/path.h"
 
-#include "api.h"
+/**
+ * Enumeration of the different standard configuration files.
+ */
+typedef enum {
+	/**
+	 * The readonly per user configuration file.
+	 */
+	CONFIG_USER,
 
-#define PARENT_INT_VALUE_PATH "default"
-#define INT_VALUE_PATH "default/int"
+	/**
+	 * The writeable per user configuration file. This file override the
+	 * configuration of CONFIG_USER.
+	 */
+	CONFIG_USER_OVERRIDE,
 
-TEST_CASE(simpleUserOverwriteConfig);
+	/**
+	 * The readonly global (application) file.
+	 */
+	CONFIG_GLOBAL
+} StandardConfigFiles;
 
-TEST_SUITE_BEGIN(std_config)
-	TEST_CASE_ADD(simpleUserOverwriteConfig);
-TEST_SUITE_END
+API Config *getStandardConfig(StandardConfigFiles file);
+API void saveStandardConfig(StandardConfigFiles file);
 
-TEST_CASE(simpleUserOverwriteConfig)
-{
-	Config *userConfig = getStandardConfig(USER_OVERWRITE_CONFIG);
-	TEST_ASSERT(userConfig != NULL);
-
-	setConfigPath(userConfig, PARENT_INT_VALUE_PATH, createConfigNodes());
-	setConfigPath(userConfig, INT_VALUE_PATH, createConfigIntegerValue(500));
-
-	ConfigNodeValue *value = getConfigPathSubtree(userConfig, INT_VALUE_PATH);
-	TEST_ASSERT(value->type == CONFIG_INTEGER);
-	TEST_ASSERT(*((int *)getConfigValueContent(value)) == 500);
-
-	saveStandardConfig(USER_OVERWRITE_CONFIG);
-
-	TEST_PASS;
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "std_config");
-}
+#endif

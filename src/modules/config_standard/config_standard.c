@@ -31,62 +31,47 @@
 #include "types.h"
 
 #include "api.h"
-#include "std_config.h"
+#include "config_standard.h"
 
 #define USER_CONFIG_DIR_NAME "kalisko"
 #define USER_CONFIG_FILE_NAME "user.cfg"
-#define USER_OVERWRITE_CONFIG_FILE_NAME "overwrite.cfg"
+#define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
 #define CONFIG_DIR_PERMISSION 0700
 
-static gchar *userConfigFilePath;
-static gchar *userOverwriteConfigFilePath;
-static gchar *globalConfigFilePath;
+static char *userConfigFilePath;
+static char *userOverrideConfigFilePath;
+static char *globalConfigFilePath;
 
 static Config *userConfig = NULL;
-static Config *userOverwriteConfig = NULL;
+static Config *userOverrideConfig = NULL;
 static Config *globalConfig = NULL;
 
-static Config *getUserConfig(void);
-static Config *getUserOverwriteConfig(void);
-static Config *getGlobalConfig(void);
+static Config *getUserConfig();
+static Config *getUserOverrideConfig();
+static void finalize();
 
 API bool module_init()
 {
-	userConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
-	userOverwriteConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERWRITE_CONFIG_FILE_NAME, NULL);
-	globalConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	userConfigFilePath = g_build_filename("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
+	userOverrideConfigFilePath = g_build_filename("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	globalConfigFilePath = g_build_filename("/", getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
 
-	return HOOK_ADD(stdConfigChanged);
+	if(!HOOK_ADD(stdConfigChanged)) {
+		finalize();
+		return false;
+	} else {
+		return true;
+	}
 }
 
 API void module_finalize()
 {
-	if(userOverwriteConfig)
-	{
-		saveStandardConfig(USER_OVERWRITE_CONFIG);
+	if(userOverrideConfig) {
+		saveStandardConfig(CONFIG_USER_OVERRIDE);
 	}
 
-	free(userConfigFilePath);
-	free(userOverwriteConfigFilePath);
-	free(globalConfigFilePath);
-
-	if(userConfig)
-	{
-		freeConfig(userConfig);
-	}
-
-	if(userOverwriteConfig)
-	{
-		freeConfig(userOverwriteConfig);
-	}
-
-	if(globalConfig)
-	{
-		freeConfig(globalConfig);
-	}
-
-	HOOK_DEL(stdConfigChanged);
+	finalize();
 }
 
 API GList *module_depends()
@@ -99,76 +84,63 @@ API GList *module_depends()
  *
  * @param file	The standard configuration file to open
  * @return		The Config reference for the given file
- * @see	StdConfigFiles
+ * @see	StandardConfigFiles
  */
-API Config *getStandardConfig(StdConfigFiles file)
+API Config *getStandardConfig(StandardConfigFiles file)
 {
-	switch(file)
-	{
-		case USER_CONFIG:
-			if(!userConfig)
-			{
+	switch(file) {
+		case CONFIG_USER:
+			if(!userConfig) {
 				userConfig = getUserConfig();
 			}
 			return userConfig;
-		case USER_OVERWRITE_CONFIG:
-			if(!userOverwriteConfig)
-			{
-				userOverwriteConfig = getUserOverwriteConfig();
+		break;
+		case CONFIG_USER_OVERRIDE:
+			if(!userOverrideConfig) {
+				userOverrideConfig = getUserOverrideConfig();
 			}
-			return userOverwriteConfig;
-		case GLOBAL_CONFIG:
-			if(!globalConfig)
-			{
-				globalConfig = getGlobalConfig();
+			return userOverrideConfig;
+		break;
+		case CONFIG_GLOBAL:
+			if(!globalConfig) {
+				// As this module should also work for a non root account
+				// we don't create a config file if it doesn't exist.
+				globalConfig = parseConfigFile(globalConfigFilePath);
 			}
 			return globalConfig;
+		break;
 		default:
 			logError("Unknown standard configuration file requested.");
-			return NULL;;
+			return NULL;
+		break;
 	}
-}
-
-/**
- * Triggers the stdConfigChanged hook. This should be called after changes
- * in one of the standard configuration files if the change could be important
- * for other modules.
- *
- * @param file	The standard configuration file which was changed
- */
-API void triggerStandardConfigChange(StdConfigFiles file)
-{
-	HOOK_TRIGGER(stdConfigChanged, file);
 }
 
 
 /**
  * Saves the given standard configuration file.
  *
- * Attention: Only the "overwrite" configuration files are writeable.
+ * Attention: Only the "override" configuration files are writeable.
  *
  * @param file	The standard configuration file to save
  */
-API void saveStandardConfig(StdConfigFiles file)
+API void saveStandardConfig(StandardConfigFiles file)
 {
-	switch(file)
-	{
-		case USER_OVERWRITE_CONFIG:
-			writeConfigFile(userOverwriteConfigFilePath, getStandardConfig(file));
-			break;
+	switch(file) {
+		case CONFIG_USER_OVERRIDE:
+			writeConfigFile(userOverrideConfigFilePath, getStandardConfig(file));
+		break;
 		default:
 			logWarning("Given standard configuration file can not be saved.");
 			return;
+		break;
 	}
-
-	triggerStandardConfigChange(file);
 }
 
-static Config *getUserConfig(void)
+static Config *getUserConfig()
 {
-	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS))
-	{
-		gchar *dirPath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
+	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
 		Config *userConfig = createConfig(USER_CONFIG_FILE_NAME);
@@ -178,37 +150,46 @@ static Config *getUserConfig(void)
 
 		free(dirPath);
 		return userConfig;
-	}
-	else
-	{
+	} else {
 		return parseConfigFile(userConfigFilePath);
 	}
 }
 
-static Config *getUserOverwriteConfig(void)
+static Config *getUserOverrideConfig()
 {
-	if(!g_file_test(userOverwriteConfigFilePath, G_FILE_TEST_EXISTS))
-	{
-		gchar *dirPath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
+	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
-		Config *globalConfig = createConfig(USER_OVERWRITE_CONFIG_FILE_NAME);
+		Config *globalConfig = createConfig(USER_OVERRIDE_CONFIG_FILE_NAME);
 		writeConfigFile(userConfigFilePath, globalConfig);
 
 		logInfo("Created new configuration file: %s", userConfigFilePath);
 
 		free(dirPath);
 		return globalConfig;
-	}
-	else
-	{
+	} else {
 		return parseConfigFile(userConfigFilePath);
 	}
 }
 
-static Config *getGlobalConfig(void)
+static void finalize()
 {
-	// As this module should also work for a non root account
-	// we don't create a config file if it doesn't exist.
-	return parseConfigFile(globalConfigFilePath);
+	free(userConfigFilePath);
+	free(userOverrideConfigFilePath);
+	free(globalConfigFilePath);
+
+	if(userConfig) {
+		freeConfig(userConfig);
+	}
+
+	if(userOverrideConfig) {
+		freeConfig(userOverrideConfig);
+	}
+
+	if(globalConfig) {
+		freeConfig(globalConfig);
+	}
+
+	HOOK_DEL(stdConfigChanged);
 }

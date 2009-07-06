@@ -9,4 +9,4 @@ if not module.GetOption('clean'):
 		
 	module = conf.Finish()
 
-module.SharedLibrary('../std_config', Glob('*.c'))
+module.SharedLibrary('../config_standard', Glob('*.c'))

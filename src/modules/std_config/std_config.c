@@ -1,5 +1,5 @@
 /**
- * @file std_config.c
+ * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.
@@ -53,9 +53,9 @@ static Config *getGlobalConfig(void);
 
 API bool module_init()
 {
-	userConfigFilePath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
-	userOverwriteConfigFilePath = g_build_path(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERWRITE_CONFIG_FILE_NAME, NULL);
-	globalConfigFilePath = g_build_path(G_DIR_SEPARATOR_S, getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	userConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
+	userOverwriteConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERWRITE_CONFIG_FILE_NAME, NULL);
+	globalConfigFilePath = g_build_filename(G_DIR_SEPARATOR_S, getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
 
 	return HOOK_ADD(stdConfigChanged);
 }

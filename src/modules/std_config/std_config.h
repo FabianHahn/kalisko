@@ -1,5 +1,5 @@
 /**
- * @file std_config.h
+ * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
  * All rights reserved.

@@ -53,9 +53,9 @@ static void finalize();
 
 API bool module_init()
 {
-	userConfigFilePath = g_build_filename("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
-	userOverrideConfigFilePath = g_build_filename("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	globalConfigFilePath = g_build_filename("/", getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
+	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	globalConfigFilePath = g_build_path("/", getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
 
 	if(!HOOK_ADD(stdConfigChanged)) {
 		finalize();

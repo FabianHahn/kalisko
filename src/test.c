@@ -21,9 +21,6 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include "api.h"
 #include "log.h"
 #include "hooks.h"
@@ -49,47 +46,43 @@ int main(int argc, char **argv)
 	printf("Running test cases...\n");
 
 	char *execpath = getExecutablePath();
-	GString *testdir = g_string_new(execpath);
-	g_string_append(testdir, "/tests");
+	char *testdir = g_build_path("/", execpath, "tests", NULL);
 
-	DIR *tests;
+	GError *testsDirError = NULL;
+	GDir *tests = g_dir_open(testdir, 0, &testsDirError);
 
-	if((tests = opendir(testdir->str)) == NULL) {
-		fprintf(stderr, "Error: Could not open tests dir.\n");
+	if(tests == NULL) {
+		fprintf(stderr, "Error: Could not open tests dir: %s\n", testsDirError != NULL ? testsDirError->message : "no error message");
 		return EXIT_FAILURE;
 	}
 
-	struct dirent *node;
+	const char *node = NULL;
 
-	while((node = readdir(tests)) != NULL) {
-		if(strcmp(node->d_name, ".") == 0 || strcmp(node->d_name, "..") == 0) {
-			continue;
+	while((node = g_dir_read_name(tests)) != NULL) {
+		char *entry = g_build_path("/", testdir, node, NULL);
+
+		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {
+			char *modname = g_strjoin(NULL, "test_", node, NULL);
+
+			requestModule(modname);
+
+			free(modname);
 		}
 
-		GString *entry = g_string_new(testdir->str);
-		g_string_append(entry, "/");
-		g_string_append(entry, node->d_name);
-
-		struct stat properties;
-
-		if(stat(entry->str, &properties) == -1) {
-			fprintf(stderr, "Error: Could not stat %s\n", entry->str);
-			return EXIT_FAILURE;
-		}
-
-		g_string_free(entry, TRUE);
-
-		if(properties.st_mode & S_IFDIR) {
-			GString *modname = g_string_new("test_");
-			g_string_append(modname, node->d_name);
-
-			requestModule(modname->str);
-
-			g_string_free(modname, TRUE);
-		}
+		free(entry);
 	}
 
-	g_string_free(testdir, TRUE);
+	if(tests)
+	{
+		g_dir_close(tests);
+	}
+
+	if(testsDirError)
+	{
+		g_error_free(testsDirError);
+	}
+
+	free(testdir);
 	free(execpath);
 
 	freeModules();

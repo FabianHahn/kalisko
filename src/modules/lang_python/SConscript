@@ -30,4 +30,4 @@ if not module.GetOption('clean'):
 			
 	module = conf.Finish()
 
-module.SharedLibrary('../mod_python', Glob('*.c'))
+module.SharedLibrary('../lang_python', Glob('*.c'))

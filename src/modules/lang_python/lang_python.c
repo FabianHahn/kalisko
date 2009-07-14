@@ -26,7 +26,7 @@
 #include "memory_alloc.h"
 
 #include "api.h"
-#include "mod_python.h"
+#include "lang_python.h"
 
 
 API bool module_init()
@@ -39,7 +39,7 @@ API bool module_init()
 API void module_finalize()
 {
 	HOOK_DEL(python_run_code);
-	
+
 	if(Py_IsInitialized())
 	{
 		Py_Finalize();

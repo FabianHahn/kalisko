@@ -19,8 +19,8 @@
  */
 
 
-#ifndef CONFIG_STANDARD_H_
-#define CONFIG_STANDARD_H_
+#ifndef CONFIG_STANDARD_CONFIG_STANDARD_H
+#define CONFIG_STANDARD_CONFIG_STANDARD_H
 
 #include "modules/config/config.h"
 

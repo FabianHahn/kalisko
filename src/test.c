@@ -48,11 +48,12 @@ int main(int argc, char **argv)
 	char *execpath = getExecutablePath();
 	char *testdir = g_build_path("/", execpath, "tests", NULL);
 
-	GError *testsDirError = NULL;
-	GDir *tests = g_dir_open(testdir, 0, &testsDirError);
+	GError *error = NULL;
+	GDir *tests = g_dir_open(testdir, 0, &error);
 
 	if(tests == NULL) {
-		fprintf(stderr, "Error: Could not open tests dir: %s\n", testsDirError != NULL ? testsDirError->message : "no error message");
+		fprintf(stderr, "Error: Could not open tests dir: %s\n", error != NULL ? error->message : "no error message");
+		g_error_free(error);
 		return EXIT_FAILURE;
 	}
 
@@ -72,15 +73,7 @@ int main(int argc, char **argv)
 		free(entry);
 	}
 
-	if(tests)
-	{
-		g_dir_close(tests);
-	}
-
-	if(testsDirError)
-	{
-		g_error_free(testsDirError);
-	}
+	g_dir_close(tests);
 
 	free(testdir);
 	free(execpath);

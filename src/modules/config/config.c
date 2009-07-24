@@ -58,8 +58,7 @@ API Config *createConfig(char *name)
 	config->resource = NULL;
 	config->read = NULL;
 	config->unread = NULL;
-	config->prelude = 0;
-	config->sections = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &destroyGHashTable);
+	config->root = createConfigArrayValue(createConfigNodes());
 
 	return config;
 }
@@ -71,7 +70,7 @@ API Config *createConfig(char *name)
  */
 API void freeConfig(Config *config)
 {
-	g_hash_table_destroy(config->sections);
+	freeConfigNodeValue(config->root);
 	free(config->name);
 
 	free(config);

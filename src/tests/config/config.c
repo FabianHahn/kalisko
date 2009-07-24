@@ -39,11 +39,11 @@ TEST_CASE(path_modify);
 TEST_CASE(path_create);
 TEST_CASE(path_split);
 
-static char *lexer_test_input = "[section]  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
-static int lexer_test_solution_tokens[] = {'[', STRING, ']', '[', STRING, ']', STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
-static YYSTYPE lexer_test_solution_values[] = {{NULL}, {"default"}, {NULL}, {NULL}, {"section"}, {NULL}, {"somekey"}, {NULL}, {"1337somevalue"}, {"someotherkey"}, {NULL}, {"some\\[other \"value//}"}, {"number"}, {NULL}, {.integer = 42}, {"float"}, {NULL}, {.float_number = 3.14159265}};
+static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
+static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
+static YYSTYPE lexer_test_solution_values[] = {{"somekey"}, {NULL}, {"1337somevalue"}, {"someotherkey"}, {NULL}, {"some\\[other \"value//}"}, {"number"}, {NULL}, {.integer = 42}, {"float"}, {NULL}, {.float_number = 3.14159265}};
 
-static char *parser_test_input = "[firstsection]\n\n[section]foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = (13, 18.34, {bird = word, foo = bar})";
+static char *parser_test_input = "foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = (13, 18.34, {bird = word, foo = bar})";
 
 static char *path_test_input = "somekey=(foo bar {foo=bar subarray={bird=word answer=42 emptylist=()}}{}())";
 
@@ -75,7 +75,6 @@ TEST_CASE(lexer)
 	config->resource = config->name;
 	config->read = &_configStringRead;
 	config->unread = &_configStringUnread;
-	config->prelude = 0;
 
 	solution_tokens = lexer_test_solution_tokens;
 	solution_values = lexer_test_solution_values;
@@ -125,13 +124,11 @@ TEST_CASE(path_modify)
 	TEST_ASSERT(config != NULL);
 
 	// check some path types
-	TEST_ASSERT(getConfigPathType(config, "") == CONFIG_SECTIONS);
-	TEST_ASSERT(getConfigPathType(config, "default") == CONFIG_NODES);
-	TEST_ASSERT(getConfigPathType(config, "default/somekey") == CONFIG_VALUES);
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/2") == CONFIG_NODES);
+	TEST_ASSERT(getConfigPath(config, "")->type == CONFIG_ARRAY);
+	TEST_ASSERT(getConfigPath(config, "somekey")->type == CONFIG_LIST);
+	TEST_ASSERT(getConfigPath(config, "somekey/2")->type == CONFIG_ARRAY);
 
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/bird") == CONFIG_LEAF_VALUE);
-	value = getConfigPathSubtree(config, "default/somekey/2/subarray/bird");
+	value = getConfigPath(config, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == CONFIG_STRING);
 	TEST_ASSERT(strcmp(getConfigValueContent(value), "word") == 0);
 
@@ -139,31 +136,25 @@ TEST_CASE(path_modify)
 	value = allocateObject(ConfigNodeValue);
 	value->type = CONFIG_FLOAT_NUMBER;
 	value->content.float_number = 13.37;
-	TEST_ASSERT(setConfigPath(config, "default/somekey/2/subarray/bird", value));
+	TEST_ASSERT(setConfigPath(config, "somekey/2/subarray/bird", value));
 
 	// check if correctly changed
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/bird") == CONFIG_LEAF_VALUE);
-	value = getConfigPathSubtree(config, "default/somekey/2/subarray/bird");
+	value = getConfigPath(config, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == CONFIG_FLOAT_NUMBER);
 	TEST_ASSERT(*((double *) getConfigValueContent(value)) == 13.37);
 
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/answer") == CONFIG_LEAF_VALUE);
-	value = getConfigPathSubtree(config, "default/somekey/2/subarray/answer");
+	value = getConfigPath(config, "somekey/2/subarray/answer");
 	TEST_ASSERT(value->type == CONFIG_INTEGER);
 	TEST_ASSERT(*((int *) getConfigValueContent(value)) == 42);
 
 	// delete value
-	TEST_ASSERT(deleteConfigPath(config, "default/somekey/2/subarray/answer"));
+	TEST_ASSERT(deleteConfigPath(config, "somekey/2/subarray/answer"));
 
 	// check if correctly deleted
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/2/subarray/answer") == CONFIG_NULL);
-	void *error = getConfigPathSubtree(config, "default/somekey/2/subarray/answer");
-	TEST_ASSERT(error == NULL);
+	TEST_ASSERT(getConfigPath(config, "somekey/2/subarray/answer") == NULL);
 
 	// test list out of bounds handling
-	TEST_ASSERT(getConfigPathType(config, "default/somekey/1337") == CONFIG_NULL);
-	void *outofbounds = getConfigPathSubtree(config, "default/somekey/1337");
-	TEST_ASSERT(outofbounds == NULL);
+	TEST_ASSERT(getConfigPath(config, "somekey/1337") == NULL);
 
 	TEST_PASS;
 }
@@ -172,14 +163,13 @@ TEST_CASE(path_create)
 {
 	Config *config = createConfig("test config");
 
-	TEST_ASSERT(setConfigPath(config, "somesection", createConfigNodes()));
-	TEST_ASSERT(setConfigPath(config, "somesection/string", createConfigStringValue("\"e = mc^2\"")));
-	TEST_ASSERT(setConfigPath(config, "somesection/integer", createConfigIntegerValue(1337)));
-	TEST_ASSERT(setConfigPath(config, "somesection/float number", createConfigFloatNumberValue(3.141)));
-	TEST_ASSERT(setConfigPath(config, "somesection/list", createConfigListValue(NULL)));
-	TEST_ASSERT(setConfigPath(config, "somesection/list/1", createConfigStringValue("the bird is the word")));
-	TEST_ASSERT(setConfigPath(config, "somesection/array", createConfigArrayValue(NULL)));
-	TEST_ASSERT(setConfigPath(config, "somesection/array/some\\/sub\\\\array", createConfigArrayValue(NULL)));
+	TEST_ASSERT(setConfigPath(config, "string", createConfigStringValue("\"e = mc^2\"")));
+	TEST_ASSERT(setConfigPath(config, "integer", createConfigIntegerValue(1337)));
+	TEST_ASSERT(setConfigPath(config, "float number", createConfigFloatNumberValue(3.141)));
+	TEST_ASSERT(setConfigPath(config, "list", createConfigListValue(NULL)));
+	TEST_ASSERT(setConfigPath(config, "list/1", createConfigStringValue("the bird is the word")));
+	TEST_ASSERT(setConfigPath(config, "array", createConfigArrayValue(NULL)));
+	TEST_ASSERT(setConfigPath(config, "array/some\\/sub\\\\array", createConfigArrayValue(NULL)));
 
 	freeConfig(config);
 

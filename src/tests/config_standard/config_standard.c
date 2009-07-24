@@ -28,8 +28,7 @@
 
 #include "api.h"
 
-#define PARENT_INT_VALUE_PATH "default"
-#define INT_VALUE_PATH "default/int"
+#define INT_VALUE_PATH "int"
 
 TEST_CASE(simpleUserOverrideConfig);
 
@@ -42,10 +41,9 @@ TEST_CASE(simpleUserOverrideConfig)
 	Config *userConfig = getStandardConfig(CONFIG_USER_OVERRIDE);
 	TEST_ASSERT(userConfig != NULL);
 
-	setConfigPath(userConfig, PARENT_INT_VALUE_PATH, createConfigNodes());
 	setConfigPath(userConfig, INT_VALUE_PATH, createConfigIntegerValue(500));
 
-	ConfigNodeValue *value = getConfigPathSubtree(userConfig, INT_VALUE_PATH);
+	ConfigNodeValue *value = getConfigPath(userConfig, INT_VALUE_PATH);
 	TEST_ASSERT(value->type == CONFIG_INTEGER);
 	TEST_ASSERT(*((int *)getConfigValueContent(value)) == 500);
 
@@ -56,5 +54,5 @@ TEST_CASE(simpleUserOverrideConfig)
 
 API GList *module_depends()
 {
-	return g_list_append(NULL, "cofig_standard");
+	return g_list_append(NULL, "config_standard");
 }

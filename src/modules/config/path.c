@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <string.h>
 
 #include "dll.h"
@@ -28,45 +29,26 @@
 #include "parse.h"
 #include "path.h"
 
-static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *parent, bool fetch_value);
+static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent);
 
 /**
- * Fetches a config subtree by its path
+ * Fetches a config value by its path
  *
  * @param config		the config in which the lookup takes place
- * @param path			the path to the subtree without a leading / to search, use integers from base 0 for list elements
- * @result				the config subtree, or NULL if not found
+ * @param path			the path to the value without a leading / to search, use integers from base 0 for list elements
+ * @result				the config value, or NULL if not found
  */
-API void *getConfigPathSubtree(Config *config, char *path)
+API ConfigNodeValue *getConfigPath(Config *config, char *path)
 {
 	if(strlen(path) == 0) { // empty path means the sections subtree itself
-		return config->sections;
+		return config->root;
 	} else {
-		return getConfigSubpath(path, CONFIG_SECTIONS, config->sections, true);
+		return getConfigSubpath(path, config->root);
 	}
 }
 
 /**
- * Looks up the type of a config subtree
- *
- * @param config		the config in which the lookup takes place
- * @param path			the path to the subtree without a leading / to search, use integers from base 0 for list elements
- * @result				the config subtree's type
- */
-API ConfigSubtreeType getConfigPathType(Config *config, char *path)
-{
-	if(strlen(path) == 0) { // empty path means the sections subtree itself
-		return CONFIG_SECTIONS;
-	} else {
-		ConfigSubtreeType *type = getConfigSubpath(path, CONFIG_SECTIONS, config->sections, false);
-		ConfigSubtreeType ret = *type;
-		free(type);
-		return ret;
-	}
-}
-
-/**
- * Sets a value in a config tree
+ * Sets a value in a config path
  *
  * @param config	the config to edit
  * @param path		the path to set, will be overridden if already exists
@@ -83,26 +65,22 @@ API bool setConfigPath(Config *config, char *path, void *value)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	ConfigSubtreeType type = getConfigPathType(config, parentpath);
+	ConfigNodeValue *parent = getConfigPath(config, parentpath);
 
-	GHashTable *table;
 	int i;
 
-	switch(type) {
-		case CONFIG_SECTIONS:
-		case CONFIG_NODES:
-			table = getConfigPathSubtree(config, parentpath);
-			g_hash_table_insert(table, key, value);
+	switch(parent->type) {
+		case CONFIG_ARRAY:
+			g_hash_table_insert(parent->content.array, key, value);
 			result = true;
 		break;
-		case CONFIG_VALUES:
+		case CONFIG_LIST:
 			i = atoi(key);
-			g_queue_push_nth(getConfigPathSubtree(config, parentpath), value, i);
+			g_queue_push_nth(parent->content.list, value, i);
 			result = true;
 			free(key);
 		break;
-		case CONFIG_LEAF_VALUE: // cannot write into a leaf value
-		case CONFIG_NULL:
+		default: // cannot write into a leaf value
 			result = false;
 			free(key);
 		break;
@@ -110,7 +88,7 @@ API bool setConfigPath(Config *config, char *path, void *value)
 
 	// Cleanup
 	free(parentpath);
-	for(int i = 0; i < array->len - 1; i++) {
+	for(i = 0; i < array->len - 1; i++) {
 		free(parts[i]);
 	}
 	g_ptr_array_free(array, TRUE);
@@ -119,10 +97,10 @@ API bool setConfigPath(Config *config, char *path, void *value)
 }
 
 /**
- * Deletes a value in a config tree
+ * Deletes a value in a config path
  *
  * @param config	the config to edit
- * @param path		the path to set, will be overridden if already exists
+ * @param path		the path to delete
  * @result			true if successful
  */
 API bool deleteConfigPath(Config *config, char *path)
@@ -135,22 +113,20 @@ API bool deleteConfigPath(Config *config, char *path)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	ConfigSubtreeType type = getConfigPathType(config, parentpath);
+	ConfigNodeValue *parent = getConfigPath(config, parentpath);
 
-	GHashTable *table;
 	int i;
 	void *value;
 
-	switch(type) {
-		case CONFIG_SECTIONS:
-		case CONFIG_NODES:
-			table = getConfigPathSubtree(config, parentpath);
-			g_hash_table_remove(table, key);
-			result = true;
+	switch(parent->type) {
+		case CONFIG_ARRAY:
+			if(g_hash_table_remove(parent->content.array, key)) { // The hash table frees the removed value automatically
+				result = true; // This is a bit nicer than assigning a gboolean to a boolean directly, even if it would work
+			}
 		break;
-		case CONFIG_VALUES:
+		case CONFIG_LIST:
 			i = atoi(key);
-			value = g_queue_pop_nth(getConfigPathSubtree(config, parentpath), i);
+			value = g_queue_pop_nth(parent->content.list, i);
 			if(value != NULL) {
 				freeConfigNodeValue(value);
 				result = true;
@@ -158,8 +134,7 @@ API bool deleteConfigPath(Config *config, char *path)
 				result = false;
 			}
 		break;
-		case CONFIG_LEAF_VALUE: // cannot write into a leaf value
-		case CONFIG_NULL:
+		default: // cannot delete inside a leaf value
 			result = false;
 		break;
 	}
@@ -167,7 +142,7 @@ API bool deleteConfigPath(Config *config, char *path)
 	// Cleanup
 	free(parentpath);
 	free(key);
-	for(int i = 0; i < array->len - 1; i++) {
+	for(i = 0; i < array->len - 1; i++) {
 		free(parts[i]);
 	}
 	g_ptr_array_free(array, TRUE);
@@ -231,15 +206,11 @@ API GPtrArray *splitConfigPath(char *path)
  *
  * @see getConfigPath
  * @param subpath		the subpath to search
- * @param type			the type of the parent
- * @param parent		the parent config tree to search
- * @param fetch_value	true if the value should be fetched, false for the type
- * @result				the config subtree / type depending on fetch_value, or NULL / CONFIG_NULL if not found
+ * @param parent		the parent value to search in
+ * @result				the config value, or NULL if not found
  */
-static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *parent, bool fetch_value)
+static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent)
 {
-	ConfigSubtreeType subtype = CONFIG_NULL;
-	void *subtree = NULL;
 	GString *pathnode = g_string_new("");
 	bool escaping = false;
 	char *iter;
@@ -262,101 +233,42 @@ static void *getConfigSubpath(char *subpath, ConfigSubtreeType type, void *paren
 		}
 
 		if(escaping) { // we're still escaping, that's not possible
-			if(fetch_value) {
-				return NULL;
-			} else {
-				ConfigSubtreeType *ret = allocateObject(ConfigSubtreeType);
-				*ret = CONFIG_NULL;
-				return ret;
-			}
+			return NULL;
 		}
 
 		g_string_append_c(pathnode, *iter);
 	}
 
-	GHashTable *table;
 	ConfigNodeValue *value;
 	int i;
 
-	switch(type) {
-		case CONFIG_SECTIONS:
-			table = g_hash_table_lookup(parent, pathnode->str);
-
-			if(table == NULL) {
-				subtype = CONFIG_NULL;
-				subtree = NULL;
-			} else {
-				subtype = CONFIG_NODES;
-				subtree = table;
-			}
-		break;
-		case CONFIG_NODES:
-			value = g_hash_table_lookup(parent, pathnode->str);
+	switch(parent->type) {
+		case CONFIG_ARRAY:
+			value = g_hash_table_lookup(parent->content.array, pathnode->str);
 
 			if(value == NULL) {
-				subtype = CONFIG_NULL;
-				subtree = NULL;
-			} else {
-				switch(value->type) {
-					case CONFIG_ARRAY:
-						subtype = CONFIG_NODES;
-						subtree = value->content.array;
-					break;
-					case CONFIG_LIST:
-						subtype = CONFIG_VALUES;
-						subtree = value->content.list;
-					break;
-					default:
-						subtype = CONFIG_LEAF_VALUE;
-						subtree = value;
-					break;
-				}
+				return NULL;
 			}
 		break;
-		case CONFIG_LEAF_VALUE:
-			subtype = CONFIG_NULL; // leaves don't have children
-			subtree = NULL;
-		break;
-		case CONFIG_VALUES:
+		case CONFIG_LIST:
 			i = atoi(pathnode->str);
 
-			if(i >= g_queue_get_length(parent)) { // out of bounds
-				subtype = CONFIG_NULL;
-				subtree = NULL;
+			if(i < 0 || i >= g_queue_get_length(parent->content.list)) { // out of bounds
+				return NULL;
 			} else {
-				value = g_queue_peek_nth(parent, i);
+				value = g_queue_peek_nth(parent->content.list, i);
 
-				switch(value->type) {
-					case CONFIG_ARRAY:
-						subtype = CONFIG_NODES;
-						subtree = value->content.array;
-					break;
-					case CONFIG_LIST:
-						subtype = CONFIG_VALUES;
-						subtree = value->content.list;
-					break;
-					default:
-						subtype = CONFIG_LEAF_VALUE;
-						subtree = value;
-					break;
-				}
+				assert(value != NULL);
 			}
 		break;
-		case CONFIG_NULL:
-			subtype = CONFIG_NULL;
-			subtree = NULL;
+		default:
+			return NULL; // leaves don't have children
 		break;
 	}
 
 	if(*iter == '\0') {
-		if(fetch_value) {
-			return subtree;
-		} else {
-			ConfigSubtreeType *ret = allocateObject(ConfigSubtreeType);
-			*ret = subtype;
-			return ret;
-		}
+		return value;
 	} else {
-		return getConfigSubpath(iter, subtype, subtree, fetch_value);
+		return getConfigSubpath(iter, value);
 	}
 }

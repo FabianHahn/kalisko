@@ -34,8 +34,6 @@ typedef union {
 	double float_number;
 	ConfigNodeValue *value;
 	ConfigNode *node;
-	GHashTable *nodes;
-	ConfigSection *section;
 } YYSTYPE;
 
 /**

@@ -39,7 +39,6 @@
 static void configFileWrite(Config *config, char *format, ...);
 static void configGStringWrite(Config *config, char *format, ...);
 static void dumpConfig(Config *config, ConfigWriter *writer);
-static void dumpConfigSection(void *key, void *value, void *data);
 static void dumpConfigNode(void *key_p, void *value_p, void *data);
 static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *context);
 
@@ -115,28 +114,9 @@ static void dumpConfig(Config *config, ConfigWriter *writer)
 	context->writer = writer;
 	context->level = 0;
 
-	g_hash_table_foreach(config->sections, &dumpConfigSection, context);
+	dumpConfigNodeValue(config->root, context);
 
 	free(context);
-}
-
-/**
- * A GHFunc to dump a config section
- *
- * @param key		the name of the section
- * @param value		the section's nodes
- * @param data		the dump's context
- */
-static void dumpConfigSection(void *key, void *value, void *data)
-{
-	char *name = key;
-	GHashTable *nodes = value;
-	ConfigDumpContext *context = data;
-
-	if(g_hash_table_size(nodes)) {
-		DUMP("[%s]\n", name);
-		g_hash_table_foreach(nodes, &dumpConfigNode, context);
-	}
 }
 
 /**

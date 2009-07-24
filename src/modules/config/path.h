@@ -21,34 +21,7 @@
 #ifndef CONFIG_PATH_H
 #define CONFIG_PATH_H
 
-/**
- * Enumeration of the config subtree types used for config path lookups
- */
-typedef enum {
-	/** Sections of the config */
-	CONFIG_SECTIONS,
-	/** Nodes of the config (in a section or an array) */
-	CONFIG_NODES,
-	/** A config string, integer or float value */
-	CONFIG_LEAF_VALUE,
-	/** Values of a config (in a list) */
-	CONFIG_VALUES,
-	/** An invalid location */
-	CONFIG_NULL
-} ConfigSubtreeType;
-
-/**
- * A config subtree used for config path lookups
- */
-typedef struct {
-	/** Type of the subtree */
-	ConfigSubtreeType type;
-	/** The subtree */
-	void *tree;
-} ConfigSubtree;
-
-API void *getConfigPathSubtree(Config *config, char *path);
-API ConfigSubtreeType getConfigPathType(Config *config, char *path);
+API ConfigNodeValue *getConfigPath(Config *config, char *path);
 API bool setConfigPath(Config *config, char *path, void *value);
 API bool deleteConfigPath(Config *config, char *path);
 API GPtrArray *splitConfigPath(char *path);

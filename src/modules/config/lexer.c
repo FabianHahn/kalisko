@@ -64,23 +64,6 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 	char assemble[CONFIG_MAX_STRING_LENGTH];
 	int i = 0;
 
-	if(config->prelude < 3) {
-		config->prelude++;
-
-		switch(config->prelude) {
-			case 1:
-				return '[';
-			break;
-			case 2:
-				lval->string = strdup("default");
-				return STRING;
-			break;
-			case 3:
-				return ']';
-			break;
-		}
-	}
-
 	while(true) {
 		c = config->read(config);
 		lloc->last_column++;
@@ -98,8 +81,6 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 		switch(c) {
 			case EOF:
 			case '\0':
-			case '[':
-			case ']':
 			case '{':
 			case '}':
 			case '(':
@@ -251,7 +232,6 @@ API GString *lexConfigString(char *string)
 	config->resource = config->name;
 	config->read = &configStringRead;
 	config->unread = &configStringUnread;
-	config->prelude = 0;
 
 	GString *ret = dumpLex(config);
 
@@ -274,7 +254,6 @@ API GString *lexConfigFile(char *filename)
 	config->resource = fopen(filename, "r");
 	config->read = &configFileRead;
 	config->unread = &configFileUnread;
-	config->prelude = 0;
 
 	GString *ret = dumpLex(config);
 

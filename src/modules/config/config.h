@@ -77,17 +77,6 @@ typedef struct {
 } ConfigNode;
 
 /**
- * Struct to represent a config section
- * Note: This struct is only used internally to do the parsing, it is NOT used in the final parsed config's representation
- */
-typedef struct {
-	/** The section's name */
-	char *name;
-	/** The section's nodes */
-	GHashTable *nodes;
-} ConfigSection;
-
-/**
  * A config reader to retrieve characters from a source
  * Note: The first param has only type void * and not ConfigFile to get around C's single pass compilation restrictions
  */
@@ -111,10 +100,8 @@ typedef struct {
 	ConfigReader *read;
 	/** The config's unreader */
 	ConfigUnreader *unread;
-	/** How many parts of the prelude were already sent */
-	int prelude;
-	/** The config's sections if it's parsed */
-	GHashTable *sections;
+	/** The config's root array node if it's parsed */
+	ConfigNodeValue *root;
 } Config;
 
 API Config *createConfig(char *name);

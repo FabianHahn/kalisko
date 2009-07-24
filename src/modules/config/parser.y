@@ -28,6 +28,7 @@
 	#include "memory_alloc.h"
 	#include "util.h"
 	#include "api.h"
+	#include "config.h"
 	#include "parse.h"
 	#include "lexer.h"
 /*
@@ -53,64 +54,19 @@
 %type <value> list
 %type <value> value
 %type <node> node
-%type <nodes> nodes
-%type <section> section
 %destructor { freeConfigNodeValue($$); } array list value
 %destructor { freeConfigNodeValue($$->value); free($$->key); free($$); } node
-%destructor { g_hash_table_destroy($$); } nodes
-%destructor { free($$->name); g_hash_table_destroy($$->nodes); free($$); } section
 
 %%
-sections:		section
-				{
-					@$.last_line = @1.last_line;
-					@$.last_column = @1.last_column;
-					config->sections = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &destroyGHashTable);
-					g_hash_table_insert(config->sections, $1->name, $1->nodes);
-					free($1);
-				}
-			|	sections section
-				{
-					@$.last_line = @1.last_line;
-					@$.last_column = @1.last_column;
-					g_hash_table_insert(config->sections, $2->name, $2->nodes);
-					free($2);
-				}
-;
-
-section:		'[' STRING ']' // empty section
-				{
-					@$.last_line = @1.last_line;
-					@$.last_column = @1.last_column;
-					$$ = allocateObject(ConfigSection);
-					$$->name = strdup($2);
-					$$->nodes = g_hash_table_new(&g_str_hash, &g_str_equal);
-				}
-			|	'[' STRING ']' nodes
-				{
-					@$.last_line = @1.last_line;
-					@$.last_column = @1.last_column;
-					$$ = allocateObject(ConfigSection);
-					$$->name = strdup($2);
-					$$->nodes = $4;
-				}
-;
-
-nodes:		node
+root:		// empty string
 			{
-				@$.last_line = @1.last_line;
-				@$.last_column = @1.last_column;
-				$$ = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
-				g_hash_table_insert($$, $1->key, $1->value);
-				free($1);
+				config->root = createConfigArrayValue(NULL);
 			}
-		|	nodes node
+		|	array
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				g_hash_table_insert($1, $2->key, $2->value);
-				free($2);
-				$$ = $1;
+				config->root = $1;
 			}
 ;
 
@@ -128,33 +84,25 @@ value:		STRING
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_STRING;
-				$$->content.string = strdup($1);
+				$$ = createConfigStringValue($1);
 			}
 		|	INTEGER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_INTEGER;
-				$$->content.integer = $1;
+				$$ = createConfigIntegerValue($1);
 			}
 		|	FLOAT_NUMBER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_FLOAT_NUMBER;
-				$$->content.float_number = $1;
+				$$ = createConfigFloatNumberValue($1);
 			}
 		|	'(' ')'
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_LIST;
-				$$->content.list = NULL;
+				$$ = createConfigListValue(NULL);
 			}
 		|	'(' list ')'
 			{
@@ -166,9 +114,7 @@ value:		STRING
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_ARRAY;
-				$$->content.array = g_hash_table_new(&g_str_hash, &g_str_equal);
+				$$ = createConfigArrayValue(NULL);
 			}
 		|	'{' array '}'
 			{
@@ -182,9 +128,7 @@ list:		value // first element of the list
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_LIST;
-				$$->content.list = g_queue_new();
+				$$ = createConfigListValue(NULL);
 				g_queue_push_head($$->content.list, $1);
 			}
 		|	list value // the list continues
@@ -200,9 +144,7 @@ array:		node // first element of the array
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = allocateObject(ConfigNodeValue);
-				$$->type = CONFIG_ARRAY;
-				$$->content.array = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
+				$$ = createConfigArrayValue(NULL);
 				g_hash_table_insert($$->content.array, $1->key, $1->value);
 				free($1);
 			}

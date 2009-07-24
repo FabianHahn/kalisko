@@ -80,7 +80,7 @@ if buildtests:
 	tests = os.listdir('src/tests')
 	
 	for testdir in tests:
-		if os.path.isdir(os.path.join('src/tests', testdir)) and not moddir in exclude:
+		if os.path.isdir(os.path.join('src/tests', testdir)) and not testdir in exclude:
 			if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 				# Build test
 				test = modtpl.Clone()

@@ -61,20 +61,28 @@ API char *getExecutablePath()
 #endif
 	execpath[length] = '\0'; // Terminate string
 
+	return getDirectoryPath(execpath);
+}
+
+/**
+ * Returns the path for the parents directory of a file path (removes the file from the path).
+ *
+ * @param filePath	The path to a file
+ * @return The path to the parents directory. Must be freed
+ */
+API char *getDirectoryPath(char *filePath)
+{
 	int i;
 	char *temp;
-	char **parts = g_strsplit_set(execpath, "/\\", 0); // Split the path by path delimiters
+	char **parts = g_strsplit_set(filePath, "/\\", 0); // Split the path by path delimiters
 
 	for(i = 0; parts[i] != NULL; i++); // Find the NULL terminator
-
 	assert(i > 0);
 
 	temp = parts[i-1]; // Remove last element
 	parts[i-1] = NULL;
 
 	char *path = g_strjoinv("/", parts); // Construct executable path
-
-	parts[i-1] = temp; // Restore last element so it gets freed as well
 
 	g_strfreev(parts);
 

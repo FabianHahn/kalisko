@@ -19,8 +19,8 @@
  */
 
 
-#ifndef LANG_PYTHON_LANG_PYTHON
-#define LANG_PYTHON_LANG_PYTHON
+#ifndef LANG_PYTHON_LANG_PYTHON_H
+#define LANG_PYTHON_LANG_PYTHON_H
 
 typedef struct
 {

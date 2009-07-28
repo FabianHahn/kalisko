@@ -18,41 +18,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <glib.h>
+#ifndef LOG_FILE_LOG_FILE_H
+#define LOG_FILE_LOG_FILE_H
+
 #include <stdio.h>
-#include "dll.h"
-#include "test.h"
-#include "modules/config_standard/config_standard.h"
-#include "modules/config/config.h"
-#include "modules/config/path.h"
 
-#include "api.h"
+/**
+ * Configuration information for a single log file.
+ */
+typedef struct {
+	/**
+	 * Location of the log file.
+	 */
+	char *filePath;
 
-#define INT_VALUE_PATH "int"
+	/**
+	 * The lowest log level to log into the log file.
+	 */
+	LogType logType;
 
-TEST_CASE(simpleUserOverrideConfig);
+	/**
+	 * FILE descriptor to append new lines.
+	 */
+	FILE *fileAppend;
 
-TEST_SUITE_BEGIN(config_standard)
-	TEST_CASE_ADD(simpleUserOverrideConfig);
-TEST_SUITE_END
+	/**
+	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
+	 * loops in case of errors.
+	 */
+	bool ignoreNextLog;
+} LogFileConfig;
 
-TEST_CASE(simpleUserOverrideConfig)
-{
-	Config *userConfig = getStandardConfig(CONFIG_USER_OVERRIDE);
-	TEST_ASSERT(userConfig != NULL);
+API void parseLogFileConfig(Config *config);
+API LogFileConfig *addLogFile(char *filePath, LogType logType);
+API void removeLogFile(LogFileConfig *logFile);
 
-	setConfigPath(userConfig, INT_VALUE_PATH, createConfigIntegerValue(500));
-
-	ConfigNodeValue *value = getConfigPath(userConfig, INT_VALUE_PATH);
-	TEST_ASSERT(value->type == CONFIG_INTEGER);
-	TEST_ASSERT(*((int *)getConfigValueContent(value)) == 500);
-
-	saveStandardConfig(CONFIG_USER_OVERRIDE);
-
-	TEST_PASS;
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "config_standard");
-}
+#endif

@@ -18,11 +18,47 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
+#include <time.h>
+#include <string.h>
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API void destroyGHashTable(void *table);
+#include "dll.h"
+#include "module.h"
+#include "memory_alloc.h"
 
-#endif
+#include "api.h"
+#include "modules/time_util/time_util.h"
+
+API bool module_init()
+{
+	return true;
+}
+
+API void module_finalize()
+{
+}
+
+API GList *module_depends()
+{
+	return NULL;
+}
+
+/**
+ * Returns a string representing the current date and time
+ *
+ * @return The current date and time as a string. This string must be freed
+ */
+API char *getCurrentDateTimeString()
+{
+	// pay attention that the string is not longer than 'TIME_STRING_BUFFER_SIZE'
+	char timeString[TIME_STRING_BUFFER_SIZE] = "[unknown time]";
+
+	time_t currentTime = time(NULL);
+	if(currentTime != -1) {
+		struct tm *timeInfo = localtime(&currentTime);
+		if(localtime != NULL) {
+			strftime(timeString, TIME_STRING_BUFFER_SIZE, "%x %X", timeInfo);
+		}
+	}
+
+	return strdup(timeString);
+}

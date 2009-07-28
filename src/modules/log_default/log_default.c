@@ -19,16 +19,17 @@
  */
 
 
+#include <stdlib.h>
 #include <stdio.h> // fprintf
 #include <time.h> //time_t, strftime
 #include <glib.h>
 
 #include "dll.h"
 #include "hooks.h"
+#include "modules/time_util/time_util.h"
+
 #include "log.h"
 #include "api.h"
-
-#define TIME_STRING_BUFFER_SIZE 18
 
 HOOK_LISTENER(log);
 
@@ -44,7 +45,7 @@ API void module_finalize()
 
 API GList *module_depends()
 {
-	return NULL;
+	return g_list_append(NULL, "time_util");
 }
 
 /**
@@ -55,31 +56,23 @@ HOOK_LISTENER(log)
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 
-	char timeString[TIME_STRING_BUFFER_SIZE] = "[unknown time]"; // pay attention that the string is not longer than 'TIME_STRING_BUFFER_SIZE'
-	time_t currentTime = time(NULL);
-	if(currentTime != -1)
-	{
-		struct tm *timeInfo = localtime(&currentTime);
-		if(localtime != NULL)
-		{
-			strftime(timeString, TIME_STRING_BUFFER_SIZE, "%x %X", timeInfo);
-		}
-	}
+	char *dateTime = getCurrentDateTimeString();
 
 	switch(type) {
 		case LOG_ERROR:
-			fprintf(stderr, "%s ERROR: %s\n", timeString, message);
+			fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
 		break;
 		case LOG_WARNING:
-			fprintf(stderr, "%s WARNING: %s\n", timeString, message);
+			fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
 		break;
 		case LOG_INFO:
-			fprintf(stderr, "%s INFO: %s\n", timeString, message);
+			fprintf(stderr, "%s INFO: %s\n", dateTime, message);
 		break;
 		case LOG_DEBUG:
-			fprintf(stderr, "%s DEBUG: %s\n", timeString, message);
+			fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
 		break;
 	}
 
+	free(dateTime);
 	fflush(stderr);
 }

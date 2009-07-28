@@ -18,11 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API void destroyGHashTable(void *table);
+#ifndef TIME_UTIL_H
+#define TIME_UTIL_H
+
+#define TIME_STRING_BUFFER_SIZE 18
+
+API char *getCurrentDateTimeString();
 
 #endif

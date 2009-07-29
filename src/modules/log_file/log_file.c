@@ -107,7 +107,7 @@ API void parseLogFileConfig(Config *config)
 {
 	ConfigNodeValue *configFiles = getConfigPath(config, LOG_FILES_CONFIG_PATH);
 	if(configFiles == NULL) {
-		logInfo("No log files configuration found in '%s'", config->name);
+		logDebug("No log files configuration found in '%s'", config->name);
 		return;
 	}
 

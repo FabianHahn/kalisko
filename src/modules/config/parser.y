@@ -74,7 +74,7 @@ node:	STRING '=' value
 		{
 			@$.last_line = @1.last_line;
 			@$.last_column = @1.last_column;
-			$$ = allocateObject(ConfigNode);
+			$$ = ALLOCATE_OBJECT(ConfigNode);
 			$$->key = strdup($1);
 			$$->value = $3;
 		}
@@ -161,5 +161,5 @@ array:		node // first element of the array
 
 void yyerror(YYLTYPE *lloc, Config *config, char *error)
 {
-	logError("Parse error in %s at line %d, column %d: %s", config->name, lloc->last_line, lloc->last_column - 1, error);
+	LOG_ERROR("Parse error in %s at line %d, column %d: %s", config->name, lloc->last_line, lloc->last_column - 1, error);
 }

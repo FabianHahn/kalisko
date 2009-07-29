@@ -226,7 +226,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
  */
 API GString *lexConfigString(char *string)
 {
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = string;
 	config->resource = config->name;
@@ -248,7 +248,7 @@ API GString *lexConfigString(char *string)
  */
 API GString *lexConfigFile(char *filename)
 {
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = filename;
 	config->resource = fopen(filename, "r");

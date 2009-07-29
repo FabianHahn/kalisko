@@ -32,7 +32,7 @@
  */
 API void initLog()
 {
-	HOOK_ADD(log);
+	addHook("log");
 }
 
 /**
@@ -49,5 +49,5 @@ API void logMessage(LogType type, char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, LOG_MSG_MAXLEN, message, va);
 
-	HOOK_TRIGGER(log, type, buffer);
+	triggerHook("log", type, buffer);
 }

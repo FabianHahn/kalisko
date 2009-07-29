@@ -23,12 +23,20 @@
 #undef API
 #endif
 
+#ifndef DLL_API_IMPORT
+#define DLL_API_IMPORT
+#endif
+
+#define $$(TYPE, FUNC) $(TYPE,, FUNC)
+
 #ifdef WIN32
-#ifndef NO_DLL_IMPORT
+#include <stdio.h>
+#include "windows.h"
+#define $(TYPE, MODULE, FUNC) ((TYPE (*)()) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
+#define GET_LIBRARY_HANDLE(MODULE) GetModuleHandle(GET_MODULE_PARAM(MODULE))
+#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? #MODULE : NULL)
 #define API __declspec(dllimport)
 #else
-#define API __declspec(dllexport)
-#endif
-#else
+#define $(TYPE, MODULE, FUNC) FUNC
 #define API
 #endif

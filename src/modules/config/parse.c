@@ -38,7 +38,7 @@ int yyparse(Config *config); // this can't go into a header because it doesn't h
  */
 API Config *parseConfigFile(char *filename)
 {
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = strdup(filename);
 	config->resource = fopen(config->name, "r");
@@ -46,16 +46,16 @@ API Config *parseConfigFile(char *filename)
 	config->unread = &configFileUnread;
 
 	if(config->resource == NULL) {
-		logSystemError("Could not open config file %s", config->name);
+		LOG_SYSTEM_ERROR("Could not open config file %s", config->name);
 		free(config->name);
 		free(config);
 		return NULL;
 	}
 
-	logInfo("Parsing config file %s", config->name);
+	LOG_INFO("Parsing config file %s", config->name);
 
 	if(yyparse(config) != 0) {
-		logError("Parsing config file %s failed", config->name);
+		LOG_ERROR("Parsing config file %s failed", config->name);
 		free(config->name);
 		fclose(config->resource);
 		free(config);
@@ -75,17 +75,17 @@ API Config *parseConfigFile(char *filename)
  */
 API Config *parseConfigString(char *string)
 {
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = strdup(string);
 	config->resource = config->name;
 	config->read = &configStringRead;
 	config->unread = &configStringUnread;
 
-	logInfo("Parsing config string: %s", config->name);
+	LOG_INFO("Parsing config string: %s", config->name);
 
 	if(yyparse(config) != 0) {
-		logError("Parsing config string failed");
+		LOG_ERROR("Parsing config string failed");
 		free(config->name);
 		free(config);
 		return NULL;

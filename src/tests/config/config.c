@@ -69,7 +69,7 @@ TEST_CASE(lexer)
 	YYSTYPE val;
 	YYLTYPE loc;
 
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = lexer_test_input;
 	config->resource = config->name;
@@ -81,7 +81,7 @@ TEST_CASE(lexer)
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = yylex(&val, &loc, config)) != 0) {
+	while((lexx = $(int, config, yylex)(&val, &loc, config)) != 0) {
 		TEST_ASSERT(lexx == *(solution_tokens++));
 
 		switch(lexx) {
@@ -110,9 +110,9 @@ TEST_CASE(parser)
 {
 	Config *config;
 
-	TEST_ASSERT((config = parseConfigString(parser_test_input)) != NULL);
+	TEST_ASSERT((config = $(Config *, config, parseConfigString)(parser_test_input)) != NULL);
 
-	freeConfig(config);
+	$(void, config, freeConfig)(config);
 
 	TEST_PASS;
 }
@@ -120,65 +120,65 @@ TEST_CASE(parser)
 TEST_CASE(path_modify)
 {
 	ConfigNodeValue *value;
-	Config *config = parseConfigString(path_test_input);
+	Config *config = $(Config *, config, parseConfigString)(path_test_input);
 	TEST_ASSERT(config != NULL);
 
 	// check some path types
-	TEST_ASSERT(getConfigPath(config, "")->type == CONFIG_ARRAY);
-	TEST_ASSERT(getConfigPath(config, "somekey")->type == CONFIG_LIST);
-	TEST_ASSERT(getConfigPath(config, "somekey/2")->type == CONFIG_ARRAY);
+	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "")->type == CONFIG_ARRAY);
+	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey")->type == CONFIG_LIST);
+	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2")->type == CONFIG_ARRAY);
 
-	value = getConfigPath(config, "somekey/2/subarray/bird");
+	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == CONFIG_STRING);
-	TEST_ASSERT(strcmp(getConfigValueContent(value), "word") == 0);
+	TEST_ASSERT(strcmp($(void *, config, getConfigValueContent)(value), "word") == 0);
 
 	// change value
-	value = allocateObject(ConfigNodeValue);
+	value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_FLOAT_NUMBER;
 	value->content.float_number = 13.37;
-	TEST_ASSERT(setConfigPath(config, "somekey/2/subarray/bird", value));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "somekey/2/subarray/bird", value));
 
 	// check if correctly changed
-	value = getConfigPath(config, "somekey/2/subarray/bird");
+	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == CONFIG_FLOAT_NUMBER);
-	TEST_ASSERT(*((double *) getConfigValueContent(value)) == 13.37);
+	TEST_ASSERT(*((double *) $(void *, config, getConfigValueContent)(value)) == 13.37);
 
-	value = getConfigPath(config, "somekey/2/subarray/answer");
+	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/answer");
 	TEST_ASSERT(value->type == CONFIG_INTEGER);
-	TEST_ASSERT(*((int *) getConfigValueContent(value)) == 42);
+	TEST_ASSERT(*((int *) $(void *, config, getConfigValueContent)(value)) == 42);
 
 	// delete value
-	TEST_ASSERT(deleteConfigPath(config, "somekey/2/subarray/answer"));
+	TEST_ASSERT($(bool, config, deleteConfigPath)(config, "somekey/2/subarray/answer"));
 
 	// check if correctly deleted
-	TEST_ASSERT(getConfigPath(config, "somekey/2/subarray/answer") == NULL);
+	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/answer") == NULL);
 
 	// test list out of bounds handling
-	TEST_ASSERT(getConfigPath(config, "somekey/1337") == NULL);
+	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/1337") == NULL);
 
 	TEST_PASS;
 }
 
 TEST_CASE(path_create)
 {
-	Config *config = createConfig("test config");
+	Config *config = $(Config *, config, createConfig)("test config");
 
-	TEST_ASSERT(setConfigPath(config, "string", createConfigStringValue("\"e = mc^2\"")));
-	TEST_ASSERT(setConfigPath(config, "integer", createConfigIntegerValue(1337)));
-	TEST_ASSERT(setConfigPath(config, "float number", createConfigFloatNumberValue(3.141)));
-	TEST_ASSERT(setConfigPath(config, "list", createConfigListValue(NULL)));
-	TEST_ASSERT(setConfigPath(config, "list/1", createConfigStringValue("the bird is the word")));
-	TEST_ASSERT(setConfigPath(config, "array", createConfigArrayValue(NULL)));
-	TEST_ASSERT(setConfigPath(config, "array/some\\/sub\\\\array", createConfigArrayValue(NULL)));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "string", $(ConfigNodeValue *, config, createConfigStringValue)("\"e = mc^2\"")));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "integer", $(ConfigNodeValue *, config, createConfigIntegerValue)(1337)));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "float number", $(ConfigNodeValue *, config, createConfigFloatNumberValue)(3.141)));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "list", $(ConfigNodeValue *, config, createConfigListValue)(NULL)));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "list/1", $(ConfigNodeValue *, config, createConfigStringValue)("the bird is the word")));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "array", $(ConfigNodeValue *, config, createConfigArrayValue)(NULL)));
+	TEST_ASSERT($(bool, config, setConfigPath)(config, "array/some\\/sub\\\\array", $(ConfigNodeValue *, config, createConfigArrayValue)(NULL)));
 
-	freeConfig(config);
+	$(void, config, freeConfig)(config);
 
 	TEST_PASS;
 }
 
 TEST_CASE(path_split)
 {
-	GPtrArray *array = splitConfigPath(path_split_input);
+	GPtrArray *array = $(GPtrArray *, config, splitConfigPath)(path_split_input);
 
 	for(int i = 0; i < array->len; i++) {
 		TEST_ASSERT(strcmp(array->pdata[i], path_split_solution[i]) == 0);
@@ -203,7 +203,7 @@ API GList *module_depends()
  */
 static char _configStringRead(void *config)
 {
-	return configStringRead(config);
+	return $(char, config, configStringRead)(config);
 }
 
 /**
@@ -214,5 +214,5 @@ static char _configStringRead(void *config)
  */
 static void _configStringUnread(void *config, char c)
 {
-	return configStringUnread(config, c);
+	return $(void, config, configStringUnread)(config, c);
 }

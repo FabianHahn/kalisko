@@ -58,7 +58,7 @@ API void freeHooks()
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-API bool addHook(const char *hook_name)
+API bool addHook(char *hook_name)
 {
 	if(g_hash_table_lookup_extended(hooks, hook_name, NULL, NULL)) { // A hook with that name already exists
 		return false;
@@ -76,7 +76,7 @@ API bool addHook(const char *hook_name)
  * @param hook_name		the name of the hook
  * @result				true if successful
  */
-API bool delHook(const char *hook_name)
+API bool delHook(char *hook_name)
 {
 	GList *hook;
 
@@ -101,7 +101,7 @@ API bool delHook(const char *hook_name)
  * @param custom_data	custom data to pass to the hook listener when triggered
  * @result				true if successful
  */
-API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data)
+API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 	char *hook_own_name;
@@ -110,7 +110,7 @@ API bool attachToHook(const char *hook_name, HookListener *listener, void *custo
 		return false;
 	}
 
-	HookListenerEntry *entry = allocateObject(HookListenerEntry);
+	HookListenerEntry *entry = allocateMemory(sizeof(HookListenerEntry));
 
 	entry->listener = listener;
 	entry->custom_data = custom_data;
@@ -132,7 +132,7 @@ API bool attachToHook(const char *hook_name, HookListener *listener, void *custo
  * @param custom_data	custom data passed to the hook listener when called
  * @result				true if successful
  */
-API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data)
+API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_data)
 {
 	GList *hook;
 	char *hook_own_name;
@@ -171,7 +171,7 @@ API bool detachFromHook(const char *hook_name, HookListener *listener, void *cus
  * @param ...			the data to pass to the listeners
  * @result				the number of listeners notified, -1 if hook not found
  */
-API int triggerHook(const char *hook_name, ...)
+API int triggerHook(char *hook_name, ...)
 {
 	GList *hook;
 
@@ -243,7 +243,7 @@ static void addHookStatsEntry(void *key, void *value, void *data)
 	GList *listeners = value;
 	GList **list = data;
 
-	HookStatsEntry *entry = allocateObject(HookStatsEntry);
+	HookStatsEntry *entry = allocateMemory(sizeof(HookStatsEntry));
 	entry->hook_name = name;
 	entry->num_listeners = g_list_length(listeners);
 

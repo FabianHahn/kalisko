@@ -29,7 +29,7 @@
  */
 API void initMemory()
 {
-	GMemVTable *table = allocateObject(GMemVTable);
+	GMemVTable *table = allocateMemory(sizeof(GMemVTable));
 
 	table->malloc = &malloc;
 	table->realloc = &realloc;
@@ -54,7 +54,7 @@ API void *allocateMemory(int size)
 	void *mem = malloc(size);
 
 	if(mem == NULL) {
-		logError("Failed to allocate %d more bytes of memory", size);
+		logMessage(LOG_TYPE_ERROR, "Failed to allocate %d more bytes of memory", size);
 		exit(EXIT_FAILURE);
 	}
 

@@ -59,6 +59,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  */
 #define TEST_CASE(CASE) static void TEST_CASE_NAME(CASE)(char *testsuite, char *testcase)
 
+#ifdef DLL_API_IMPORT
 /**
  * Checks if an expression holds, and fails the test case if it doesn't
  *
@@ -69,13 +70,14 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 /**
  * Passes a test case
  */
-#define TEST_PASS reportTestResult(testsuite, testcase, true, NULL); return
+#define TEST_PASS $$(void, reportTestResult)(testsuite, testcase, true, NULL); return
 
 /**
  * Fails a test case with an error message
  *
  * @param ERROR		printf-like error message
  */
-#define TEST_FAIL(ERROR, ...) reportTestResult(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
+#define TEST_FAIL(ERROR, ...) $$(void, reportTestResult)(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
+#endif
 
 #endif

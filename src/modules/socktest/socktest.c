@@ -51,20 +51,20 @@ API GList *module_depends()
 
 static void testSocket()
 {
-	Socket *sock = createClientSocket("www.kalisko.org", "http");
-	connectSocket(sock);
+	Socket *sock = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
+	$(bool, socket, connectSocket)(sock);
 
-	socketWriteRaw(sock, REQUEST, sizeof(REQUEST));
+	$(bool, socket, socketWriteRaw)(sock, REQUEST, sizeof(REQUEST));
 
 	while(sock->connected) {
 		char buffer[BUF];
 
 		memset(buffer, 0, BUF);
 
-		socketReadRaw(sock, buffer, BUF);
+		$(int, socket, socketReadRaw)(sock, buffer, BUF);
 
 		printf("%s", buffer);
 	}
 
-	freeSocket(sock);
+	$(bool, socket, freeSocket)(sock);
 }

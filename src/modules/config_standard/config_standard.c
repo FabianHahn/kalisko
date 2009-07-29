@@ -55,7 +55,7 @@ API bool module_init()
 {
 	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
 	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	globalConfigFilePath = g_build_path("/", getExecutablePath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	globalConfigFilePath = g_build_path("/", $$(char *, getExecutablePath)(), GLOBAL_CONFIG_FILE_NAME, NULL);
 
 	if(!HOOK_ADD(stdConfigChanged)) {
 		finalize();
@@ -105,12 +105,12 @@ API Config *getStandardConfig(StandardConfigFiles file)
 			if(!globalConfig) {
 				// As this module should also work for a non root account
 				// we don't create a config file if it doesn't exist.
-				globalConfig = parseConfigFile(globalConfigFilePath);
+				globalConfig = $(Config *, config, parseConfigFile)(globalConfigFilePath);
 			}
 			return globalConfig;
 		break;
 		default:
-			logError("Unknown standard configuration file requested.");
+			LOG_ERROR("Unknown standard configuration file requested.");
 			return NULL;
 		break;
 	}
@@ -128,10 +128,10 @@ API void saveStandardConfig(StandardConfigFiles file)
 {
 	switch(file) {
 		case CONFIG_USER_OVERRIDE:
-			writeConfigFile(userOverrideConfigFilePath, getStandardConfig(file));
+			$(void, config, writeConfigFile)(userOverrideConfigFilePath, getStandardConfig(file));
 		break;
 		default:
-			logWarning("Given standard configuration file can not be saved.");
+			LOG_WARNING("Given standard configuration file can not be saved.");
 			return;
 		break;
 	}
@@ -143,15 +143,15 @@ static Config *getUserConfig()
 		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
-		Config *userConfig = createConfig(USER_CONFIG_FILE_NAME);
-		writeConfigFile(userConfigFilePath, userConfig);
+		Config *userConfig = $(Config *, config, createConfig)(USER_CONFIG_FILE_NAME);
+		$(void, config, writeConfigFile)(userConfigFilePath, userConfig);
 
-		logInfo("Created new configuration file: %s", userConfigFilePath);
+		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
 
 		free(dirPath);
 		return userConfig;
 	} else {
-		return parseConfigFile(userConfigFilePath);
+		return $(Config *, config, parseConfigFile)(userConfigFilePath);
 	}
 }
 
@@ -161,15 +161,15 @@ static Config *getUserOverrideConfig()
 		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
-		Config *globalConfig = createConfig(USER_OVERRIDE_CONFIG_FILE_NAME);
-		writeConfigFile(userConfigFilePath, globalConfig);
+		Config *globalConfig = $(Config *, config, createConfig)(USER_OVERRIDE_CONFIG_FILE_NAME);
+		$(void, config, writeConfigFile)(userConfigFilePath, globalConfig);
 
-		logInfo("Created new configuration file: %s", userConfigFilePath);
+		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
 
 		free(dirPath);
 		return globalConfig;
 	} else {
-		return parseConfigFile(userConfigFilePath);
+		return $(Config *, config, parseConfigFile)(userConfigFilePath);
 	}
 }
 
@@ -180,15 +180,15 @@ static void finalize()
 	free(globalConfigFilePath);
 
 	if(userConfig) {
-		freeConfig(userConfig);
+		$(void, config, freeConfig)(userConfig);
 	}
 
 	if(userOverrideConfig) {
-		freeConfig(userOverrideConfig);
+		$(void, config, freeConfig)(userOverrideConfig);
 	}
 
 	if(globalConfig) {
-		freeConfig(globalConfig);
+		$(void, config, freeConfig)(globalConfig);
 	}
 
 	HOOK_DEL(stdConfigChanged);

@@ -45,8 +45,6 @@ if ARGUMENTS.get('verbose') != '1':
 
 # Build core
 core = coretpl.Clone()
-if coretpl['PLATFORM'] == 'win32':
-	core.Append(LINKFLAGS = ['-Wl,--out-implib,' + prefix + '/libkalisko.a'])
 corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'test.c']
 SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
 
@@ -58,21 +56,15 @@ for moddir in modules:
 		if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 			# Build module
 			module = modtpl.Clone()
-			if modtpl['PLATFORM'] == 'win32':
-				module.Append(LIBPATH = ['#' + prefix, '#' + prefix + '/modules'])
 			SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), 'module')
 			if buildtests:
 				module = modtpl.Clone()
-				if modtpl['PLATFORM'] == 'win32':
-					module.Append(LIBPATH = ['#bin/test', '#bin/test/modules'])
 				SConscript(os.path.join('bin/test', 'modules', moddir, 'SConscript'), 'module')
 
 # Build tests
 if buildtests:
 	# Build tester core
 	core = coretpl.Clone()
-	if coretpl['PLATFORM'] == 'win32':
-		core.Append(LINKFLAGS = ['-Wl,--out-implib,bin/test/libkalisko.a'])	
 	corefiles = [x for x in core.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
 	SConscript('bin/test/SConscript', ['core', 'corefiles'])
 
@@ -83,7 +75,5 @@ if buildtests:
 		if os.path.isdir(os.path.join('src/tests', testdir)) and not testdir in exclude:
 			if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 				# Build test
-				test = modtpl.Clone()
-				if modtpl['PLATFORM'] == 'win32':
-					test.Append(LIBPATH = ['#bin/test', '#bin/test/modules'])				
+				test = modtpl.Clone()		
 				SConscript(os.path.join('bin/test/tests', testdir, 'SConscript'), 'test')

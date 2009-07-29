@@ -53,13 +53,13 @@ API GList *module_depends()
 
 API void python_interpreter_init(PythonInterpreter *interpreter)
 {
-	logInfo("Init new PythonInterpreter");
+	LOG_INFO("Init new PythonInterpreter");
 	interpreter->threadState = Py_NewInterpreter();
 }
 
 API void python_run_code(PythonInterpreter *interpreter, char *code)
 {
-	logDebug("Run Python-Code: %s", code);
+	LOG_DEBUG("Run Python-Code: %s", code);
 	PyThreadState_Swap(interpreter->threadState);
 	PyRun_SimpleString(code);
 }

@@ -107,9 +107,9 @@ static void configGStringWrite(Config *config, char *format, ...)
  */
 static void dumpConfig(Config *config, ConfigWriter *writer)
 {
-	logInfo("Dumping config %s", config->name);
+	LOG_INFO("Dumping config %s", config->name);
 
-	ConfigDumpContext *context = allocateObject(ConfigDumpContext);
+	ConfigDumpContext *context = ALLOCATE_OBJECT(ConfigDumpContext);
 	context->config = config;
 	context->writer = writer;
 	context->level = 0;

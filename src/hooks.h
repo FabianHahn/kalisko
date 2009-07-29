@@ -55,11 +55,11 @@ typedef struct
 
 API void initHooks();
 API void freeHooks();
-API bool addHook(const char *hook_name);
-API bool delHook(const char *hook_name);
-API bool attachToHook(const char *hook_name, HookListener *listener, void *custom_data);
-API bool detachFromHook(const char *hook_name, HookListener *listener, void *custom_data);
-API int triggerHook(const char *hook_name, ...);
+API bool addHook(char *hook_name);
+API bool delHook(char *hook_name);
+API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data);
+API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_data);
+API int triggerHook(char *hook_name, ...);
 API GList *getHookStats();
 API void freeHookStats(GList *hook_stats);
 
@@ -89,59 +89,70 @@ API void freeHookStats(GList *hook_stats);
  */
 #define HOOK_ARG(TYPE) va_arg(args, TYPE)
 
-/**
- * @see HOOK_TRIGGER
- * @see HOOK_LISTENER
- * @see attachToHook
- * @param HOOK		the name of the hook
- * @param LISTENER	the hook listener to attach
- */
-#define HOOK_ATTACH(HOOK, LISTENER) attachToHook(#HOOK, &HOOK_LISTENER_NAME(LISTENER), NULL)
+#ifdef DLL_API_IMPORT
 
 /**
  * @see HOOK_TRIGGER
  * @see HOOK_LISTENER
  * @see attachToHook
- * @param HOOK		the hook to which the listener will be attached
- * @param LISTENER	the listener to attach
- * @param CDATA		custom data to pass to the hook listeners when triggered
+ * @param HOOK			the name of the hook
+ * @param LISTENER		the hook listener to attach
+ * @result				true if successful
  */
-#define HOOK_ATTACH_EX(HOOK, LISTENER, CDATA) attachToHook(#HOOK, &HOOK_LISTENER_NAME(LISTENER), CDATA)
+#define HOOK_ATTACH(HOOK, LISTENER) $$(bool, attachToHook)(#HOOK, &HOOK_LISTENER_NAME(LISTENER), NULL)
+
+/**
+ * @see HOOK_TRIGGER
+ * @see HOOK_LISTENER
+ * @see attachToHook
+ * @param HOOK			the hook to which the listener will be attached
+ * @param LISTENER		the listener to attach
+ * @param CDATA			custom data to pass to the hook listeners when triggered
+ * @result				true if successful
+ */
+#define HOOK_ATTACH_EX(HOOK, LISTENER, CDATA) $$(bool, attachToHook)(#HOOK, &HOOK_LISTENER_NAME(LISTENER), CDATA)
 
 /**
  * @see HOOK_ATTACH
  * @see detachFromHook
- * @param HOOK		the hook from which the listener will be detached
- * @param LISTENER	the listener to detached
+ * @param HOOK			the hook from which the listener will be detached
+ * @param LISTENER		the listener to detached
+ * @result				true if successful
  */
-#define HOOK_DETACH(HOOK, LISTENER) detachFromHook(#HOOK, &HOOK_LISTENER_NAME(LISTENER), NULL)
+#define HOOK_DETACH(HOOK, LISTENER) $$(bool, detachFromHook)(#HOOK, &HOOK_LISTENER_NAME(LISTENER), NULL)
 
 /**
  * @see HOOK_ATTACH
  * @see detachFromHook
- * @param HOOK		the hook from which the listener will be detached
- * @param LISTENER	the listener to detached
- * @param CDATA		custom data which was passed to the hook listeners when triggered
+ * @param HOOK			the hook from which the listener will be detached
+ * @param LISTENER		the listener to detached
+ * @param CDATA			custom data which was passed to the hook listeners when triggered
+ * @result				true if successful
  */
-#define HOOK_DETACH_EX(HOOK, LISTENER, CDATA) detachFromHook(#HOOK, &HOOK_LISTENER_NAME(LISTENER), CDATA)
+#define HOOK_DETACH_EX(HOOK, LISTENER, CDATA) $$(bool, detachFromHook)(#HOOK, &HOOK_LISTENER_NAME(LISTENER), CDATA)
 
 /**
  * @see addHook
  * @param HOOK	the name of the hook
+ * @result				true if successful
  */
-#define HOOK_ADD(HOOK) addHook(#HOOK)
+#define HOOK_ADD(HOOK) $$(bool, addHook)(#HOOK)
 
 /**
  * @see delHook
  * @param HOOK	the name of the hook
+ * @result				true if successful
  */
-#define HOOK_DEL(HOOK) delHook(#HOOK)
+#define HOOK_DEL(HOOK) $$(bool, delHook)(#HOOK)
 
 /**
  * @see triggerHook
- * @param HOOK	the name of the hook
- * @param ...	the data to pass to the listeners
+ * @param HOOK			the name of the hook
+ * @param ...			the data to pass to the listeners
+ * @result				the number of listeners notified, -1 if hook not found
  */
-#define HOOK_TRIGGER(HOOK, ...) triggerHook(#HOOK, __VA_ARGS__)
+#define HOOK_TRIGGER(HOOK, ...) $$(int, triggerHook)(#HOOK, __VA_ARGS__)
+
+#endif
 
 #endif

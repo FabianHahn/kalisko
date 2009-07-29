@@ -34,7 +34,7 @@
  */
 API Version *createVersion(int major, int minor, int patch, int revision)
 {
-	Version *ver = allocateObject(Version);
+	Version *ver = allocateMemory(sizeof(Version));
 	ver->major = major;
 	ver->minor = minor;
 	ver->patch = patch;

@@ -34,7 +34,7 @@ TEST_SUITE_END
 
 TEST_CASE(add)
 {
-	TEST_ASSERT(add(1, 1) == 2);
+	TEST_ASSERT($(int, sample, add)(1, 1) == 2);
 
 	TEST_PASS;
 }

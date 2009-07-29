@@ -34,17 +34,19 @@
 typedef enum
 {
 	/** Information needed for debugging function. */
-	LOG_DEBUG,
+	LOG_TYPE_DEBUG,
 	/** Verbose information what a function do. */
-	LOG_INFO,
+	LOG_TYPE_INFO,
 	/** The function has an unexpected state but can go on with the work. */
-	LOG_WARNING,
+	LOG_TYPE_WARNING,
 	/** The function has an unexpected state and can not end the work. */
-	LOG_ERROR
+	LOG_TYPE_ERROR
 } LogType;
 
 API void initLog();
 API void logMessage(LogType type, char *message, ...);
+
+#ifdef DLL_API_IMPORT
 
 /**
  * Logs a system error (strerror).
@@ -52,7 +54,7 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
-#define logSystemError(MESSAGE, ...) logMessage(LOG_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
+#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
 
 /**
  * Logs a message as an error.
@@ -60,7 +62,7 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logError(...) logMessage(LOG_ERROR, __VA_ARGS__);
+#define LOG_ERROR(...) $$(void, logMessage)(LOG_TYPE_ERROR, __VA_ARGS__);
 
 /**
  * Logs a message as a warning.
@@ -68,7 +70,7 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logWarning(...) logMessage(LOG_WARNING, __VA_ARGS__);
+#define LOG_WARNING(...) $$(void, logMessage)(LOG_TYPE_WARNING, __VA_ARGS__);
 
 /**
  * Logs a message as an info.
@@ -76,7 +78,7 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logInfo(...) logMessage(LOG_INFO, __VA_ARGS__);
+#define LOG_INFO(...) $$(void, logMessage)(LOG_TYPE_INFO, __VA_ARGS__);
 
 /**
  * Logs a message as a debug information
@@ -84,7 +86,9 @@ API void logMessage(LogType type, char *message, ...);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logDebug(...) logMessage(LOG_DEBUG, __VA_ARGS__);
+#define LOG_DEBUG(...) $$(void, logMessage)(LOG_TYPE_DEBUG, __VA_ARGS__);
+
+#endif
 
 /**
  * The maximal length for a log message.

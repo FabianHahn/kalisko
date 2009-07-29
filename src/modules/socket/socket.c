@@ -51,7 +51,7 @@ API bool module_init()
     WSADATA wsaData;
 
     if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
-        logError("WSAStartup failed");
+        LOG_ERROR("WSAStartup failed");
         return false;
     }
 #endif
@@ -80,7 +80,7 @@ API GList *module_depends()
  */
 API Socket *createClientSocket(char *host, char *port)
 {
-	Socket *s = allocateObject(Socket);
+	Socket *s = ALLOCATE_OBJECT(Socket);
 
 	s->fd = -1;
 	s->host = strdup(host);
@@ -100,12 +100,12 @@ API Socket *createClientSocket(char *host, char *port)
 API bool connectSocket(Socket *s)
 {
 	if(s->connected) {
-		logError("Cannot connect already connected socket %d", s->fd);
+		LOG_ERROR("Cannot connect already connected socket %d", s->fd);
 		return false;
 	}
 
 	if(s->server) {
-		logError("connectSocket not yet implemented for server sockets");
+		LOG_ERROR("connectSocket not yet implemented for server sockets");
 	} else {
 		struct addrinfo hints;
 		struct addrinfo *server;
@@ -117,17 +117,17 @@ API bool connectSocket(Socket *s)
 		int ret;
 
 		if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
-			logError("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
+			LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
 			return false;
 		}
 
 		if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-			logSystemError("Failed to create socket");
+			LOG_SYSTEM_ERROR("Failed to create socket");
 			return false;
 		}
 
 		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
-			logSystemError("Failed to connect socket %d", s->fd);
+			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
 			return false;
 		}
 
@@ -153,7 +153,7 @@ API bool disconnectSocket(Socket *s)
 #else
 		if(close(s->fd) != 0) {
 #endif
-			logSystemError("Failed to close socket %d", s->fd);
+			LOG_SYSTEM_ERROR("Failed to close socket %d", s->fd);
 			return false;
 		}
 
@@ -161,7 +161,7 @@ API bool disconnectSocket(Socket *s)
 
 		return true;
 	} else {
-		logError("Cannot disconnect already disconnected socket");
+		LOG_ERROR("Cannot disconnect already disconnected socket");
 		return false;
 	}
 }
@@ -203,12 +203,12 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		logError("Cannot write to disconnected socket");
+		LOG_ERROR("Cannot write to disconnected socket");
 		return false;
 	}
 
 	if(s->server) {
-		logError("Cannot write to server socket");
+		LOG_ERROR("Cannot write to server socket");
 		return false;
 	}
 
@@ -219,7 +219,7 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 		} else if(errno == EINTR) { // interrupted
 			continue;
 		} else { // error
-			logSystemError("Failed to write to socket %d", s->fd);
+			LOG_SYSTEM_ERROR("Failed to write to socket %d", s->fd);
 			return false;
 		}
 	}
@@ -242,21 +242,21 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		logError("Cannot read from disconnected socket");
+		LOG_ERROR("Cannot read from disconnected socket");
 		return 0;
 	}
 
 	if(s->server) {
-		logError("Cannot write to server socket");
+		LOG_ERROR("Cannot write to server socket");
 		return 0;
 	}
 
 	if((ret = recv(s->fd, buffer, size, 0)) == 0) { // connection reset by peer
-		logInfo("Connection on socket %d reset by peer", s->fd);
+		LOG_INFO("Connection on socket %d reset by peer", s->fd);
 		disconnectSocket(s);
 		return 0;
 	} else if(ret < 0) {
-		logSystemError("Failed to read from socket %d", s->fd);
+		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
 		return 0;
 	}
 

@@ -12,9 +12,6 @@ if not module.GetOption('clean'):
 			print('Error: Could not find Ws2tcpip.h header file!')
 			Exit(1)
 			
-		# Module dependencies
-		conf.env.Append(LIBS = ['kalisko'])
-			
 	module = conf.Finish()
 
 module.SharedLibrary('../socket', Glob('*.c'))

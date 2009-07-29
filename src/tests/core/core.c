@@ -44,17 +44,17 @@ TEST_SUITE_END
 
 TEST_CASE(version_compare)
 {
-	Version *a = createVersion(1, 2, 3, 4);
+	Version *a = $$(Version *, createVersion)(1, 2, 3, 4);
 
-	TEST_ASSERT(compareVersions(a, a) == 0);
+	TEST_ASSERT($$(int, compareVersions)(a, a) == 0);
 
-	Version *b = createVersion(1, 2, 3, 5);
+	Version *b = $$(Version *, createVersion)(1, 2, 3, 5);
 
-	TEST_ASSERT(compareVersions(a, b) < 0);
+	TEST_ASSERT($$(int, compareVersions)(a, b) < 0);
 
 	b->minor = 1;
 
-	TEST_ASSERT(compareVersions(a, b) > 0);
+	TEST_ASSERT($$(int, compareVersions)(a, b) > 0);
 
 	TEST_PASS;
 }
@@ -85,8 +85,8 @@ TEST_CASE(hooks)
 TEST_CASE(module_failure)
 {
 	// Request and revoke non existant module
-	TEST_ASSERT(!requestModule("_doesnotexist_"));
-	TEST_ASSERT(!revokeModule("_doesnotexist_"));
+	TEST_ASSERT(!$$(bool, requestModule)("_doesnotexist_"));
+	TEST_ASSERT(!$$(bool, revokeModule)("_doesnotexist_"));
 
 	TEST_PASS;
 }

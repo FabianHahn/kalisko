@@ -56,19 +56,19 @@ HOOK_LISTENER(log)
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 
-	char *dateTime = getCurrentDateTimeString();
+	char *dateTime = $(char *, time_util, getCurrentDateTimeString)();
 
 	switch(type) {
-		case LOG_ERROR:
+		case LOG_TYPE_ERROR:
 			fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
 		break;
-		case LOG_WARNING:
+		case LOG_TYPE_WARNING:
 			fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
 		break;
-		case LOG_INFO:
+		case LOG_TYPE_INFO:
 			fprintf(stderr, "%s INFO: %s\n", dateTime, message);
 		break;
-		case LOG_DEBUG:
+		case LOG_TYPE_DEBUG:
 			fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
 		break;
 	}

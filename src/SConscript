@@ -21,6 +21,3 @@ if not core.GetOption('clean'):
 	
 # Build core
 prog = core.Program('kalisko', corefiles)
-
-if core['PLATFORM'] == 'win32': # also clean libkalisko.a file
-	core.Clean(prog, 'libkalisko.a')

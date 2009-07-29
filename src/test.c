@@ -57,9 +57,9 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	const char *node = NULL;
+	char *node = NULL;
 
-	while((node = g_dir_read_name(tests)) != NULL) {
+	while((node = (char *) g_dir_read_name(tests)) != NULL) {
 		char *entry = g_build_path("/", testdir, node, NULL);
 
 		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {

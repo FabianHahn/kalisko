@@ -77,7 +77,7 @@ API void initModules()
 
 #ifdef WIN32
 	if(!SetDllDirectory(modpath)) {
-		logError("Failed to set DLL directory to %s", modpath);
+		logMessage(LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
 	}
 #endif
 }
@@ -87,13 +87,13 @@ API void initModules()
  */
 API void freeModules()
 {
-	logInfo("Revoking all modules...");
+	logMessage(LOG_TYPE_INFO, "Revoking all modules...");
 	g_hash_table_foreach_remove(root_set, &unneedModuleWrapper, NULL);
 
 	assert(g_hash_table_size(root_set) == 0);
 	assert(g_hash_table_size(modules) == 0);
 
-	logInfo("All modules successfully revoked");
+	logMessage(LOG_TYPE_INFO, "All modules successfully revoked");
 
 	g_hash_table_destroy(root_set);
 	g_hash_table_destroy(modules);
@@ -110,11 +110,11 @@ API void freeModules()
 API bool requestModule(char *name)
 {
 	if(g_hash_table_lookup(root_set, name) != NULL) {
-		logError("Cannot request already requested module %s", name);
+		logMessage(LOG_TYPE_ERROR, "Cannot request already requested module %s", name);
 		return false;
 	}
 
-	logInfo("Requesting module %s", name);
+	logMessage(LOG_TYPE_INFO, "Requesting module %s", name);
 
 	return needModule(name, root_set);
 }
@@ -130,16 +130,16 @@ API bool revokeModule(char *name)
 	Module *mod = g_hash_table_lookup(root_set, name);
 
 	if(mod == NULL) {
-		logError("Cannot revoke unrequested module %s", name);
+		logMessage(LOG_TYPE_ERROR, "Cannot revoke unrequested module %s", name);
 		return false;
 	}
 
-	logInfo("Revoking module %s", name);
+	logMessage(LOG_TYPE_INFO, "Revoking module %s", name);
 
 	// This needs to be done BEFORE unneedModule because modules enter themselves by their own name into the hashtables
 	// and after unneedModule, their names are freed
 	if(!g_hash_table_remove(root_set, name)) {
-		logError("Failed to remove %s from root set", name);
+		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from root set", name);
 		exit(EXIT_FAILURE);
 	}
 
@@ -164,7 +164,7 @@ static void *getLibraryFunction(Module *mod, char *funcname)
 #else
 	if((func = dlsym(mod->handle, funcname)) == NULL) {
 #endif
-		logError("Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
+		logMessage(LOG_TYPE_ERROR, "Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
 		return NULL;
 	}
 
@@ -185,11 +185,11 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 		return true;
 	}
 
-	logDebug("Loading dynamic library %s of module %s", mod->dlname, mod->name);
+	logMessage(LOG_TYPE_DEBUG, "Loading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
 	if((mod->handle = LoadLibrary(mod->dlname)) == NULL) {
-		logError("Failed to load dynamic library %s of module %s", mod->dlname, mod->name);
+		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s", mod->dlname, mod->name);
 		return false;
 	}
 
@@ -204,7 +204,7 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 	}
 
 	if((mod->handle = dlopen(mod->dlname, mode)) == NULL) {
-		logError("Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
 		return false;
 	}
 #endif
@@ -223,15 +223,15 @@ static void unloadDynamicLibrary(Module *mod)
 		return;
 	}
 
-	logDebug("Unloading dynamic library %s of module %s", mod->dlname, mod->name);
+	logMessage(LOG_TYPE_DEBUG, "Unloading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
 	if(FreeLibrary(mod->handle) == 0) {
-		logError("Failed to unload dynamic library %s of module %s", mod->dlname, mod->name);
+		logMessage(LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s", mod->dlname, mod->name);
 	}
 #else
 	if(dlclose(mod->handle) != 0) {
-		logError("Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+		logMessage(LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
 	}
 #endif
 
@@ -251,11 +251,11 @@ static bool needModule(char *name, GHashTable *parent)
 
 	if(mod != NULL) {
 		mod->rc++;
-		logDebug("Module %s is now needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
+		logMessage(LOG_TYPE_DEBUG, "Module %s is now needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
 	} else {
-		logInfo("Unloaded module %s needed, loading...", name);
+		logMessage(LOG_TYPE_INFO, "Unloaded module %s needed, loading...", name);
 
-		mod = allocateObject(Module);
+		mod = allocateMemory(sizeof(Module));
 
 		mod->name = strdup(name);
 		mod->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
@@ -295,12 +295,12 @@ static bool needModule(char *name, GHashTable *parent)
 
 		// Load dependencies
 		for(GList *iter = deplist; iter != NULL; iter = iter->next) {
-			logDebug("Module %s depends on %s, needing...", mod->name, iter->data);
+			logMessage(LOG_TYPE_DEBUG, "Module %s depends on %s, needing...", mod->name, iter->data);
 
 			Module *depmod = g_hash_table_lookup(modules, iter->data);
 
 			if(depmod != NULL && !depmod->loaded) {
-				logError("Circular dependency on module %s, requested by %s", iter->data, mod->name);
+				logMessage(LOG_TYPE_ERROR, "Circular dependency on module %s, requested by %s", iter->data, mod->name);
 				unneedModule(mod->name, mod, NULL); // Recover, unneed self and all already loaded dependencies
 				return false;
 			}
@@ -330,17 +330,17 @@ static bool needModule(char *name, GHashTable *parent)
 		}
 
 		// Call module initializer
-		logDebug("Initializing module %s", mod->name);
+		logMessage(LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
 		ModuleInitializer *init_func = getLibraryFunction(mod, "module_init");
 		if(!init_func()) {
-			logError("Failed to initialize module %s\n");
+			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s\n");
 			unneedModule(mod->name, mod, NULL);
 			return false;
 		}
 
 		mod->loaded = true; // finished loading
 
-		logInfo("Module %s loaded", mod->name);
+		logMessage(LOG_TYPE_INFO, "Module %s loaded", mod->name);
 	}
 
 	g_hash_table_insert(parent, mod->name, mod);
@@ -365,17 +365,17 @@ static void unneedModule(void *name, void *mod_p, void *data)
 	mod->rc--;
 
 	if(mod->rc > 0) {
-		logDebug("Module %s is still needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
+		logMessage(LOG_TYPE_DEBUG, "Module %s is still needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
 		return;
 	}
 
-	logInfo("Module %s is no longer needed, unloading...", mod->name);
+	logMessage(LOG_TYPE_INFO, "Module %s is no longer needed, unloading...", mod->name);
 
 	// Module is obsolete
 	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
 
 	// Call module finalizer
-	logDebug("Finalizing module %s", mod->name);
+	logMessage(LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
 	ModuleFinalizer *finalize_func = getLibraryFunction(mod, "module_finalize");
 	finalize_func();
 
@@ -383,7 +383,7 @@ static void unneedModule(void *name, void *mod_p, void *data)
 	unloadDynamicLibrary(mod);
 
 	if(!g_hash_table_remove(modules, mod->name)) {
-		logError("Failed to remove %s from modules table", mod->name);
+		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from modules table", mod->name);
 		exit(EXIT_FAILURE);
 	}
 
@@ -391,7 +391,7 @@ static void unneedModule(void *name, void *mod_p, void *data)
 
 	// free(mod->ver); TODO add version freeing as soon as its fetched somewhere
 
-	logInfo("Module %s unloaded", mod->name);
+	logMessage(LOG_TYPE_INFO, "Module %s unloaded", mod->name);
 
 	free(mod->name);
 	free(mod);

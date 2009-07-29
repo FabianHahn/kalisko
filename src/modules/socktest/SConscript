@@ -1,12 +1,3 @@
 Import('module')
-
-if not module.GetOption('clean'):
-	conf = Configure(module)
-
-	if conf.env['PLATFORM'] == 'win32':
-		# Module dependencies
-		conf.env.Append(LIBS = ['kalisko','socket'])
-		
-	module = conf.Finish()
 	
 module.SharedLibrary('../socktest', Glob('*.c'))

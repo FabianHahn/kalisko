@@ -23,6 +23,10 @@
 #undef API
 #endif
 
+#ifdef DLL_API_IMPORT
+#undef DLL_API_IMPORT
+#endif
+
 #ifdef WIN32
 #define API __declspec(dllexport)
 #else

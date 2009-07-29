@@ -48,15 +48,15 @@ API char *getExecutablePath()
 
 #ifdef WIN32
 	if((length = GetModuleFileName(NULL, execpath, BUF - 1)) == 0) {
-		logError("Failed to determine executable path");
+		logMessage(LOG_TYPE_ERROR, "Failed to determine executable path");
 		return NULL;
 	}
 #else
 	if((length = readlink("/proc/self/exe", execpath, BUF - 1)) < 0) {
-		logSystemError("Failed to determine executable path");
+		logMessage(LOG_TYPE_ERROR, "Failed to determine executable path: %s", strerror(errno));
 		return NULL;
 	} else if(length >= BUF) {
-		logWarning("Path buffer too small, truncating...");
+		logMessage(LOG_TYPE_WARNING, "Path buffer too small, truncating...");
 	}
 #endif
 	execpath[length] = '\0'; // Terminate string

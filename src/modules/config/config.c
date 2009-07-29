@@ -52,7 +52,7 @@ API GList *module_depends()
  */
 API Config *createConfig(char *name)
 {
-	Config *config = allocateObject(Config);
+	Config *config = ALLOCATE_OBJECT(Config);
 
 	config->name = strdup(name);
 	config->resource = NULL;
@@ -161,7 +161,7 @@ API GString *escapeConfigString(char *string)
  */
 API ConfigNodeValue *createConfigStringValue(char *string)
 {
-	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_STRING;
 	value->content.string = strdup(string);
 
@@ -176,7 +176,7 @@ API ConfigNodeValue *createConfigStringValue(char *string)
  */
 API ConfigNodeValue *createConfigIntegerValue(int integer)
 {
-	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_INTEGER;
 	value->content.integer = integer;
 
@@ -191,7 +191,7 @@ API ConfigNodeValue *createConfigIntegerValue(int integer)
  */
 API ConfigNodeValue *createConfigFloatNumberValue(double float_number)
 {
-	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_FLOAT_NUMBER;
 	value->content.float_number = float_number;
 
@@ -206,7 +206,7 @@ API ConfigNodeValue *createConfigFloatNumberValue(double float_number)
  */
 API ConfigNodeValue *createConfigListValue(GQueue *list)
 {
-	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_LIST;
 
 	if(list != NULL) {
@@ -226,7 +226,7 @@ API ConfigNodeValue *createConfigListValue(GQueue *list)
  */
 API ConfigNodeValue *createConfigArrayValue(GHashTable *array)
 {
-	ConfigNodeValue *value = allocateObject(ConfigNodeValue);
+	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
 	value->type = CONFIG_ARRAY;
 
 	if(array != NULL) {

@@ -38,7 +38,7 @@
 // module_ functions also need API
 API bool module_init()
 {
-	logInfo("This is a log message from the sample module. Hi there!");
+	LOG_INFO("This is a log message from the sample module. Hi there!");
 	HOOK_ADD(sample);
 
 	return true;

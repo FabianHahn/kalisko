@@ -54,25 +54,25 @@ static GList *logFiles = NULL;
 
 API bool module_init()
 {
-	Config *userConfig = getStandardConfig(CONFIG_USER);
+	Config *userConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_USER);
 	if(userConfig) {
 		parseLogFileConfig(userConfig);
 	} else {
-		logInfo("Could not parse the user configuration");
+		LOG_INFO("Could not parse the user configuration");
 	}
 
-	Config *overrideConfig = getStandardConfig(CONFIG_USER_OVERRIDE);
+	Config *overrideConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_USER_OVERRIDE);
 	if(overrideConfig) {
 		parseLogFileConfig(overrideConfig);
 	} else {
-		logInfo("Could not parse the user override configuration");
+		LOG_INFO("Could not parse the user override configuration");
 	}
 
-	Config *globalConfig = getStandardConfig(CONFIG_GLOBAL);
+	Config *globalConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_GLOBAL);
 	if(globalConfig) {
 		parseLogFileConfig(globalConfig);
 	} else {
-		logInfo("Could not parse the global configuration");
+		LOG_INFO("Could not parse the global configuration");
 	}
 
 	if(!HOOK_ATTACH(log, log)) {
@@ -105,14 +105,14 @@ API GList *module_depends()
  */
 API void parseLogFileConfig(Config *config)
 {
-	ConfigNodeValue *configFiles = getConfigPath(config, LOG_FILES_CONFIG_PATH);
+	ConfigNodeValue *configFiles = $(ConfigNodeValue *, config, getConfigPath)(config, LOG_FILES_CONFIG_PATH);
 	if(configFiles == NULL) {
-		logDebug("No log files configuration found in '%s'", config->name);
+		LOG_DEBUG("No log files configuration found in '%s'", config->name);
 		return;
 	}
 
 	if(configFiles->type != CONFIG_LIST) {
-		logWarning("Found log files configuration in '%s' but it is not a list and can not be processed.", config->name);
+		LOG_WARNING("Found log files configuration in '%s' but it is not a list and can not be processed.", config->name);
 		return;
 	}
 
@@ -126,18 +126,18 @@ API void parseLogFileConfig(Config *config)
 
 			// check for 'must have' values
 			if(filePath == NULL) {
-				logWarning("The filepath is not set in the '%s' configuration. Ignoring log file", config->name);
+				LOG_WARNING("The filepath is not set in the '%s' configuration. Ignoring log file", config->name);
 				continue;
 			} else if(logtype == NULL) {
-				logWarning("The logtype is not set in the '%s' configuration. Ignoring log file", config->name);
+				LOG_WARNING("The logtype is not set in the '%s' configuration. Ignoring log file", config->name);
 				continue;
 			}
 
 			if(filePath->type != CONFIG_STRING) {
-				logWarning("The filepath is not a string in '%s'. Ignoring log file", config->name);
+				LOG_WARNING("The filepath is not a string in '%s'. Ignoring log file", config->name);
 				continue;
 			} else if(logtype->type != CONFIG_STRING) {
-				logWarning("The logtype is not a string in '%s'. Ignoring log file", config->name);
+				LOG_WARNING("The logtype is not a string in '%s'. Ignoring log file", config->name);
 				continue;
 			}
 
@@ -145,21 +145,21 @@ API void parseLogFileConfig(Config *config)
 			LogType parsedLogtype;
 
 			if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_DEBUG) == 0) {
-				parsedLogtype = LOG_DEBUG;
+				parsedLogtype = LOG_TYPE_DEBUG;
 			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_INFO) == 0) {
-				parsedLogtype = LOG_INFO;
+				parsedLogtype = LOG_TYPE_INFO;
 			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_WARNING) == 0) {
-				parsedLogtype = LOG_WARNING;
+				parsedLogtype = LOG_TYPE_WARNING;
 			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_ERROR) == 0) {
-				parsedLogtype = LOG_ERROR;
+				parsedLogtype = LOG_TYPE_ERROR;
 			} else {
-				logWarning("Could not interpret logtype value in '%s': %s", config->name, logtype->content.string);
+				LOG_WARNING("Could not interpret logtype value in '%s': %s", config->name, logtype->content.string);
 				continue;
 			}
 
 			addLogFile(filePath->content.string, parsedLogtype);
 		} else {
-			logWarning("Found list of log file configurations but one of the elements is not an array. Config: %s", config->name);
+			LOG_WARNING("Found list of log file configurations but one of the elements is not an array. Config: %s", config->name);
 		}
 	}
 }
@@ -175,15 +175,15 @@ API void parseLogFileConfig(Config *config)
  */
 API LogFileConfig *addLogFile(char *filePath, LogType logType)
 {
-	LogFileConfig *logFile = allocateObject(LogFileConfig);
+	LogFileConfig *logFile = ALLOCATE_OBJECT(LogFileConfig);
 	logFile->filePath = strdup(filePath);
 	logFile->logType = logType;
 	logFile->ignoreNextLog = false;
 	logFile->fileAppend = NULL;
 
-	char *dirPath = getDirectoryPath(logFile->filePath);
+	char *dirPath = $$(char *, getDirectoryPath)(logFile->filePath);
 	if(!g_file_test(dirPath, G_FILE_TEST_IS_DIR | G_FILE_TEST_EXISTS) && !g_mkdir_with_parents(dirPath, LOGFILE_DIR_PERMISSION)) {
-		logError("Could not create parent directory for the log file '%s'.", logFile->filePath);
+		LOG_ERROR("Could not create parent directory for the log file '%s'.", logFile->filePath);
 		free(logFile);
 		free(dirPath);
 
@@ -215,7 +215,7 @@ HOOK_LISTENER(log)
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 
-	char *dateTime = getCurrentDateTimeString();
+	char *dateTime = $(char *, time_util, getCurrentDateTimeString)();
 
     for(GList *item = logFiles; item != NULL; item = item->next) {
     	LogFileConfig *logFile = item->data;
@@ -228,24 +228,24 @@ HOOK_LISTENER(log)
     	if(logFile->fileAppend == NULL) {
     		if((logFile->fileAppend = fopen(logFile->filePath, "a")) == NULL) {
     			logFile->ignoreNextLog = true;
-    			logWarning("Could not open logfile: %s", logFile->filePath);
+    			LOG_WARNING("Could not open logfile: %s", logFile->filePath);
 
     			continue;
     		}
     	}
 
     	switch(logFile->logType) {
-			case LOG_DEBUG:
-				if(type == LOG_DEBUG)
+			case LOG_TYPE_DEBUG:
+				if(type == LOG_TYPE_DEBUG)
 					fprintf(logFile->fileAppend, "%s DEBUG: %s\n", dateTime, message);
-			case LOG_INFO:
-				if(type == LOG_INFO)
+			case LOG_TYPE_INFO:
+				if(type == LOG_TYPE_INFO)
 					fprintf(logFile->fileAppend, "%s INFO: %s\n", dateTime, message);
-			case LOG_WARNING:
-				if(type == LOG_WARNING)
+			case LOG_TYPE_WARNING:
+				if(type == LOG_TYPE_WARNING)
 					fprintf(logFile->fileAppend, "%s WARNING: %s\n", dateTime, message);
-			case LOG_ERROR:
-				if(type == LOG_ERROR)
+			case LOG_TYPE_ERROR:
+				if(type == LOG_TYPE_ERROR)
 					fprintf(logFile->fileAppend, "%s ERROR: %s\n", dateTime, message);
     	}
     }

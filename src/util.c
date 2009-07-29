@@ -84,6 +84,8 @@ API char *getDirectoryPath(char *filePath)
 
 	char *path = g_strjoinv("/", parts); // Construct executable path
 
+    parts[i-1] = temp; // Restore last element so it gets freed as well
+
 	g_strfreev(parts);
 
 	return path;

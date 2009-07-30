@@ -30,7 +30,7 @@
 #include "util.h"
 #include "modules/config/config.h"
 #include "modules/config/path.h"
-#include "modules/config_standard/config_standard.h"
+#include "modules/config_standard/util.h"
 #include "modules/time_util/time_util.h"
 
 #include "api.h"
@@ -54,25 +54,56 @@ static GList *logFiles = NULL;
 
 API bool module_init()
 {
-	Config *userConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_USER);
-	if(userConfig) {
-		parseLogFileConfig(userConfig);
-	} else {
-		LOG_INFO("Could not parse the user configuration");
-	}
+	// Go trough the standard configuration files and search for log file settings
+	ConfigNodeValue *configFiles = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(LOG_FILES_CONFIG_PATH);
+	if(configFiles != NULL) {
+		if(configFiles->type != CONFIG_LIST) {
+			LOG_WARNING("Found log files configuration but it is not a list and can not be processed");
+			return false;
+		}
+		for(int i = 0; i < configFiles->content.list->length; i++) {
+			ConfigNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
+			if(fileConfig->type == CONFIG_ARRAY) {
+				GHashTable *settings = fileConfig->content.array;
+				ConfigNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
+				ConfigNodeValue *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
 
-	Config *overrideConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_USER_OVERRIDE);
-	if(overrideConfig) {
-		parseLogFileConfig(overrideConfig);
-	} else {
-		LOG_INFO("Could not parse the user override configuration");
-	}
+				if(filePath == NULL) {
+					LOG_WARNING("The filepath is not set in the configuration. Ignoring log file");
+					continue;
+				} else if(logType == NULL) {
+					LOG_WARNING("The logtype is not set in the configuration. Ignoring log file");
+					continue;
+				}
 
-	Config *globalConfig = $(Config *, config_standard, getStandardConfig)(CONFIG_GLOBAL);
-	if(globalConfig) {
-		parseLogFileConfig(globalConfig);
-	} else {
-		LOG_INFO("Could not parse the global configuration");
+				if(filePath->type != CONFIG_STRING) {
+					LOG_WARNING("The filepath is not a string. Ignoring log file");
+					continue;
+				} else if(logType->type != CONFIG_STRING) {
+					LOG_WARNING("The logtype is not a string. Ignoring log file");
+					continue;
+				}
+
+				// parse the string value to the needed type
+				LogType parsedLogtype;
+				if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_DEBUG) == 0) {
+					parsedLogtype = LOG_TYPE_DEBUG;
+				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_INFO) == 0) {
+					parsedLogtype = LOG_TYPE_INFO;
+				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_WARNING) == 0) {
+					parsedLogtype = LOG_TYPE_WARNING;
+				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_ERROR) == 0) {
+					parsedLogtype = LOG_TYPE_ERROR;
+				} else {
+					LOG_WARNING("Could not interpret logtype value: %s",logType->content.string);
+					continue;
+				}
+
+				addLogFile(filePath->content.string, parsedLogtype);
+			} else {
+				LOG_WARNING("Found list of log file configurations but one of the elements is not an array");
+			}
+		}
 	}
 
 	if(!HOOK_ATTACH(log, log)) {
@@ -99,72 +130,6 @@ API GList *module_depends()
 }
 
 /**
- * Parse a given Config for module specific settings and use them.
- *
- * @param config	The Configuration to use
- */
-API void parseLogFileConfig(Config *config)
-{
-	ConfigNodeValue *configFiles = $(ConfigNodeValue *, config, getConfigPath)(config, LOG_FILES_CONFIG_PATH);
-	if(configFiles == NULL) {
-		LOG_DEBUG("No log files configuration found in '%s'", config->name);
-		return;
-	}
-
-	if(configFiles->type != CONFIG_LIST) {
-		LOG_WARNING("Found log files configuration in '%s' but it is not a list and can not be processed.", config->name);
-		return;
-	}
-
-	for(int i = 0; i < configFiles->content.list->length; i++) {
-		ConfigNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
-
-		if(fileConfig->type == CONFIG_ARRAY) {
-			GHashTable *settings = fileConfig->content.array;
-			ConfigNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
-			ConfigNodeValue *logtype = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
-
-			// check for 'must have' values
-			if(filePath == NULL) {
-				LOG_WARNING("The filepath is not set in the '%s' configuration. Ignoring log file", config->name);
-				continue;
-			} else if(logtype == NULL) {
-				LOG_WARNING("The logtype is not set in the '%s' configuration. Ignoring log file", config->name);
-				continue;
-			}
-
-			if(filePath->type != CONFIG_STRING) {
-				LOG_WARNING("The filepath is not a string in '%s'. Ignoring log file", config->name);
-				continue;
-			} else if(logtype->type != CONFIG_STRING) {
-				LOG_WARNING("The logtype is not a string in '%s'. Ignoring log file", config->name);
-				continue;
-			}
-
-			// parse the string value to the needed types
-			LogType parsedLogtype;
-
-			if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_DEBUG) == 0) {
-				parsedLogtype = LOG_TYPE_DEBUG;
-			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_INFO) == 0) {
-				parsedLogtype = LOG_TYPE_INFO;
-			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_WARNING) == 0) {
-				parsedLogtype = LOG_TYPE_WARNING;
-			} else if(strcmp(logtype->content.string, LOG_FILES_LOGTYPE_ERROR) == 0) {
-				parsedLogtype = LOG_TYPE_ERROR;
-			} else {
-				LOG_WARNING("Could not interpret logtype value in '%s': %s", config->name, logtype->content.string);
-				continue;
-			}
-
-			addLogFile(filePath->content.string, parsedLogtype);
-		} else {
-			LOG_WARNING("Found list of log file configurations but one of the elements is not an array. Config: %s", config->name);
-		}
-	}
-}
-
-/**
  * Adds a new LogFileConfig to the configuration files list. This can be used to add programmatically
  * additional log files.
  *
@@ -181,11 +146,11 @@ API LogFileConfig *addLogFile(char *filePath, LogType logType)
 	logFile->ignoreNextLog = false;
 	logFile->fileAppend = NULL;
 
+	// checking the directory exists and if not try to create it
 	char *dirPath = $$(char *, getDirectoryPath)(logFile->filePath);
 	if(!g_file_test(dirPath, G_FILE_TEST_IS_DIR | G_FILE_TEST_EXISTS) && !g_mkdir_with_parents(dirPath, LOGFILE_DIR_PERMISSION)) {
 		LOG_ERROR("Could not create parent directory for the log file '%s'.", logFile->filePath);
-		free(logFile);
-		free(dirPath);
+		removeLogFile(logFile);
 
 		return NULL;
 	}
@@ -193,7 +158,6 @@ API LogFileConfig *addLogFile(char *filePath, LogType logType)
 	free(dirPath);
 
 	logFiles = g_list_append(logFiles, logFile);
-
 	return logFile;
 }
 
@@ -205,6 +169,10 @@ API LogFileConfig *addLogFile(char *filePath, LogType logType)
 API void removeLogFile(LogFileConfig *logFile)
 {
 	logFiles = g_list_remove(logFiles, logFile);
+
+	if(logFile->fileAppend) {
+		fclose(logFile->fileAppend);
+	}
 
 	free(logFile->filePath);
 	free(logFile);

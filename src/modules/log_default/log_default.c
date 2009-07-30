@@ -49,7 +49,7 @@ API GList *module_depends()
 }
 
 /**
- * Log message listener to write them into stdout.
+ * Log message listener to write them into stderr.
  */
 HOOK_LISTENER(log)
 {

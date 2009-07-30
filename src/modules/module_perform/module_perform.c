@@ -18,38 +18,55 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_FILE_LOG_FILE_H
-#define LOG_FILE_LOG_FILE_H
+#include <stdlib.h>
+#include "dll.h"
+#include "log.h"
+#include "module.h"
+#include "types.h"
+#include "modules/config/config.h"
+#include "modules/config_standard/util.h"
 
-#include <stdio.h>
+#include "api.h"
 
-/**
- * Configuration information for a single log file.
- */
-typedef struct {
-	/**
-	 * Location of the log file.
-	 */
-	char *filePath;
+#define CONFIG_PATH "loadModules"
 
-	/**
-	 * The lowest log level to log into the log file.
-	 */
-	LogType logType;
+API bool module_init()
+{
+	ConfigNodeValue *modules = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(CONFIG_PATH);
+	if(modules != NULL) {
+		if(modules->type != CONFIG_LIST) {
+			LOG_WARNING("In standard configurations '%s' must be a list", CONFIG_PATH);
+			return false;
+		}
 
-	/**
-	 * FILE descriptor to append new lines.
-	 */
-	FILE *fileAppend;
+		for(int moduleNameIndex = 0; moduleNameIndex < modules->content.list->length; moduleNameIndex++) {
+			ConfigNodeValue *moduleName = g_queue_peek_nth(modules->content.list, moduleNameIndex);
 
-	/**
-	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
-	 * loops in case of errors.
-	 */
-	bool ignoreNextLog;
-} LogFileConfig;
+			if(moduleName->type != CONFIG_STRING) {
+				LOG_WARNING("Each value of loadModules must be a string value");
+				continue;
+			}
 
-API LogFileConfig *addLogFile(char *filePath, LogType logType);
-API void removeLogFile(LogFileConfig *logFile);
+			if(!$$(bool, requestModule)(moduleName->content.string)) {
+				LOG_WARNING("Module Perform could not request '%s' module", moduleName->content.string);
+			} else {
+				LOG_DEBUG("Module Perform requested successfully '%s'", moduleName->content.string);
+			}
+		}
+	}
 
-#endif
+	return true;
+}
+
+API void module_finalize()
+{
+}
+
+API GList *module_depends()
+{
+	GList *list = NULL;
+	list = g_list_append(list, "config");
+	list = g_list_append(list, "config_standard");
+
+	return list;
+}

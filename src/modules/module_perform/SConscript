@@ -16,5 +16,5 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
-	
-module.SharedLibrary('../socktest', Glob('*.c'))
+
+module.SharedLibrary('../module_perform', Glob('*.c'))

@@ -18,38 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_FILE_LOG_FILE_H
-#define LOG_FILE_LOG_FILE_H
 
-#include <stdio.h>
+#ifndef CONFIG_STANDARD_UTIL_H
+#define CONFIG_STANDARD_UTIL_H
 
-/**
- * Configuration information for a single log file.
- */
-typedef struct {
-	/**
-	 * Location of the log file.
-	 */
-	char *filePath;
-
-	/**
-	 * The lowest log level to log into the log file.
-	 */
-	LogType logType;
-
-	/**
-	 * FILE descriptor to append new lines.
-	 */
-	FILE *fileAppend;
-
-	/**
-	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
-	 * loops in case of errors.
-	 */
-	bool ignoreNextLog;
-} LogFileConfig;
-
-API LogFileConfig *addLogFile(char *filePath, LogType logType);
-API void removeLogFile(LogFileConfig *logFile);
+API ConfigNodeValue *getStandardConfigPathValue(char *path);
 
 #endif

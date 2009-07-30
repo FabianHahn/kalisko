@@ -17,39 +17,54 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <glib.h>
+#include "dll.h"
+#include "types.h"
+#include "log.h"
+#include "modules/config/config.h"
+#include "modules/config/path.h"
 
-#ifndef LOG_FILE_LOG_FILE_H
-#define LOG_FILE_LOG_FILE_H
-
-#include <stdio.h>
+#include "api.h"
+#include "config_standard.h"
+#include "util.h"
 
 /**
- * Configuration information for a single log file.
+ * Searches for the given path trough the standard configuration files
+ * consider the weighting of the different configurations. The first found value
+ * will be returned otherwise NULL.
+ *
+ * Do not free the returned value. This is handled by the config_standard module.
+ *
+ * @param	path			The path to search
+ * @return	The first found value for given path or NULL
  */
-typedef struct {
-	/**
-	 * Location of the log file.
-	 */
-	char *filePath;
+API ConfigNodeValue *getStandardConfigPathValue(char *path)
+{
+	ConfigNodeValue *value = NULL;
 
-	/**
-	 * The lowest log level to log into the log file.
-	 */
-	LogType logType;
+	Config *overrideConfig = getStandardConfig(CONFIG_USER_OVERRIDE);
+	if(overrideConfig) {
+		value = $(ConfigNodeValue *, config, getConfigPath)(overrideConfig, path);
+		if(value) {
+			return value;
+		}
+	}
 
-	/**
-	 * FILE descriptor to append new lines.
-	 */
-	FILE *fileAppend;
+	Config *userConfig = getStandardConfig(CONFIG_USER);
+	if(userConfig) {
+		value = $(ConfigNodeValue *, config, getConfigPath)(userConfig, path);
+		if(value) {
+			return value;
+		}
+	}
 
-	/**
-	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
-	 * loops in case of errors.
-	 */
-	bool ignoreNextLog;
-} LogFileConfig;
+	Config *globalConfig = getStandardConfig(CONFIG_GLOBAL);
+	if(globalConfig) {
+		value = $(ConfigNodeValue *, config, getConfigPath)(globalConfig, path);
+		if(value) {
+			return value;
+		}
+	}
 
-API LogFileConfig *addLogFile(char *filePath, LogType logType);
-API void removeLogFile(LogFileConfig *logFile);
-
-#endif
+	return NULL;
+}

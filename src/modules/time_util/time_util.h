@@ -19,8 +19,8 @@
  */
 
 
-#ifndef TIME_UTIL_H
-#define TIME_UTIL_H
+#ifndef TIME_UTIL_TIME_UTIL_H
+#define TIME_UTIL_TIME_UTIL_H
 
 #define TIME_STRING_BUFFER_SIZE 18
 

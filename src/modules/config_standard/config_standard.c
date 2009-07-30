@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include "dll.h"
 #include "hooks.h"
-#include "util.h"
+#include "../../util.h"
 #include "modules/config/config.h"
 #include "modules/config/path.h"
 #include "modules/config/write.h"
@@ -162,14 +162,14 @@ static Config *getUserOverrideConfig()
 		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
 
 		Config *globalConfig = $(Config *, config, createConfig)(USER_OVERRIDE_CONFIG_FILE_NAME);
-		$(void, config, writeConfigFile)(userConfigFilePath, globalConfig);
+		$(void, config, writeConfigFile)(userOverrideConfigFilePath, globalConfig);
 
-		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
+		LOG_INFO("Created new configuration file: %s", userOverrideConfigFilePath);
 
 		free(dirPath);
 		return globalConfig;
 	} else {
-		return $(Config *, config, parseConfigFile)(userConfigFilePath);
+		return $(Config *, config, parseConfigFile)(userOverrideConfigFilePath);
 	}
 }
 

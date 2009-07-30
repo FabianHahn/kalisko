@@ -371,13 +371,13 @@ static void unneedModule(void *name, void *mod_p, void *data)
 
 	logMessage(LOG_TYPE_INFO, "Module %s is no longer needed, unloading...", mod->name);
 
-	// Module is obsolete
-	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
-
 	// Call module finalizer
 	logMessage(LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
 	ModuleFinalizer *finalize_func = getLibraryFunction(mod, "module_finalize");
 	finalize_func();
+
+	// Module is obsolete
+	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
 
 	// Unload dynamic library
 	unloadDynamicLibrary(mod);

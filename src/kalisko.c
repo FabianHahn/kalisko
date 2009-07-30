@@ -33,8 +33,6 @@ int main(int argc, char **argv)
 
 	initModules();
 
-	//LÖSUNG:
-	//requestModule("time_util");
 	requestModule("log_default");
 	requestModule("socktest");
 	requestModule("module_perform");

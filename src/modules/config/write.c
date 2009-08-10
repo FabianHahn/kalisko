@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "dll.h"
@@ -114,7 +115,8 @@ static void dumpConfig(Config *config, ConfigWriter *writer)
 	context->writer = writer;
 	context->level = 0;
 
-	dumpConfigNodeValue(config->root, context);
+	assert(config->root->type == CONFIG_ARRAY);
+	g_hash_table_foreach(config->root->content.array, &dumpConfigNode, context);
 
 	free(context);
 }

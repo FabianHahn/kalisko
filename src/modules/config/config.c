@@ -32,7 +32,7 @@
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides an API to parse, create, edit and write config files");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_NODEPS;
 

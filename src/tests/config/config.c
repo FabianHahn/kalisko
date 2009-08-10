@@ -53,6 +53,13 @@ static char *path_split_solution[] = {"this", "is a \"difficult\"", "path\\to", 
 static char _configStringRead(void *config);
 static void _configStringUnread(void *config, char c);
 
+MODULE_NAME("test_config");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Test suite for the config module");
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+
 TEST_SUITE_BEGIN(config)
 	TEST_CASE_ADD(lexer);
 	TEST_CASE_ADD(parser);
@@ -188,11 +195,6 @@ TEST_CASE(path_split)
 	g_ptr_array_free(array, TRUE);
 
 	TEST_PASS;
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "config");
 }
 
 /**

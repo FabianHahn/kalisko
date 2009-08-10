@@ -21,6 +21,7 @@
 #ifndef TEST_H
 #define TEST_H
 
+#include "module.h"
 #include "types.h"
 
 API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...);
@@ -30,8 +31,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  *
  * @param SUITE		the name of the test suite
  */
-#define TEST_SUITE_BEGIN(SUITE) API void module_finalize() { } \
-	API bool module_init() \
+#define TEST_SUITE_BEGIN(SUITE) MODULE_INIT \
 	{ \
 		char *testsuite = #SUITE;
 

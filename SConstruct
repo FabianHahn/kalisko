@@ -16,6 +16,13 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import os
+import re
+
+# Fetch current svn revision
+cmd = os.popen('svnversion -n')
+svnversion = cmd.read()
+matches = re.search('^(\d+)', svnversion)
+svnrevision = matches.group(0)
 
 # Build exclude list
 exclude = []
@@ -27,8 +34,8 @@ for key, value in ARGLIST:
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
-coretpl = Environment(CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
-modtpl = Environment(CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
+coretpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+modtpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 # Add glib support
 coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')

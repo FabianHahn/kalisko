@@ -52,7 +52,14 @@ static void finalize();
 
 static GList *logFiles = NULL;
 
-API bool module_init()
+MODULE_NAME("log_file");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0), MODULE_DEPENDENCY("time_util", 0, 1, 0));
+
+MODULE_INIT
 {
 	// Go trough the standard configuration files and search for log file settings
 	ConfigNodeValue *configFiles = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(LOG_FILES_CONFIG_PATH);
@@ -114,19 +121,9 @@ API bool module_init()
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 	finalize();
-}
-
-API GList *module_depends()
-{
-	GList *modules = NULL;
-	modules = g_list_append(modules, "config");
-	modules = g_list_append(modules, "config_standard");
-	modules = g_list_append(modules, "time_util");
-
-	return modules;
 }
 
 /**

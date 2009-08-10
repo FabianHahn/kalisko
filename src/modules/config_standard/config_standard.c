@@ -51,7 +51,14 @@ static Config *getUserConfig();
 static Config *getUserOverrideConfig();
 static void finalize();
 
-API bool module_init()
+MODULE_NAME("config_standard");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("The config_standard module provides access to standard config files that can override each other");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+
+MODULE_INIT
 {
 	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
 	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
@@ -65,18 +72,13 @@ API bool module_init()
 	}
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 	if(userOverrideConfig) {
 		saveStandardConfig(CONFIG_USER_OVERRIDE);
 	}
 
 	finalize();
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "config");
 }
 
 /**

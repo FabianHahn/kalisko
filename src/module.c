@@ -50,7 +50,7 @@ static GHashTable *modules;
 static GHashTable *root_set;
 static char *modpath;
 
-static bool needModule(char *name, GHashTable *parent);
+static bool needModule(char *name, Version *needver, GHashTable *parent);
 static void unneedModule(void *name_p, void *mod_p, void *data);
 static gboolean unneedModuleWrapper(void *name_p, void *mod_p, void *data);
 static void *getLibraryFunction(Module *mod, char *funcname);
@@ -116,7 +116,7 @@ API bool requestModule(char *name)
 
 	logMessage(LOG_TYPE_INFO, "Requesting module %s", name);
 
-	return needModule(name, root_set);
+	return needModule(name, NULL, root_set);
 }
 
 /**
@@ -241,19 +241,46 @@ static void unloadDynamicLibrary(Module *mod)
 /**
  * Tells a module it's needed or load it if it isn't loaded yet
  *
- * @param name		the module's name
- * @param parent	the module's parent tree
- * @result			true if successful, false on error
+ * @param name			the module's name
+ * @param needversion	the needed version of the module
+ * @param parent		the module's parent tree
+ * @result				true if successful, false on error
  */
-static bool needModule(char *name, GHashTable *parent)
+static bool needModule(char *name, Version *needversion, GHashTable *parent)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
 	if(mod != NULL) {
+		if(!mod->loaded) {
+			logMessage(LOG_TYPE_ERROR, "Circular dependency on module %s", mod->name);
+			return false;
+		}
+
+		// Version checking
+		if(needversion != NULL) { // NULL would mean that any version is okay
+			if(compareVersions(needversion, mod->bcversion) < 0) {
+				GString *ver = dumpVersion(mod->version);
+				GString *bcver = dumpVersion(mod->bcversion);
+				GString *needver = dumpVersion(needversion);
+				logMessage(LOG_TYPE_ERROR, "Loaded module %s %s is too new to satisfy dependency on version %s, only backwards compatible down to %s", mod->name, ver->str, needver->str, bcver->str);
+				g_string_free(ver, TRUE);
+				g_string_free(bcver, TRUE);
+				g_string_free(needver, TRUE);
+				return false;
+			} else if(compareVersions(needversion, mod->version) > 0) {
+				GString *ver = dumpVersion(mod->version);
+				GString *needver = dumpVersion(needversion);
+				logMessage(LOG_TYPE_ERROR, "Loaded module %s %s is too old to satisfy dependency on version %s", mod->name, ver->str, needver->str);
+				g_string_free(ver, TRUE);
+				g_string_free(needver, TRUE);
+				return false;
+			}
+		}
+
 		mod->rc++;
 		logMessage(LOG_TYPE_DEBUG, "Module %s is now needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
 	} else {
-		logMessage(LOG_TYPE_INFO, "Unloaded module %s needed, loading...", name);
+		logMessage(LOG_TYPE_DEBUG, "Unloaded module %s needed, loading...", name);
 
 		mod = allocateMemory(sizeof(Module));
 
@@ -270,6 +297,7 @@ static bool needModule(char *name, GHashTable *parent)
 		mod->dlname = libname->str;
 		g_string_free(libname, FALSE);
 
+		// Insert the newly created module into the module table
 		g_hash_table_insert(modules, mod->name, mod);
 
 		// Lazy-load dynamic library
@@ -281,9 +309,81 @@ static bool needModule(char *name, GHashTable *parent)
 			return false;
 		}
 
+		ModuleDescriptor *descriptor_func;
+		ModuleVersioner *version_func;
+		ModuleDepender *depender_func;
+		ModuleInitializer *init_func;
+		bool meta_error = false;
+		char *meta_author;
+		char *meta_description;
+		Version *meta_version;
+		Version *meta_bcversion;
+		ModuleDependency *meta_dependencies;
+
+		if((descriptor_func = getLibraryFunction(mod, MODULE_NAME_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			// Check if meta name matches module name
+			meta_error = meta_error && strcmp(mod->name, descriptor_func());
+		}
+
+		// Fetch module author
+		if((descriptor_func = getLibraryFunction(mod, MODULE_AUTHOR_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			meta_author = descriptor_func();
+		}
+
+		// Fetch module description
+		if((descriptor_func = getLibraryFunction(mod, MODULE_DESCRIPTION_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			meta_description = descriptor_func();
+		}
+
+		// Fetch module version
+		if((version_func = getLibraryFunction(mod, MODULE_VERSION_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			meta_version = version_func();
+		}
+
+		// Fetch module bcversion
+		if((version_func = getLibraryFunction(mod, MODULE_BCVERSION_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			meta_bcversion = version_func();
+		}
+
+		// Version checking
+		if(needversion != NULL && meta_version != NULL && meta_bcversion != NULL) { // NULL would mean that any version is okay
+			if(compareVersions(needversion, meta_bcversion) < 0) {
+				GString *ver = dumpVersion(meta_version);
+				GString *bcver = dumpVersion(meta_bcversion);
+				GString *needver = dumpVersion(needversion);
+				logMessage(LOG_TYPE_ERROR, "Available module %s %s is too new to satisfy dependency on version %s (only backwards compatible down to %s), aborting load", mod->name, ver->str, needver->str, bcver->str);
+				g_string_free(ver, TRUE);
+				g_string_free(bcver, TRUE);
+				g_string_free(needver, TRUE);
+				meta_error = true;
+			} else if(compareVersions(needversion, meta_version) > 0) {
+				GString *ver = dumpVersion(meta_version);
+				GString *needver = dumpVersion(needversion);
+				logMessage(LOG_TYPE_ERROR, "Available module %s %s is too old to satisfy dependency on version %s, aborting load", mod->name, ver->str, needver->str);
+				g_string_free(ver, TRUE);
+				g_string_free(needver, TRUE);
+				meta_error = true;
+			}
+		}
+
 		// Fetch dependencies
-		ModuleDepender *depends_func;
-		if((depends_func = getLibraryFunction(mod, "module_depends")) == NULL) {
+		if((depender_func = getLibraryFunction(mod, MODULE_DEPENDS_FUNC)) == NULL) {
+			meta_error = true;
+		} else {
+			meta_dependencies = depender_func();
+		}
+
+		if(meta_error) {
 			g_hash_table_remove(modules, mod->name);
 			free(mod->name);
 			free(mod->dlname);
@@ -291,28 +391,30 @@ static bool needModule(char *name, GHashTable *parent)
 			return false;
 		}
 
-		GList *deplist = depends_func();
+		mod->author = strdup(meta_author);
+		mod->description = strdup(meta_description);
+		mod->version = copyVersion(meta_version);
+		mod->bcversion = copyVersion(meta_bcversion);
+
+		GString *ver = dumpVersion(mod->version);
+		GString *bcver = dumpVersion(mod->bcversion);
+		logMessage(LOG_TYPE_INFO, "Loading module %s %s by %s, compatible >= %s", mod->name, ver->str, mod->author, bcver->str);
+		g_string_free(ver, TRUE);
+		g_string_free(bcver, TRUE);
 
 		// Load dependencies
-		for(GList *iter = deplist; iter != NULL; iter = iter->next) {
-			logMessage(LOG_TYPE_DEBUG, "Module %s depends on %s, needing...", mod->name, iter->data);
-
-			Module *depmod = g_hash_table_lookup(modules, iter->data);
-
-			if(depmod != NULL && !depmod->loaded) {
-				logMessage(LOG_TYPE_ERROR, "Circular dependency on module %s, requested by %s", iter->data, mod->name);
-				unneedModule(mod->name, mod, NULL); // Recover, unneed self and all already loaded dependencies
-				return false;
-			}
+		for(ModuleDependency *dep = meta_dependencies; dep->name != NULL; dep++) {
+			GString *depver = dumpVersion(&dep->version);
+			logMessage(LOG_TYPE_DEBUG, "Module %s depends on %s %s, needing...", mod->name, dep->name, depver->str);
+			g_string_free(depver, TRUE);
 
 			// Need the dependency
-			if(!needModule(iter->data, mod->dependencies)) { // Propagate down circular recovery
+			if(!needModule(dep->name, &dep->version, mod->dependencies)) {
+				// Propagate down loading failure
 				unneedModule(mod->name, mod, NULL);
 				return false;
 			}
 		}
-
-		g_list_free(deplist);
 
 		// Unload lazy loaded dynamic library
 		unloadDynamicLibrary(mod);
@@ -323,15 +425,14 @@ static bool needModule(char *name, GHashTable *parent)
 			return false;
 		}
 
-		// Check library functions
-		if(getLibraryFunction(mod, "module_init") == NULL || getLibraryFunction(mod, "module_finalize") == NULL) {
+		// Initialize module
+		if((init_func = getLibraryFunction(mod, MODULE_INITIALIZER_FUNC)) == NULL) {
 			unneedModule(mod->name, mod, NULL);
 			return false;
 		}
 
 		// Call module initializer
 		logMessage(LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
-		ModuleInitializer *init_func = getLibraryFunction(mod, "module_init");
 		if(!init_func()) {
 			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s\n");
 			unneedModule(mod->name, mod, NULL);
@@ -369,14 +470,19 @@ static void unneedModule(void *name, void *mod_p, void *data)
 		return;
 	}
 
-	logMessage(LOG_TYPE_INFO, "Module %s is no longer needed, unloading...", mod->name);
+	logMessage(LOG_TYPE_DEBUG, "Module %s is no longer needed, unloading...", mod->name);
 
-	// Call module finalizer
-	logMessage(LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
-	ModuleFinalizer *finalize_func = getLibraryFunction(mod, "module_finalize");
-	finalize_func();
+	if(mod->loaded) { // Only finalize modules that are fully loaded
+		// Call module finalizer
+		logMessage(LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
+		ModuleFinalizer *finalize_func;
 
-	// Module is obsolete
+		if((finalize_func = getLibraryFunction(mod, MODULE_FINALIZER_FUNC)) != NULL) {
+			finalize_func(); // Call finalizer if it exists
+		}
+	}
+
+	// Tell our dependencies they are no longer needed
 	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
 
 	// Unload dynamic library
@@ -389,7 +495,10 @@ static void unneedModule(void *name, void *mod_p, void *data)
 
 	g_hash_table_destroy(mod->dependencies);
 
-	// free(mod->ver); TODO add version freeing as soon as its fetched somewhere
+	free(mod->author);
+	free(mod->description);
+	free(mod->version);
+	free(mod->bcversion);
 
 	logMessage(LOG_TYPE_INFO, "Module %s unloaded", mod->name);
 

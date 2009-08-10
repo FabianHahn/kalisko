@@ -29,14 +29,21 @@
 #include "lang_python.h"
 
 
-API bool module_init()
+MODULE_NAME("lang_python");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("This module provides access to an interpreter for the Python scripting language");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_NODEPS;
+
+MODULE_INIT
 {
 	Py_Initialize();
 	PyEval_InitThreads();
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 	HOOK_DEL(python_run_code);
 
@@ -44,11 +51,6 @@ API void module_finalize()
 	{
 		Py_Finalize();
 	}
-}
-
-API GList *module_depends()
-{
-	return NULL;
 }
 
 API void python_interpreter_init(PythonInterpreter *interpreter)

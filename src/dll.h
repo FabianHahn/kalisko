@@ -40,3 +40,5 @@
 #define $(TYPE, MODULE, FUNC) FUNC
 #define API
 #endif
+
+#include "module.h"

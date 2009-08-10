@@ -32,21 +32,23 @@ static void testSocket();
 #define BUF 4096
 #define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
 
-API bool module_init()
+MODULE_NAME("socktest");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("This module shows the socket API in action");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 0));
+
+MODULE_INIT
 {
 	testSocket();
 
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "socket");
 }
 
 static void testSocket()

@@ -30,7 +30,14 @@
 
 #define CONFIG_PATH "loadModules"
 
-API bool module_init()
+MODULE_NAME("module_perform");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
+
+MODULE_INIT
 {
 	ConfigNodeValue *modules = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(CONFIG_PATH);
 	if(modules != NULL) {
@@ -58,15 +65,6 @@ API bool module_init()
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
-}
-
-API GList *module_depends()
-{
-	GList *list = NULL;
-	list = g_list_append(list, "config");
-	list = g_list_append(list, "config_standard");
-
-	return list;
 }

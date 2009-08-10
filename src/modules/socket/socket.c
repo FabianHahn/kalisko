@@ -45,7 +45,14 @@
 #include "api.h"
 #include "socket.h"
 
-API bool module_init()
+MODULE_NAME("socket");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_NODEPS;
+
+MODULE_INIT
 {
 #ifdef WIN32
     WSADATA wsaData;
@@ -59,16 +66,11 @@ API bool module_init()
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 #ifdef WIN32
 	WSACleanup();
 #endif
-}
-
-API GList *module_depends()
-{
-	return NULL;
 }
 
 /**

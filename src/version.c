@@ -18,7 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <glib.h>
+#include <memory.h>
 #include "api.h"
 #include "version.h"
 #include "memory_alloc.h"
@@ -41,6 +42,18 @@ API Version *createVersion(int major, int minor, int patch, int revision)
 	ver->revision = revision;
 
 	return ver;
+}
+
+/**
+ * Creates a copy of a version
+ *
+ * @param from		the version to create a copy from
+ * @result			the created copy version
+ */
+API Version *copyVersion(Version *from)
+{
+	Version *version = allocateMemory(sizeof(Version));
+	return memcpy(version, from, sizeof(Version));
 }
 
 /**
@@ -79,4 +92,17 @@ API int compareVersions(Version *a, Version *b)
 	} else {
 		return a->major - b->major;
 	}
+}
+
+/**
+ * Returns the string representation of a version
+ *
+ * @param version	the version to dump
+ * @result			the string representation of the version
+ */
+API GString *dumpVersion(Version *version)
+{
+	GString *string = g_string_new("");
+	g_string_append_printf(string, "%d.%d.%d-%d", version->major, version->minor, version->patch, version->revision);
+	return string;
 }

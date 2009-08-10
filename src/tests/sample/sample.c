@@ -28,6 +28,13 @@
 
 TEST_CASE(add);
 
+MODULE_NAME("test_sample");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Test suite for the sample module");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("sample", 0, 1, 0));
+
 TEST_SUITE_BEGIN(sample)
 	TEST_CASE_ADD(add);
 TEST_SUITE_END
@@ -37,9 +44,4 @@ TEST_CASE(add)
 	TEST_ASSERT($(int, sample, add)(1, 1) == 2);
 
 	TEST_PASS;
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "sample");
 }

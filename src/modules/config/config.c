@@ -29,19 +29,21 @@
 #include "api.h"
 #include "config.h"
 
-API bool module_init()
+MODULE_NAME("config");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("The config module provides an API to parse, create, edit and write config files");
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_NODEPS;
+
+MODULE_INIT
 {
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 
-}
-
-API GList *module_depends()
-{
-	return NULL;
 }
 
 /**

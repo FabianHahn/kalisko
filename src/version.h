@@ -22,6 +22,8 @@
 #ifndef VERSION_H
 #define VERSION_H
 
+#include <glib.h>
+
 typedef struct {
 	int major;
 	int minor;
@@ -30,7 +32,9 @@ typedef struct {
 } Version;
 
 API Version *createVersion(int major, int minor, int patch, int revision);
+API Version *copyVersion(Version *from);
 API void freeVersion(Version *ver);
 API int compareVersions(Version *a, Version *b);
+API GString *dumpVersion(Version *version);
 
 #endif

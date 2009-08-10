@@ -25,11 +25,15 @@
 #include <glib.h>
 #include "version.h"
 #include "types.h"
+#include "memory_alloc.h"
 
 typedef struct {
 	char *name;
 	char *dlname;
-	Version *ver;
+	char *author;
+	char *description;
+	Version *version;
+	Version *bcversion;
 	void *handle;
 	int rc;
 	GHashTable *dependencies;
@@ -37,13 +41,48 @@ typedef struct {
 	bool skip_reload;
 } Module;
 
+typedef struct {
+	char *name;
+	Version version;
+} ModuleDependency;
+
 typedef bool (ModuleInitializer)();
 typedef void (ModuleFinalizer)();
-typedef GList *(ModuleDepender)();
+typedef Version *(ModuleVersioner)();
+typedef ModuleDependency *(ModuleDepender)();
+typedef char *(ModuleDescriptor)();
 
 API void initModules();
 API void freeModules();
 API bool requestModule(char *name);
 API bool revokeModule(char *name);
+
+#define MODULE_NAME_FUNC "module_name"
+#define MODULE_AUTHOR_FUNC "module_author"
+#define MODULE_DESCRIPTION_FUNC "module_description"
+#define MODULE_VERSION_FUNC "module_version"
+#define MODULE_BCVERSION_FUNC "module_bcversion"
+#define MODULE_DEPENDS_FUNC "module_depends"
+
+#define MODULE_INITIALIZER_FUNC "module_init"
+#define MODULE_FINALIZER_FUNC "module_finalize"
+
+#define MODULE_NAME(NAME) API char *module_name() { return NAME; }
+#define MODULE_AUTHOR(AUTHOR) API char *module_author() { return AUTHOR; }
+#define MODULE_DESCRIPTION(DESC) API char *module_description() { return DESC; }
+#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, SVN_REVISION}; \
+	API Version *module_version() { return &_module_version; }
+#define MODULE_BCVERSION(MAJOR, MINOR, PATCH) static Version _module_bcversion = {MAJOR, MINOR, PATCH, 0}; \
+	API Version *module_bcversion() { return &_module_bcversion; }
+
+#define MODULE_NODEPS static ModuleDependency _module_dependencies[] = {{NULL,{-1,-1,-1,-1}}}; \
+	API ModuleDependency *module_depends() { return _module_dependencies; }
+#define MODULE_DEPENDS(...) static ModuleDependency _module_dependencies[] = {__VA_ARGS__, {NULL,{-1,-1,-1,-1}}}; \
+	API ModuleDependency *module_depends() { return _module_dependencies; }
+
+#define MODULE_DEPENDENCY(NAME, MAJOR, MINOR, PATCH) {NAME, {MAJOR, MINOR, PATCH, 0}}
+
+#define MODULE_INIT API bool module_init()
+#define MODULE_FINALIZE API void module_finalize()
 
 #endif

@@ -28,18 +28,21 @@
 #include "api.h"
 #include "modules/time_util/time_util.h"
 
-API bool module_init()
+MODULE_NAME("time_util");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Utility module that provides frequently used date and time functions");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_NODEPS;
+
+MODULE_INIT
 {
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
-}
 
-API GList *module_depends()
-{
-	return NULL;
 }
 
 /**

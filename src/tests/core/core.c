@@ -36,6 +36,13 @@ HOOK_LISTENER(add_count_times);
 
 static int counter = 0;
 
+MODULE_NAME("test_core");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Test suite for the Kalisko core");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_NODEPS;
+
 TEST_SUITE_BEGIN(core)
 	TEST_CASE_ADD(version_compare);
 	TEST_CASE_ADD(hooks);
@@ -104,9 +111,4 @@ HOOK_LISTENER(add_count_times)
 	int factor = *(int *) custom_data;
 
 	counter += count * factor;
-}
-
-API GList *module_depends()
-{
-	return NULL;
 }

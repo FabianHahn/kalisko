@@ -33,10 +33,14 @@
 // Include our own header only after api.h
 #include "sample.h"
 
-// Every function that could be called from another module must have an API marker
+MODULE_NAME("sample");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("This is a sample module intended to show new module developers how the Kalisko module system works.");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_NODEPS;
 
-// module_ functions also need API
-API bool module_init()
+MODULE_INIT
 {
 	LOG_INFO("This is a log message from the sample module. Hi there!");
 	HOOK_ADD(sample);
@@ -44,16 +48,12 @@ API bool module_init()
 	return true;
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 	HOOK_DEL(sample);
 }
 
-API GList *module_depends()
-{
-	return NULL;
-}
-
+// Every function that could be called from another module must have an API marker
 // This is a function that's exported to the global scope, hence it needs the API marker
 API int add(int a, int b)
 {

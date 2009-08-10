@@ -31,21 +31,23 @@
 #include "log.h"
 #include "api.h"
 
+MODULE_NAME("log_default");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Kalisko's default log provider that's always loaded initially");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("time_util", 0, 1, 0));
+
 HOOK_LISTENER(log);
 
-API bool module_init()
+MODULE_INIT
 {
 	return HOOK_ATTACH(log, log);
 }
 
-API void module_finalize()
+MODULE_FINALIZE
 {
 	HOOK_DETACH(log, log);
-}
-
-API GList *module_depends()
-{
-	return g_list_append(NULL, "time_util");
 }
 
 /**

@@ -28,21 +28,23 @@
 
 #include "api.h"
 
-#define CONFIG_PATH "loadModules"
+#define PERFORM_CONFIG_PATH "kalisko/perform"
 
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
 
 MODULE_INIT
 {
-	ConfigNodeValue *modules = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(CONFIG_PATH);
+	LOG_INFO("Requesting perform modules");
+
+	ConfigNodeValue *modules = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(PERFORM_CONFIG_PATH);
 	if(modules != NULL) {
 		if(modules->type != CONFIG_LIST) {
-			LOG_WARNING("In standard configurations '%s' must be a list", CONFIG_PATH);
+			LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
 			return false;
 		}
 
@@ -50,14 +52,14 @@ MODULE_INIT
 			ConfigNodeValue *moduleName = g_queue_peek_nth(modules->content.list, moduleNameIndex);
 
 			if(moduleName->type != CONFIG_STRING) {
-				LOG_WARNING("Each value of loadModules must be a string value");
+				LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
 				continue;
 			}
 
 			if(!$$(bool, requestModule)(moduleName->content.string)) {
-				LOG_WARNING("Module Perform could not request '%s' module", moduleName->content.string);
+				LOG_ERROR("Module perform failed to request module %s", moduleName->content.string);
 			} else {
-				LOG_DEBUG("Module Perform requested successfully '%s'", moduleName->content.string);
+				LOG_DEBUG("Module perform successfully requested %s", moduleName->content.string);
 			}
 		}
 	}

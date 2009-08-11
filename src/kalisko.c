@@ -33,7 +33,6 @@ int main(int argc, char **argv)
 	initModules();
 
 	requestModule("log_default");
-	requestModule("socktest");
 	requestModule("module_perform");
 
 	freeModules();

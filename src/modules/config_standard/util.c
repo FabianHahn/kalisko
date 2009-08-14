@@ -28,6 +28,8 @@
 #include "config_standard.h"
 #include "util.h"
 
+#define KALISKO_DIR_NAME "kalisko"
+
 /**
  * Searches for the given path trough the standard configuration files
  * consider the weighting of the different configurations. The first found value
@@ -67,4 +69,35 @@ API ConfigNodeValue *getStandardConfigPathValue(char *path)
 	}
 
 	return NULL;
+}
+
+/**
+ * Returns the path to the Kalisko specific system wide configuration directory. This directory must not exist
+ * yet.
+ *
+ * @return	The Kalisko specific folder path for system wide
+ * 			configurations. This string must be freed.
+ */
+API char *getGlobalKaliskoConfigPath()
+{
+// On Unix/Linux systems GLib returns a path as defined in "XDG Base Direcotry Specification".
+// This path is not the right one for Kalisko as it is more for X Window applications and Kalisko is
+// not necessarily a X Window application.
+#if defined(__unix__) || defined(__linux__)
+	#ifdef __FreeBsd__
+		return g_build_path("/", "/usr/local/etc", KALISKO_DIR_NAME, NULL);
+	#else
+		return g_build_path("/", "/etc", KALISKO_DIR_NAME, NULL);
+	#endif
+#else
+// However, on Windows systems GLib returns the right path as it uses a Windows API function. For this
+// case we use the GLib function (and also for other systems, which are not Unix/Linux based).
+	char const * const *globalConfigDirectories = g_get_system_config_dirs();
+	if(globalConfigDirectories[0] == NULL) {
+		LOG_INFO("Could not find a system wide configuration directory. Using the executable directory.");
+		return g_build_path("/", $$(char *, getExecutablePath)(), KALISKO_DIR_NAME, NULL);
+	} else {
+		return g_build_path("/", globalConfigDirectories[0], KALISKO_DIR_NAME, NULL);
+	}
+#endif
 }

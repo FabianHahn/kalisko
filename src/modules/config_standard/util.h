@@ -23,5 +23,6 @@
 #define CONFIG_STANDARD_UTIL_H
 
 API ConfigNodeValue *getStandardConfigPathValue(char *path);
+API char *getGlobalKaliskoConfigPath();
 
 #endif

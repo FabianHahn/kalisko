@@ -32,12 +32,13 @@
 
 #include "api.h"
 #include "config_standard.h"
+#include "modules/config_standard/util.h"
 
-#define USER_CONFIG_DIR_NAME "kalisko"
+#define CONFIG_DIR_NAME "kalisko"
 #define USER_CONFIG_FILE_NAME "user.cfg"
 #define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
-#define CONFIG_DIR_PERMISSION 0700
+#define USER_CONFIG_DIR_PERMISSION 0700
 
 static char *userConfigFilePath;
 static char *userOverrideConfigFilePath;
@@ -53,16 +54,19 @@ static void finalize();
 
 MODULE_NAME("config_standard");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The config_standard module provides access to standard config files that can override each other");
-MODULE_VERSION(0, 1, 0);
+MODULE_DESCRIPTION("The config_standard module provides access to standard config files that override each other");
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {
-	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
-	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	globalConfigFilePath = g_build_path("/", $$(char *, getExecutablePath)(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
+	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+
+	char *globalDir = getGlobalKaliskoConfigPath();
+	globalConfigFilePath = g_build_path("/", globalDir, GLOBAL_CONFIG_FILE_NAME, NULL);
+	free(globalDir);
 
 	if(!HOOK_ADD(stdConfigChanged)) {
 		finalize();
@@ -106,7 +110,7 @@ API Config *getStandardConfig(StandardConfigFiles file)
 		case CONFIG_GLOBAL:
 			if(!globalConfig) {
 				// As this module should also work for a non root account
-				// we don't create a config file if it doesn't exist.
+				// we don't create the global config file if it doesn't exist.
 				globalConfig = $(Config *, config, parseConfigFile)(globalConfigFilePath);
 			}
 			return globalConfig;
@@ -142,8 +146,8 @@ API void saveStandardConfig(StandardConfigFiles file)
 static Config *getUserConfig()
 {
 	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
-		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 
 		Config *userConfig = $(Config *, config, createConfig)(USER_CONFIG_FILE_NAME);
 		$(void, config, writeConfigFile)(userConfigFilePath, userConfig);
@@ -160,8 +164,8 @@ static Config *getUserConfig()
 static Config *getUserOverrideConfig()
 {
 	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = g_build_path("/", g_get_user_config_dir(), USER_CONFIG_DIR_NAME, NULL);
-		g_mkdir_with_parents(dirPath, CONFIG_DIR_PERMISSION);
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 
 		Config *globalConfig = $(Config *, config, createConfig)(USER_OVERRIDE_CONFIG_FILE_NAME);
 		$(void, config, writeConfigFile)(userOverrideConfigFilePath, globalConfig);

@@ -27,26 +27,26 @@
 #include "probability.h"
 #include "entropy.h"
 
-static double GetMarkovTreeEntropy(GTree *, int);
+static double getMarkovTreeEntropy(GTree *, int);
 
-API double GetMarkovEntropy(MarkovSource *source)
+API double getMarkovEntropy(MarkovSource *source)
 {
-	return GetMarkovTreeEntropy(source->stats, source->count);
+	return getMarkovTreeEntropy(source->stats, source->count);
 }
 
-static double GetMarkovTreeEntropy(GTree *tree, int count)
+static double getMarkovTreeEntropy(GTree *tree, int count)
 {
 	double entropy = 0.0;
 	double probability;
-	GArray *array = ConvertTreeToArray(tree, sizeof(MarkovStatsNode *));
+	GArray *array = convertTreeToArray(tree, sizeof(MarkovStatsNode *));
 	MarkovStatsNode *current_node;
 
 	for(int i = 0; i < array->len; i++) {
 		current_node = g_array_index(array, MarkovStatsNode *, i); // Fetch current node
-		probability = GetMarkovNodeProbability(count, current_node);
+		probability = getMarkovNodeProbability(count, current_node);
 
 		if(current_node->substats != NULL) { // It's no leaf yet
-			entropy += probability * GetMarkovTreeEntropy(current_node->substats, current_node->count); // Recursively add to entropy
+			entropy += probability * getMarkovTreeEntropy(current_node->substats, current_node->count); // Recursively add to entropy
 		} else { // Reached a leaf
 			entropy -= probability * log(probability) / log(2);
 		}

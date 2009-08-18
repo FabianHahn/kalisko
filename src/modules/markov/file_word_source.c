@@ -35,9 +35,9 @@ typedef struct {
 	int level;
 } ReadLevelChar;
 
-static ReadLevelChar ReadDumpFileWordLevel(MarkovFileWordSource *, FILE *, GTree *, int);
+static ReadLevelChar readDumpFileWordLevel(MarkovFileWordSource *, FILE *, GTree *, int);
 
-API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
+API MarkovFileWordSource *createMarkovFileWordSource(char *filename, int level)
 {
 	int read = 0;
 	char c;
@@ -47,8 +47,8 @@ API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
 
 	MarkovFileWordSource *fls = g_malloc(sizeof(MarkovFileWordSource));
 
-	MarkovSource *source = CreateMarkovSource(level, sizeof(char *), &CompareWords);
-	GTree *symbols = g_tree_new(&CompareWords);
+	MarkovSource *source = createMarkovSource(level, sizeof(char *), &compareWords);
+	GTree *symbols = g_tree_new(&compareWords);
 	GQueue *symbol_queue = g_queue_new();
 	GQueue *circular_queue = g_queue_new(); // Create circular queue whith is used to begin reading from start again level times after EOF
 
@@ -104,7 +104,7 @@ API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
 					g_queue_push_tail(symbol_queue, symbol); // Push symbol to queue
 
 					if(symbol_queue->length > level) { // Queue full enough
-						ReadMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
+						readMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
 						g_queue_pop_head(symbol_queue); // Pop the first symbol
 					}
 
@@ -145,7 +145,7 @@ API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
 					g_queue_push_tail(symbol_queue, symbol); // Push symbol to queue
 
 					if(symbol_queue->length > level) { // Queue full enough
-						ReadMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
+						readMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
 						g_queue_pop_head(symbol_queue); // Pop the first symbol
 					}
 
@@ -168,7 +168,7 @@ API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
 				g_queue_push_tail(symbol_queue, symbol);
 
 				if(symbol_queue->length > level) { // Queue full enough
-					ReadMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
+					readMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
 					g_queue_pop_head(symbol_queue); // Pop the first symbol
 				}
 
@@ -192,17 +192,17 @@ API MarkovFileWordSource *CreateMarkovFileWordSource(char *filename, int level)
 	return fls;
 }
 
-API MarkovFileWordSource *CreateMarkovDumpFileWordSource(FILE *file, int level)
+API MarkovFileWordSource *createMarkovDumpFileWordSource(FILE *file, int level)
 {
 	MarkovFileWordSource *fws = g_malloc(sizeof(MarkovFileWordSource));
 
-	MarkovSource *source = CreateMarkovSource(level, sizeof(char *), &CompareWords);
-	GTree *symbols = g_tree_new(&CompareWords);
+	MarkovSource *source = createMarkovSource(level, sizeof(char *), &compareWords);
+	GTree *symbols = g_tree_new(&compareWords);
 
 	fws->source = source;
 	fws->symbols = symbols;
 
-	ReadLevelChar ret = ReadDumpFileWordLevel(fws, file, fws->source->stats, 0);
+	ReadLevelChar ret = readDumpFileWordLevel(fws, file, fws->source->stats, 0);
 
 	if(ret.level == -1) { // Parse error
 		return NULL;
@@ -211,9 +211,9 @@ API MarkovFileWordSource *CreateMarkovDumpFileWordSource(FILE *file, int level)
 	return fws;
 }
 
-API void FreeMarkovFileWordSource(MarkovFileWordSource *fls)
+API void freeMarkovFileWordSource(MarkovFileWordSource *fls)
 {
-	GArray *array = ConvertTreeToArray(fls->symbols, sizeof(char *)); // Convert symbol tree to array
+	GArray *array = convertTreeToArray(fls->symbols, sizeof(char *)); // Convert symbol tree to array
 
 	for(int i = 0; i < array->len; i++) { // Loop over tree items
 		g_free(g_array_index(array, char *, i)); // Free the symbol
@@ -222,11 +222,11 @@ API void FreeMarkovFileWordSource(MarkovFileWordSource *fls)
 	g_tree_destroy(fls->symbols); // Free symbol tree
 	g_array_free(array, TRUE); // Free the array and its elements
 
-	FreeMarkovSource(fls->source); // Free markov source
+	freeMarkovSource(fls->source); // Free markov source
 	g_free(fls); // Free markov source itself
 }
 
-API int CompareWords(const void *a, const void *b)
+API int compareWords(const void *a, const void *b)
 {
 	char *ap = (char *) a;
 	char *bp = (char *) b;
@@ -235,7 +235,7 @@ API int CompareWords(const void *a, const void *b)
 }
 
 
-static ReadLevelChar ReadDumpFileWordLevel(MarkovFileWordSource *fws, FILE *file, GTree *current_tree, int current_level)
+static ReadLevelChar readDumpFileWordLevel(MarkovFileWordSource *fws, FILE *file, GTree *current_tree, int current_level)
 {
 	int read = 0;
 	int state = 0;
@@ -304,7 +304,7 @@ static ReadLevelChar ReadDumpFileWordLevel(MarkovFileWordSource *fws, FILE *file
 				g_string_free(word, TRUE);
 
 				// Create the node
-				node = CreateMarkovStatsNode(fws->source, symbol);
+				node = createMarkovStatsNode(fws->source, symbol);
 				node->count = number;
 
 				g_tree_insert(current_tree, symbol, node); // Insert node into current tree
@@ -312,7 +312,7 @@ static ReadLevelChar ReadDumpFileWordLevel(MarkovFileWordSource *fws, FILE *file
 				if(current_level < fws->source->level) { // Final markov level not reached yet
 					node->substats = g_tree_new(fws->source->comparer); // Create subtree
 
-					ret = ReadDumpFileWordLevel(fws, file, node->substats, current_level + 1);
+					ret = readDumpFileWordLevel(fws, file, node->substats, current_level + 1);
 
 					if(ret.c) { // Valid char
 						state = ret.level;

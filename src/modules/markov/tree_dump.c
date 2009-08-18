@@ -28,12 +28,12 @@
 #include "tree_convert.h"
 #include "tree_dump.h"
 
-static void PrintLetterDumper(void *, const char *, ...);
-static void PrintWordDumper(void *, const char *, ...);
-static void FileLetterDumper(void *, const char *, ...);
-static void FileWordDumper(void *, const char *, ...);
+static void printLetterDumper(void *, const char *, ...);
+static void printWordDumper(void *, const char *, ...);
+static void fileLetterDumper(void *, const char *, ...);
+static void fileWordDumper(void *, const char *, ...);
 
-API void DumpMarkovTreeLevel(GTree *tree, int level, DumpOutput *dump, void *data)
+API void dumpMarkovTreeLevel(GTree *tree, int level, DumpOutput *dump, void *data)
 {
 	MarkovStatsNode *current_node;
 
@@ -41,7 +41,7 @@ API void DumpMarkovTreeLevel(GTree *tree, int level, DumpOutput *dump, void *dat
 		return;
 	}
 
-	GArray *array = ConvertTreeToArray(tree, sizeof(MarkovStatsNode *)); // Convert to array
+	GArray *array = convertTreeToArray(tree, sizeof(MarkovStatsNode *)); // Convert to array
 
 	for(int i = 0; i < array->len; i++) { // Loop over tree items
 		current_node = g_array_index(array, MarkovStatsNode *, i);
@@ -53,40 +53,23 @@ API void DumpMarkovTreeLevel(GTree *tree, int level, DumpOutput *dump, void *dat
 		dump(data, NULL, current_node->symbol);
 		dump(data, ": %d\n", current_node->count);
 
-		DumpMarkovTreeLevel(current_node->substats, level + 1, dump, data);
+		dumpMarkovTreeLevel(current_node->substats, level + 1, dump, data);
 	}
 
 	g_array_free(array, TRUE); // Free the helper array
 }
 
-API void PrintMarkovLetterTree(GTree *tree)
+API void printMarkovLetterTree(GTree *tree)
 {
-	DumpMarkovTreeLevel(tree, 0, &PrintLetterDumper, NULL);
+	dumpMarkovTreeLevel(tree, 0, &printLetterDumper, NULL);
 }
 
-
-API void PrintMarkovWordTree(GTree *tree)
+API void printMarkovWordTree(GTree *tree)
 {
-	DumpMarkovTreeLevel(tree, 0, &PrintWordDumper, NULL);
+	dumpMarkovTreeLevel(tree, 0, &printWordDumper, NULL);
 }
 
-API int FileDumpMarkovLetterTree(GTree *tree, char *filename)
-{
-	FILE *file = fopen(filename, "w+");
-
-	if(file == NULL) { // Could not open file
-		fprintf(stderr, "Could not open file %s for writing!\n", filename);
-		return FALSE;
-	}
-
-	DumpMarkovTreeLevel(tree, 0, &FileLetterDumper, file);
-
-	fclose(file);
-
-	return TRUE;
-}
-
-API int FileDumpMarkovWordTree(GTree *tree, char *filename)
+API int fileDumpMarkovLetterTree(GTree *tree, char *filename)
 {
 	FILE *file = fopen(filename, "w+");
 
@@ -95,14 +78,30 @@ API int FileDumpMarkovWordTree(GTree *tree, char *filename)
 		return FALSE;
 	}
 
-	DumpMarkovTreeLevel(tree, 0, &FileWordDumper, file);
+	dumpMarkovTreeLevel(tree, 0, &fileLetterDumper, file);
 
 	fclose(file);
 
 	return TRUE;
 }
 
-static void PrintLetterDumper(void *data, const char *format, ...)
+API int fileDumpMarkovWordTree(GTree *tree, char *filename)
+{
+	FILE *file = fopen(filename, "w+");
+
+	if(file == NULL) { // Could not open file
+		fprintf(stderr, "Could not open file %s for writing!\n", filename);
+		return FALSE;
+	}
+
+	dumpMarkovTreeLevel(tree, 0, &fileWordDumper, file);
+
+	fclose(file);
+
+	return TRUE;
+}
+
+static void printLetterDumper(void *data, const char *format, ...)
 {
 	va_list args;
 	char *cp;
@@ -119,7 +118,7 @@ static void PrintLetterDumper(void *data, const char *format, ...)
 	}
 }
 
-static void PrintWordDumper(void *data, const char *format, ...)
+static void printWordDumper(void *data, const char *format, ...)
 {
 	va_list args;
 	char *string;
@@ -136,7 +135,7 @@ static void PrintWordDumper(void *data, const char *format, ...)
 	}
 }
 
-static void FileLetterDumper(void *data, const char *format, ...)
+static void fileLetterDumper(void *data, const char *format, ...)
 {
 	FILE *file = (FILE *) data;
 
@@ -155,7 +154,7 @@ static void FileLetterDumper(void *data, const char *format, ...)
 	}
 }
 
-static void FileWordDumper(void *data, const char *format, ...)
+static void fileWordDumper(void *data, const char *format, ...)
 {
 	FILE *file = (FILE *) data;
 

@@ -26,8 +26,8 @@
 MODULE_NAME("markov");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The markov module provides an API to synthesize texts from markov random chains.");
-MODULE_VERSION(1, 0, 0);
-MODULE_BCVERSION(1, 0, 0);
+MODULE_VERSION(1, 1, 0);
+MODULE_BCVERSION(1, 1, 0);
 MODULE_NODEPS;
 
 MODULE_INIT

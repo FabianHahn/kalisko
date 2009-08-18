@@ -34,9 +34,9 @@ typedef struct {
 	int level;
 } ReadLevelChar;
 
-static ReadLevelChar ReadDumpFileLetterLevel(MarkovFileLetterSource *, FILE *, GTree *, int);
+static ReadLevelChar readDumpFileLetterLevel(MarkovFileLetterSource *, FILE *, GTree *, int);
 
-API MarkovFileLetterSource *CreateMarkovFileLetterSource(char *filename, int level)
+API MarkovFileLetterSource *createMarkovFileLetterSource(char *filename, int level)
 {
 	int read = 0;
 	char c;
@@ -45,8 +45,8 @@ API MarkovFileLetterSource *CreateMarkovFileLetterSource(char *filename, int lev
 
 	MarkovFileLetterSource *fls = g_malloc(sizeof(MarkovFileLetterSource));
 
-	MarkovSource *source = CreateMarkovSource(level, sizeof(char *), &CompareLetters);
-	GTree *symbols = g_tree_new(&CompareLetters);
+	MarkovSource *source = createMarkovSource(level, sizeof(char *), &compareLetters);
+	GTree *symbols = g_tree_new(&compareLetters);
 	GQueue *symbol_queue = g_queue_new();
 	GQueue *circular_queue = g_queue_new(); // Create circular queue whith is used to begin reading from start again level times after EOF
 
@@ -94,7 +94,7 @@ API MarkovFileLetterSource *CreateMarkovFileLetterSource(char *filename, int lev
 		g_queue_push_tail(symbol_queue, cp); // Push symbol to queue
 
 		if(symbol_queue->length > level) { // Queue full enough
-			ReadMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
+			readMarkovSymbol(source, symbol_queue); // Let the markov source read the symbol
 			g_queue_pop_head(symbol_queue); // Pop the first symbol
 		}
 	}
@@ -107,17 +107,17 @@ API MarkovFileLetterSource *CreateMarkovFileLetterSource(char *filename, int lev
 	return fls;
 }
 
-API MarkovFileLetterSource *CreateMarkovDumpFileLetterSource(FILE *file, int level)
+API MarkovFileLetterSource *createMarkovDumpFileLetterSource(FILE *file, int level)
 {
 	MarkovFileLetterSource *fls = g_malloc(sizeof(MarkovFileLetterSource));
 
-	MarkovSource *source = CreateMarkovSource(level, sizeof(char *), &CompareLetters);
-	GTree *symbols = g_tree_new(&CompareLetters);
+	MarkovSource *source = createMarkovSource(level, sizeof(char *), &compareLetters);
+	GTree *symbols = g_tree_new(&compareLetters);
 
 	fls->source = source;
 	fls->symbols = symbols;
 
-	ReadLevelChar ret = ReadDumpFileLetterLevel(fls, file, fls->source->stats, 0);
+	ReadLevelChar ret = readDumpFileLetterLevel(fls, file, fls->source->stats, 0);
 
 	if(ret.level == -1) { // Parse error
 		return NULL;
@@ -126,9 +126,9 @@ API MarkovFileLetterSource *CreateMarkovDumpFileLetterSource(FILE *file, int lev
 	return fls;
 }
 
-API void FreeMarkovFileLetterSource(MarkovFileLetterSource *fls)
+API void freeMarkovFileLetterSource(MarkovFileLetterSource *fls)
 {
-	GArray *array = ConvertTreeToArray(fls->symbols, sizeof(char *)); // Convert symbol tree to array
+	GArray *array = convertTreeToArray(fls->symbols, sizeof(char *)); // Convert symbol tree to array
 
 	for(int i = 0; i < array->len; i++) { // Loop over tree items
 		g_free(g_array_index(array, char *, i)); // Free the symbol
@@ -137,11 +137,11 @@ API void FreeMarkovFileLetterSource(MarkovFileLetterSource *fls)
 	g_tree_destroy(fls->symbols); // Free symbol tree
 	g_array_free(array, TRUE); // Free the array and its elements
 
-	FreeMarkovSource(fls->source); // Free markov source
+	freeMarkovSource(fls->source); // Free markov source
 	g_free(fls); // Free markov source itself
 }
 
-API int CompareLetters(const void *a, const void *b) {
+API int compareLetters(const void *a, const void *b) {
 	char *ap = (char *) a;
 	char *bp = (char *) b;
 
@@ -154,7 +154,7 @@ API int CompareLetters(const void *a, const void *b) {
 	}
 }
 
-static ReadLevelChar ReadDumpFileLetterLevel(MarkovFileLetterSource *fls, FILE *file, GTree *current_tree, int current_level)
+static ReadLevelChar readDumpFileLetterLevel(MarkovFileLetterSource *fls, FILE *file, GTree *current_tree, int current_level)
 {
 	int read = 0;
 	int state = 0;
@@ -217,7 +217,7 @@ static ReadLevelChar ReadDumpFileLetterLevel(MarkovFileLetterSource *fls, FILE *
 				}
 
 				// Create the node
-				node = CreateMarkovStatsNode(fls->source, cp);
+				node = createMarkovStatsNode(fls->source, cp);
 				node->count = number;
 
 				g_tree_insert(current_tree, cp, node); // Insert node into current tree
@@ -225,7 +225,7 @@ static ReadLevelChar ReadDumpFileLetterLevel(MarkovFileLetterSource *fls, FILE *
 				if(current_level < fls->source->level) { // Final markov level not reached yet
 					node->substats = g_tree_new(fls->source->comparer); // Create subtree
 
-					ret = ReadDumpFileLetterLevel(fls, file, node->substats, current_level + 1);
+					ret = readDumpFileLetterLevel(fls, file, node->substats, current_level + 1);
 
 					if(ret.c) { // Valid char
 						state = ret.level;

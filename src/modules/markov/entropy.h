@@ -23,6 +23,6 @@
 
 #include "source.h"
 
-API double GetMarkovEntropy(MarkovSource *);
+API double getMarkovEntropy(MarkovSource *);
 
 #endif

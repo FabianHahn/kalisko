@@ -30,8 +30,8 @@ typedef struct {
 	GQueue *queue;
 } MarkovSynthesizer;
 
-API MarkovSynthesizer *CreateMarkovSynthesizer(MarkovSource *);
-API void FreeMarkovSynthesizer(MarkovSynthesizer *);
-API void *SynthesizeSymbol(MarkovSynthesizer *);
+API MarkovSynthesizer *createMarkovSynthesizer(MarkovSource *);
+API void freeMarkovSynthesizer(MarkovSynthesizer *);
+API void *synthesizeSymbol(MarkovSynthesizer *);
 
 #endif

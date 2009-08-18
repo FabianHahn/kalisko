@@ -26,9 +26,9 @@
 #include "source.h"
 #include "tree_convert.h"
 
-static void FreeMarkovTree(GTree *tree);
+static void freeMarkovTree(GTree *tree);
 
-API MarkovSource *CreateMarkovSource(int level, int elementSize, GCompareFunc comparer)
+API MarkovSource *createMarkovSource(int level, int elementSize, GCompareFunc comparer)
 {
 	MarkovSource *source = g_malloc(sizeof(MarkovSource));
 
@@ -41,7 +41,7 @@ API MarkovSource *CreateMarkovSource(int level, int elementSize, GCompareFunc co
 	return source;
 }
 
-API MarkovStatsNode *CreateMarkovStatsNode(MarkovSource *parent_source, void *symbol)
+API MarkovStatsNode *createMarkovStatsNode(MarkovSource *parent_source, void *symbol)
 {
 	MarkovStatsNode *node = g_malloc(sizeof(MarkovStatsNode));
 
@@ -53,7 +53,7 @@ API MarkovStatsNode *CreateMarkovStatsNode(MarkovSource *parent_source, void *sy
 	return node;
 }
 
-API void ReadMarkovSymbol(MarkovSource *source, GQueue *symbol_queue)
+API void readMarkovSymbol(MarkovSource *source, GQueue *symbol_queue)
 {
 	GTree *current_tree = source->stats;
 	MarkovStatsNode *current_node;
@@ -70,7 +70,7 @@ API void ReadMarkovSymbol(MarkovSource *source, GQueue *symbol_queue)
 		current_node = (MarkovStatsNode *) g_tree_lookup(current_tree, current_symbol); // Locate symbol in current tree
 
 		if(current_node == NULL) { // Node doesn't exist yet
-			current_node = CreateMarkovStatsNode(source, current_symbol); // Create it
+			current_node = createMarkovStatsNode(source, current_symbol); // Create it
 
 			g_tree_insert(current_tree, current_symbol, current_node); // Insert it
 		}
@@ -91,13 +91,13 @@ API void ReadMarkovSymbol(MarkovSource *source, GQueue *symbol_queue)
 	source->count++;
 }
 
-API void FreeMarkovSource(MarkovSource *source)
+API void freeMarkovSource(MarkovSource *source)
 {
-	FreeMarkovTree(source->stats);
+	freeMarkovTree(source->stats);
 	g_free(source); // Free the source itself
 }
 
-static void FreeMarkovTree(GTree *tree)
+static void freeMarkovTree(GTree *tree)
 {
 	MarkovStatsNode *current_node;
 
@@ -105,11 +105,11 @@ static void FreeMarkovTree(GTree *tree)
 		return;
 	}
 
-	GArray *array = ConvertTreeToArray(tree, sizeof(MarkovStatsNode *)); // Convert to array
+	GArray *array = convertTreeToArray(tree, sizeof(MarkovStatsNode *)); // Convert to array
 
 	for(int i = 0; i < array->len; i++) { // Loop over tree items
 		current_node = g_array_index(array, MarkovStatsNode *, i);
-		FreeMarkovTree(current_node->substats);
+		freeMarkovTree(current_node->substats);
 		g_free(current_node); // Free the symbol
 	}
 

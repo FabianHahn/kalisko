@@ -31,9 +31,9 @@ typedef struct {
 	GTree *symbols;
 } MarkovFileWordSource;
 
-API MarkovFileWordSource *CreateMarkovFileWordSource(char *, int);
-API MarkovFileWordSource *CreateMarkovDumpFileWordSource(FILE *, int);
-API void FreeMarkovFileWordSource(MarkovFileWordSource *);
-API int CompareWords(const void *, const void *);
+API MarkovFileWordSource *createMarkovFileWordSource(char *, int);
+API MarkovFileWordSource *createMarkovDumpFileWordSource(FILE *, int);
+API void freeMarkovFileWordSource(MarkovFileWordSource *);
+API int compareWords(const void *, const void *);
 
 #endif

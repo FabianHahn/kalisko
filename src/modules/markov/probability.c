@@ -25,12 +25,12 @@
 #include "api.h"
 #include "probability.h"
 
-API void InitRandomizer()
+API void initRandomizer()
 {
 	srand(time(NULL));
 }
 
-API MarkovStatsNode *RollMarkovSymbol(int count, GArray *nodes)
+API MarkovStatsNode *rollMarkovSymbol(int count, GArray *nodes)
 {
 	double random = rand() / ((double) RAND_MAX + 1);
 	double last = 0.0;

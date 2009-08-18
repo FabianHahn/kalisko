@@ -24,6 +24,6 @@
 
 #include <glib.h>
 
-API GArray *ConvertTreeToArray(GTree *, int);
+API GArray *convertTreeToArray(GTree *, int);
 
 #endif

@@ -26,10 +26,10 @@
 
 typedef void (DumpOutput)(void *, const char *, ...);
 
-API void DumpMarkovTreeLevel(GTree *, int, DumpOutput *, void *);
-API void PrintMarkovLetterTree(GTree *);
-API void PrintMarkovWordTree(GTree *);
-API int FileDumpMarkovLetterTree(GTree *, char *);
-API int FileDumpMarkovWordTree(GTree *, char *);
+API void dumpMarkovTreeLevel(GTree *, int, DumpOutput *, void *);
+API void printMarkovLetterTree(GTree *);
+API void printMarkovWordTree(GTree *);
+API int fileDumpMarkovLetterTree(GTree *, char *);
+API int fileDumpMarkovWordTree(GTree *, char *);
 
 #endif

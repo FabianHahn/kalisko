@@ -25,18 +25,18 @@
 #include "source.h"
 #include "tree_convert.h"
 
-static gboolean TraverseTreeNode(void *, void *, void *);
+static gboolean traverseTreeNode(void *, void *, void *);
 
-API GArray *ConvertTreeToArray(GTree *tree, int element_size)
+API GArray *convertTreeToArray(GTree *tree, int element_size)
 {
 	GArray *array = g_array_new(FALSE, FALSE, element_size);
 
-	g_tree_foreach(tree, &TraverseTreeNode, array); // Add tree nodes to the array
+	g_tree_foreach(tree, &traverseTreeNode, array); // Add tree nodes to the array
 
 	return array;
 }
 
-static gboolean TraverseTreeNode(void *key, void *value, void *data)
+static gboolean traverseTreeNode(void *key, void *value, void *data)
 {
 	GArray *array = (GArray *) data;
 

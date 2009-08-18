@@ -27,9 +27,9 @@
 #include <glib.h>
 #include "source.h"
 
-API void InitRandomizer();
-API MarkovStatsNode *RollMarkovSymbol(int, GArray *);
+API void initRandomizer();
+API MarkovStatsNode *rollMarkovSymbol(int, GArray *);
 
-#define GetMarkovNodeProbability(COUNT, NODE) ((double) NODE->count / COUNT)
+#define getMarkovNodeProbability(COUNT, NODE) ((double) NODE->count / COUNT)
 
 #endif

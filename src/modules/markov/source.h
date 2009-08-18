@@ -39,9 +39,9 @@ typedef struct {
 	MarkovSource *source;
 } MarkovStatsNode;
 
-API MarkovSource *CreateMarkovSource(int, int, GCompareFunc);
-API MarkovStatsNode *CreateMarkovStatsNode(MarkovSource *, void *);
-API void ReadMarkovSymbol(MarkovSource *, GQueue *);
-API void FreeMarkovSource(MarkovSource *source);
+API MarkovSource *createMarkovSource(int, int, GCompareFunc);
+API MarkovStatsNode *createMarkovStatsNode(MarkovSource *, void *);
+API void readMarkovSymbol(MarkovSource *, GQueue *);
+API void freeMarkovSource(MarkovSource *source);
 
 #endif

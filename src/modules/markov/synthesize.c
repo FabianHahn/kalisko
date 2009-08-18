@@ -28,7 +28,7 @@
 #include "probability.h"
 #include "tree_convert.h"
 
-API MarkovSynthesizer *CreateMarkovSynthesizer(MarkovSource *source)
+API MarkovSynthesizer *createMarkovSynthesizer(MarkovSource *source)
 {
 	GTree *current_tree = source->stats;
 	GArray *current_array;
@@ -40,12 +40,12 @@ API MarkovSynthesizer *CreateMarkovSynthesizer(MarkovSource *source)
 	synth->source = source;
 	synth->queue = g_queue_new();
 
-	InitRandomizer();
+	initRandomizer();
 
 	// Init queue
 	for(int i = 0; i < source->level; i++) {
-		current_array = ConvertTreeToArray(current_tree, sizeof(MarkovStatsNode *)); // Convert to array
-		node = RollMarkovSymbol(current_count, current_array); // Roll a symbol
+		current_array = convertTreeToArray(current_tree, sizeof(MarkovStatsNode *)); // Convert to array
+		node = rollMarkovSymbol(current_count, current_array); // Roll a symbol
 
 		if(node == NULL) { // Failed to roll a symbol
 			return NULL;
@@ -64,13 +64,13 @@ API MarkovSynthesizer *CreateMarkovSynthesizer(MarkovSource *source)
 	return synth;
 }
 
-API void FreeMarkovSynthesizer(MarkovSynthesizer *synth)
+API void freeMarkovSynthesizer(MarkovSynthesizer *synth)
 {
 	g_queue_free(synth->queue); // Free the queue
 	g_free(synth); // Free the synthesizer itself
 }
 
-API void *SynthesizeSymbol(MarkovSynthesizer *synth)
+API void *synthesizeSymbol(MarkovSynthesizer *synth)
 {
 	GTree *current_tree =  synth->source->stats;
 	GArray *array;
@@ -99,8 +99,8 @@ API void *SynthesizeSymbol(MarkovSynthesizer *synth)
 		current_tree = current_node->substats;
 	}
 
-	array = ConvertTreeToArray(current_tree, sizeof(MarkovStatsNode *)); // Convert to array
-	current_node = RollMarkovSymbol(count, array); // Roll a symbol
+	array = convertTreeToArray(current_tree, sizeof(MarkovStatsNode *)); // Convert to array
+	current_node = rollMarkovSymbol(count, array); // Roll a symbol
 
 	if(current_node == NULL) { // We've haven't got a symbol :(
 		fprintf(stderr, "Synthesize error: Rolling for symbol failed\n");

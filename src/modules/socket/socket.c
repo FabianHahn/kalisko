@@ -45,10 +45,12 @@
 #include "api.h"
 #include "socket.h"
 
+static bool setSocketNonBlocking(int fd);
+
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -130,6 +132,11 @@ API bool connectSocket(Socket *s)
 
 		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
 			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
+			return false;
+		}
+
+		if(!setSocketNonBlocking(s->fd)) {
+			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
 			return false;
 		}
 
@@ -263,4 +270,34 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	}
 
 	return ret;
+}
+
+/**
+ * Sets a socket to non-blocking I/O mode
+ *
+ * @param fd		the descriptor of the socket to set non-blocking
+ * @result			true if successful
+ */
+static bool setSocketNonBlocking(int fd)
+{
+#ifdef WIN32
+	unsigned long nbmode = 1;
+	if(ioctlsocket(fd, FIONBIO, &nbmode) != 0) {
+		LOG_WARNING("ioctrlsocket failed on fd %d", fd);
+		return false;
+	}
+#elif
+	int flags;
+
+	if((flags = fcntl(fd, F_GETFL, 0)) == -1) {
+		flags = 0; // if fcntl fails, set flags to zero
+	}
+
+	if(fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+		LOG_WARNING("fcntl failed on fd %d", fd);
+		return false;
+	}
+#endif
+
+	return true;
 }

@@ -69,7 +69,7 @@ TEST_CASE(source)
 	entropy = $(double, markov, getMarkovEntropy)(word_source->source);
 	TEST_ASSERT(entropy >= TEST_WORD_EMIN && entropy <= TEST_WORD_EMAX);
 
-	$(void, markov, freeMarkovFileLetterSource)(word_source);
+	$(void, markov, freeMarkovFileWordSource)(word_source);
 
 	TEST_PASS;
 }

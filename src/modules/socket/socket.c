@@ -41,9 +41,11 @@
 #include "types.h"
 #include "memory_alloc.h"
 #include "module.h"
+#include "hooks.h"
 
 #include "api.h"
 #include "socket.h"
+#include "poll.h"
 
 static bool setSocketNonBlocking(int fd);
 
@@ -65,6 +67,7 @@ MODULE_INIT
     }
 #endif
 
+    initPoll();
 	return true;
 }
 
@@ -73,6 +76,8 @@ MODULE_FINALIZE
 #ifdef WIN32
 	WSACleanup();
 #endif
+
+	freePoll();
 }
 
 /**
@@ -242,7 +247,7 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
  * @param s				the socket to read from
  * @param buffer		the buffer to read into
  * @param size			the buffer's size
- * @result				number of bytes read, 0 on error
+ * @result				number of bytes read, -1 on error
  */
 API int socketReadRaw(Socket *s, void *buffer, int size)
 {
@@ -252,19 +257,29 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 
 	if(!s->connected) {
 		LOG_ERROR("Cannot read from disconnected socket");
-		return 0;
+		return -1;
 	}
 
 	if(s->server) {
 		LOG_ERROR("Cannot write to server socket");
-		return 0;
+		return -1;
 	}
 
 	if((ret = recv(s->fd, buffer, size, 0)) == 0) { // connection reset by peer
 		LOG_INFO("Connection on socket %d reset by peer", s->fd);
 		disconnectSocket(s);
-		return 0;
+		return -1;
+#ifndef WIN32
+	} else if(ret == EAGAIN || ret == EWOULDBLOCK) {
+		return 0; // The socket is non-blocking and we've got nothing back
+#endif
 	} else if(ret < 0) {
+#ifdef WIN32
+		if(WSAGetLastError() == WSAEWOULDBLOCK) {
+			return 0; // The socket is non-blocking and we've got nothing back
+		}
+#endif
+
 		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
 		return 0;
 	}

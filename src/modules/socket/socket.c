@@ -27,6 +27,7 @@
 #else
 #include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
 #include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
+#include <fcntl.h>
 #endif
 #include <glib.h> // GList
 #include <stdlib.h> // malloc, free
@@ -269,19 +270,17 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		LOG_INFO("Connection on socket %d reset by peer", s->fd);
 		disconnectSocket(s);
 		return -1;
-#ifndef WIN32
-	} else if(ret == EAGAIN || ret == EWOULDBLOCK) {
-		return 0; // The socket is non-blocking and we've got nothing back
-#endif
 	} else if(ret < 0) {
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
+#else
+		if(errno == EAGAIN || errno == EWOULDBLOCK) {
+#endif
 			return 0; // The socket is non-blocking and we've got nothing back
 		}
-#endif
 
 		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
-		return 0;
+		return -1;
 	}
 
 	return ret;
@@ -301,7 +300,7 @@ static bool setSocketNonBlocking(int fd)
 		LOG_WARNING("ioctrlsocket failed on fd %d", fd);
 		return false;
 	}
-#elif
+#else
 	int flags;
 
 	if((flags = fcntl(fd, F_GETFL, 0)) == -1) {

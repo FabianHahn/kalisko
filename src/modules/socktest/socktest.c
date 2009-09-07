@@ -37,7 +37,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 2));
 
 MODULE_INIT
 {

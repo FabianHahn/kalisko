@@ -21,7 +21,15 @@
 #ifndef SOCKET_POLL_H
 #define SOCKET_POLL_H
 
+#include "socket.h"
+
 API void initPoll();
 API void freePoll();
+
+API bool enableSocketPolling(Socket *socket);
+API bool disableSocketPolling(Socket *socket);
+API void pollSockets();
+
+#define SOCKET_POLL_BUFSIZE 4096
 
 #endif

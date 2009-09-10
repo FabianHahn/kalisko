@@ -65,6 +65,8 @@ static void testSocket()
 
 		$(int, socket, socketReadRaw)(sock, buffer, BUF);
 
+		buffer[BUF-1] = '\0';
+
 		printf("%s", buffer);
 	}
 

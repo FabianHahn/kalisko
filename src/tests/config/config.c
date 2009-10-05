@@ -163,6 +163,8 @@ TEST_CASE(path_modify)
 	// test list out of bounds handling
 	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/1337") == NULL);
 
+	$(void, config, freeConfig)(config);
+
 	TEST_PASS;
 }
 

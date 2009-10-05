@@ -63,6 +63,9 @@ TEST_CASE(version_compare)
 
 	TEST_ASSERT($$(int, compareVersions)(a, b) > 0);
 
+	$$(void, freeVersion)(a);
+	$$(void, freeVersion)(b);
+
 	TEST_PASS;
 }
 
@@ -91,7 +94,7 @@ TEST_CASE(hooks)
 
 TEST_CASE(module_failure)
 {
-	// Request and revoke non existant module
+	// Request and revoke non existent module
 	TEST_ASSERT(!$$(bool, requestModule)("_doesnotexist_"));
 	TEST_ASSERT(!$$(bool, revokeModule)("_doesnotexist_"));
 

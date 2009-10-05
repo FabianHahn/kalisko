@@ -85,8 +85,9 @@ API bool delHook(char *hook_name)
 	}
 
 	// Free all HookListenerEntry structs in the list
-	for(; hook != NULL; hook = hook->next) {
-		free(hook->data);
+	GList *hookPos = hook;
+	for(; hookPos != NULL; hookPos = hookPos->next) {
+		free(hookPos->data);
 	}
 
 	// Free the hook's listener list

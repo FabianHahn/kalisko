@@ -84,6 +84,11 @@ API bool delHook(char *hook_name)
 		return false;
 	}
 
+	// Free all HookListenerEntry structs in the list
+	for(; hook != NULL; hook = hook->next) {
+		free(hook->data);
+	}
+
 	// Free the hook's listener list
 	g_list_free(hook);
 
@@ -143,12 +148,10 @@ API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_da
 
 	HookListenerEntry *entry;
 
-	for(; hook != NULL; hook = hook->next)
-	{
+	for(; hook != NULL; hook = hook->next) {
 		entry = hook->data;
 
-		if(entry->listener == listener && entry->custom_data == custom_data) // Is this the right listener entry?
-		{
+		if(entry->listener == listener && entry->custom_data == custom_data) { // Is this the right listener entry?
 			// Remove the listener entry from the list
 			hook = g_list_remove(hook, entry);
 
@@ -184,8 +187,7 @@ API int triggerHook(char *hook_name, ...)
 	HookListener *listener;
 	int counter;
 
-	for(counter = 0; hook != NULL; hook = hook->next, counter++)
-	{
+	for(counter = 0; hook != NULL; hook = hook->next, counter++) {
 		// Get args and listener
 		va_start(args, hook_name);
 		entry = hook->data;
@@ -260,8 +262,7 @@ static gboolean freeList(void *hook_name, void *list, void *user_data)
 	HookListenerEntry *entry;
 	GList *hook = list;
 
-	for(; hook != NULL; hook = hook->next)
-	{
+	for(; hook != NULL; hook = hook->next) {
 		entry = hook->data;
 
 		free(entry);

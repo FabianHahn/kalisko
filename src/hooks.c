@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -84,14 +83,8 @@ API bool delHook(char *hook_name)
 		return false;
 	}
 
-	// Free all HookListenerEntry structs in the list
-	GList *hookPos = hook;
-	for(; hookPos != NULL; hookPos = hookPos->next) {
-		free(hookPos->data);
-	}
-
 	// Free the hook's listener list
-	g_list_free(hook);
+	freeList(NULL, hook, NULL);
 
 	// Remove the hook from the hooks table
 	g_hash_table_remove(hooks, hook_name);
@@ -273,5 +266,4 @@ static gboolean freeList(void *hook_name, void *list, void *user_data)
 
 	return TRUE;
 }
-
 

@@ -15,26 +15,7 @@ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-Import('core')
-Import('corefiles')
+Import('test')
 
-# core configure checks
-if not core.GetOption('clean'):
-	conf = Configure(core)
-
-	if conf.env['PLATFORM'] == 'posix':
-		conf.env.Append(LIBS = ['dl'])
-	elif conf.env['PLATFORM'] == 'win32':
-		if not conf.CheckCHeader('windows.h'):
-			print('Error: Could not find windows.h header file!')
-			Exit(1)
-
-	for depmod in conf.env['LIBS']:
-		if not conf.CheckLib(depmod):
-			print('Error: Could not find library ' + depmod + '!')
-			Exit(1)
-
-	core = conf.Finish()
-
-# Build core
-prog = core.Program('kalisko', corefiles)
+test.Append(CPPPATH = ['../..', '../../modules/string_util'])
+test.SharedLibrary('../../modules/test_string_util', Glob('*.c'))

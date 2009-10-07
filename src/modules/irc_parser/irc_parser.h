@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifndef IRC_PARSER_IRC_PARSER_H
 #define IRC_PARSER_IRC_PARSER_H
 
@@ -43,13 +42,13 @@ typedef struct {
 	char *command;
 
 	/**
-	 * NULL terminated array of parameter strings.
+	 * NULL-terminated array of parameter strings.
 	 */
 	char **params;
 	char *trailing;
 
 	/**
-	 * The original not changed IRC message.
+	 * The original unchanged IRC message.
 	 */
 	char *ircMessage;
 } IrcMessage;

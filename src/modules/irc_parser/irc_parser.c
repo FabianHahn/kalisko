@@ -45,7 +45,6 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-
 }
 
 /**
@@ -66,29 +65,34 @@ API IrcMessage *parseIrcMessage(char *message)
 	if(message[0] == ':') {
 		// message has a prefix
 		prefixEnd = strchr(message, ' ');
-		if(!prefixEnd) {
-			LOG_DEBUG("Given string does not seem to be a correct IRC message: '%s'", message);
+		if(prefixEnd == NULL) {
+			LOG_ERROR("Malformed IRC message: '%s'", message);
 			freeIrcMessage(ircMessage);
-
 			return NULL;
 		}
 
-		ircMessage->prefix = g_strndup(&message[1], prefixEnd - message - 1); // Subtracting one because we do not need the leading ':'
+		message++; // Get rid of trailing colon
+		ircMessage->prefix = g_strndup(message, prefixEnd - message);
 	}
 
 	// extracting the command
 	g_strchug(prefixEnd);
 	char *commandEnd = strchr(prefixEnd, ' ');
+	if(commandEnd == NULL) {
+		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->ircMessage);
+		freeIrcMessage(ircMessage);
+		return NULL;
+	}
 	ircMessage->command = g_strndup(prefixEnd, commandEnd - prefixEnd);
 
 	// extracting the params
 	char *paramsEnd = strchr(commandEnd, ':');
 
 	char *paramsText = NULL;
-	if(!paramsEnd) {
+	if(paramsEnd == NULL) {
 		paramsText = g_strdup(commandEnd);
 	} else {
-		int paramsTextLength = paramsEnd - commandEnd - 1; // Subtracting one because we do not need the tailing ':'
+		int paramsTextLength = paramsEnd - commandEnd - 1; // Remove trailing colon
 
 		if(paramsTextLength > 0) { // It is possible that the IRC message does not have a parameter (like PING)
 			paramsText = g_strndup(commandEnd, paramsTextLength);
@@ -106,7 +110,7 @@ API IrcMessage *parseIrcMessage(char *message)
 	// extracting trailing
 	if(paramsEnd) {
 		g_strchomp(paramsEnd);
-		ircMessage->trailing = g_strdup(&paramsEnd[1]); // We start at the second char as the first one is always the leading ':' which we do not need
+		ircMessage->trailing = g_strdup(paramsEnd + 1); // Once again, remove trailing colon
 	}
 
 	return ircMessage;
@@ -135,27 +139,23 @@ API IrcUserMask *parseIrcUserMask(char *prefix)
 
 	if(!userStart && !hostStart) {
 		mask->nick = g_strdup(prefix);
-	} else if(userStart && !hostStart) {
-		int nickLength = strlen(prefix) - strlen(userStart);
+	} else {
+		mask->nick = g_strndup(prefix, userStart - prefix);
 
-		mask->nick = g_strndup(prefix, nickLength);
-		mask->user = g_strndup(&prefix[nickLength + 1], strlen(prefix) - nickLength);
-	} else if(!userStart && hostStart) {
-		int nickLength = strlen(prefix) - strlen(hostStart);
-
-		mask->nick = g_strndup(prefix, nickLength);
-		mask->host = g_strndup(&prefix[nickLength + 1], strlen(prefix) - nickLength);
-	} else if(userStart && hostStart) {
-		int nickLength = strlen(prefix) - strlen(userStart);
-
-		mask->nick = g_strndup(prefix, nickLength);
-		mask->user = g_strndup(&prefix[nickLength + 1], strlen(prefix) - nickLength - strlen(hostStart) - 1);
-		mask->host = g_strdup(&hostStart[1]);
+		if(userStart && hostStart) {
+			mask->user = g_strndup(userStart + 1, (hostStart - userStart) - 1);
+			mask->host = g_strdup(hostStart + 1);
+		} else { // !hostStart || !userStart
+			if(!hostStart) {
+				mask->user = g_strdup(userStart + 1);
+			} else if(!userStart) {
+				mask->host = g_strdup(hostStart + 1);
+			}
+		}
 	}
 
 	return mask;
 }
-
 
 /**
  * Frees the given IrcMessage.

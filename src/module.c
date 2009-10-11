@@ -453,7 +453,7 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
  * A GHFunc that tells a module that it's no longer needed by its parent
  *
  * @param name		the module's name
- * @param mod		the module
+ * @param mod_p		the module
  * @param data		unused
  */
 static void unneedModule(void *name, void *mod_p, void *data)
@@ -509,8 +509,8 @@ static void unneedModule(void *name, void *mod_p, void *data)
 /**
  * A GHRFunc wrapper around unneedModule
  *
- * @param name		the module's name
- * @param mod		the module
+ * @param name_p	the module's name
+ * @param mod_p		the module
  * @param data		unused
  * @result			always TRUE
  */

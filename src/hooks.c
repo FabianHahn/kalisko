@@ -249,7 +249,7 @@ static void addHookStatsEntry(void *key, void *value, void *data)
 /**
  * Helper function to free a list
  *
- * @param data			The list to free
+ * @param list		The list to free
  */
 static gboolean freeList(void *hook_name, void *list, void *user_data)
 {

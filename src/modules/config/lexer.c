@@ -221,7 +221,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 /**
  * Lexes a config string and dumps the result
  *
- * @param config		the config string to lex and dump
+ * @param string		the config string to lex and dump
  * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
  */
 API GString *lexConfigString(char *string)

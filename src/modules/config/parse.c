@@ -70,7 +70,7 @@ API Config *parseConfigFile(char *filename)
 /**
  * Parses a config string
  *
- * @param filename		the config string to parse
+ * @param string		the config string to parse
  * @result				the parsed config
  */
 API Config *parseConfigString(char *string)

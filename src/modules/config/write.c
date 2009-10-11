@@ -124,8 +124,8 @@ static void dumpConfig(Config *config, ConfigWriter *writer)
 /**
  * A GHFunc to dump a config node
  *
- * @param key		the key of the node
- * @param value		the value of the node
+ * @param key_p		the key of the node
+ * @param value_p	the value of the node
  * @param data		the dump's context
  */
 static void dumpConfigNode(void *key_p, void *value_p, void *data)

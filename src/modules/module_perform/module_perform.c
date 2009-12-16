@@ -28,7 +28,7 @@
 
 #include "api.h"
 
-#define PERFORM_CONFIG_PATH "kalisko/perform"
+#define PERFORM_CONFIG_PATH "kalisko/loadModules"
 
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
@@ -62,6 +62,8 @@ MODULE_INIT
 				LOG_DEBUG("Module perform successfully requested %s", moduleName->content.string);
 			}
 		}
+	} else {
+		LOG_DEBUG("Module perform does not have any modules to load.");
 	}
 
 	return true;

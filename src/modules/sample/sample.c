@@ -27,6 +27,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "timer.h"
 
 // api.h must be included before own headers and definitions that could be called from other modules
 #include "api.h"
@@ -40,10 +41,13 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
+TIMER_CALLBACK(sample);
+
 MODULE_INIT
 {
 	LOG_INFO("This is a log message from the sample module. Hi there!");
 	HOOK_ADD(sample);
+	TIMER_ADD_TIMEOUT(10 * G_USEC_PER_SEC, sample);
 
 	return true;
 }
@@ -51,6 +55,11 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	HOOK_DEL(sample);
+}
+
+TIMER_CALLBACK(sample)
+{
+	printf("Hello world from timer!\n");
 }
 
 // Every function that could be called from another module must have an API marker

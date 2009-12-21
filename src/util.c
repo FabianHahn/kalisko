@@ -92,6 +92,50 @@ API char *getDirectoryPath(char *filePath)
 }
 
 /**
+ * A GCompareDataFunc for integers
+ *
+ * @param a		the first number to compare
+ * @param b		the second number to compare
+ * @param data	unused
+ * @result		negative if a < b, zero if a = b, positive if a > b
+ */
+API int compareIntegers(const void *a, const void *b, void *data)
+{
+	int va = *((int *) a);
+	int vb = *((int *) b);
+	return va - vb;
+}
+
+/**
+ * A GCompareDataFunc for GTimeVals
+ *
+ * @param a		the first time to compare
+ * @param b		the second time to compare
+ * @param data	unused
+ * @result		negative if a < b, zero if a = b, positive if a > b
+ */
+API int compareTimes(const void *a, const void *b, void *data)
+{
+	GTimeVal *timea = (GTimeVal *) a;
+	GTimeVal *timeb = (GTimeVal *) b;
+	glong diff;
+
+	if((diff = timea->tv_sec - timeb->tv_sec) > 0) {
+		return 1;
+	} else if(diff < 0) {
+		return -1;
+	} else {
+		if((diff = timea->tv_usec - timeb->tv_usec) > 0) {
+			return 1;
+		} else if(diff < 0) {
+			return -1;
+		} else {
+			return 0;
+		}
+	}
+}
+
+/**
  * A GDestroyNotify wrapper around g_hash_table_destroy
  *
  * @param table		the hash table to destroy

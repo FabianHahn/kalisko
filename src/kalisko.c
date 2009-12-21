@@ -22,6 +22,7 @@
 #include "api.h"
 #include "log.h"
 #include "hooks.h"
+#include "timer.h"
 #include "module.h"
 #include "memory_alloc.h"
 
@@ -29,13 +30,20 @@ int main(int argc, char **argv)
 {
 	initMemory();
 	initHooks();
+	initTimers();
 	initLog();
 	initModules();
 
 	requestModule("log_default");
 	requestModule("module_perform");
 
+	while(hasMoreTimerCallbacks()) {
+		g_usleep(getCurrentSleepTime());
+		notifyTimerCallbacks();
+	}
+
 	freeModules();
+	freeTimers();
 	freeHooks();
 
 	return EXIT_SUCCESS;

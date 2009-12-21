@@ -23,6 +23,8 @@
 
 API char *getExecutablePath();
 API char *getDirectoryPath(char *filePath);
+API int compareIntegers(const void *a, const void *b, void *data);
+API int compareTimes(const void *a, const void *b, void *data);
 API void destroyGHashTable(void *table);
 
 #endif

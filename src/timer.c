@@ -43,7 +43,7 @@ bool blockTimers;
  */
 API void initTimers()
 {
-	timers = g_tree_new_full(&compareIntegers, NULL, &free, NULL);
+	timers = g_tree_new_full(&compareTimes, NULL, &free, NULL);
 	blockTimers = false;
 }
 
@@ -127,7 +127,8 @@ API int getCurrentSleepTime()
 
 	int sleepTime = (nextTime.tv_sec - time.tv_sec) * G_USEC_PER_SEC;
 	sleepTime += (nextTime.tv_usec - time.tv_usec);
-	return sleepTime;
+
+	return sleepTime > 0 ? sleepTime : 0;
 }
 
 /**

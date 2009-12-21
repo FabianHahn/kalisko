@@ -72,6 +72,12 @@ API bool isExiting();
  */
 #define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK))
 
+/**
+ * @see delTimer
+ * @param TIME			the scheduled time of the callback to be deleted
+ */
+#define TIMER_DEL(TIME) $$(bool, delTimer)((TIME))
+
 #endif
 
 #endif

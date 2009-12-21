@@ -34,8 +34,14 @@ for key, value in ARGLIST:
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
-coretpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
-modtpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
+dummy = Environment(ENV = os.environ)
+
+if dummy['PLATFORM'] == 'win32':
+	coretpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
+	modtpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])
+else:
+	coretpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+	modtpl = Environment(CPPDEFINES = [('SVN_REVISION', svnrevision)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 # Add glib support
 coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')

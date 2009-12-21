@@ -29,7 +29,8 @@ static void processReadyCallbacks(void *item, void *data);
 static gboolean assembleReadyCallbacks(void *key, void *value, void *data);
 static gboolean findFirstTime(void *key, void *value, void *data);
 
-typedef struct {
+typedef struct
+{
 	GTimeVal *time;
 	TimerCallback *callback;
 } TimerEntry;
@@ -59,11 +60,12 @@ API void freeTimers()
  * Adds a timer callback
  * @param time		the time when the callback should be executed
  * @param callback	the callback that should be called at the specified time
+ * @result 			a pointer to the actual time scheduled
  */
-API void addTimer(GTimeVal time, TimerCallback *callback)
+API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback)
 {
 	if(blockTimers) {
-		return;
+		return NULL;
 	}
 
 	GTimeVal *timeContainer = allocateMemory(sizeof(GTimeVal));
@@ -74,6 +76,18 @@ API void addTimer(GTimeVal time, TimerCallback *callback)
 	}
 
 	g_tree_insert(timers, timeContainer, callback);
+
+	return timeContainer;
+}
+
+/**
+ * Removes a timer callback
+ * @param time		the time of the callback to delete
+ * @result			true if successful
+ */
+API bool delTimer(GTimeVal *time)
+{
+	return g_tree_remove(timers, time);
 }
 
 /**

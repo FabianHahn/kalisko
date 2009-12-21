@@ -31,7 +31,8 @@ typedef void (TimerCallback)(GTimeVal time);
 
 API void initTimers();
 API void freeTimers();
-API void addTimer(GTimeVal time, TimerCallback *callback);
+API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback);
+API bool delTimer(GTimeVal *time);
 API void addTimeout(int timeout, TimerCallback *callback);
 API GTimeVal getNextTimerTime();
 API int getCurrentSleepTime();

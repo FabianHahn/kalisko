@@ -28,7 +28,7 @@
 #include "socket.h"
 #include "poll.h"
 
-static void pollSocket(void *fd_p, void *socket_p, void *data);
+static gboolean pollSocket(void *fd_p, void *socket_p, void *data);
 
 static GHashTable *poll_table;
 static char poll_buffer[SOCKET_POLL_BUFSIZE];
@@ -87,21 +87,23 @@ API bool disableSocketPolling(Socket *socket)
  */
 API void pollSockets()
 {
-	g_hash_table_foreach(poll_table, &pollSocket, NULL);
+	g_hash_table_foreach_remove(poll_table, &pollSocket, NULL);
 }
 
 /**
- * A GHFunc used to poll a socket
+ * A GHRFunc used to poll a socket
  * @param fd_p		a pointer to the socket's file descriptor
  * @param socket_p	the socket
  * @param data		unused
  */
-static void pollSocket(void *fd_p, void *socket_p, void *data)
+static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 {
 	int ret;
 	Socket *socket = socket_p;
 
-	assert(socket->connected);
+	if(!socket->connected) { // Remove socket from poll list if disconnected
+		return FALSE;
+	}
 
 	if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 		if(!socket->connected) { // socket was disconnected
@@ -109,7 +111,11 @@ static void pollSocket(void *fd_p, void *socket_p, void *data)
 		} else { // error
 			HOOK_TRIGGER(socket_error, socket);
 		}
+
+		return FALSE;
 	} else if(ret > 0) { // we actually read something
 		HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
 	}
+
+	return TRUE;
 }

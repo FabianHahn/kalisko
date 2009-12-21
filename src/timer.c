@@ -95,12 +95,12 @@ API bool delTimer(GTimeVal *time)
  * @param timeout	the timeout from now after which the timer should be executed in microseconds
  * @param callback	the callback that should be called after the time elapsed
  */
-API void addTimeout(int timeout, TimerCallback *callback)
+API GTimeVal *addTimeout(int timeout, TimerCallback *callback)
 {
 	GTimeVal time;
 	g_get_current_time(&time);
 	g_time_val_add(&time, timeout);
-	addTimer(time, callback);
+	return addTimer(time, callback);
 }
 
 /**

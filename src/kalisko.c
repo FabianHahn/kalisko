@@ -18,6 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef MIN_SLEEP_TIME
+#define MIN_SLEEP_TIME 1000
+#endif
+
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
@@ -38,7 +42,8 @@ int main(int argc, char **argv)
 	requestModule("module_perform");
 
 	while(hasMoreTimerCallbacks()) {
-		g_usleep(getCurrentSleepTime());
+		int sleepTime = getCurrentSleepTime();
+		g_usleep(sleepTime < MIN_SLEEP_TIME ? MIN_SLEEP_TIME : sleepTime);
 		notifyTimerCallbacks();
 	}
 

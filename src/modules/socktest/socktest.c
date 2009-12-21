@@ -23,6 +23,7 @@
 #include <glib.h>
 
 #include "dll.h"
+#include "hooks.h"
 #include "modules/socket/socket.h"
 
 #include "api.h"
@@ -39,36 +40,51 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 2));
 
+static Socket *sock;
+
+HOOK_LISTENER(sample_read);
+HOOK_LISTENER(sample_disconnect);
+
 MODULE_INIT
 {
 	testSocket();
+	HOOK_ATTACH(socket_read, sample_read);
+	HOOK_ATTACH(socket_disconnect, sample_disconnect);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	HOOK_DETACH(socket_read, sample_read);
+	HOOK_DETACH(socket_disconnect, sample_disconnect);
+}
 
+HOOK_LISTENER(sample_read)
+{
+	Socket *s = HOOK_ARG(Socket *);
+	char *read = HOOK_ARG(char *);
+
+	if(s == sock) {
+		printf("%s", read);
+		fflush(stdout);
+	}
+}
+
+HOOK_LISTENER(sample_disconnect)
+{
+	Socket *s = HOOK_ARG(Socket *);
+
+	if(s == sock) {
+		$(bool, socket, freeSocket)(sock);
+	}
 }
 
 static void testSocket()
 {
-	Socket *sock = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
+	sock = $(Socket *, socket, createClientSocket)("www.smf68.ch", "http");
 	$(bool, socket, connectSocket)(sock);
+	$(bool, socket, enableSocketPolling)(sock);
 
 	$(bool, socket, socketWriteRaw)(sock, REQUEST, sizeof(REQUEST));
-
-	while(sock->connected) {
-		char buffer[BUF];
-
-		memset(buffer, 0, BUF);
-
-		$(int, socket, socketReadRaw)(sock, buffer, BUF);
-
-		buffer[BUF-1] = '\0';
-
-		printf("%s", buffer);
-	}
-
-	$(bool, socket, freeSocket)(sock);
 }

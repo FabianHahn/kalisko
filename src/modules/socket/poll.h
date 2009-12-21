@@ -23,7 +23,7 @@
 
 #include "socket.h"
 
-API void initPoll();
+API void initPoll(int interval);
 API void freePoll();
 
 API bool enableSocketPolling(Socket *socket);

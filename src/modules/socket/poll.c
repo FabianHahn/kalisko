@@ -23,6 +23,7 @@
 
 #include "dll.h"
 #include "hooks.h"
+#include "timer.h"
 
 #include "api.h"
 #include "socket.h"
@@ -32,17 +33,26 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data);
 
 static GHashTable *poll_table;
 static char poll_buffer[SOCKET_POLL_BUFSIZE];
+static int pollInterval;
+static GTimeVal *lastScheduledPollTime;
+
+TIMER_CALLBACK(poll);
 
 /**
  * Initializes socket polling via hooks
+ * @param interval		the polling interval to use
  */
-API void initPoll()
+API void initPoll(int interval)
 {
+	pollInterval = interval;
+
 	HOOK_ADD(socket_read);
 	HOOK_ADD(socket_error);
 	HOOK_ADD(socket_disconnect);
 
 	poll_table = g_hash_table_new(&g_int_hash, &g_int_equal);
+
+	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 
 /**
@@ -50,6 +60,8 @@ API void initPoll()
  */
 API void freePoll()
 {
+	TIMER_DEL(lastScheduledPollTime);
+
 	HOOK_DEL(socket_read);
 	HOOK_DEL(socket_error);
 	HOOK_DEL(socket_disconnect);
@@ -88,6 +100,15 @@ API bool disableSocketPolling(Socket *socket)
 API void pollSockets()
 {
 	g_hash_table_foreach_remove(poll_table, &pollSocket, NULL);
+}
+
+/**
+ * Callback to poll all sockets signed up for polling
+ */
+TIMER_CALLBACK(poll)
+{
+	pollSockets();
+	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 
 /**

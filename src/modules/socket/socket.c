@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifdef WIN32
 #include <winsock2.h> // recv, send, getaddrinfo, socket, connect
 #undef _WIN32_WINNT
@@ -43,6 +42,7 @@
 #include "memory_alloc.h"
 #include "module.h"
 #include "hooks.h"
+#include "modules/config_standard/config_standard.h"
 
 #include "api.h"
 #include "socket.h"
@@ -53,22 +53,31 @@ static bool setSocketNonBlocking(int fd);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 2);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1));
 
 MODULE_INIT
 {
 #ifdef WIN32
-    WSADATA wsaData;
+	WSADATA wsaData;
 
-    if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
-        LOG_ERROR("WSAStartup failed");
-        return false;
-    }
+	if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
+		LOG_ERROR("WSAStartup failed");
+		return false;
+	}
 #endif
 
-    initPoll();
+	int pollInterval = 100000;
+
+	ConfigNodeValue *configPollInterval = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("socket/pollInterval");
+	if(configPollInterval != NULL && configPollInterval->type == CONFIG_INTEGER) {
+		pollInterval = configPollInterval->content.integer;
+	} else {
+		LOG_WARNING("Could not determine config value socket/pollInterval, using default");
+	}
+
+	initPoll(pollInterval);
 	return true;
 }
 

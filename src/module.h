@@ -70,7 +70,7 @@ API bool revokeModule(char *name);
 #define MODULE_NAME(NAME) API char *module_name() { return NAME; }
 #define MODULE_AUTHOR(AUTHOR) API char *module_author() { return AUTHOR; }
 #define MODULE_DESCRIPTION(DESC) API char *module_description() { return DESC; }
-#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, SVN_REVISION}; \
+#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, SRC_REVISION}; \
 	API Version *module_version() { return &_module_version; }
 #define MODULE_BCVERSION(MAJOR, MINOR, PATCH) static Version _module_bcversion = {MAJOR, MINOR, PATCH, 0}; \
 	API Version *module_bcversion() { return &_module_bcversion; }

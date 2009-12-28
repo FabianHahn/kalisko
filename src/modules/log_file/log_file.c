@@ -31,7 +31,6 @@
 #include "modules/config/config.h"
 #include "modules/config/path.h"
 #include "modules/config_standard/util.h"
-#include "modules/time_util/time_util.h"
 
 #include "api.h"
 #include "log_file.h"
@@ -57,7 +56,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0), MODULE_DEPENDENCY("time_util", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
 
 MODULE_INIT
 {
@@ -180,7 +179,9 @@ HOOK_LISTENER(log)
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 
-	char *dateTime = $(char *, time_util, getCurrentDateTimeString)();
+	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
+	g_get_current_time(now);
+	char *dateTime = g_time_val_to_iso8601(now);
 
     for(GList *item = logFiles; item != NULL; item = item->next) {
     	LogFileConfig *logFile = item->data;
@@ -215,6 +216,7 @@ HOOK_LISTENER(log)
     	}
     }
 
+    free(now);
     free(dateTime);
 }
 

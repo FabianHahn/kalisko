@@ -26,7 +26,6 @@
 
 #include "dll.h"
 #include "hooks.h"
-#include "modules/time_util/time_util.h"
 
 #include "log.h"
 #include "api.h"
@@ -36,7 +35,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko's default log provider that's always loaded initially");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("time_util", 0, 1, 0));
+MODULE_NODEPS;
 
 HOOK_LISTENER(log);
 
@@ -58,7 +57,9 @@ HOOK_LISTENER(log)
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 
-	char *dateTime = $(char *, time_util, getCurrentDateTimeString)();
+	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
+	g_get_current_time(now);
+	char *dateTime = g_time_val_to_iso8601(now);
 
 	switch(type) {
 		case LOG_TYPE_ERROR:
@@ -75,6 +76,7 @@ HOOK_LISTENER(log)
 		break;
 	}
 
+	free(now);
 	free(dateTime);
 	fflush(stderr);
 }

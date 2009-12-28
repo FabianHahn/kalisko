@@ -1,0 +1,10 @@
+# ignore SCons log
+config.log
+
+syntax: glob
+
+# ignore dot files
+.*
+
+# ignore built source code
+bin\*

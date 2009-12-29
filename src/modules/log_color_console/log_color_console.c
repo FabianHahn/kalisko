@@ -43,14 +43,9 @@ MODULE_NODEPS;
 HOOK_LISTENER(log);
 
 #ifdef WIN32
+	static void writeMessage(char *dateTime, int color, char *logType, char *message);
 	static void setWindowsConsoleColor(int color);
 	static int getWindowsConsoleColor();
-#else
-	#define ERROR_COLOR "\033[1;31m" // bold red
-	#define WARNING_COLOR "\033[31m" // red
-	#define INFO_COLOR "\033[32m" // green
-	#define DEBUG_COLOR "\033[34m" // blue
-	#define COLOR_RESET "\033[m"
 #endif
 
 MODULE_INIT
@@ -75,17 +70,10 @@ HOOK_LISTENER(log)
 	g_get_current_time(now);
 	char *dateTime = g_time_val_to_iso8601(now);
 
-#ifdef WIN32
-	int currentColor = getWindowsConsoleColor();
-#endif
-
 	switch(type) {
 		case LOG_TYPE_ERROR:
 #ifdef WIN32
-			fprintf(stderr, dateTime);
-			setWindowsConsoleColor(12); // red
-			fprintf(stderr, " ERROR: %s\n", message);
-			setWindowsConsoleColor(currentColor);
+			writeMessage(dateTime, 12, "ERROR", message); // 12 -> red
 #else
 			fprintf(stderr, "%s \033[1;31mERROR: %s\033[m\n", dateTime, message); // bold red
 #endif
@@ -93,10 +81,7 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_WARNING:
 #ifdef WIN32
-			fprintf(stderr, dateTime);
-			setWindowsConsoleColor(4); // dark red
-			fprintf(stderr, " WARNING: %s\n", message);
-			setWindowsConsoleColor(currentColor);
+			writeMessage(dateTime, 4, "WARNING", message); // 4 -> dark red
 #else
 			fprintf(stderr, "%s \033[31mWARNING: %s\033[m\n", dateTime, message); // red
 #endif
@@ -104,10 +89,7 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_INFO:
 #ifdef WIN32
-			fprintf(stderr, dateTime);
-			setWindowsConsoleColor(10); // green
-			fprintf(stderr, " INFO: %s\n", message);
-			setWindowsConsoleColor(currentColor);
+			writeMessage(dateTime, 10, "INFO", message); // 10 -> green
 #else
 			fprintf(stderr, "%s \033[32mINFO: %s\033[m\n", dateTime, message); // green
 #endif
@@ -115,10 +97,7 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_DEBUG:
 #ifdef WIN32
-			fprintf(stderr, dateTime);
-			setWindowsConsoleColor(9); // blue
-			fprintf(stderr, " DEBUG: %s\n", message);
-			setWindowsConsoleColor(currentColor);
+			writeMessage(dateTime, 9, "DEBUG", message); // 9 -> blue
 #else
 			fprintf(stderr, "%s \033[34mDEBUG: %s\033[m\n", dateTime, message); // blue
 #endif
@@ -131,6 +110,30 @@ HOOK_LISTENER(log)
 }
 
 #ifdef WIN32
+	/**
+	 * Writes on Windows systems the log message to stderr. This function just makes the source code
+	 * more readable.
+	 *
+	 * @param dateTime	The date & time string
+	 * @param color		The color to use on the console
+	 * @param logType	The string representing the current log type
+	 * @param message	The message itself
+	 */
+	static void writeMessage(char *dateTime, int color, char *logType, char *message) {
+		int currentColor = getWindowsConsoleColor();
+
+		fprintf(stderr, dateTime);
+		setWindowsConsoleColor(color); // red
+		fprintf(stderr, " %s: %s\n", logType, message);
+
+		setWindowsConsoleColor(currentColor);
+	}
+
+	/**
+	 * Sets the foreground color in a Windows console to the given value.
+	 *
+	 * @param color		The new foreground color
+	 */
 	static void setWindowsConsoleColor(int color)
 	{
 		WORD newColor;
@@ -147,6 +150,11 @@ HOOK_LISTENER(log)
 		}
 	}
 
+	/**
+	 * Returns the current foreground color in a Windows console.
+	 *
+	 * @return	The current foreground color
+	 */
 	static int getWindowsConsoleColor()
 	{
 		// Get the handle for stderr

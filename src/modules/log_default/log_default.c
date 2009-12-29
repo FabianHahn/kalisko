@@ -21,13 +21,12 @@
 
 #include <stdlib.h>
 #include <stdio.h> // fprintf
-#include <time.h> //time_t, strftime
 #include <glib.h>
 
 #include "dll.h"
 #include "hooks.h"
-
 #include "log.h"
+
 #include "api.h"
 
 MODULE_NAME("log_default");

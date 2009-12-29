@@ -17,5 +17,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-if module['PLATFORM'] == 'posix':
-	module.SharedLibrary('../log_color_console', Glob('*.c'))
+module.SharedLibrary('../log_color_console', Glob('*.c'))

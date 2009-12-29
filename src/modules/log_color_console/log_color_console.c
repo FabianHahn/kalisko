@@ -123,7 +123,7 @@ HOOK_LISTENER(log)
 		int currentColor = getWindowsConsoleColor();
 
 		fprintf(stderr, dateTime);
-		setWindowsConsoleColor(color); // red
+		setWindowsConsoleColor(color);
 		fprintf(stderr, " %s: %s\n", logType, message);
 
 		setWindowsConsoleColor(currentColor);

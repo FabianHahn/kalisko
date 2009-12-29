@@ -30,7 +30,7 @@
 #define TEST_FILE "/../../src/tests/markov/darwin.txt"
 #define TEST_LETTER_LEVEL 5
 #define TEST_LETTER_EMIN 0.95
-#define TEST_LETTER_EMAX 0.96
+#define TEST_LETTER_EMAX 1.0
 #define TEST_WORD_LEVEL 2
 #define TEST_WORD_EMIN 1.27
 #define TEST_WORD_EMAX 1.28
@@ -59,6 +59,7 @@ TEST_CASE(source)
 	TEST_ASSERT(letter_source != NULL);
 
 	entropy = $(double, markov, getMarkovEntropy)(letter_source->source);
+	printf("%f\n", entropy);
 	TEST_ASSERT(entropy >= TEST_LETTER_EMIN && entropy <= TEST_LETTER_EMAX);
 
 	$(void, markov, freeMarkovFileLetterSource)(letter_source);

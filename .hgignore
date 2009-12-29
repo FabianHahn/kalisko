@@ -7,4 +7,4 @@ syntax: glob
 .*
 
 # ignore built source code
-bin\*
+bin/*

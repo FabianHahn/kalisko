@@ -82,8 +82,9 @@ HOOK_LISTENER(log)
 	switch(type) {
 		case LOG_TYPE_ERROR:
 #ifdef WIN32
+			fprintf(stderr, dateTime);
 			setWindowsConsoleColor(12); // red
-			fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
+			fprintf(stderr, " ERROR: %s\n", message);
 			setWindowsConsoleColor(currentColor);
 #else
 			fprintf(stderr, "%s \033[1;31mERROR: %s\033[m\n", dateTime, message); // bold red
@@ -92,8 +93,9 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_WARNING:
 #ifdef WIN32
+			fprintf(stderr, dateTime);
 			setWindowsConsoleColor(4); // dark red
-			fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
+			fprintf(stderr, " WARNING: %s\n", message);
 			setWindowsConsoleColor(currentColor);
 #else
 			fprintf(stderr, "%s \033[31mWARNING: %s\033[m\n", dateTime, message); // red
@@ -102,8 +104,9 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_INFO:
 #ifdef WIN32
+			fprintf(stderr, dateTime);
 			setWindowsConsoleColor(10); // green
-			fprintf(stderr, "%s INFO: %s\n", dateTime, message);
+			fprintf(stderr, " INFO: %s\n", message);
 			setWindowsConsoleColor(currentColor);
 #else
 			fprintf(stderr, "%s \033[32mINFO: %s\033[m\n", dateTime, message); // green
@@ -112,8 +115,9 @@ HOOK_LISTENER(log)
 		break;
 		case LOG_TYPE_DEBUG:
 #ifdef WIN32
+			fprintf(stderr, dateTime);
 			setWindowsConsoleColor(9); // blue
-			fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
+			fprintf(stderr, " DEBUG: %s\n", message);
 			setWindowsConsoleColor(currentColor);
 #else
 			fprintf(stderr, "%s \033[34mDEBUG: %s\033[m\n", dateTime, message); // blue

@@ -29,6 +29,9 @@
 
 #include "dll.h"
 #include "hooks.h"
+#include "modules/config/config.h"
+#include "modules/config/path.h"
+#include "modules/config_standard/util.h"
 
 #include "log.h"
 #include "api.h"
@@ -36,21 +39,71 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
 
 HOOK_LISTENER(log);
+HOOK_LISTENER(configChanged);
+
+static void updateConfig();
 
 #ifdef WIN32
+	static void updateConfigFor(char *configPath, LogType type, int defaultValue);
+#else
+	static void updateConfigFor(char *configPath, LogType type, char *defaultValue);
+#endif
+
+#ifdef WIN32
+	static bool inWindowsColorRange(int color);
 	static void writeMessage(char *dateTime, int color, char *logType, char *message);
 	static void setWindowsConsoleColor(int color);
 	static int getWindowsConsoleColor();
 #endif
 
+#define COLORS_CONFIG_PATH "kalisko/logColors"
+#define ERROR_COLOR_PATH "/error"
+#define WARNING_COLOR_PATH "/warning"
+#define INFO_COLOR_PATH "/info"
+#define DEBUG_COLOR_PATH "/debug"
+
+#ifdef WIN32
+	#define STD_ERROR_COLOR 12 // red
+	#define STD_WARNING_COLOR 4 // dark red
+	#define STD_INFO_COLOR 10 // green
+	#define STD_DEBUG_COLOR 9 // blue
+#else
+	#define STD_ERROR_COLOR "1;31m" // bold red
+	#define STD_WARNING_COLOR "31m" // red
+	#define STD_INFO_COLOR "32m" // green
+	#define STD_DEBUG_COLOR "34m" // blue
+#endif
+
+#ifdef WIN32
+	int errorColor = STD_ERROR_COLOR;
+	int warningColor = STD_WARNING_COLOR;
+	int infoColor = STD_INFO_COLOR;
+	int debugColor = STD_DEBUG_COLOR;
+#else
+	char *errorColor = STD_ERROR_COLOR;
+	char *warningColor = STD_WARNING_COLOR;
+	char *infoColor = STD_INFO_COLOR;
+	char *debugColor = STD_DEBUG_COLOR;
+#endif
+
 MODULE_INIT
 {
-	return HOOK_ATTACH(log, log);
+	if(!HOOK_ATTACH(log, log)) {
+		return false;
+	}
+
+	updateConfig(); // we initialize the colors after attaching the log hook so we can see possible problems on the console.
+
+	if(!HOOK_ATTACH(stdConfigChanged, configChanged)) {
+		return false;
+	}
+
+	return true;
 }
 
 MODULE_FINALIZE
@@ -73,33 +126,33 @@ HOOK_LISTENER(log)
 	switch(type) {
 		case LOG_TYPE_ERROR:
 #ifdef WIN32
-			writeMessage(dateTime, 12, "ERROR", message); // 12 -> red
+			writeMessage(dateTime, errorColor, "ERROR", message);
 #else
-			fprintf(stderr, "%s \033[1;31mERROR: %s\033[m\n", dateTime, message); // bold red
+			fprintf(stderr, "%s \033[%sERROR: %s\033[m\n", dateTime, errorColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_WARNING:
 #ifdef WIN32
-			writeMessage(dateTime, 4, "WARNING", message); // 4 -> dark red
+			writeMessage(dateTime, warningColor, "WARNING", message);
 #else
-			fprintf(stderr, "%s \033[31mWARNING: %s\033[m\n", dateTime, message); // red
+			fprintf(stderr, "%s \033[%sWARNING: %s\033[m\n", dateTime, warningColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_INFO:
 #ifdef WIN32
-			writeMessage(dateTime, 10, "INFO", message); // 10 -> green
+			writeMessage(dateTime, infoColor, "INFO", message);
 #else
-			fprintf(stderr, "%s \033[32mINFO: %s\033[m\n", dateTime, message); // green
+			fprintf(stderr, "%s \033[%sINFO: %s\033[m\n", dateTime, infoColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_DEBUG:
 #ifdef WIN32
-			writeMessage(dateTime, 9, "DEBUG", message); // 9 -> blue
+			writeMessage(dateTime, debugColor, "DEBUG", message);
 #else
-			fprintf(stderr, "%s \033[34mDEBUG: %s\033[m\n", dateTime, message); // blue
+			fprintf(stderr, "%s \033[%sDEBUG: %s\033[m\n", dateTime, debugColor, message);
 #endif
 		break;
 	}
@@ -109,7 +162,102 @@ HOOK_LISTENER(log)
 	fflush(stderr);
 }
 
+HOOK_LISTENER(configChanged) {
+	updateConfig();
+}
+
+/**
+ * Reads the standard configs to set the colors as the user want it. If no configuration is set the default colors are used.
+ */
+static void updateConfig() {
+	LOG_INFO("Reading configuration for log_color_console.");
+
 #ifdef WIN32
+	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_TYPE_ERROR, STD_ERROR_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_TYPE_WARNING, STD_WARNING_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_TYPE_INFO, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_TYPE_DEBUG, STD_DEBUG_COLOR);
+#else
+	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_TYPE_ERROR, STD_ERROR_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_TYPE_WARNING, STD_WARNING_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_TYPE_INFO, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_TYPE_DEBUG, STD_DEBUG_COLOR);
+#endif
+}
+
+/**
+ * Reads the standard configs to set the color for a given log type or if nothing is set to default.
+ *
+ * @param configPath	The configuration path to the color in the configuration file
+ * @param type			The LogType for which this setting is to applay
+ * @param defaultValue	The default color to use
+ */
+#ifdef WIN32
+	static void updateConfigFor(char *configPath, LogType type, int defaultValue)
+#else
+	static void updateConfigFor(char *configPath, LogType type, char *defaultValue)
+#endif
+{
+	#ifdef WIN32
+		int newColor = defaultValue;
+	#else
+		char *newColor = defaultValue;
+	#endif
+
+	ConfigNodeValue *colorConfig = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(configPath);
+	if(colorConfig) {
+		#ifdef WIN32
+			if(colorConfig->type == CONFIG_INTEGER) {
+				int color = colorConfig->content.integer;
+
+				if(!inWindowsColorRange(color)) {
+					LOG_ERROR("On Windows systems the color code must be a number from 0 to 15 (inclusive). Currently it is: %i", color);
+				} else {
+					newColor = color;
+				}
+			} else {
+				LOG_ERROR("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
+			}
+	#else
+			if(colorConfig->type == CONFIG_STRING) {
+				newColor = colorConfig->content.string;
+			} else {
+				LOG_ERROR("On *nix systems the color code must be a string.");
+			}
+		#endif
+	} else {
+		LOG_DEBUG("No color set for log type error. Using default value");
+	}
+
+	switch(type) {
+		case LOG_TYPE_ERROR:
+			errorColor = newColor;
+		break;
+		case LOG_TYPE_WARNING:
+			warningColor = newColor;
+		break;
+		case LOG_TYPE_INFO:
+			infoColor = newColor;
+		break;
+		case LOG_TYPE_DEBUG:
+			debugColor = newColor;
+		break;
+		default:
+			LOG_DEBUG("Unknown LogType value given: '%i'", type);
+	}
+}
+
+#ifdef WIN32
+
+	/**
+	 * Checks if the given color can be used on Windows as a color.
+	 *
+	 * @param color		The color to check.
+	 */
+	static bool inWindowsColorRange(int color) {
+		return color >= 0 && color <= 15;
+	}
+
 	/**
 	 * Writes on Windows systems the log message to stderr. This function just makes the source code
 	 * more readable.

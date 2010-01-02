@@ -37,10 +37,10 @@
 #include "module.h"
 
 #ifdef WIN32
-#define MODULE_PREFIX ""
+#define MODULE_PREFIX "kalisko_"
 #define MODULE_SUFFIX ".dll"
 #else
-#define MODULE_PREFIX "lib"
+#define MODULE_PREFIX "libkalisko_"
 #define MODULE_SUFFIX ".so"
 #endif
 

@@ -26,4 +26,4 @@ if not module.GetOption('clean'):
 			
 	module = conf.Finish()
 	
-module.SharedLibrary('../markov', Glob('*.c'))
+module.SharedLibrary('../kalisko_markov', Glob('*.c'))

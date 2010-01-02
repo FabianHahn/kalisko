@@ -31,4 +31,4 @@ if not module.GetOption('clean'):
 			
 	module = conf.Finish()
 
-module.SharedLibrary('../socket', Glob('*.c'))
+module.SharedLibrary('../kalisko_socket', Glob('*.c'))

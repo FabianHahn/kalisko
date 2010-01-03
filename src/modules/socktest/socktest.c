@@ -25,6 +25,7 @@
 #include "dll.h"
 #include "hooks.h"
 #include "modules/socket/socket.h"
+#include "modules/socket/poll.h"
 
 #include "api.h"
 

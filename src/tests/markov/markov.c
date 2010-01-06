@@ -59,7 +59,6 @@ TEST_CASE(source)
 	TEST_ASSERT(letter_source != NULL);
 
 	entropy = $(double, markov, getMarkovEntropy)(letter_source->source);
-	printf("%f\n", entropy);
 	TEST_ASSERT(entropy >= TEST_LETTER_EMIN && entropy <= TEST_LETTER_EMAX);
 
 	$(void, markov, freeMarkovFileLetterSource)(letter_source);

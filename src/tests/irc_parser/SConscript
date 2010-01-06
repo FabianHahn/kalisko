@@ -18,4 +18,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Import('test')
 
 test.Append(CPPPATH = ['../..', '../../modules/irc_parser'])
-test.SharedLibrary('../../modules/test_irc_parser', Glob('*.c'))
+test.SharedLibrary('../../modules/kalisko_test_irc_parser', Glob('*.c'))

@@ -18,4 +18,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Import('test')
 
 test.Append(CPPPATH = ['../..', '../../modules/string_util'])
-test.SharedLibrary('../../modules/test_string_util', Glob('*.c'))
+test.SharedLibrary('../../modules/kalisko_test_string_util', Glob('*.c'))

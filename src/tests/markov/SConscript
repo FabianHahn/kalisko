@@ -18,4 +18,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Import('test')
 
 test.Append(CPPPATH = ['../..', '../../modules/markov'])
-lib = test.SharedLibrary('../../modules/test_markov', Glob('*.c'))
+lib = test.SharedLibrary('../../modules/kalisko_test_markov', Glob('*.c'))

@@ -64,7 +64,7 @@ MODULE_INIT
 
 	// window
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_default_size(GTK_WIDGET(window), 850, 250);
+	gtk_window_set_default_size(GTK_WINDOW(window), 850, 250);
 	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(closeWindow), NULL);
 
 	// vertical layout

@@ -43,6 +43,7 @@
 #include "module.h"
 #include "hooks.h"
 #include "modules/config_standard/config_standard.h"
+#include "modules/config_standard/util.h"
 
 #include "api.h"
 #include "socket.h"

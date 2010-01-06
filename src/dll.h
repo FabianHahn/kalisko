@@ -34,7 +34,7 @@
 #include "windows.h"
 #define $(TYPE, MODULE, FUNC) ((TYPE (*)()) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
 #define GET_LIBRARY_HANDLE(MODULE) GetModuleHandle(GET_MODULE_PARAM(MODULE))
-#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? #MODULE : NULL)
+#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
 #define API __declspec(dllimport)
 #else
 #define $(TYPE, MODULE, FUNC) FUNC

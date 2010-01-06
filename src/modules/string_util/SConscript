@@ -17,4 +17,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.SharedLibrary('../string_util', Glob('*.c'))
+module.SharedLibrary('../kalisko_string_util', Glob('*.c'))

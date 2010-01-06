@@ -17,13 +17,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
-
-	if not conf.CheckLibWithHeader('m', 'math.h', 'c'):
-		print('Error: Could not find libm and the corresponding math.h header file!')
-		Exit(1)
-			
-	module = conf.Finish()
-	
-module.SharedLibrary('../kalisko_markov', Glob('*.c'))
+module.SharedLibrary('../kalisko_log_color_console', Glob('*.c'))

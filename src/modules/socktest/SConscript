@@ -17,4 +17,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 	
-module.SharedLibrary('../socktest', Glob('*.c'))
+module.SharedLibrary('../kalisko_socktest', Glob('*.c'))

@@ -21,19 +21,18 @@
 
 #include <stdlib.h>
 #include <stdio.h> // fprintf
-#include <time.h> //time_t, strftime
 #include <glib.h>
 
 #include "dll.h"
 #include "hooks.h"
-
 #include "log.h"
+
 #include "api.h"
 
 MODULE_NAME("log_default");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko's default log provider that's always loaded initially");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 

@@ -54,7 +54,7 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
 

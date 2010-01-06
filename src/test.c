@@ -26,6 +26,7 @@
 #include "hooks.h"
 #include "module.h"
 #include "types.h"
+#include "timer.h"
 #include "util.h"
 #include "test.h"
 #include "memory_alloc.h"
@@ -39,8 +40,8 @@ int main(int argc, char **argv)
 {
 	initMemory();
 	initHooks();
+	initTimers();
 	initLog();
-
 	initModules();
 
 	printf("Running test cases...\n");

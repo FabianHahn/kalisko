@@ -22,6 +22,11 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-typedef enum {false, true} bool;
+#include <glib.h>
+
+// support java-like boolean syntax
+typedef gboolean bool;
+#define true TRUE
+#define false FALSE
 
 #endif

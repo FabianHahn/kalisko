@@ -35,7 +35,7 @@
 #include "api.h"
 #include "log_file.h"
 
-#define LOG_FILES_CONFIG_PATH "logfiles"
+#define LOG_FILES_CONFIG_PATH "kalisko/logfiles"
 #define LOG_FILES_CONFIG_FILEPATH_KEY "filepath"
 #define LOG_FILES_CONFIG_LOGTYPE_KEY "logtype"
 

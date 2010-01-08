@@ -65,10 +65,12 @@ static GtkWidget *vLayout;
 static GtkWidget *scroll;
 static GtkWidget *input;
 static unsigned int lines;
+static GString *buffer;
 
 MODULE_INIT
 {
 	lines = 0;
+	buffer = g_string_new("");
 
 	gtk_init(NULL, NULL);
 
@@ -129,7 +131,8 @@ MODULE_FINALIZE
 HOOK_LISTENER(php_out)
 {
 	char *message = HOOK_ARG(char *);
-	appendMessage(message, MESSAGE_OUT);
+	unsigned int length = HOOK_ARG(unsigned int);
+	g_string_append_len(buffer, message, length);
 }
 
 HOOK_LISTENER(php_log)
@@ -157,6 +160,19 @@ static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(input));
 	appendMessage(command, MESSAGE_IN);
 	evaluatePhp(command);
+	char *delimiter = "\n";
+	char *str = buffer->str;
+	g_string_free(buffer, false);
+	char **tokens = g_strsplit(g_strchomp(str), delimiter, -1);
+
+	for(char **iter = tokens; *iter != NULL; iter++) {
+		appendMessage(*iter, MESSAGE_OUT);
+	}
+
+	free(str);
+	g_strfreev(tokens);
+	buffer = g_string_new("");
+
 	gtk_entry_set_text(GTK_ENTRY(input), "");
 
 	return true;

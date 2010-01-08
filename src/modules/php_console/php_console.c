@@ -106,7 +106,6 @@ MODULE_INIT
 	// list columns
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), gtk_tree_view_column_new_with_attributes("Timestamp", gtk_cell_renderer_text_new(), "text", ROW_TIME, NULL));
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	g_object_set(G_OBJECT(renderer), "family", "Monospace", NULL);
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Message", renderer, "text", ROW_MESSAGE, NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 	gtk_tree_view_column_set_cell_data_func(column, renderer, &formatMessageCell, NULL, NULL);
@@ -190,23 +189,26 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 	return true;
 }
 
-static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data) // GtkTreeCellDataFunc
+static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *renderer, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data) // GtkTreeCellDataFunc
 {
 	PhpConsoleMessageType type;
 	gtk_tree_model_get(tree_model, iter, ROW_MESSAGE_TYPE, &type, -1);
 
 	switch(type) {
 		case MESSAGE_IN:
-			g_object_set(G_OBJECT(cell), "foreground", "#0000ff", NULL);
-			g_object_set(G_OBJECT(cell), "weight", 800, NULL);
+			g_object_set(G_OBJECT(renderer), "foreground", "#0000ff", NULL);
+			g_object_set(G_OBJECT(renderer), "weight", 800, NULL);
+			g_object_set(G_OBJECT(renderer), "family", "Monospace", NULL);
 		break;
 		case MESSAGE_OUT:
-			g_object_set(G_OBJECT(cell), "foreground", "#000000", NULL);
-			g_object_set(G_OBJECT(cell), "weight", 400, NULL);
+			g_object_set(G_OBJECT(renderer), "foreground", "#000000", NULL);
+			g_object_set(G_OBJECT(renderer), "weight", 400, NULL);
+			g_object_set(G_OBJECT(renderer), "family", "Sans", NULL);
 		break;
 		case MESSAGE_LOG:
-			g_object_set(G_OBJECT(cell), "foreground", "#ff0000", NULL);
-			g_object_set(G_OBJECT(cell), "weight", 800, NULL);
+			g_object_set(G_OBJECT(renderer), "foreground", "#ff0000", NULL);
+			g_object_set(G_OBJECT(renderer), "weight", 800, NULL);
+			g_object_set(G_OBJECT(renderer), "family", "Sans", NULL);
 		break;
 	}
 }

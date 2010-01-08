@@ -31,6 +31,7 @@
 
 #include "dll.h"
 #include "log.h"
+#include "hooks.h"
 #include "api.h"
 #include "lang_php.h"
 #include "phpext_kalisko.h"
@@ -71,6 +72,8 @@ MODULE_INIT
 	zend_alter_ini_entry("error_log", sizeof("error_log"), "", sizeof("") - 1, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
 	zend_alter_ini_entry("error_reporting", sizeof("error_reporting"), "6143", sizeof("6143") - 1, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
 
+	HOOK_ADD(php_out);
+
 	return true;
 }
 
@@ -78,18 +81,22 @@ MODULE_FINALIZE
 {
 	LOG_INFO("Shutting down the PHP SAPI");
 	php_embed_shutdown(TSRMLS_C);
+
+	HOOK_DEL(php_out);
 }
 
 static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 {
-	LOG_INFO("%s", str);
+	if(str_length > 0) {
+		HOOK_TRIGGER(php_out, str, str_length);
+	}
 
 	return 0;
 }
 
 static void log_message(char *message)
 {
-	LOG_INFO(message);
+	LOG_INFO("PHP log: %s", message);
 }
 
 static void sapi_error(int type, const char *fmt, ...)

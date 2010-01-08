@@ -32,7 +32,7 @@
 MODULE_NAME("GTK+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -41,40 +41,39 @@ MODULE_NODEPS;
 TIMER_CALLBACK(GTK_MAIN_LOOP);
 
 static bool isLoopRunning;
+static GTimeVal *lastScheduledPollTime;
 
 MODULE_INIT
 {
 	isLoopRunning = false;
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	isLoopRunning = false;
+	stopGtkLoop();
 }
 
 TIMER_CALLBACK(GTK_MAIN_LOOP)
 {
 	gtk_main_iteration_do(FALSE);
-
-	if(isLoopRunning) {
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-	}
+	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 }
 
 API void runGtkLoop()
 {
 	if(!isLoopRunning) {
 		isLoopRunning = true;
-
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
+		lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 	}
 }
 
 API void stopGtkLoop()
 {
-	isLoopRunning = false;
+	if(isLoopRunning) {
+		TIMER_DEL(lastScheduledPollTime);
+		isLoopRunning = false;
+	}
 }
 
 API bool isGtkLoopRunning()

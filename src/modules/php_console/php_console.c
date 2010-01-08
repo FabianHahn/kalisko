@@ -36,7 +36,21 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 0), MODULE_DEPENDENCY("lang_php", 0, 1, 0));
 
-static void appendMessage(char *message, bool isInType);
+// Columns
+typedef enum {
+		ROW_TIME,
+		ROW_MESSAGE,
+		ROW_MESSAGE_TYPE,
+		N_ROWS
+} PhpConsoleRow;
+
+typedef enum {
+		MESSAGE_IN,
+		MESSAGE_OUT,
+		MESSAGE_LOG
+} PhpConsoleMessageType;
+
+static void appendMessage(char *message, PhpConsoleMessageType isInType);
 static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
@@ -50,14 +64,6 @@ static GtkWidget *vLayout;
 static GtkWidget *scroll;
 static GtkWidget *input;
 static unsigned int lines;
-
-// Columns
-typedef enum {
-		ROW_TIME,
-		ROW_MESSAGE,
-		ROW_MESSAGE_IN,
-		N_ROWS
-} PhpConsoleRow;
 
 MODULE_INIT
 {
@@ -97,7 +103,7 @@ MODULE_INIT
 	gtk_tree_view_column_set_cell_data_func(column, renderer, &formatMessageCell, NULL, NULL);
 
 	// create store
-	store = gtk_list_store_new(N_ROWS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN);
+	store = gtk_list_store_new(N_ROWS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(list), GTK_TREE_MODEL(store));
 
 	// show everything
@@ -121,10 +127,10 @@ HOOK_LISTENER(php)
 {
 	char *message = HOOK_ARG(char *);
 
-	appendMessage(message, false);
+	appendMessage(message, MESSAGE_OUT);
 }
 
-static void appendMessage(char *message, bool isInType)
+static void appendMessage(char *message, PhpConsoleMessageType type)
 {
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);
@@ -132,7 +138,7 @@ static void appendMessage(char *message, bool isInType)
 
 	GtkTreeIter iter;
 	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter, ROW_TIME, dateTime, ROW_MESSAGE, message, ROW_MESSAGE_IN, isInType, -1);
+	gtk_list_store_set(store, &iter, ROW_TIME, dateTime, ROW_MESSAGE, message, ROW_MESSAGE_TYPE, type, -1);
 
 	GtkTreePath	*path = gtk_tree_path_new_from_indices(lines++, -1);
 	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(list), path, NULL, TRUE, 0.0, 0.0);
@@ -141,7 +147,7 @@ static void appendMessage(char *message, bool isInType)
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(input));
-	appendMessage(command, true);
+	appendMessage(command, MESSAGE_IN);
 	evaluatePhp(command);
 	gtk_entry_set_text(GTK_ENTRY(input), "");
 
@@ -156,14 +162,21 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data) // GtkTreeCellDataFunc
 {
-	bool isInType;
-	gtk_tree_model_get(tree_model, iter, ROW_MESSAGE_IN, &isInType, -1);
+	PhpConsoleMessageType type;
+	gtk_tree_model_get(tree_model, iter, ROW_MESSAGE_TYPE, &type, -1);
 
-	if(isInType) {
-		g_object_set(G_OBJECT(cell), "foreground", "#ff0000", NULL);
-		g_object_set(G_OBJECT(cell), "weight", 800, NULL);
-	} else {
-		g_object_set(G_OBJECT(cell), "foreground", "#000000", NULL);
-		g_object_set(G_OBJECT(cell), "weight", 400, NULL);
+	switch(type) {
+		case MESSAGE_IN:
+			g_object_set(G_OBJECT(cell), "foreground", "#0000ff", NULL);
+			g_object_set(G_OBJECT(cell), "weight", 800, NULL);
+		break;
+		case MESSAGE_OUT:
+			g_object_set(G_OBJECT(cell), "foreground", "#000000", NULL);
+			g_object_set(G_OBJECT(cell), "weight", 400, NULL);
+		break;
+		case MESSAGE_LOG:
+			g_object_set(G_OBJECT(cell), "foreground", "#ff0000", NULL);
+			g_object_set(G_OBJECT(cell), "weight", 800, NULL);
+		break;
 	}
 }

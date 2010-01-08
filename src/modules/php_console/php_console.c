@@ -90,6 +90,11 @@ MODULE_INIT
 	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(scroll));
 
 	input = gtk_entry_new();
+	GtkRcStyle *style = gtk_widget_get_modifier_style(GTK_WIDGET(input));
+	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(GTK_WIDGET(input), style);
+
 	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
 	gtk_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), NULL);
 	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
@@ -101,6 +106,7 @@ MODULE_INIT
 	// list columns
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), gtk_tree_view_column_new_with_attributes("Timestamp", gtk_cell_renderer_text_new(), "text", ROW_TIME, NULL));
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	g_object_set(G_OBJECT(renderer), "family", "Monospace", NULL);
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Message", renderer, "text", ROW_MESSAGE, NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
 	gtk_tree_view_column_set_cell_data_func(column, renderer, &formatMessageCell, NULL, NULL);

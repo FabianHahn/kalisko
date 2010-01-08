@@ -55,7 +55,8 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 
-HOOK_LISTENER(php);
+HOOK_LISTENER(php_out);
+HOOK_LISTENER(php_log);
 
 static GtkWidget *window;
 static GtkWidget *list;
@@ -74,7 +75,7 @@ MODULE_INIT
 	// window
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), "Kalisko PHP console");
-	gtk_window_set_default_size(GTK_WINDOW(window), 600, 600);
+	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
 	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(closeWindow), NULL);
 
 	// vertical layout
@@ -109,7 +110,8 @@ MODULE_INIT
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-	HOOK_ATTACH(php_out, php);
+	HOOK_ATTACH(php_out, php_out);
+	HOOK_ATTACH(php_log, php_log);
 
 	// run
 	$(void, gtk+, runGtkLoop)();
@@ -119,15 +121,21 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(php_out, php);
+	HOOK_DETACH(php_out, php_out);
+	HOOK_DETACH(php_log, php_log);
 	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
-HOOK_LISTENER(php)
+HOOK_LISTENER(php_out)
 {
 	char *message = HOOK_ARG(char *);
-
 	appendMessage(message, MESSAGE_OUT);
+}
+
+HOOK_LISTENER(php_log)
+{
+	char *message = HOOK_ARG(char *);
+	appendMessage(message, MESSAGE_LOG);
 }
 
 static void appendMessage(char *message, PhpConsoleMessageType type)

@@ -73,6 +73,7 @@ MODULE_INIT
 	zend_alter_ini_entry("error_reporting", sizeof("error_reporting"), "6143", sizeof("6143") - 1, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
 
 	HOOK_ADD(php_out);
+	HOOK_ADD(php_log);
 
 	return true;
 }
@@ -83,6 +84,7 @@ MODULE_FINALIZE
 	php_embed_shutdown(TSRMLS_C);
 
 	HOOK_DEL(php_out);
+	HOOK_DEL(php_log);
 }
 
 static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
@@ -96,7 +98,8 @@ static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 
 static void log_message(char *message)
 {
-	LOG_INFO("PHP log: %s", message);
+	HOOK_TRIGGER(php_log, message);
+	LOG_WARNING(message);
 }
 
 static void sapi_error(int type, const char *fmt, ...)

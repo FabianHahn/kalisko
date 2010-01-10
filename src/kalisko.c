@@ -32,6 +32,9 @@
 
 int main(int argc, char **argv)
 {
+	setArgc(argc);
+	setArgv(argv);
+
 	initMemory();
 	initHooks();
 	initTimers();

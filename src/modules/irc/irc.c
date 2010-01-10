@@ -116,6 +116,8 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	ircSend("QUIT :Kalisko module unload :(");
+
 	HOOK_DEL(irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	HOOK_DEL(irc_line);

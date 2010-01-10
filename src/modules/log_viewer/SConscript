@@ -19,4 +19,4 @@ Import('module')
 
 module.ParseConfig('pkg-config --libs --cflags gtk+-2.0')
 
-module.SharedLibrary('../kalisko_gtk+_log_viewer', Glob('*.c'))
+module.SharedLibrary('../kalisko_log_viewer', Glob('*.c'))

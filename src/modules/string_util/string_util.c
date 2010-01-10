@@ -31,7 +31,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 

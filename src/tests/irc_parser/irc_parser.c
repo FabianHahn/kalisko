@@ -27,7 +27,7 @@
 
 #include "api.h"
 
-MODULE_NAME("irc_parser_tests");
+MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_parser module");
 MODULE_VERSION(0, 0, 1);

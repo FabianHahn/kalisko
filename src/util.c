@@ -36,6 +36,49 @@
 
 #define BUF 1024
 
+static char **argv;
+static int argc;
+
+/**
+ * Returns the argv from main().
+ *
+ * @return The argv from main().
+ */
+API char **getArgv()
+{
+	return argv;
+}
+
+/**
+ * Sets the argv.
+ *
+ * @param args		The argv from main().
+ */
+API void setArgv(char **args)
+{
+	argv = args;
+}
+
+/**
+ * Returns the argc from main().
+ *
+ * @return The argc from main().
+ */
+API int getArgc()
+{
+	return argc;
+}
+
+/**
+ * Sets the argc.
+ *
+ * @param count	The argc from main().
+ */
+API void setArgc(int count)
+{
+	argc = count;
+}
+
 /**
  * Returns the path to the core executable
  *

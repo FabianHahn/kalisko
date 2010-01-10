@@ -18,17 +18,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef GTK_LOG_VIEWER_GTK_LOG_VIEWER_H
+#define GTK_LOG_VIEWER_GTK_LOG_VIEWER_H
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API int compareIntegers(const void *a, const void *b, void *data);
-API int compareTimes(const void *a, const void *b, void *data);
-API void destroyGHashTable(void *table);
-API char **getArgv();
-API void setArgv(char **args);
-API int getArgc();
-API void setArgc(int count);
+typedef struct {
+		GtkWidget *container;
+		GtkWidget *treeViewScrollbar;
+		GtkWidget *treeView;
+		GtkListStore *listStore;
+		GtkTreeIter *listIter;
+		GtkWidget *toolbar;
+		unsigned int lines;
+} GtkLogViewer;
+
+enum {
+		COLUMN_LOG_TYPE = 0,
+		COLUMN_DATE_TIME,
+		COLUMN_MESSAGE,
+		COLUMN_COUNT
+} GtkLogViewerTreeViewColumns;
+
+typedef struct {
+		GtkWidget *window;
+		GtkLogViewer* logViewer;
+} GtkLogViewerWindow;
+
+API GtkLogViewer *newGtkLogViewer();
+API void freeGtkLogViewer(GtkLogViewer *viewer);
+
+API GtkLogViewerWindow *newGtkLogViewerWindow();
+API void freeGtkLogViewerWindow(GtkLogViewerWindow *window);
+
+API void gtkLogViewerAddMessage(GtkLogViewer *logViewer, char *time, char *message, GdkPixbuf *icon);
 
 #endif

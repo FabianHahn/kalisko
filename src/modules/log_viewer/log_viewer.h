@@ -18,8 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GTK_LOG_VIEWER_GTK_LOG_VIEWER_H
-#define GTK_LOG_VIEWER_GTK_LOG_VIEWER_H
+#ifndef LOG_VIEWER_LOG_VIEWER_H
+#define LOG_VIEWER_LOG_VIEWER_H
 
 typedef struct {
 		GtkWidget *container;
@@ -29,26 +29,26 @@ typedef struct {
 		GtkTreeIter *listIter;
 		GtkWidget *toolbar;
 		unsigned int lines;
-} GtkLogViewer;
+} LogViewer;
 
 enum {
 		COLUMN_LOG_TYPE = 0,
 		COLUMN_DATE_TIME,
 		COLUMN_MESSAGE,
 		COLUMN_COUNT
-} GtkLogViewerTreeViewColumns;
+} LogViewerTreeViewColumns;
 
 typedef struct {
 		GtkWidget *window;
-		GtkLogViewer* logViewer;
-} GtkLogViewerWindow;
+		LogViewer* logViewer;
+} LogViewerWindow;
 
-API GtkLogViewer *newGtkLogViewer();
-API void freeGtkLogViewer(GtkLogViewer *viewer);
+API LogViewer *newLogViewer();
+API void freeLogViewer(LogViewer *viewer);
 
-API GtkLogViewerWindow *newGtkLogViewerWindow();
-API void freeGtkLogViewerWindow(GtkLogViewerWindow *window);
+API LogViewerWindow *newLogViewerWindow();
+API void freeLogViewerWindow(LogViewerWindow *window);
 
-API void gtkLogViewerAddMessage(GtkLogViewer *logViewer, char *time, char *message, GdkPixbuf *icon);
+API void logViewerAddMessage(LogViewer *logViewer, char *time, char *message, GdkPixbuf *icon);
 
 #endif

@@ -32,12 +32,12 @@
 #include "modules/config_standard/util.h"
 
 #include "api.h"
-#include "modules/gtk+_log_viewer/gtk+_log_viewer.h"
+#include "modules/log_viewer/log_viewer.h"
 
-MODULE_NAME("gtk+_log_viewer");
+MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
@@ -54,9 +54,9 @@ MODULE_INIT
 	ConfigNodeValue *perform = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(PERFORM_CONFIG_PATH);
 
 	if(perform != NULL && perform->type == CONFIG_LIST &&
-		g_queue_find_custom(perform->content.list, "gtk+_log_viewer", (GCompareFunc)cmpStringItems) != NULL) {
+		g_queue_find_custom(perform->content.list, "log_viewer", (GCompareFunc)cmpStringItems) != NULL) {
 
-		GtkLogViewerWindow *window = newGtkLogViewerWindow();
+		LogViewerWindow *window = newLogViewerWindow();
 		g_signal_connect(G_OBJECT(window->window), "delete_event", G_CALLBACK(closeWindow), window);
 
 		HOOK_ATTACH_EX(log, newLogMessage, window);
@@ -79,9 +79,9 @@ MODULE_FINALIZE
  *
  * @return A new log viewer. Must be freed with freeGtkLogViewer().
  */
-API GtkLogViewer *newGtkLogViewer()
+API LogViewer *newLogViewer()
 {
-	GtkLogViewer *logViewer = ALLOCATE_OBJECT(GtkLogViewer);
+	LogViewer *logViewer = ALLOCATE_OBJECT(LogViewer);
 	logViewer->lines = 0;
 	logViewer->listIter = ALLOCATE_OBJECT(GtkTreeIter);
 
@@ -130,7 +130,7 @@ API GtkLogViewer *newGtkLogViewer()
  *
  * @param viewer	The log viewer to destroy
  */
-API void freeGtkLogViewer(GtkLogViewer *viewer)
+API void freeLogViewer(LogViewer *viewer)
 {
 	g_object_unref(viewer->listStore);
 	gtk_widget_destroy(viewer->container);
@@ -143,9 +143,9 @@ API void freeGtkLogViewer(GtkLogViewer *viewer)
  *
  * @return The newly created log viewer window. Must be freed with freeGtkLogViewerWindow().
  */
-API GtkLogViewerWindow *newGtkLogViewerWindow()
+API LogViewerWindow *newLogViewerWindow()
 {
-	GtkLogViewerWindow *window = ALLOCATE_OBJECT(GtkLogViewerWindow);
+	LogViewerWindow *window = ALLOCATE_OBJECT(LogViewerWindow);
 
 	// window for log viewer
 	window->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -154,7 +154,7 @@ API GtkLogViewerWindow *newGtkLogViewerWindow()
 	gtk_window_set_default_size(GTK_WINDOW(window->window), 850, 250);
 
 	// log viewer
-	window->logViewer = newGtkLogViewer();
+	window->logViewer = newLogViewer();
 	gtk_container_add(GTK_CONTAINER(window->window), GTK_WIDGET(window->logViewer->container));
 
 	return window;
@@ -165,15 +165,15 @@ API GtkLogViewerWindow *newGtkLogViewerWindow()
  *
  * @param window		The log viewer window to destroy.
  */
-API void freeGtkLogViewerWindow(GtkLogViewerWindow *window)
+API void freeLogViewerWindow(LogViewerWindow *window)
 {
-	freeGtkLogViewer(window->logViewer);
+	freeLogViewer(window->logViewer);
 	gtk_widget_destroy(window->window);
 
 	free(window);
 }
 
-API void gtkLogViewerAddMessage(GtkLogViewer *logViewer, char *time, char *message, GdkPixbuf *icon)
+API void logViewerAddMessage(LogViewer *logViewer, char *time, char *message, GdkPixbuf *icon)
 {
 	gtk_list_store_append(logViewer->listStore, logViewer->listIter);
 	gtk_list_store_set(logViewer->listStore, logViewer->listIter, COLUMN_LOG_TYPE, icon, COLUMN_DATE_TIME, time, COLUMN_MESSAGE, message, -1);
@@ -186,7 +186,7 @@ API void gtkLogViewerAddMessage(GtkLogViewer *logViewer, char *time, char *messa
 
 HOOK_LISTENER(newLogMessage)
 {
-	GtkLogViewerWindow *window = (GtkLogViewerWindow *)custom_data;
+	LogViewerWindow *window = (LogViewerWindow *)custom_data;
 
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
@@ -211,7 +211,7 @@ HOOK_LISTENER(newLogMessage)
 			break;
 	}
 
-	gtkLogViewerAddMessage(window->logViewer, dateTime, message, icon);
+	logViewerAddMessage(window->logViewer, dateTime, message, icon);
 
 	g_object_unref(icon);
 	free(dateTime);
@@ -222,8 +222,8 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	HOOK_DETACH_EX(log, newLogMessage, data);
 
-	GtkLogViewerWindow *window = (GtkLogViewerWindow *)data;
-	freeGtkLogViewerWindow(window);
+	LogViewerWindow *window = (LogViewerWindow *)data;
+	freeLogViewerWindow(window);
 
 	$$(void, exitGracefully)();
 

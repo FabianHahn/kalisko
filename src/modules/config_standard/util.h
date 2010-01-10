@@ -22,6 +22,8 @@
 #ifndef CONFIG_STANDARD_UTIL_H
 #define CONFIG_STANDARD_UTIL_H
 
+#include "modules/config/config.h"
+
 API ConfigNodeValue *getStandardConfigPathValue(char *path);
 API char *getGlobalKaliskoConfigPath();
 

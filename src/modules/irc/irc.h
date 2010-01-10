@@ -18,17 +18,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API int compareIntegers(const void *a, const void *b, void *data);
-API int compareTimes(const void *a, const void *b, void *data);
-API void destroyGHashTable(void *table);
-API char **getArgv();
-API void setArgv(char **args);
-API int getArgc();
-API void setArgc(int count);
+#ifndef IRC_IRC_H
+#define IRC_IRC_H
+
+API bool ircSend(char *message, ...);
+
+/**
+ * The maximal length for a log message.
+ */
+#define IRC_SEND_MAXLEN 4096
 
 #endif

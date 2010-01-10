@@ -55,7 +55,7 @@ static void finalize();
 MODULE_NAME("config_standard");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config_standard module provides access to standard config files that override each other");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 

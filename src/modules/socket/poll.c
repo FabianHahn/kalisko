@@ -24,6 +24,7 @@
 #include "dll.h"
 #include "hooks.h"
 #include "timer.h"
+#include "log.h"
 
 #include "api.h"
 #include "socket.h"
@@ -123,7 +124,8 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 	Socket *socket = socket_p;
 
 	if(!socket->connected) { // Remove socket from poll list if disconnected
-		return FALSE;
+		LOG_WARNING("Polling not connected socket %p, removing from list", socket);
+		return TRUE;
 	}
 
 	if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
@@ -133,10 +135,10 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 			HOOK_TRIGGER(socket_error, socket);
 		}
 
-		return FALSE;
+		return TRUE;
 	} else if(ret > 0) { // we actually read something
 		HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
 	}
 
-	return TRUE;
+	return FALSE;
 }

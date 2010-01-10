@@ -25,56 +25,66 @@
 #include "log.h"
 #include "timer.h"
 #include "module.h"
+#include "util.h"
 
 #include "api.h"
 #include "modules/gtk+/gtk+.h"
 
-MODULE_NAME("GTK+");
+MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
+#ifndef GTK_MAIN_TIMEOUT
 #define GTK_MAIN_TIMEOUT 5000
+#endif
 
 TIMER_CALLBACK(GTK_MAIN_LOOP);
 
 static bool isLoopRunning;
+static GTimeVal *lastScheduledPollTime;
 
 MODULE_INIT
 {
-	isLoopRunning = false;
+	char **argv = getArgv();
+	int argc = getArgc();
 
+	gtk_init(&argc, &argv);
+
+	setArgv(argv);
+	setArgc(argc);
+
+	isLoopRunning = false;
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	isLoopRunning = false;
+	stopGtkLoop();
 }
 
 TIMER_CALLBACK(GTK_MAIN_LOOP)
 {
 	gtk_main_iteration_do(FALSE);
-
-	if(isLoopRunning) {
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-	}
+	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 }
 
 API void runGtkLoop()
 {
 	if(!isLoopRunning) {
 		isLoopRunning = true;
-
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
+		lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 	}
 }
 
 API void stopGtkLoop()
 {
-	isLoopRunning = false;
+	if(isLoopRunning) {
+		TIMER_DEL(lastScheduledPollTime);
+		isLoopRunning = false;
+	}
 }
 
 API bool isGtkLoopRunning()

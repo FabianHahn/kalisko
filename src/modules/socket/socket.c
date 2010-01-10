@@ -54,7 +54,7 @@ static bool setSocketNonBlocking(int fd);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1));
 
@@ -276,7 +276,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		return -1;
 	}
 
-	if((ret = recv(s->fd, buffer, size, 0)) == 0) { // connection reset by peer
+	if((ret = recv(s->fd, buffer, size - 1, 0)) == 0) { // connection reset by peer
 		LOG_INFO("Connection on socket %d reset by peer", s->fd);
 		disconnectSocket(s);
 		return -1;
@@ -292,6 +292,8 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
 		return -1;
 	}
+
+	((char *) buffer)[ret] = '\0'; // recv is not null terminated
 
 	return ret;
 }

@@ -32,9 +32,9 @@
 MODULE_NAME("php_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical PHP console using GTK+");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 0), MODULE_DEPENDENCY("lang_php", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_php", 0, 1, 0));
 
 // Columns
 typedef enum {
@@ -71,8 +71,6 @@ MODULE_INIT
 {
 	lines = 0;
 	buffer = g_string_new("");
-
-	gtk_init(NULL, NULL);
 
 	// window
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);

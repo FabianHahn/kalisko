@@ -22,5 +22,11 @@
 #ifndef IRC_IRC_H
 #define IRC_IRC_H
 
+API bool ircSend(char *message, ...);
+
+/**
+ * The maximal length for a log message.
+ */
+#define IRC_SEND_MAXLEN 4096
 
 #endif

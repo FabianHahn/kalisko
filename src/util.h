@@ -26,9 +26,9 @@ API char *getDirectoryPath(char *filePath);
 API int compareIntegers(const void *a, const void *b, void *data);
 API int compareTimes(const void *a, const void *b, void *data);
 API void destroyGHashTable(void *table);
-API char ***getArgv();
-API void setArgv(char ***args);
-API int* getArgc();
-API void setArgc(int *count);
+API char **getArgv();
+API void setArgv(char **args);
+API int getArgc();
+API void setArgc(int count);
 
 #endif

@@ -48,13 +48,13 @@ static GTimeVal *lastScheduledPollTime;
 
 MODULE_INIT
 {
-	char **argc = getArgc();
-	int argv = getArgv();
+	char **argv = getArgv();
+	int argc = getArgc();
 
 	gtk_init(&argc, &argv);
 
-	setArgc(argc);
 	setArgv(argv);
+	setArgc(argc);
 
 	isLoopRunning = false;
 	return true;

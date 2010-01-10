@@ -29,6 +29,7 @@
 #include "timer.h"
 #include "module.h"
 #include "memory_alloc.h"
+#include "util.h"
 
 int main(int argc, char **argv)
 {

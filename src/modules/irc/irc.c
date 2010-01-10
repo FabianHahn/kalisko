@@ -22,6 +22,8 @@
 #include <glib.h>
 
 #include "dll.h"
+#include "log.h"
+#include "modules/config_standard/util.h"
 #include "api.h"
 #include "irc.h"
 
@@ -30,10 +32,44 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1), MODULE_DEPENDENCY("socket", 0, 2, 0));
 
 MODULE_INIT
 {
+	ConfigNodeValue *config;
+	char *server;
+	char *port;
+	char *user;
+	char *nick;
+
+	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/server")) == NULL || config->type != CONFIG_STRING) {
+		LOG_ERROR("Could not find required config value 'irc/server', aborting");
+		return false;
+	}
+
+	server = config->content.string;
+
+	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/port")) == NULL || config->type != CONFIG_STRING) {
+		LOG_ERROR("Could not find required config value 'irc/port', aborting");
+		return false;
+	}
+
+	port = config->content.string;
+
+	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/user")) == NULL || config->type != CONFIG_STRING) {
+		LOG_ERROR("Could not find required config value 'irc/user', aborting");
+		return false;
+	}
+
+	user = config->content.string;
+
+	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/nick")) == NULL || config->type != CONFIG_STRING) {
+		LOG_ERROR("Could not find required config value 'irc/nick', aborting");
+		return false;
+	}
+
+	nick = config->content.string;
+
 	return true;
 }
 

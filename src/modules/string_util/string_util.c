@@ -35,6 +35,8 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
+#define NEWLINE_CHARS "\r\n"
+
 MODULE_INIT
 {
 	return true;
@@ -68,6 +70,34 @@ API void stripDuplicateWhitespace(char *str)
 
 		// Now let's move forward to the next whitespace
 		textlength = strcspn(str, WHITESPACE_CHARS);
+		str += textlength, len -= textlength;
+	}
+}
+
+/**
+ * Replaces all multiple newlines by a single newline within the given string.
+ *
+ * @param str	The string in which the multiple whitespaces should be replaced.
+ */
+API void stripDuplicateNewlines(char *str)
+{
+	size_t len = strlen(str) + 1 /* Consider nullbyte */;
+	size_t whitespace; // To keep track of whitespaces
+	size_t textlength; // Length of text without spaces to skip
+
+	while(*str != '\0') {
+		// Is there whitespace to eat?
+		whitespace = strspn(str, NEWLINE_CHARS);
+		if(whitespace > 0) {
+			// Keep one newline ('\n')
+			str[0] = '\n';
+			str++, whitespace--, len--;
+			// Move everything that follows to the front
+			memmove(str, str + whitespace, len -= whitespace);
+		}
+
+		// Now let's move forward to the next whitespace
+		textlength = strcspn(str, NEWLINE_CHARS);
 		str += textlength, len -= textlength;
 	}
 }

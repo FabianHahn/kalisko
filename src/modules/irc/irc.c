@@ -36,7 +36,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1), MODULE_DEPENDENCY("socket", 0, 2, 2), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -107,6 +107,7 @@ MODULE_INIT
 
 	HOOK_ATTACH(socket_read, irc_read);
 	HOOK_ATTACH(socket_disconnect, irc_disconnect);
+	HOOK_ADD(irc_send);
 	HOOK_ADD(irc_line);
 	HOOK_ATTACH(irc_line, irc_line);
 
@@ -115,6 +116,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	HOOK_DEL(irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	HOOK_DEL(irc_line);
 	HOOK_DETACH(socket_read, irc_read);
@@ -146,8 +148,6 @@ HOOK_LISTENER(irc_line)
 {
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
 
-	LOG_DEBUG("<--IRC<-- %s", message->ircMessage);
-
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
 		ircSend("PONG :%s", challenge);
@@ -168,7 +168,7 @@ API bool ircSend(char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
 
-	LOG_DEBUG("-->IRC--> %s", buffer);
+	HOOK_TRIGGER(irc_send, buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');

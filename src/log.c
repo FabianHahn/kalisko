@@ -22,10 +22,13 @@
 #include <stdio.h> // vsnprintf
 #include <stdarg.h> // va_list, va_start
 #include <time.h> // time_t
+#include <glib.h>
 
 #include "api.h"
 #include "log.h"
 #include "hooks.h"
+
+static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData);
 
 /**
  * Inits logging
@@ -33,6 +36,8 @@
 API void initLog()
 {
 	addHook("log");
+
+	g_log_set_default_handler(handleGlibLogMessage, NULL);
 }
 
 /**
@@ -50,4 +55,40 @@ API void logMessage(LogType type, char *message, ...)
 	vsnprintf(buffer, LOG_MSG_MAXLEN, message, va);
 
 	triggerHook("log", type, buffer);
+}
+
+/**
+ * Handles GLib log messages and put them into Kalisko's own log system.
+ *
+ * @param domain
+ * @param logLevel
+ * @param message
+ * @param userData
+ */
+static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData)
+{
+	const char *fixedDomain = (domain == NULL ? "GLib default" : domain);
+
+	switch(logLevel) {
+		case G_LOG_LEVEL_CRITICAL:
+			logMessage(LOG_TYPE_ERROR, "%s: CRITICAL: %s", fixedDomain, message);
+			break;
+		case G_LOG_LEVEL_ERROR:
+			logMessage(LOG_TYPE_ERROR, "%s: %s", fixedDomain, message);
+			break;
+		case G_LOG_LEVEL_WARNING:
+			logMessage(LOG_TYPE_WARNING, "%s: %s", fixedDomain, message);
+			break;
+		case G_LOG_LEVEL_INFO:
+			logMessage(LOG_TYPE_INFO, "%s: %s", fixedDomain, message);
+			break;
+		case G_LOG_LEVEL_MESSAGE:
+			logMessage(LOG_TYPE_ERROR, "%s: MESSAGE: %s", fixedDomain, message);
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			logMessage(LOG_TYPE_DEBUG, "%s: %s", fixedDomain, message);
+			break;
+		default:
+			logMessage(LOG_TYPE_WARNING, "Unknown '%s' log type: '%s', message: '%s'", fixedDomain, logLevel, message);
+	}
 }

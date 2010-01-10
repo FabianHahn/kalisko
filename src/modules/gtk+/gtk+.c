@@ -33,7 +33,7 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
@@ -48,13 +48,13 @@ static GTimeVal *lastScheduledPollTime;
 
 MODULE_INIT
 {
-	char **argv = getArgv();
-	int argc = getArgc();
+	char **argv = $$(char **, getArgv)();
+	int argc = $$(int, getArgc)();
 
 	gtk_init(&argc, &argv);
 
-	setArgv(argv);
-	setArgc(argc);
+	$$(void, setArgv)(argv);
+	$$(void, setArgc)(argc);
 
 	isLoopRunning = false;
 	return true;

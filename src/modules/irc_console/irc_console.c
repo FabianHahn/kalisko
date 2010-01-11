@@ -51,6 +51,7 @@ typedef enum {
 } IrcConsoleMessageType;
 
 typedef struct {
+	unsigned int lines;
 	GtkWidget *list;
 	GtkListStore *store;
 } IrcConsoleTab;
@@ -68,12 +69,9 @@ HOOK_LISTENER(irc_line);
 static GHashTable *tabs;
 static GtkWidget *window;
 static GtkWidget *notebook;
-unsigned int lines;
 
 MODULE_INIT
 {
-	lines = 0;
-
 	tabs = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConsoleTab);
 
 	// window
@@ -148,6 +146,8 @@ static void createTab(char *name)
 {
 	LOG_DEBUG("Creating IRC console tab '%s'", name);
 
+	char *dupname = strdup(name);
+
 	// vertical layout
 	GtkWidget *vLayout = gtk_vbox_new(false, 1);
 
@@ -163,7 +163,7 @@ static void createTab(char *name)
 	gtk_widget_modify_style(GTK_WIDGET(input), style);
 
 	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
-	g_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), strdup(name)); // TODO: somehow free this stuff!
+	g_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), dupname); // TODO: somehow free this stuff!
 	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
 
 	// list
@@ -186,10 +186,11 @@ static void createTab(char *name)
 
 	IrcConsoleTab *tab = ALLOCATE_OBJECT(IrcConsoleTab);
 	g_object_ref(G_OBJECT(list));
+	tab->lines = 0;
 	tab->list = list;
 	tab->store = store;
 
-	g_hash_table_insert(tabs, strdup(name), tab);
+	g_hash_table_insert(tabs, dupname, tab);
 
 	gtk_widget_show_all(GTK_WIDGET(notebook));
 }
@@ -211,7 +212,7 @@ static void appendMessage(char *tabname, char *message, IrcConsoleMessageType ty
 	gtk_list_store_append(tab->store, &iter);
 	gtk_list_store_set(tab->store, &iter, ROW_TIME, dateTime, ROW_MESSAGE, message, ROW_MESSAGE_TYPE, type, -1);
 
-	GtkTreePath	*path = gtk_tree_path_new_from_indices(lines++, -1);
+	GtkTreePath	*path = gtk_tree_path_new_from_indices(tab->lines++, -1);
 	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(tab->list), path, NULL, TRUE, 0.0, 0.0);
 }
 

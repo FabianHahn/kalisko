@@ -58,7 +58,7 @@ typedef struct {
 static void createTab(char *name);
 static void appendMessage(char *tabname, char *message, IrcConsoleMessageType isInType);
 static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
-static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data);
+static gboolean inputActivate(GtkWidget *widget, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 static void freeConsoleTab(void *tab_p);
 
@@ -121,18 +121,33 @@ HOOK_LISTENER(irc_line)
 
 	if(g_strcmp0(message->command, "JOIN") == 0) {
 		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
-		char *nick = $(char *, irc, getNick)();
+		if(mask != NULL) {
+			char *nick = $(char *, irc, getNick)();
 
-		if(g_strcmp0(mask->nick, nick) == 0) { // it's-a-me!
-			createTab(message->trailing);
+			if(g_strcmp0(mask->nick, nick) == 0) { // it's-a-me!
+				createTab(message->params[0]);
+			}
+
+			$(void, irc_parser, freeIrcUserMask)(mask);
 		}
-
-		$(void, irc_parser, freeIrcUserMask)(mask);
+	} else if(g_strcmp0(message->command, "PRIVMSG") == 0) {
+		if(message->params[0] != NULL) {
+			IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+			if(mask != NULL) {
+				GString *msg = g_string_new("");
+				g_string_append_printf(msg, "<%s> %s", mask->nick, message->trailing);
+				appendMessage(message->params[0], msg->str, MESSAGE_LINE);
+				g_string_free(msg, true);
+				$(void, irc_parser, freeIrcUserMask)(mask);
+			}
+		}
 	}
 }
 
 static void createTab(char *name)
 {
+	LOG_DEBUG("Creating IRC console tab '%s'", name);
+
 	// vertical layout
 	GtkWidget *vLayout = gtk_vbox_new(false, 1);
 
@@ -148,7 +163,7 @@ static void createTab(char *name)
 	gtk_widget_modify_style(GTK_WIDGET(input), style);
 
 	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
-	gtk_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), name);
+	g_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), strdup(name)); // TODO: somehow free this stuff!
 	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
 
 	// list
@@ -175,13 +190,15 @@ static void createTab(char *name)
 	tab->store = store;
 
 	g_hash_table_insert(tabs, strdup(name), tab);
+
+	gtk_widget_show_all(GTK_WIDGET(notebook));
 }
 
 static void appendMessage(char *tabname, char *message, IrcConsoleMessageType type)
 {
 	IrcConsoleTab *tab = g_hash_table_lookup(tabs, tabname);
 
-	if(tab->store == NULL) {
+	if(tab == NULL) {
 		LOG_ERROR("Requested unknown tab '%s'", tab);
 		return;
 	}
@@ -198,10 +215,23 @@ static void appendMessage(char *tabname, char *message, IrcConsoleMessageType ty
 	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(tab->list), path, NULL, TRUE, 0.0, 0.0);
 }
 
-static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
+static gboolean inputActivate(GtkWidget *widget, gpointer data)
 {
+	char *tab = (char *) data;
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(widget));
-	$(void, irc, ircSend)(command);
+
+	if(g_strcmp0(tab, "*status") == 0) {
+		$(void, irc, ircSend)(command);
+	} else {
+		$(void, irc, ircSend)("PRIVMSG %s :%s", tab, command);
+		char *nick = $(char *, irc, getNick)();
+		GString *msg = g_string_new("");
+		g_string_append_printf(msg, "<%s> %s", nick, command);
+		appendMessage(tab, msg->str, MESSAGE_SEND);
+		g_string_free(msg, true);
+	}
+
+
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 
 	return true;

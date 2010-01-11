@@ -163,7 +163,7 @@ static void createTab(char *name)
 	gtk_widget_modify_style(GTK_WIDGET(input), style);
 
 	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
-	g_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), dupname); // TODO: somehow free this stuff!
+	g_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), dupname);
 	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
 
 	// list
@@ -252,13 +252,13 @@ static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *r
 	switch(type) {
 		case MESSAGE_SEND:
 			g_object_set(G_OBJECT(renderer), "foreground", "#0000ff", NULL);
-			g_object_set(G_OBJECT(renderer), "weight", 800, NULL);
+			g_object_set(G_OBJECT(renderer), "weight", 400, NULL);
 			g_object_set(G_OBJECT(renderer), "family", "Monospace", NULL);
 		break;
 		case MESSAGE_LINE:
 			g_object_set(G_OBJECT(renderer), "foreground", "#000000", NULL);
 			g_object_set(G_OBJECT(renderer), "weight", 400, NULL);
-			g_object_set(G_OBJECT(renderer), "family", "Sans", NULL);
+			g_object_set(G_OBJECT(renderer), "family", "Monospace", NULL);
 		break;
 	}
 }

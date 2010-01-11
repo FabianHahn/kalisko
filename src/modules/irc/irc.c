@@ -46,6 +46,7 @@ HOOK_LISTENER(irc_disconnect);
 
 static Socket *sock;
 static GString *buffer;
+static char *nick;
 
 static void checkForBufferLine();
 
@@ -56,7 +57,6 @@ MODULE_INIT
 	char *port;
 	char *user;
 	char *real;
-	char *nick;
 
 	buffer = g_string_new("");
 
@@ -154,6 +154,11 @@ HOOK_LISTENER(irc_line)
 		char *challenge = message->trailing;
 		ircSend("PONG :%s", challenge);
 	}
+}
+
+API char *getNick()
+{
+	return nick;
 }
 
 /**

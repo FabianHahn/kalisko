@@ -22,6 +22,7 @@
 #ifndef IRC_IRC_H
 #define IRC_IRC_H
 
+API char *getNick();
 API bool ircSend(char *message, ...);
 
 /**

@@ -50,25 +50,31 @@ typedef enum {
 		MESSAGE_LINE
 } IrcConsoleMessageType;
 
-static void appendMessage(char *message, IrcConsoleMessageType isInType);
+typedef struct {
+	GtkWidget *list;
+	GtkListStore *store;
+} IrcConsoleTab;
+
+static void createTab(char *name);
+static void appendMessage(char *tabname, char *message, IrcConsoleMessageType isInType);
 static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
+static void freeConsoleTab(void *tab_p);
 
 HOOK_LISTENER(irc_send);
 HOOK_LISTENER(irc_line);
 
+static GHashTable *tabs;
 static GtkWidget *window;
-static GtkWidget *list;
-static GtkListStore *store;
-static GtkWidget *vLayout;
-static GtkWidget *scroll;
-static GtkWidget *input;
+static GtkWidget *notebook;
 unsigned int lines;
 
 MODULE_INIT
 {
 	lines = 0;
+
+	tabs = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConsoleTab);
 
 	// window
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -76,39 +82,10 @@ MODULE_INIT
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
 	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(closeWindow), NULL);
 
-	// vertical layout
-	vLayout = gtk_vbox_new(false, 1);
-	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(vLayout));
+	notebook = gtk_notebook_new();
+	createTab("*status");
 
-	// scroll
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(scroll));
-
-	input = gtk_entry_new();
-	GtkRcStyle *style = gtk_widget_get_modifier_style(GTK_WIDGET(input));
-	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
-	style->font_desc = font;
-	gtk_widget_modify_style(GTK_WIDGET(input), style);
-
-	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
-	gtk_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), NULL);
-	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
-
-	// list
-	list = gtk_tree_view_new();
-	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(list));
-
-	// list columns
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), gtk_tree_view_column_new_with_attributes("Timestamp", gtk_cell_renderer_text_new(), "text", ROW_TIME, NULL));
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Message", renderer, "text", ROW_MESSAGE, NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
-	gtk_tree_view_column_set_cell_data_func(column, renderer, &formatMessageCell, NULL, NULL);
-
-	// create store
-	store = gtk_list_store_new(N_ROWS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
-	gtk_tree_view_set_model(GTK_TREE_VIEW(list), GTK_TREE_MODEL(store));
+	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(notebook));
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
@@ -127,39 +104,105 @@ MODULE_FINALIZE
 	HOOK_DETACH(irc_send, irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	gtk_widget_destroy(GTK_WIDGET(window));
+
+	g_hash_table_destroy(tabs);
 }
 
 HOOK_LISTENER(irc_send)
 {
 	char *message = HOOK_ARG(char *);
-	appendMessage(message, MESSAGE_SEND);
+	appendMessage("*status", message, MESSAGE_SEND);
 }
 
 HOOK_LISTENER(irc_line)
 {
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
-	appendMessage(message->ircMessage, MESSAGE_LINE);
+	appendMessage("*status", message->ircMessage, MESSAGE_LINE);
+
+	if(g_strcmp0(message->command, "JOIN") == 0) {
+		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+		char *nick = $(char *, irc, getNick)();
+
+		if(g_strcmp0(mask->nick, nick) == 0) { // it's-a-me!
+			createTab(message->trailing);
+		}
+
+		$(void, irc_parser, freeIrcUserMask)(mask);
+	}
 }
 
-static void appendMessage(char *message, IrcConsoleMessageType type)
+static void createTab(char *name)
 {
+	// vertical layout
+	GtkWidget *vLayout = gtk_vbox_new(false, 1);
+
+	// scroll
+	GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(scroll));
+
+	GtkWidget *input = gtk_entry_new();
+	GtkRcStyle *style = gtk_widget_get_modifier_style(GTK_WIDGET(input));
+	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(GTK_WIDGET(input), style);
+
+	gtk_container_add(GTK_CONTAINER(vLayout), GTK_WIDGET(input));
+	gtk_signal_connect(GTK_OBJECT(input), "activate", GTK_SIGNAL_FUNC(inputActivate), name);
+	gtk_box_set_child_packing(GTK_BOX(vLayout), GTK_WIDGET(input), false, true, 0, GTK_PACK_END);
+
+	// list
+	GtkWidget *list = gtk_tree_view_new();
+	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(list));
+
+	// list columns
+	gtk_tree_view_append_column(GTK_TREE_VIEW(list), gtk_tree_view_column_new_with_attributes("Timestamp", gtk_cell_renderer_text_new(), "text", ROW_TIME, NULL));
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Message", renderer, "text", ROW_MESSAGE, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
+	gtk_tree_view_column_set_cell_data_func(column, renderer, &formatMessageCell, NULL, NULL);
+
+	// create store
+	GtkListStore *store = gtk_list_store_new(N_ROWS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(list), GTK_TREE_MODEL(store));
+
+	GtkWidget *title = gtk_label_new(name);
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), GTK_WIDGET(vLayout), GTK_WIDGET(title));
+
+	IrcConsoleTab *tab = ALLOCATE_OBJECT(IrcConsoleTab);
+	g_object_ref(G_OBJECT(list));
+	tab->list = list;
+	tab->store = store;
+
+	g_hash_table_insert(tabs, strdup(name), tab);
+}
+
+static void appendMessage(char *tabname, char *message, IrcConsoleMessageType type)
+{
+	IrcConsoleTab *tab = g_hash_table_lookup(tabs, tabname);
+
+	if(tab->store == NULL) {
+		LOG_ERROR("Requested unknown tab '%s'", tab);
+		return;
+	}
+
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);
 	char *dateTime = g_time_val_to_iso8601(now);
 
 	GtkTreeIter iter;
-	gtk_list_store_append(store, &iter);
-	gtk_list_store_set(store, &iter, ROW_TIME, dateTime, ROW_MESSAGE, message, ROW_MESSAGE_TYPE, type, -1);
+	gtk_list_store_append(tab->store, &iter);
+	gtk_list_store_set(tab->store, &iter, ROW_TIME, dateTime, ROW_MESSAGE, message, ROW_MESSAGE_TYPE, type, -1);
 
 	GtkTreePath	*path = gtk_tree_path_new_from_indices(lines++, -1);
-	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(list), path, NULL, TRUE, 0.0, 0.0);
+	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(tab->list), path, NULL, TRUE, 0.0, 0.0);
 }
 
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(input));
+	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(widget));
 	$(void, irc, ircSend)(command);
-	gtk_entry_set_text(GTK_ENTRY(input), "");
+	gtk_entry_set_text(GTK_ENTRY(widget), "");
 
 	return true;
 }
@@ -187,4 +230,12 @@ static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *r
 			g_object_set(G_OBJECT(renderer), "family", "Sans", NULL);
 		break;
 	}
+}
+
+static void freeConsoleTab(void *tab_p)
+{
+	IrcConsoleTab *tab = (IrcConsoleTab *) tab_p;
+	g_object_unref(G_OBJECT(tab->list));
+	g_object_unref(G_OBJECT(tab->store));
+	free(tab);
 }

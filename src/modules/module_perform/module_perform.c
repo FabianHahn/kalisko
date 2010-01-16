@@ -48,8 +48,10 @@ MODULE_INIT
 			return false;
 		}
 
-		for(int moduleNameIndex = 0; moduleNameIndex < modules->content.list->length; moduleNameIndex++) {
-			ConfigNodeValue *moduleName = g_queue_peek_nth(modules->content.list, moduleNameIndex);
+		GQueue *list = modules->content.list;
+
+		for(GList *iter = list->head; iter != NULL; iter = iter->next) {
+			ConfigNodeValue *moduleName = (ConfigNodeValue *) iter->data;
 
 			if(moduleName->type != CONFIG_STRING) {
 				LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);

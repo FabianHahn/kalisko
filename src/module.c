@@ -314,10 +314,10 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 		ModuleDepender *depender_func;
 		ModuleInitializer *init_func;
 		bool meta_error = false;
-		char *meta_author;
-		char *meta_description;
-		Version *meta_version;
-		Version *meta_bcversion;
+		char *meta_author = NULL;
+		char *meta_description = NULL;
+		Version *meta_version = NULL;
+		Version *meta_bcversion = NULL;
 		ModuleDependency *meta_dependencies;
 
 		if((descriptor_func = getLibraryFunction(mod, MODULE_NAME_FUNC)) == NULL) {

@@ -124,7 +124,13 @@ HOOK_LISTENER(irc_line)
 			char *nick = $(char *, irc, getNick)();
 
 			if(g_strcmp0(mask->nick, nick) == 0) { // it's-a-me!
-				createTab(message->params[0]);
+				if(message->params != NULL && message->params[0] != NULL) { // usually, the channel is being sent straight as parameter
+					createTab(message->params[0]);
+				} else if(message->trailing != NULL) { // some other servers though, like znc, send it as trailing parameter...
+					createTab(message->trailing);
+				} else { // anything else can't possibly happen
+					LOG_ERROR("No channel given in JOIN command");
+				}
 			}
 
 			$(void, irc_parser, freeIrcUserMask)(mask);

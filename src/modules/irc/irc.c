@@ -104,6 +104,10 @@ MODULE_INIT
 
 	ircSend("USER %s 0 0 :%s", user, real);
 	ircSend("NICK %s", nick);
+	
+	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/serverpass")) != NULL && config->type == CONFIG_STRING) {
+		ircSend("PASS %s", config->content.string);
+	}
 
 	HOOK_ATTACH(socket_read, irc_read);
 	HOOK_ATTACH(socket_disconnect, irc_disconnect);

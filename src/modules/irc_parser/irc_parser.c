@@ -104,6 +104,11 @@ API IrcMessage *parseIrcMessage(char *message)
 		$(void, string_util, stripDuplicateWhitespace)(paramsText);
 
 		ircMessage->params = g_strsplit(paramsText, " ", 0);
+		// I haven't found any glib function doing this, so I'll count manually
+		for(ircMessage->params_count = 0; ircMessage->params[ircMessage->params_count] != NULL; ircMessage->params_count++) {
+			// Nothing left to do
+		}
+
 		free(paramsText);
 	}
 

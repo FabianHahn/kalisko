@@ -87,6 +87,11 @@ typedef struct {
 	 * [1] @code NULL @endcode
 	 */
 	char **params;
+	
+	/**
+	 * Amount of given parameters (in params)
+	 */
+	unsigned int params_count;
 
 	/**
 	 * The trailing part is everything after the ':'.

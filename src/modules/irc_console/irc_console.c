@@ -81,6 +81,7 @@ MODULE_INIT
 	g_signal_connect(G_OBJECT(window), "delete_event", G_CALLBACK(closeWindow), NULL);
 
 	notebook = gtk_notebook_new();
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 	createTab("*status");
 
 	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(notebook));

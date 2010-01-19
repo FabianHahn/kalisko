@@ -206,9 +206,15 @@ static void checkForBufferLine()
 		char **iter;
 		for(iter = parts; *iter != NULL; iter++) {
 			if(*(iter + 1) != NULL) { // Don't trigger the last part, it's not yet complete
-				IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
-				HOOK_TRIGGER(irc_line, ircMessage);
-				$(void, irc_parser, freeIrcMessage)(ircMessage);
+				if(strlen(*iter) > 0) {
+					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
+
+					if(ircMessage != NULL) {
+						HOOK_TRIGGER(irc_line, ircMessage);
+					}
+
+					$(void, irc_parser, freeIrcMessage)(ircMessage);
+				}
 			}
 		}
 

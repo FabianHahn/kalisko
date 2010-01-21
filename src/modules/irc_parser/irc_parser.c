@@ -51,7 +51,7 @@ MODULE_FINALIZE
  * This function parses an IRC message as described in RFC 1459 (Chapter 2.3.1).
  *
  * @param message	An IRC message. Has to be on heap.
- * @return A struct containing the different parts of the message. If an error occured NULL is returned.
+ * @return 			A struct containing the different parts of the message. If an error occured NULL is returned.
  */
 API IrcMessage *parseIrcMessage(char *message)
 {
@@ -128,7 +128,7 @@ API IrcMessage *parseIrcMessage(char *message)
  * See for further information RFC 1459.
  *
  * @param prefix	The prefix part of an IRC message.
- * @return A struct containing the different parts of a user mask or NULL if an error occurred.
+ * @return 			A struct containing the different parts of a user mask or NULL if an error occurred.
  */
 API IrcUserMask *parseIrcUserMask(char *prefix)
 {

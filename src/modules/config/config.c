@@ -143,6 +143,47 @@ API void saveConfig(ConfigFiles file)
 	}
 }
 
+/**
+ * Searches for the given path trough the configuration files
+ * consider the weighting of the different configurations. The first found value
+ * will be returned otherwise NULL.
+ *
+ * Do not free the returned value. This is handled by the config module.
+ *
+ * @param	path			The path to search
+ * @return	The first found value for given path or NULL
+ */
+API StoreNodeValue *getConfigPathValue(char *path)
+{
+	StoreNodeValue *value = NULL;
+
+	Store *overrideConfig = getConfig(CONFIG_USER_OVERRIDE);
+	if(overrideConfig) {
+		value = $(StoreNodeValue *, store, getStorePath)(overrideConfig, path);
+		if(value) {
+			return value;
+		}
+	}
+
+	Store *userConfig = getConfig(CONFIG_USER);
+	if(userConfig) {
+		value = $(StoreNodeValue *, store, getStorePath)(userConfig, path);
+		if(value) {
+			return value;
+		}
+	}
+
+	Store *globalConfig = getConfig(CONFIG_GLOBAL);
+	if(globalConfig) {
+		value = $(StoreNodeValue *, store, getStorePath)(globalConfig, path);
+		if(value) {
+			return value;
+		}
+	}
+
+	return NULL;
+}
+
 static Store *getUserConfig()
 {
 	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {

@@ -24,7 +24,6 @@
 
 #include "modules/store/store.h"
 
-API StoreNodeValue *getConfigPathValue(char *path);
 API char *getGlobalKaliskoConfigPath();
 
 #endif

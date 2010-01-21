@@ -47,5 +47,6 @@ typedef enum
 
 API Store *getConfig(ConfigFiles file);
 API void saveConfig(ConfigFiles file);
+API StoreNodeValue *getConfigPathValue(char *path);
 
 #endif

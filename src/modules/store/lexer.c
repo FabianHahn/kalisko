@@ -41,18 +41,18 @@
  */
 #define IS_DELIMITER(C) (isspace(c) || c == ';' || c == ',')
 
-static GString *dumpLex(Config *config) G_GNUC_WARN_UNUSED_RESULT;
+static GString *dumpLex(Store *store) G_GNUC_WARN_UNUSED_RESULT;
 
-void yyerror(YYLTYPE *lloc, Config *config, char *error); // this can't go into a header because it doesn't have an API export
+void yyerror(YYLTYPE *lloc, Store *store, char *error); // this can't go into a header because it doesn't have an API export
 
 /**
- * Lexes a token from a config
+ * Lexes a token from a store
  *
  * @param lval		the lexer value target
- * @param config	the config to lex
+ * @param store	the store to lex
  * @result			the lexed token
  */
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 {
 	int c;
 	bool escaping = false;
@@ -61,11 +61,11 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 	bool reading_numeric = false;
 	bool numeric_is_float = false;
 	int commenting = 0;
-	char assemble[CONFIG_MAX_STRING_LENGTH];
+	char assemble[STORE_MAX_STRING_LENGTH];
 	int i = 0;
 
 	while(true) {
-		c = config->read(config);
+		c = store->read(store);
 		lloc->last_column++;
 
 		if(c == '\n') {
@@ -91,7 +91,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 						assemble[i] = '\0';
 						lval->string = strdup(assemble);
 						if(c != EOF) {
-							config->unread(config, c); // push back to stream
+							store->unread(store, c); // push back to stream
 							lloc->last_column--;
 						}
 						return STRING;
@@ -101,7 +101,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 						assemble[i] = '\0';
 						lval->float_number = atof(assemble);
 						if(c != EOF) {
-							config->unread(config, c); // push back to stream
+							store->unread(store, c); // push back to stream
 							lloc->last_column--;
 						}
 						return FLOAT_NUMBER;
@@ -109,7 +109,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 						assemble[i] = '\0';
 						lval->integer = atoi(assemble);
 						if(c != EOF) {
-							config->unread(config, c); // push back to stream
+							store->unread(store, c); // push back to stream
 							lloc->last_column--;
 						}
 						return INTEGER;
@@ -146,7 +146,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 				} // else just continue reading
 			} else {
 				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
-					yyerror(lloc, config, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, store, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
 					assemble[i] = '\0';
@@ -157,7 +157,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 		} else if(reading_numeric) {
 			if(c == '.') { // delimiter
 				if(numeric_is_float) {
-					yyerror(lloc, config, "Multiple occurences of delimiter '.' in numeric value");
+					yyerror(lloc, store, "Multiple occurences of delimiter '.' in numeric value");
 					return 0; // error
 				} else {
 					numeric_is_float = true;
@@ -175,7 +175,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 			} else if(!isdigit(c)) { // we're actually reading a non-delimited string
 				reading_numeric = false;
 				reading_string = true;
-				config->unread(config, c); // push back to stream
+				store->unread(store, c); // push back to stream
 				lloc->last_column--;
 				continue;
 			}
@@ -198,89 +198,89 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config)
 					string_is_delimited = true;
 					continue;
 				} else if(c == '\\') {
-					yyerror(lloc, config, "Escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, store, "Escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} // else just continue reading the non-delimited string
 			}
 		}
 
 		if(escaping) { // escape character wasn't used
-			yyerror(lloc, config, "Unused escape character '\\'");
+			yyerror(lloc, store, "Unused escape character '\\'");
 			return 0; // error
 		}
 
 		assemble[i++] = c;
 
-		if(i >= CONFIG_MAX_STRING_LENGTH) {
-			yyerror(lloc, config, "String value exceeded maximum length");
+		if(i >= STORE_MAX_STRING_LENGTH) {
+			yyerror(lloc, store, "String value exceeded maximum length");
 			return 0; // error
 		}
 	}
 }
 
 /**
- * Lexes a config string and dumps the result
+ * Lexes a store string and dumps the result
  *
- * @param string		the config string to lex and dump
- * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ * @param string		the store string to lex and dump
+ * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
  */
-API GString *lexConfigString(char *string)
+API GString *lexStoreString(char *string)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = string;
-	config->resource = config->name;
-	config->read = &configStringRead;
-	config->unread = &configStringUnread;
+	store->name = string;
+	store->resource = store->name;
+	store->read = &storeStringRead;
+	store->unread = &storeStringUnread;
 
-	GString *ret = dumpLex(config);
+	GString *ret = dumpLex(store);
 
-	free(config);
+	free(store);
 
 	return ret;
 }
 
 /**
- * Lexes a config file and dumps the result
+ * Lexes a store file and dumps the result
  *
- * @param filename		the config file to lex and dump
- * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ * @param filename		the store file to lex and dump
+ * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
  */
-API GString *lexConfigFile(char *filename)
+API GString *lexStoreFile(char *filename)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = filename;
-	config->resource = fopen(filename, "r");
-	config->read = &configFileRead;
-	config->unread = &configFileUnread;
+	store->name = filename;
+	store->resource = fopen(filename, "r");
+	store->read = &storeFileRead;
+	store->unread = &storeFileUnread;
 
-	GString *ret = dumpLex(config);
+	GString *ret = dumpLex(store);
 
-	fclose(config->resource);
-	free(config);
+	fclose(store->resource);
+	free(store);
 
 	return ret;
 }
 
 /**
- * Lexes a config and dumps the result
+ * Lexes a store and dumps the result
  *
- * @param config		the config to lex and dump
- * @result				the config's lexer dump as a string, must be freed with g_string_free afterwards
+ * @param store		the store to lex and dump
+ * @result			the store's lexer dump as a string, must be freed with g_string_free afterwards
  */
-static GString *dumpLex(Config *config)
+static GString *dumpLex(Store *store)
 {
 	int lexx;
 	YYSTYPE val;
 	YYLTYPE loc;
 
 	GString *ret = g_string_new("");
-	g_string_append_printf(ret, "Lexer dump for %s:\n", config->name);
+	g_string_append_printf(ret, "Lexer dump for %s:\n", store->name);
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = yylex(&val, &loc, config)) != 0) {
+	while((lexx = yylex(&val, &loc, store)) != 0) {
 		switch(lexx) {
 			case STRING:
 				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);

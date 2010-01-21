@@ -116,7 +116,7 @@ HOOK_LISTENER(irc_send)
 HOOK_LISTENER(irc_line)
 {
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
-	appendMessage("*status", message->ircMessage, MESSAGE_LINE);
+	appendMessage("*status", message->raw_message, MESSAGE_LINE);
 
 	if(g_strcmp0(message->command, "JOIN") == 0) {
 		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);

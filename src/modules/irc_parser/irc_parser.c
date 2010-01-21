@@ -58,7 +58,7 @@ API IrcMessage *parseIrcMessage(char *message)
 	IrcMessage *ircMessage = ALLOCATE_OBJECT(IrcMessage);
 	memset(ircMessage, 0, sizeof(IrcMessage));
 
-	ircMessage->ircMessage = g_strdup(message);
+	ircMessage->raw_message = g_strdup(message);
 
 	char *prefixEnd = message;
 
@@ -79,7 +79,7 @@ API IrcMessage *parseIrcMessage(char *message)
 	g_strchug(prefixEnd);
 	char *commandEnd = strchr(prefixEnd, ' ');
 	if(commandEnd == NULL) {
-		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->ircMessage);
+		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->raw_message);
 		freeIrcMessage(ircMessage);
 		return NULL;
 	}
@@ -173,8 +173,8 @@ API void freeIrcMessage(IrcMessage *message)
 		free(message->command);
 	}
 
-	if(message->ircMessage) {
-		free(message->ircMessage);
+	if(message->raw_message) {
+		free(message->raw_message);
 	}
 
 	if(message->params) {

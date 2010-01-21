@@ -52,7 +52,7 @@ static void checkForBufferLine();
 
 MODULE_INIT
 {
-	ConfigNodeValue *config;
+	StoreNodeValue *config;
 	char *server;
 	char *port;
 	char *user;
@@ -60,35 +60,35 @@ MODULE_INIT
 
 	buffer = g_string_new("");
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/server")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/server")) == NULL || config->type != CONFIG_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/server', aborting");
 		return false;
 	}
 
 	server = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/port")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/port")) == NULL || config->type != CONFIG_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/port', aborting");
 		return false;
 	}
 
 	port = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/user")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/user")) == NULL || config->type != CONFIG_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/user', aborting");
 		return false;
 	}
 
 	user = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/real")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/real")) == NULL || config->type != CONFIG_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/real', aborting");
 		return false;
 	}
 
 	real = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/nick")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/nick")) == NULL || config->type != CONFIG_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/nick', aborting");
 		return false;
 	}
@@ -105,7 +105,7 @@ MODULE_INIT
 	ircSend("USER %s 0 0 :%s", user, real);
 	ircSend("NICK %s", nick);
 	
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/serverpass")) != NULL && config->type == CONFIG_STRING) {
+	if((config = $(StoreNodeValue *, config_standard, getConfigPathValue)("irc/serverpass")) != NULL && config->type == CONFIG_STRING) {
 		ircSend("PASS %s", config->content.string);
 	}
 

@@ -61,18 +61,18 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
 MODULE_INIT
 {
 	// Go trough the standard configuration files and search for log file settings
-	ConfigNodeValue *configFiles = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(LOG_FILES_CONFIG_PATH);
+	StoreNodeValue *configFiles = $(StoreNodeValue *, config_standard, getConfigPathValue)(LOG_FILES_CONFIG_PATH);
 	if(configFiles != NULL) {
 		if(configFiles->type != CONFIG_LIST) {
 			LOG_WARNING("Found log files configuration but it is not a list and can not be processed");
 			return false;
 		}
 		for(int i = 0; i < configFiles->content.list->length; i++) {
-			ConfigNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
+			StoreNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
 			if(fileConfig->type == CONFIG_ARRAY) {
 				GHashTable *settings = fileConfig->content.array;
-				ConfigNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
-				ConfigNodeValue *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
+				StoreNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
+				StoreNodeValue *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
 
 				if(filePath == NULL) {
 					LOG_WARNING("The filepath is not set in the configuration. Ignoring log file");
@@ -134,9 +134,9 @@ MODULE_FINALIZE
  * 					the file
  * @return The created LogFileConfig or NULL on error
  */
-API LogFileConfig *addLogFile(char *filePath, LogType logType)
+API LogFileStore *addLogFile(char *filePath, LogType logType)
 {
-	LogFileConfig *logFile = ALLOCATE_OBJECT(LogFileConfig);
+	LogFileStore *logFile = ALLOCATE_OBJECT(LogFileConfig);
 	logFile->filePath = strdup(filePath);
 	logFile->logType = logType;
 	logFile->ignoreNextLog = false;
@@ -162,7 +162,7 @@ API LogFileConfig *addLogFile(char *filePath, LogType logType)
  *
  * @param logFile	The LogFileConfig to remove
  */
-API void removeLogFile(LogFileConfig *logFile)
+API void removeLogFile(LogFileStore *logFile)
 {
 	logFiles = g_list_remove(logFiles, logFile);
 
@@ -184,7 +184,7 @@ HOOK_LISTENER(log)
 	char *dateTime = g_time_val_to_iso8601(now);
 
     for(GList *item = logFiles; item != NULL; item = item->next) {
-    	LogFileConfig *logFile = item->data;
+    	LogFileStore *logFile = item->data;
 
     	if(logFile->ignoreNextLog) {
     		logFile->ignoreNextLog = false;

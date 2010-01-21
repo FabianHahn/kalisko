@@ -71,7 +71,7 @@ MODULE_INIT
 
 	int pollInterval = 100000;
 
-	ConfigNodeValue *configPollInterval = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("socket/pollInterval");
+	StoreNodeValue *configPollInterval = $(StoreNodeValue *, config_standard, getConfigPathValue)("socket/pollInterval");
 	if(configPollInterval != NULL && configPollInterval->type == CONFIG_INTEGER) {
 		pollInterval = configPollInterval->content.integer;
 	} else {

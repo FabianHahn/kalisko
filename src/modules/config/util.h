@@ -19,33 +19,12 @@
  */
 
 
-#ifndef CONFIG_STANDARD_CONFIG_STANDARD_H
-#define CONFIG_STANDARD_CONFIG_STANDARD_H
+#ifndef CONFIG_UTIL_H
+#define CONFIG_UTIL_H
 
-#include "modules/config/config.h"
+#include "modules/store/store.h"
 
-/**
- * Enumeration of the different standard configuration files.
- */
-typedef enum {
-	/**
-	 * The readonly per user configuration file.
-	 */
-	CONFIG_USER,
-
-	/**
-	 * The writeable per user configuration file. This file override the
-	 * configuration of CONFIG_USER.
-	 */
-	CONFIG_USER_OVERRIDE,
-
-	/**
-	 * The readonly global (application) file.
-	 */
-	CONFIG_GLOBAL
-} StandardConfigFiles;
-
-API Config *getStandardConfig(StandardConfigFiles file);
-API void saveStandardConfig(StandardConfigFiles file);
+API StoreNodeValue *getConfigPathValue(char *path);
+API char *getGlobalKaliskoConfigPath();
 
 #endif

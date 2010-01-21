@@ -51,7 +51,7 @@ static int cmpStringItems(const void *a, const void *b);
 
 MODULE_INIT
 {
-	ConfigNodeValue *perform = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(PERFORM_CONFIG_PATH);
+	StoreNodeValue *perform = $(StoreNodeValue *, config_standard, getConfigPathValue)(PERFORM_CONFIG_PATH);
 
 	if(perform != NULL && perform->type == CONFIG_LIST &&
 		g_queue_find_custom(perform->content.list, "log_viewer", (GCompareFunc)cmpStringItems) != NULL) {
@@ -232,7 +232,7 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 
 static int cmpStringItems(const void *a, const void *b)
 {
-	const ConfigNodeValue *aItem = (const ConfigNodeValue*) a;
+	const StoreNodeValue *aItem = (const StoreNodeValue*) a;
 	const char *bItem = (const char *) b;
 
 	return strcmp(aItem->content.string, bItem);

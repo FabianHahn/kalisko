@@ -49,7 +49,7 @@ typedef struct {
 	bool ignoreNextLog;
 } LogFileConfig;
 
-API LogFileConfig *addLogFile(char *filePath, LogType logType);
-API void removeLogFile(LogFileConfig *logFile);
+API LogFileStore *addLogFile(char *filePath, LogType logType);
+API void removeLogFile(LogFileStore *logFile);
 
 #endif

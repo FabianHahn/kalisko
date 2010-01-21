@@ -30,8 +30,6 @@
 #include "dll.h"
 #include "hooks.h"
 #include "modules/config/config.h"
-#include "modules/config/path.h"
-#include "modules/config_standard/util.h"
 
 #include "log.h"
 #include "api.h"
@@ -41,7 +39,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
 MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 HOOK_LISTENER(log);
 HOOK_LISTENER(configChanged);
@@ -204,7 +202,7 @@ static void updateConfig() {
 		char *newColor = defaultValue;
 	#endif
 
-	StoreNodeValue *colorConfig = $(StoreNodeValue *, config_standard, getConfigPathValue)(configPath);
+	StoreNodeValue *colorConfig = $(StoreNodeValue *, config, getConfigPathValue)(configPath);
 	if(colorConfig) {
 		#ifdef WIN32
 			if(colorConfig->type == CONFIG_INTEGER) {
@@ -219,7 +217,7 @@ static void updateConfig() {
 				LOG_ERROR("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
 			}
 	#else
-			if(colorConfig->type == CONFIG_STRING) {
+			if(colorConfig->type == STORE_STRING) {
 				newColor = colorConfig->content.string;
 			} else {
 				LOG_ERROR("On *nix systems the color code must be a string.");

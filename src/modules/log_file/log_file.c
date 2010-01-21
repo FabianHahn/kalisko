@@ -29,8 +29,6 @@
 #include "memory_alloc.h"
 #include "util.h"
 #include "modules/config/config.h"
-#include "modules/config/path.h"
-#include "modules/config_standard/util.h"
 
 #include "api.h"
 #include "log_file.h"
@@ -56,20 +54,20 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
 MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {
 	// Go trough the standard configuration files and search for log file settings
-	StoreNodeValue *configFiles = $(StoreNodeValue *, config_standard, getConfigPathValue)(LOG_FILES_CONFIG_PATH);
+	StoreNodeValue *configFiles = $(StoreNodeValue *, config, getConfigPathValue)(LOG_FILES_CONFIG_PATH);
 	if(configFiles != NULL) {
-		if(configFiles->type != CONFIG_LIST) {
+		if(configFiles->type != STORE_LIST) {
 			LOG_WARNING("Found log files configuration but it is not a list and can not be processed");
 			return false;
 		}
 		for(int i = 0; i < configFiles->content.list->length; i++) {
 			StoreNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
-			if(fileConfig->type == CONFIG_ARRAY) {
+			if(fileConfig->type == STORE_ARRAY) {
 				GHashTable *settings = fileConfig->content.array;
 				StoreNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
 				StoreNodeValue *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
@@ -82,10 +80,10 @@ MODULE_INIT
 					continue;
 				}
 
-				if(filePath->type != CONFIG_STRING) {
+				if(filePath->type != STORE_STRING) {
 					LOG_WARNING("The filepath is not a string. Ignoring log file");
 					continue;
-				} else if(logType->type != CONFIG_STRING) {
+				} else if(logType->type != STORE_STRING) {
 					LOG_WARNING("The logtype is not a string. Ignoring log file");
 					continue;
 				}
@@ -134,9 +132,9 @@ MODULE_FINALIZE
  * 					the file
  * @return The created LogFileConfig or NULL on error
  */
-API LogFileStore *addLogFile(char *filePath, LogType logType)
+API LogFileConfig *addLogFile(char *filePath, LogType logType)
 {
-	LogFileStore *logFile = ALLOCATE_OBJECT(LogFileConfig);
+	LogFileConfig *logFile = ALLOCATE_OBJECT(LogFileConfig);
 	logFile->filePath = strdup(filePath);
 	logFile->logType = logType;
 	logFile->ignoreNextLog = false;
@@ -162,7 +160,7 @@ API LogFileStore *addLogFile(char *filePath, LogType logType)
  *
  * @param logFile	The LogFileConfig to remove
  */
-API void removeLogFile(LogFileStore *logFile)
+API void removeLogFile(LogFileConfig *logFile)
 {
 	logFiles = g_list_remove(logFiles, logFile);
 
@@ -184,7 +182,7 @@ HOOK_LISTENER(log)
 	char *dateTime = g_time_val_to_iso8601(now);
 
     for(GList *item = logFiles; item != NULL; item = item->next) {
-    	LogFileStore *logFile = item->data;
+    	LogFileConfig *logFile = item->data;
 
     	if(logFile->ignoreNextLog) {
     		logFile->ignoreNextLog = false;

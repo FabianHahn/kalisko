@@ -43,13 +43,13 @@ typedef struct {
 	FILE *fileAppend;
 
 	/**
-	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
+	 * If this is true the next log entry has to be ignored. This is used by config.c to prevent endless
 	 * loops in case of errors.
 	 */
 	bool ignoreNextLog;
 } LogFileConfig;
 
-API LogFileStore *addLogFile(char *filePath, LogType logType);
-API void removeLogFile(LogFileStore *logFile);
+API LogFileConfig *addLogFile(char *filePath, LogType logType);
+API void removeLogFile(LogFileConfig *logFile);
 
 #endif

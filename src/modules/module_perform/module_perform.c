@@ -33,9 +33,9 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {

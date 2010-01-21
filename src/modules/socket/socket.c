@@ -53,9 +53,9 @@ static bool setSocketNonBlocking(int fd);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {

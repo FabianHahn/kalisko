@@ -37,7 +37,7 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 

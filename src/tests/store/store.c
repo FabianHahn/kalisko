@@ -56,9 +56,9 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 2, 0));
+MODULE_VERSION(0, 2, 1);
+MODULE_BCVERSION(0, 2, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 3, 0));
 
 TEST_SUITE_BEGIN(store)
 	TEST_CASE_ADD(lexer);

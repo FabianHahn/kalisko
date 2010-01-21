@@ -27,157 +27,157 @@
 #include "log.h"
 
 #include "api.h"
-#include "config.h"
+#include "store.h"
 #include "write.h"
 
 /**
- * Convenience macro to write to config dumps
+ * Convenience macro to write to store dumps
  *
  * @param FORMAT		printf-like format string
  */
-#define DUMP(FORMAT, ...) context->writer(context->config, FORMAT, ##__VA_ARGS__)
+#define DUMP(FORMAT, ...) context->writer(context->store, FORMAT, ##__VA_ARGS__)
 
-static void configFileWrite(Config *config, char *format, ...);
-static void configGStringWrite(Config *config, char *format, ...);
-static void dumpConfig(Config *config, ConfigWriter *writer);
-static void dumpConfigNode(void *key_p, void *value_p, void *data);
-static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *context);
+static void storeFileWrite(Store *store, char *format, ...);
+static void storeGStringWrite(Store *store, char *format, ...);
+static void dumpStore(Store *store, StoreWriter *writer);
+static void dumpStoreNode(void *key_p, void *value_p, void *data);
+static void dumpStoreNodeValue(StoreNodeValue *value, StoreDumpContext *context);
 
 /**
- * Writes a config from memory to a file
+ * Writes a store from memory to a file
  *
  * @param filename		the filename to write to
- * @param config		the config to write
+ * @param store		the store to write
  */
-API void writeConfigFile(char *filename, Config *config)
+API void writeStoreFile(char *filename, Store *store)
 {
-	config->resource = fopen(filename, "w");
-	dumpConfig(config, &configFileWrite);
-	fclose(config->resource);
+	store->resource = fopen(filename, "w");
+	dumpStore(store, &storeFileWrite);
+	fclose(store->resource);
 }
 
 /**
- * Writes a config from memory to a GString
+ * Writes a store from memory to a GString
  *
- * @param config		the config to write
- * @result				the written config string, must be freed with g_string_free
+ * @param store		the store to write
+ * @result				the written store string, must be freed with g_string_free
  */
-API GString *writeConfigGString(Config *config)
+API GString *writeStoreGString(Store *store)
 {
-	config->resource = g_string_new("");
-	dumpConfig(config, &configGStringWrite);
-	return config->resource;
+	store->resource = g_string_new("");
+	dumpStore(store, &storeGStringWrite);
+	return store->resource;
 }
 
 
 /**
- * A ConfigWriter function for files
+ * A StoreWriter function for files
  *
- * @param config		the config to to write to
+ * @param store		the store to to write to
  * @param format		printf-like string to write
  */
-static void configFileWrite(Config *config, char *format, ...)
+static void storeFileWrite(Store *store, char *format, ...)
 {
 	va_list va;
 
 	va_start(va, format);
 
-	vfprintf(config->resource, format, va);
+	vfprintf(store->resource, format, va);
 }
 
 /**
- * A ConfigWriter function for GStrings
+ * A StoreWriter function for GStrings
  *
- * @param config		the config to to write to
+ * @param store		the store to to write to
  * @param format		printf-like string to write
  */
-static void configGStringWrite(Config *config, char *format, ...)
+static void storeGStringWrite(Store *store, char *format, ...)
 {
 	va_list va;
 
 	va_start(va, format);
 
-	g_string_append_vprintf(config->resource, format, va);
+	g_string_append_vprintf(store->resource, format, va);
 }
 
 /**
- * Dumps a parsed config from memory to a writer
+ * Dumps a parsed store from memory to a writer
  *
- * @param config		the config to dump
- * @param writer		the writer where the config should be dumped to
+ * @param store		the store to dump
+ * @param writer		the writer where the store should be dumped to
  */
-static void dumpConfig(Config *config, ConfigWriter *writer)
+static void dumpStore(Store *store, StoreWriter *writer)
 {
-	LOG_INFO("Dumping config %s", config->name);
+	LOG_INFO("Dumping store %s", store->name);
 
-	ConfigDumpContext *context = ALLOCATE_OBJECT(ConfigDumpContext);
-	context->config = config;
+	StoreDumpContext *context = ALLOCATE_OBJECT(StoreDumpContext);
+	context->store = store;
 	context->writer = writer;
 	context->level = 0;
 
-	assert(config->root->type == CONFIG_ARRAY);
-	g_hash_table_foreach(config->root->content.array, &dumpConfigNode, context);
+	assert(store->root->type == STORE_ARRAY);
+	g_hash_table_foreach(store->root->content.array, &dumpStoreNode, context);
 
 	free(context);
 }
 
 /**
- * A GHFunc to dump a config node
+ * A GHFunc to dump a store node
  *
  * @param key_p		the key of the node
  * @param value_p	the value of the node
  * @param data		the dump's context
  */
-static void dumpConfigNode(void *key_p, void *value_p, void *data)
+static void dumpStoreNode(void *key_p, void *value_p, void *data)
 {
 	char *key = key_p;
-	ConfigNodeValue *value = value_p;
-	ConfigDumpContext *context = data;
+	StoreNodeValue *value = value_p;
+	StoreDumpContext *context = data;
 
 	for(int i = 0; i < context->level; i++) {
 		DUMP("\t");
 	}
 
-	GString *escaped = escapeConfigString(key);
+	GString *escaped = escapeStoreString(key);
 
 	DUMP("\"%s\" = ", escaped->str);
 
 	g_string_free(escaped, TRUE);
 
-	dumpConfigNodeValue(value, context);
+	dumpStoreNodeValue(value, context);
 
 	DUMP("\n");
 }
 
 /**
- * Dumps a config node value
+ * Dumps a store node value
  *
  * @param value		the value of the node
  * @param context		the dump's context
  */
-static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *context)
+static void dumpStoreNodeValue(StoreNodeValue *value, StoreDumpContext *context)
 {
 	GString *escaped;
 
 	switch (value->type) {
-		case CONFIG_STRING:
-			escaped = escapeConfigString(value->content.string);
+		case STORE_STRING:
+			escaped = escapeStoreString(value->content.string);
 
 			DUMP("\"%s\"", escaped->str);
 
 			g_string_free(escaped, TRUE);
 		break;
-		case CONFIG_INTEGER:
+		case STORE_INTEGER:
 			DUMP("%d", value->content.integer);
 		break;
-		case CONFIG_FLOAT_NUMBER:
+		case STORE_FLOAT_NUMBER:
 			DUMP("%f", value->content.float_number);
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			DUMP("(");
 
 			for (GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-				dumpConfigNodeValue(iter->data, context);
+				dumpStoreNodeValue(iter->data, context);
 
 				if(iter->next != NULL) {
 					DUMP(", ");
@@ -186,10 +186,10 @@ static void dumpConfigNodeValue(ConfigNodeValue *value, ConfigDumpContext *conte
 
 			DUMP(")");
 		break;
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			DUMP("{\n");
 			context->level++;
-			g_hash_table_foreach(value->content.array, &dumpConfigNode, context);
+			g_hash_table_foreach(value->content.array, &dumpStoreNode, context);
 			context->level--;
 
 			for(int i = 0; i < context->level; i++) {

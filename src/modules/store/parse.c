@@ -28,120 +28,120 @@
 #include "parser.h"
 #include "lexer.h"
 
-int yyparse(Config *config); // this can't go into a header because it doesn't have an API export
+int yyparse(Store *store); // this can't go into a header because it doesn't have an API export
 
 /**
- * Parses a config file
+ * Parses a store file
  *
- * @param filename		the file name of the config file to parse
- * @result				the parsed config
+ * @param filename		the file name of the store file to parse
+ * @result				the parsed store
  */
-API Config *parseConfigFile(char *filename)
+API Store *parseStoreFile(char *filename)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = strdup(filename);
-	config->resource = fopen(config->name, "r");
-	config->read = &configFileRead;
-	config->unread = &configFileUnread;
+	store->name = strdup(filename);
+	store->resource = fopen(store->name, "r");
+	store->read = &storeFileRead;
+	store->unread = &storeFileUnread;
 
-	if(config->resource == NULL) {
-		LOG_SYSTEM_ERROR("Could not open config file %s", config->name);
-		free(config->name);
-		free(config);
+	if(store->resource == NULL) {
+		LOG_SYSTEM_ERROR("Could not open store file %s", store->name);
+		free(store->name);
+		free(store);
 		return NULL;
 	}
 
-	LOG_INFO("Parsing config file %s", config->name);
+	LOG_INFO("Parsing store file %s", store->name);
 
-	if(yyparse(config) != 0) {
-		LOG_ERROR("Parsing config file %s failed", config->name);
-		free(config->name);
-		fclose(config->resource);
-		free(config);
+	if(yyparse(store) != 0) {
+		LOG_ERROR("Parsing store file %s failed", store->name);
+		free(store->name);
+		fclose(store->resource);
+		free(store);
 		return NULL;
 	}
 
-	fclose(config->resource);
+	fclose(store->resource);
 
-	return config;
+	return store;
 }
 
 /**
- * Parses a config string
+ * Parses a store string
  *
- * @param string		the config string to parse
- * @result				the parsed config
+ * @param string		the store string to parse
+ * @result				the parsed store
  */
-API Config *parseConfigString(char *string)
+API Store *parseStoreString(char *string)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = strdup(string);
-	config->resource = config->name;
-	config->read = &configStringRead;
-	config->unread = &configStringUnread;
+	store->name = strdup(string);
+	store->resource = store->name;
+	store->read = &storeStringRead;
+	store->unread = &storeStringUnread;
 
-	LOG_INFO("Parsing config string: %s", config->name);
+	LOG_INFO("Parsing store string: %s", store->name);
 
-	if(yyparse(config) != 0) {
-		LOG_ERROR("Parsing config string failed");
-		free(config->name);
-		free(config);
+	if(yyparse(store) != 0) {
+		LOG_ERROR("Parsing store string failed");
+		free(store->name);
+		free(store);
 		return NULL;
 	}
 
-	return config;
+	return store;
 }
 
 /**
- * A ConfigReader function for files
+ * A StoreReader function for files
  *
- * @param config		the config to to read from
+ * @param store		the store to to read from
  * @result				the read character
  */
-API char configFileRead(void *config)
+API char storeFileRead(void *store)
 {
-	Config *cfg = config;
+	Store *cfg = store;
 
 	return fgetc(cfg->resource);
 }
 
 /**
- * A ConfigUnreader function for files
+ * A StoreUnreader function for files
  *
- * @param config		the config to to unread to
+ * @param store		the store to to unread to
  * @param c				the character to unread
  */
-API void configFileUnread(void *config, char c)
+API void storeFileUnread(void *store, char c)
 {
-	Config *cfg = config;
+	Store *cfg = store;
 
 	ungetc(c, cfg->resource);
 }
 
 /**
- * A ConfigReader function for strings
+ * A StoreReader function for strings
  *
- * @param config		the config to to read from
+ * @param store		the store to to read from
  * @result				the read character
  */
-API char configStringRead(void *config)
+API char storeStringRead(void *store)
 {
-	Config *cfg = config;
+	Store *cfg = store;
 
 	return *((char *) cfg->resource++);
 }
 
 /**
- * A ConfigUnreader function for strings
+ * A StoreUnreader function for strings
  *
- * @param config		the config to to unread to
+ * @param store		the store to to unread to
  * @param c				the character to unread
  */
-API void configStringUnread(void *config, char c)
+API void storeStringUnread(void *store, char c)
 {
-	Config *cfg = config;
+	Store *cfg = store;
 
 	cfg->resource--;
 }

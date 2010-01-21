@@ -18,12 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_PARSE_H
-#define CONFIG_PARSE_H
+#ifndef STORE_PARSE_H
+#define STORE_PARSE_H
 
 #include <glib.h>
 #include <stdio.h>
-#include "config.h"
+#include "store.h"
 
 /**
  * Parser union for bison
@@ -32,20 +32,20 @@ typedef union {
 	char *string;
 	int integer;
 	double float_number;
-	ConfigNodeValue *value;
-	ConfigNode *node;
+	StoreNodeValue *value;
+	StoreNode *node;
 } YYSTYPE;
 
 /**
- * A config string's maximum length
+ * A store string's maximum length
  */
-#define CONFIG_MAX_STRING_LENGTH 1024
+#define STORE_MAX_STRING_LENGTH 1024
 
-API Config *parseConfigFile(char *filename);
-API Config *parseConfigString(char *string);
-API char configFileRead(void *config);
-API void configFileUnread(void *config, char c);
-API char configStringRead(void *config);
-API void configStringUnread(void *config, char c);
+API Store *parseStoreFile(char *filename);
+API Store *parseStoreString(char *string);
+API char storeFileRead(void *store);
+API void storeFileUnread(void *store, char c);
+API char storeStringRead(void *store);
+API void storeStringUnread(void *store, char c);
 
 #endif

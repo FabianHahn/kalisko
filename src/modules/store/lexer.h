@@ -18,16 +18,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_LEXER_H
-#define CONFIG_LEXER_H
+#ifndef STORE_LEXER_H
+#define STORE_LEXER_H
 
 #include <glib.h>
-#include "config.h"
+#include "store.h"
 #include "parse.h"
 #include "parser.h"
 
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Config *config);
-API GString *lexConfigString(char *string);
-API GString *lexConfigFile(char *filename);
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store);
+API GString *lexStoreString(char *string);
+API GString *lexStoreFile(char *filename);
 
 #endif

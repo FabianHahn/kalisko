@@ -18,12 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_PATH_H
-#define CONFIG_PATH_H
+#ifndef STORE_PATH_H
+#define STORE_PATH_H
 
-API ConfigNodeValue *getConfigPath(Config *config, char *path);
-API bool setConfigPath(Config *config, char *path, void *value);
-API bool deleteConfigPath(Config *config, char *path);
-API GPtrArray *splitConfigPath(char *path);
+API StoreNodeValue *getStorePath(Store *store, char *path);
+API bool setStorePath(Store *store, char *path, void *value);
+API bool deleteStorePath(Store *store, char *path);
+API GPtrArray *splitStorePath(char *path);
 
 #endif

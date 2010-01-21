@@ -27,13 +27,13 @@
 #include "util.h"
 
 #include "api.h"
-#include "config.h"
+#include "store.h"
 
-MODULE_NAME("config");
+MODULE_NAME("store");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The config module provides an API to parse, create, edit and write config files");
-MODULE_VERSION(0, 2, 1);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_DESCRIPTION("The store module provides a recursive key-value data type that can be easily converted back and forth from a string and to its abstract memory representation");
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -47,58 +47,58 @@ MODULE_FINALIZE
 }
 
 /**
- * Creates an empty config
+ * Creates an empty store
  *
- * @param name		the name for the new config
- * @result			the created config
+ * @param name		the name for the new store
+ * @result			the created store
  */
-API Config *createConfig(char *name)
+API Store *createStore(char *name)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = strdup(name);
-	config->resource = NULL;
-	config->read = NULL;
-	config->unread = NULL;
-	config->root = createConfigArrayValue(createConfigNodes());
+	store->name = strdup(name);
+	store->resource = NULL;
+	store->read = NULL;
+	store->unread = NULL;
+	store->root = createStoreArrayValue(createStoreNodes());
 
-	return config;
+	return store;
 }
 
 /**
- * Frees a config
+ * Frees a store
  *
- * @param config		the config to free
+ * @param store		the store to free
  */
-API void freeConfig(Config *config)
+API void freeStore(Store *store)
 {
-	freeConfigNodeValue(config->root);
-	free(config->name);
+	freeStoreNodeValue(store->root);
+	free(store->name);
 
-	free(config);
+	free(store);
 }
 
 /**
- * A GDestroyNotify function to free a config node value
+ * A GDestroyNotify function to free a store node value
  *
- * @param config		the config node value to free
+ * @param store		the store node value to free
  */
-API void freeConfigNodeValue(void *value_p)
+API void freeStoreNodeValue(void *value_p)
 {
-	ConfigNodeValue *value = value_p;
+	StoreNodeValue *value = value_p;
 
 	switch (value->type) {
-		case CONFIG_STRING:
+		case STORE_STRING:
 			free(value->content.string);
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			for(GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-				freeConfigNodeValue(iter->data);
+				freeStoreNodeValue(iter->data);
 			}
 
 			g_queue_free(value->content.list);
 		break;
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			g_hash_table_destroy(value->content.array);
 		break;
 		default:
@@ -113,19 +113,19 @@ API void freeConfigNodeValue(void *value_p)
 /**
  * Returns a node value's actual content
  *
- * @param value		the config node value
+ * @param value		the store node value
  * @result 			the node value's content
  */
-API void *getConfigValueContent(ConfigNodeValue *value)
+API void *getStoreValueContent(StoreNodeValue *value)
 {
 	switch(value->type) {
-		case CONFIG_STRING:
+		case STORE_STRING:
 			return value->content.string;
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			return value->content.list;
 		break;
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			return value->content.array;
 		break;
 		default:
@@ -135,12 +135,12 @@ API void *getConfigValueContent(ConfigNodeValue *value)
 }
 
 /**
- * Escapes a config string for output in a dump
+ * Escapes a store string for output in a dump
  *
  * @param string		the string to escape
  * @result				the escaped string, must be freed with g_string_free
  */
-API GString *escapeConfigString(char *string)
+API GString *escapeStoreString(char *string)
 {
 	GString *escaped = g_string_new("");
 
@@ -156,60 +156,60 @@ API GString *escapeConfigString(char *string)
 }
 
 /**
- * Creates a string value to be used in a config
+ * Creates a string value to be used in a store
  *
  * @param string		the content string
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
  */
-API ConfigNodeValue *createConfigStringValue(char *string)
+API StoreNodeValue *createStoreStringValue(char *string)
 {
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_STRING;
+	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_STRING;
 	value->content.string = strdup(string);
 
 	return value;
 }
 
 /**
- * Creates an integer value to be used in a config
+ * Creates an integer value to be used in a store
  *
  * @param string		the content integer
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
  */
-API ConfigNodeValue *createConfigIntegerValue(int integer)
+API StoreNodeValue *createStoreIntegerValue(int integer)
 {
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_INTEGER;
+	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_INTEGER;
 	value->content.integer = integer;
 
 	return value;
 }
 
 /**
- * Creates a float number value to be used in a config
+ * Creates a float number value to be used in a store
  *
  * @param string		the content float number
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
  */
-API ConfigNodeValue *createConfigFloatNumberValue(double float_number)
+API StoreNodeValue *createStoreFloatNumberValue(double float_number)
 {
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_FLOAT_NUMBER;
+	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_FLOAT_NUMBER;
 	value->content.float_number = float_number;
 
 	return value;
 }
 
 /**
- * Creates a list value to be used in a config
+ * Creates a list value to be used in a store
  *
  * @param string		the content list or NULL for an empty list
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
  */
-API ConfigNodeValue *createConfigListValue(GQueue *list)
+API StoreNodeValue *createStoreListValue(GQueue *list)
 {
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_LIST;
+	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_LIST;
 
 	if(list != NULL) {
 		value->content.list = list;
@@ -221,31 +221,31 @@ API ConfigNodeValue *createConfigListValue(GQueue *list)
 }
 
 /**
- * Creates an array value to be used in a config
+ * Creates an array value to be used in a store
  *
  * @param string		the content array
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
+ * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
  */
-API ConfigNodeValue *createConfigArrayValue(GHashTable *array)
+API StoreNodeValue *createStoreArrayValue(GHashTable *array)
 {
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_ARRAY;
+	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_ARRAY;
 
 	if(array != NULL) {
 		value->content.array = array;
 	} else {
-		value->content.array = createConfigNodes();
+		value->content.array = createStoreNodes();
 	}
 
 	return value;
 }
 
 /**
- * Creates an empty config nodes table to be used as a section or an array in a config
+ * Creates an empty store nodes table to be used as a section or an array in a store
  *
- * @result			the created nodes table, must be freed with g_hash_table_destroy or the config system
+ * @result			the created nodes table, must be freed with g_hash_table_destroy or the store system
  */
-API GHashTable *createConfigNodes()
+API GHashTable *createStoreNodes()
 {
-	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
+	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeStoreNodeValue);
 }

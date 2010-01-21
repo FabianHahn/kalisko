@@ -29,52 +29,52 @@
 #include "parse.h"
 #include "path.h"
 
-static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent);
+static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent);
 
 /**
- * Fetches a config value by its path
+ * Fetches a store value by its path
  *
- * @param config		the config in which the lookup takes place
+ * @param store		the store in which the lookup takes place
  * @param path			the path to the value without a leading / to search, use integers from base 0 for list elements
- * @result				the config value, or NULL if not found
+ * @result				the store value, or NULL if not found
  */
-API ConfigNodeValue *getConfigPath(Config *config, char *path)
+API StoreNodeValue *getStorePath(Store *store, char *path)
 {
 	if(strlen(path) == 0) { // empty path means the sections subtree itself
-		return config->root;
+		return store->root;
 	} else {
-		return getConfigSubpath(path, config->root);
+		return getStoreSubpath(path, store->root);
 	}
 }
 
 /**
- * Sets a value in a config path
+ * Sets a value in a store path
  *
- * @param config	the config to edit
+ * @param store	the store to edit
  * @param path		the path to set, will be overridden if already exists
  * @param value		the value to set
  * @result			true if successful
  */
-API bool setConfigPath(Config *config, char *path, void *value)
+API bool setStorePath(Store *store, char *path, void *value)
 {
 	bool result = false;
-	GPtrArray *array = splitConfigPath(path);
+	GPtrArray *array = splitStorePath(path);
 	char **parts = (char **) array->pdata;
 	char *key = parts[array->len - 1];
 	parts[array->len - 1] = NULL; // cut off last element
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	ConfigNodeValue *parent = getConfigPath(config, parentpath);
+	StoreNodeValue *parent = getStorePath(store, parentpath);
 
 	int i;
 
 	switch(parent->type) {
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			g_hash_table_insert(parent->content.array, key, value);
 			result = true;
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			i = atoi(key);
 			g_queue_push_nth(parent->content.list, value, i);
 			result = true;
@@ -97,38 +97,38 @@ API bool setConfigPath(Config *config, char *path, void *value)
 }
 
 /**
- * Deletes a value in a config path
+ * Deletes a value in a store path
  *
- * @param config	the config to edit
+ * @param store	the store to edit
  * @param path		the path to delete
  * @result			true if successful
  */
-API bool deleteConfigPath(Config *config, char *path)
+API bool deleteStorePath(Store *store, char *path)
 {
 	bool result = false;
-	GPtrArray *array = splitConfigPath(path);
+	GPtrArray *array = splitStorePath(path);
 	char **parts = (char **) array->pdata;
 	char *key = parts[array->len - 1];
 	parts[array->len - 1] = NULL; // cut off last element
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	ConfigNodeValue *parent = getConfigPath(config, parentpath);
+	StoreNodeValue *parent = getStorePath(store, parentpath);
 
 	int i;
 	void *value;
 
 	switch(parent->type) {
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			if(g_hash_table_remove(parent->content.array, key)) { // The hash table frees the removed value automatically
 				result = true; // This is a bit nicer than assigning a gboolean to a boolean directly, even if it would work
 			}
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			i = atoi(key);
 			value = g_queue_pop_nth(parent->content.list, i);
 			if(value != NULL) {
-				freeConfigNodeValue(value);
+				freeStoreNodeValue(value);
 				result = true;
 			} else {
 				result = false;
@@ -151,12 +151,12 @@ API bool deleteConfigPath(Config *config, char *path)
 }
 
 /**
- * Splits a config path by its unescaped delimiter '/'
+ * Splits a store path by its unescaped delimiter '/'
  *
  * @param path		the path to escape
  * @result			an array of path elements, contents must be freed with free and the array itself with g_ptr_array_free
  */
-API GPtrArray *splitConfigPath(char *path)
+API GPtrArray *splitStorePath(char *path)
 {
 	GPtrArray *array = g_ptr_array_new();
 	GString *assemble = g_string_new("");
@@ -202,14 +202,14 @@ API GPtrArray *splitConfigPath(char *path)
 }
 
 /**
- * Fetches a config subtree by its parent tree and its subpath
+ * Fetches a store subtree by its parent tree and its subpath
  *
- * @see getConfigPath
+ * @see getStorePath
  * @param subpath		the subpath to search
  * @param parent		the parent value to search in
- * @result				the config value, or NULL if not found
+ * @result				the store value, or NULL if not found
  */
-static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent)
+static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent)
 {
 	GString *pathnode = g_string_new("");
 	bool escaping = false;
@@ -239,18 +239,18 @@ static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent)
 		g_string_append_c(pathnode, *iter);
 	}
 
-	ConfigNodeValue *value;
+	StoreNodeValue *value;
 	int i;
 
 	switch(parent->type) {
-		case CONFIG_ARRAY:
+		case STORE_ARRAY:
 			value = g_hash_table_lookup(parent->content.array, pathnode->str);
 
 			if(value == NULL) {
 				return NULL;
 			}
 		break;
-		case CONFIG_LIST:
+		case STORE_LIST:
 			i = atoi(pathnode->str);
 
 			if(i < 0 || i >= g_queue_get_length(parent->content.list)) { // out of bounds
@@ -269,6 +269,6 @@ static ConfigNodeValue *getConfigSubpath(char *subpath, ConfigNodeValue *parent)
 	if(*iter == '\0') {
 		return value;
 	} else {
-		return getConfigSubpath(iter, value);
+		return getStoreSubpath(iter, value);
 	}
 }

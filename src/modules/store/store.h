@@ -18,26 +18,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_CONFIG_H
-#define CONFIG_CONFIG_H
+#ifndef STORE_STORE_H
+#define STORE_STORE_H
 
 #include <glib.h>
 
 /**
- * Enumeration of the four standard log levels.
+ * Enumeration of the store value types
  */
 typedef enum {
 	/** A string value */
-	CONFIG_STRING,
+	STORE_STRING,
 	/** An integer value */
-	CONFIG_INTEGER,
+	STORE_INTEGER,
 	/** A floating point number value */
-	CONFIG_FLOAT_NUMBER,
+	STORE_FLOAT_NUMBER,
 	/** A list value */
-	CONFIG_LIST,
+	STORE_LIST,
 	/** An associative array value */
-	CONFIG_ARRAY
-} ConfigValueType;
+	STORE_ARRAY
+} StoreValueType;
 
 /**
  * Union to store a node value's content
@@ -53,67 +53,67 @@ typedef union {
 	GQueue *list;
 	/** An associative array value */
 	GHashTable *array;
-} ConfigNodeValueContent;
+} StoreNodeValueContent;
 
 /**
  * Struct to represent a node value
  */
 typedef struct {
 	/** The node value's type */
-	ConfigValueType type;
+	StoreValueType type;
 	/** The node value's content */
-	ConfigNodeValueContent content;
-} ConfigNodeValue;
+	StoreNodeValueContent content;
+} StoreNodeValue;
 
 /**
- * Struct to represent a config node
- * Note: This struct is only used internally to do the parsing, it is NOT used in the final parsed config's representation
+ * Struct to represent a store node
+ * Note: This struct is only used internally to do the parsing, it is NOT used in the final parsed store's representation
  */
 typedef struct {
 	/** The node's key */
 	char *key;
 	/** The node's value */
-	ConfigNodeValue *value;
-} ConfigNode;
+	StoreNodeValue *value;
+} StoreNode;
 
 /**
- * A config reader to retrieve characters from a source
- * Note: The first param has only type void * and not ConfigFile to get around C's single pass compilation restrictions
+ * A store reader to retrieve characters from a source
+ * Note: The first param has only type void * and not StoreFile to get around C's single pass compilation restrictions
  */
-typedef char (ConfigReader)(void *config);
+typedef char (StoreReader)(void *store);
 
 /**
- * A config unreader to push back characters into a source
- * Note: The first param has only type void * and not ConfigFile to get around C's single pass compilation restrictions
+ * A store unreader to push back characters into a source
+ * Note: The first param has only type void * and not StoreFile to get around C's single pass compilation restrictions
  */
-typedef void (ConfigUnreader)(void *config, char c);
+typedef void (StoreUnreader)(void *store, char c);
 
 /**
- * Struct to represent a config
+ * Struct to represent a store
  */
 typedef struct {
-	/** The config's identification name */
+	/** The store's identification name */
 	char *name;
-	/** The config's resource */
+	/** The store's resource */
 	void *resource;
-	/** The config's reader */
-	ConfigReader *read;
-	/** The config's unreader */
-	ConfigUnreader *unread;
-	/** The config's root array node if it's parsed */
-	ConfigNodeValue *root;
-} Config;
+	/** The store's reader */
+	StoreReader *read;
+	/** The store's unreader */
+	StoreUnreader *unread;
+	/** The store's root array node if it's parsed */
+	StoreNodeValue *root;
+} Store;
 
-API Config *createConfig(char *name);
-API void freeConfig(Config *config);
-API void freeConfigNodeValue(void *value);
-API void *getConfigValueContent(ConfigNodeValue *value);
-API GString *escapeConfigString(char *string);
-API ConfigNodeValue *createConfigStringValue(char *string);
-API ConfigNodeValue *createConfigIntegerValue(int integer);
-API ConfigNodeValue *createConfigFloatNumberValue(double float_number);
-API ConfigNodeValue *createConfigListValue(GQueue *list);
-API ConfigNodeValue *createConfigArrayValue(GHashTable *array);
-API GHashTable *createConfigNodes();
+API Store *createStore(char *name);
+API void freeStore(Store *store);
+API void freeStoreNodeValue(void *value);
+API void *getStoreValueContent(StoreNodeValue *value);
+API GString *escapeStoreString(char *string);
+API StoreNodeValue *createStoreStringValue(char *string);
+API StoreNodeValue *createStoreIntegerValue(int integer);
+API StoreNodeValue *createStoreFloatNumberValue(double float_number);
+API StoreNodeValue *createStoreListValue(GQueue *list);
+API StoreNodeValue *createStoreArrayValue(GHashTable *array);
+API GHashTable *createStoreNodes();
 
 #endif

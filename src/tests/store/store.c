@@ -25,11 +25,11 @@
 #include "dll.h"
 #include "test.h"
 #include "memory_alloc.h"
-#include "modules/config/config.h"
-#include "modules/config/parse.h"
-#include "modules/config/parser.h"
-#include "modules/config/lexer.h"
-#include "modules/config/path.h"
+#include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/parser.h"
+#include "modules/store/lexer.h"
+#include "modules/store/path.h"
 
 #include "api.h"
 
@@ -50,17 +50,17 @@ static char *path_test_input = "somekey=(foo bar {foo=bar subarray={bird=word an
 static char *path_split_input = "this/is a \"difficult\"/path\\\\to/split\\/:)";
 static char *path_split_solution[] = {"this", "is a \"difficult\"", "path\\to", "split/:)"};
 
-static char _configStringRead(void *config);
-static void _configStringUnread(void *config, char c);
+static char _storeStringRead(void *store);
+static void _storeStringUnread(void *store, char c);
 
-MODULE_NAME("test_config");
+MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Test suite for the config module");
+MODULE_DESCRIPTION("Test suite for the store module");
 MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 2, 0));
 
-TEST_SUITE_BEGIN(config)
+TEST_SUITE_BEGIN(store)
 	TEST_CASE_ADD(lexer);
 	TEST_CASE_ADD(parser);
 	TEST_CASE_ADD(path_modify);
@@ -76,19 +76,19 @@ TEST_CASE(lexer)
 	YYSTYPE val;
 	YYLTYPE loc;
 
-	Config *config = ALLOCATE_OBJECT(Config);
+	Store *store = ALLOCATE_OBJECT(Store);
 
-	config->name = lexer_test_input;
-	config->resource = config->name;
-	config->read = &_configStringRead;
-	config->unread = &_configStringUnread;
+	store->name = lexer_test_input;
+	store->resource = store->name;
+	store->read = &_storeStringRead;
+	store->unread = &_storeStringUnread;
 
 	solution_tokens = lexer_test_solution_tokens;
 	solution_values = lexer_test_solution_values;
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = $(int, config, yylex)(&val, &loc, config)) != 0) {
+	while((lexx = $(int, store, yylex)(&val, &loc, store)) != 0) {
 		TEST_ASSERT(lexx == *(solution_tokens++));
 
 		switch(lexx) {
@@ -108,86 +108,86 @@ TEST_CASE(lexer)
 		solution_values++;
 	}
 
-	free(config);
+	free(store);
 
 	TEST_PASS;
 }
 
 TEST_CASE(parser)
 {
-	Config *config;
+	Store *store;
 
-	TEST_ASSERT((config = $(Config *, config, parseConfigString)(parser_test_input)) != NULL);
+	TEST_ASSERT((store = $(Store *, store, parseStoreString)(parser_test_input)) != NULL);
 
-	$(void, config, freeConfig)(config);
+	$(void, store, freeStore)(store);
 
 	TEST_PASS;
 }
 
 TEST_CASE(path_modify)
 {
-	ConfigNodeValue *value;
-	Config *config = $(Config *, config, parseConfigString)(path_test_input);
-	TEST_ASSERT(config != NULL);
+	StoreNodeValue *value;
+	Store *store = $(Store *, store, parseStoreString)(path_test_input);
+	TEST_ASSERT(store != NULL);
 
 	// check some path types
-	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "")->type == CONFIG_ARRAY);
-	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey")->type == CONFIG_LIST);
-	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2")->type == CONFIG_ARRAY);
+	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "")->type == STORE_ARRAY);
+	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey")->type == STORE_LIST);
+	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/2")->type == STORE_ARRAY);
 
-	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/bird");
-	TEST_ASSERT(value->type == CONFIG_STRING);
-	TEST_ASSERT(strcmp($(void *, config, getConfigValueContent)(value), "word") == 0);
+	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/bird");
+	TEST_ASSERT(value->type == STORE_STRING);
+	TEST_ASSERT(strcmp($(void *, store, getStoreValueContent)(value), "word") == 0);
 
 	// change value
-	value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_FLOAT_NUMBER;
+	value = ALLOCATE_OBJECT(StoreNodeValue);
+	value->type = STORE_FLOAT_NUMBER;
 	value->content.float_number = 13.37;
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "somekey/2/subarray/bird", value));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "somekey/2/subarray/bird", value));
 
 	// check if correctly changed
-	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/bird");
-	TEST_ASSERT(value->type == CONFIG_FLOAT_NUMBER);
-	TEST_ASSERT(*((double *) $(void *, config, getConfigValueContent)(value)) == 13.37);
+	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/bird");
+	TEST_ASSERT(value->type == STORE_FLOAT_NUMBER);
+	TEST_ASSERT(*((double *) $(void *, store, getStoreValueContent)(value)) == 13.37);
 
-	value = $(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/answer");
-	TEST_ASSERT(value->type == CONFIG_INTEGER);
-	TEST_ASSERT(*((int *) $(void *, config, getConfigValueContent)(value)) == 42);
+	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/answer");
+	TEST_ASSERT(value->type == STORE_INTEGER);
+	TEST_ASSERT(*((int *) $(void *, store, getStoreValueContent)(value)) == 42);
 
 	// delete value
-	TEST_ASSERT($(bool, config, deleteConfigPath)(config, "somekey/2/subarray/answer"));
+	TEST_ASSERT($(bool, store, deleteStorePath)(store, "somekey/2/subarray/answer"));
 
 	// check if correctly deleted
-	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/2/subarray/answer") == NULL);
+	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/answer") == NULL);
 
 	// test list out of bounds handling
-	TEST_ASSERT($(ConfigNodeValue *, config, getConfigPath)(config, "somekey/1337") == NULL);
+	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/1337") == NULL);
 
-	$(void, config, freeConfig)(config);
+	$(void, store, freeStore)(store);
 
 	TEST_PASS;
 }
 
 TEST_CASE(path_create)
 {
-	Config *config = $(Config *, config, createConfig)("test config");
+	Store *store = $(Store *, store, createStore)("test store");
 
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "string", $(ConfigNodeValue *, config, createConfigStringValue)("\"e = mc^2\"")));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "integer", $(ConfigNodeValue *, config, createConfigIntegerValue)(1337)));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "float number", $(ConfigNodeValue *, config, createConfigFloatNumberValue)(3.141)));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "list", $(ConfigNodeValue *, config, createConfigListValue)(NULL)));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "list/1", $(ConfigNodeValue *, config, createConfigStringValue)("the bird is the word")));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "array", $(ConfigNodeValue *, config, createConfigArrayValue)(NULL)));
-	TEST_ASSERT($(bool, config, setConfigPath)(config, "array/some\\/sub\\\\array", $(ConfigNodeValue *, config, createConfigArrayValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "string", $(StoreNodeValue *, store, createStoreStringValue)("\"e = mc^2\"")));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "integer", $(StoreNodeValue *, store, createStoreIntegerValue)(1337)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "float number", $(StoreNodeValue *, store, createStoreFloatNumberValue)(3.141)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "list", $(StoreNodeValue *, store, createStoreListValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "list/1", $(StoreNodeValue *, store, createStoreStringValue)("the bird is the word")));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "array", $(StoreNodeValue *, store, createStoreArrayValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "array/some\\/sub\\\\array", $(StoreNodeValue *, store, createStoreArrayValue)(NULL)));
 
-	$(void, config, freeConfig)(config);
+	$(void, store, freeStore)(store);
 
 	TEST_PASS;
 }
 
 TEST_CASE(path_split)
 {
-	GPtrArray *array = $(GPtrArray *, config, splitConfigPath)(path_split_input);
+	GPtrArray *array = $(GPtrArray *, store, splitStorePath)(path_split_input);
 
 	for(int i = 0; i < array->len; i++) {
 		TEST_ASSERT(strcmp(array->pdata[i], path_split_solution[i]) == 0);
@@ -200,23 +200,23 @@ TEST_CASE(path_split)
 }
 
 /**
- * A local wrapper around configStringRead
+ * A local wrapper around storeStringRead
  *
- * @param config		the config to to read from
+ * @param store		the store to to read from
  * @result				the read character
  */
-static char _configStringRead(void *config)
+static char _storeStringRead(void *store)
 {
-	return $(char, config, configStringRead)(config);
+	return $(char, store, storeStringRead)(store);
 }
 
 /**
- * A local wrapper around configStringUnread
+ * A local wrapper around storeStringUnread
  *
- * @param config		the config to to read from
+ * @param store		the store to to read from
  * @result				the read character
  */
-static void _configStringUnread(void *config, char c)
+static void _storeStringUnread(void *store, char c)
 {
-	return $(void, config, configStringUnread)(config, c);
+	return $(void, store, storeStringUnread)(store, c);
 }

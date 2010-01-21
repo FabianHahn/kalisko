@@ -17,5 +17,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('test')
 
-test.Append(CPPPATH = ['../..','../../modules/config'])
-test.SharedLibrary('../../modules/kalisko_test_config', Glob('*.c'))
+test.Append(CPPPATH = ['../..','../../modules/store'])
+test.SharedLibrary('../../modules/kalisko_test_store', Glob('*.c'))

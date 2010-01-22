@@ -19,6 +19,7 @@
  */
 
 #include <glib.h>
+#include <string.h>
 
 #include "dll.h"
 #include "api.h"
@@ -31,12 +32,54 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 3, 0));
 
+static GHashTable *functions;
+
 MODULE_INIT
 {
+	functions = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
-
+	g_hash_table_destroy(functions);
 }
+
+/**
+ * Adds a new XCall function
+ *
+ * @param name		the name of the hook
+ * @param func		the xcall to add
+ * @result			true if successful, false if the xcall already exists
+ */
+API bool addXCallFunction(const char *name, XCallFunction *func)
+{
+	if(g_hash_table_lookup(functions, name) != NULL) { // A xcall with that name already exists
+		return false;
+	}
+
+	// Insert the xcall
+	g_hash_table_insert(functions, strdup(name), func);
+
+	return true;
+}
+
+/**
+ * Deletes an existing xcall
+ *
+ * @param name		the name of the xcall
+ * @result			true if successful, if the xcall was not found
+ */
+API bool delXCall(const char *name)
+{
+	if(g_hash_table_lookup(functions, name) != NULL) { // A function with that name doesn't exist
+		return false;
+	}
+
+	// Remove the function
+	g_hash_table_remove(functions, name);
+
+	return true;
+}
+

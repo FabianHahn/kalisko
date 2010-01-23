@@ -41,7 +41,7 @@ static void storeFileWrite(Store *store, char *format, ...);
 static void storeGStringWrite(Store *store, char *format, ...);
 static void dumpStore(Store *store, StoreWriter *writer);
 static void dumpStoreNode(void *key_p, void *value_p, void *data);
-static void dumpStoreNodeValue(StoreNodeValue *value, StoreDumpContext *context);
+static void dumpStore(Store *value, StoreDumpContext *context);
 
 /**
  * Writes a store from memory to a file
@@ -131,7 +131,7 @@ static void dumpStore(Store *store, StoreWriter *writer)
 static void dumpStoreNode(void *key_p, void *value_p, void *data)
 {
 	char *key = key_p;
-	StoreNodeValue *value = value_p;
+	Store *value = value_p;
 	StoreDumpContext *context = data;
 
 	for(int i = 0; i < context->level; i++) {
@@ -144,7 +144,7 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data)
 
 	g_string_free(escaped, TRUE);
 
-	dumpStoreNodeValue(value, context);
+	dumpStore(value, context);
 
 	DUMP("\n");
 }
@@ -155,7 +155,7 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data)
  * @param value		the value of the node
  * @param context		the dump's context
  */
-static void dumpStoreNodeValue(StoreNodeValue *value, StoreDumpContext *context)
+static void dumpStore(Store *value, StoreDumpContext *context)
 {
 	GString *escaped;
 
@@ -177,7 +177,7 @@ static void dumpStoreNodeValue(StoreNodeValue *value, StoreDumpContext *context)
 			DUMP("(");
 
 			for (GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-				dumpStoreNodeValue(iter->data, context);
+				dumpStore(iter->data, context);
 
 				if(iter->next != NULL) {
 					DUMP(", ");

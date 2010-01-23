@@ -70,7 +70,7 @@ API Store *createStore()
  */
 API void freeStore(Store *store)
 {
-	freeStoreNodeValue(store->root);
+	freeStore(store->root);
 	free(store);
 }
 
@@ -79,9 +79,9 @@ API void freeStore(Store *store)
  *
  * @param store		the store node value to free
  */
-API void freeStoreNodeValue(void *value_p)
+API void freeStore(void *value_p)
 {
-	StoreNodeValue *value = value_p;
+	Store *value = value_p;
 
 	switch (value->type) {
 		case STORE_STRING:
@@ -89,7 +89,7 @@ API void freeStoreNodeValue(void *value_p)
 		break;
 		case STORE_LIST:
 			for(GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-				freeStoreNodeValue(iter->data);
+				freeStore(iter->data);
 			}
 
 			g_queue_free(value->content.list);
@@ -112,7 +112,7 @@ API void freeStoreNodeValue(void *value_p)
  * @param value		the store node value
  * @result 			the node value's content
  */
-API void *getStoreValueContent(StoreNodeValue *value)
+API void *getStoreValueContent(Store *value)
 {
 	switch(value->type) {
 		case STORE_STRING:
@@ -155,11 +155,11 @@ API GString *escapeStoreString(char *string)
  * Creates a string value to be used in a store
  *
  * @param string		the content string
- * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
+ * @result				the created node value, must be freed with freeStore or by the store system
  */
-API StoreNodeValue *createStoreStringValue(char *string)
+API Store *createStoreStringValue(char *string)
 {
-	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_STRING;
 	value->content.string = strdup(string);
 
@@ -170,11 +170,11 @@ API StoreNodeValue *createStoreStringValue(char *string)
  * Creates an integer value to be used in a store
  *
  * @param string		the content integer
- * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
+ * @result				the created node value, must be freed with freeStore or by the store system
  */
-API StoreNodeValue *createStoreIntegerValue(int integer)
+API Store *createStoreIntegerValue(int integer)
 {
-	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_INTEGER;
 	value->content.integer = integer;
 
@@ -185,11 +185,11 @@ API StoreNodeValue *createStoreIntegerValue(int integer)
  * Creates a float number value to be used in a store
  *
  * @param string		the content float number
- * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
+ * @result				the created node value, must be freed with freeStore or by the store system
  */
-API StoreNodeValue *createStoreFloatNumberValue(double float_number)
+API Store *createStoreFloatNumberValue(double float_number)
 {
-	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_FLOAT_NUMBER;
 	value->content.float_number = float_number;
 
@@ -200,11 +200,11 @@ API StoreNodeValue *createStoreFloatNumberValue(double float_number)
  * Creates a list value to be used in a store
  *
  * @param string		the content list or NULL for an empty list
- * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
+ * @result				the created node value, must be freed with freeStore or by the store system
  */
-API StoreNodeValue *createStoreListValue(GQueue *list)
+API Store *createStoreListValue(GQueue *list)
 {
-	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_LIST;
 
 	if(list != NULL) {
@@ -220,11 +220,11 @@ API StoreNodeValue *createStoreListValue(GQueue *list)
  * Creates an array value to be used in a store
  *
  * @param string		the content array
- * @result				the created node value, must be freed with freeStoreNodeValue or by the store system
+ * @result				the created node value, must be freed with freeStore or by the store system
  */
-API StoreNodeValue *createStoreArrayValue(GHashTable *array)
+API Store *createStoreArrayValue(GHashTable *array)
 {
-	StoreNodeValue *value = ALLOCATE_OBJECT(StoreNodeValue);
+	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_ARRAY;
 
 	if(array != NULL) {
@@ -243,5 +243,5 @@ API StoreNodeValue *createStoreArrayValue(GHashTable *array)
  */
 API GHashTable *createStoreNodes()
 {
-	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeStoreNodeValue);
+	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeStore);
 }

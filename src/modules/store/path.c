@@ -29,7 +29,7 @@
 #include "parse.h"
 #include "path.h"
 
-static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent);
+static Store *getStoreSubpath(char *subpath, Store *parent);
 
 /**
  * Fetches a store value by its path
@@ -38,7 +38,7 @@ static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent);
  * @param path			the path to the value without a leading / to search, use integers from base 0 for list elements
  * @result				the store value, or NULL if not found
  */
-API StoreNodeValue *getStorePath(Store *store, char *path)
+API Store *getStorePath(Store *store, char *path)
 {
 	if(strlen(path) == 0) { // empty path means the sections subtree itself
 		return store->root;
@@ -65,7 +65,7 @@ API bool setStorePath(Store *store, char *path, void *value)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	StoreNodeValue *parent = getStorePath(store, parentpath);
+	Store *parent = getStorePath(store, parentpath);
 
 	int i;
 
@@ -113,7 +113,7 @@ API bool deleteStorePath(Store *store, char *path)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	StoreNodeValue *parent = getStorePath(store, parentpath);
+	Store *parent = getStorePath(store, parentpath);
 
 	int i;
 	void *value;
@@ -128,7 +128,7 @@ API bool deleteStorePath(Store *store, char *path)
 			i = atoi(key);
 			value = g_queue_pop_nth(parent->content.list, i);
 			if(value != NULL) {
-				freeStoreNodeValue(value);
+				freeStore(value);
 				result = true;
 			} else {
 				result = false;
@@ -209,7 +209,7 @@ API GPtrArray *splitStorePath(char *path)
  * @param parent		the parent value to search in
  * @result				the store value, or NULL if not found
  */
-static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent)
+static Store *getStoreSubpath(char *subpath, Store *parent)
 {
 	GString *pathnode = g_string_new("");
 	bool escaping = false;
@@ -239,7 +239,7 @@ static StoreNodeValue *getStoreSubpath(char *subpath, StoreNodeValue *parent)
 		g_string_append_c(pathnode, *iter);
 	}
 
-	StoreNodeValue *value;
+	Store *value;
 	int i;
 
 	switch(parent->type) {

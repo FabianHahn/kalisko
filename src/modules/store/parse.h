@@ -32,7 +32,7 @@ typedef union {
 	char *string;
 	int integer;
 	double float_number;
-	StoreNodeValue *value;
+	Store *value;
 	StoreNode *node;
 } YYSTYPE;
 

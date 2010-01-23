@@ -59,18 +59,18 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 MODULE_INIT
 {
 	// Go trough the standard configuration files and search for log file settings
-	StoreNodeValue *configFiles = $(StoreNodeValue *, config, getConfigPathValue)(LOG_FILES_CONFIG_PATH);
+	Store *configFiles = $(Store *, config, getConfigPathValue)(LOG_FILES_CONFIG_PATH);
 	if(configFiles != NULL) {
 		if(configFiles->type != STORE_LIST) {
 			LOG_WARNING("Found log files configuration but it is not a list and can not be processed");
 			return false;
 		}
 		for(int i = 0; i < configFiles->content.list->length; i++) {
-			StoreNodeValue *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
+			Store *fileConfig = g_queue_peek_nth(configFiles->content.list, i);
 			if(fileConfig->type == STORE_ARRAY) {
 				GHashTable *settings = fileConfig->content.array;
-				StoreNodeValue *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
-				StoreNodeValue *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
+				Store *filePath = g_hash_table_lookup(settings, LOG_FILES_CONFIG_FILEPATH_KEY);
+				Store *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
 
 				if(filePath == NULL) {
 					LOG_WARNING("The filepath is not set in the configuration. Ignoring log file");

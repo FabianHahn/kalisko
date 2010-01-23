@@ -125,31 +125,31 @@ TEST_CASE(parser)
 
 TEST_CASE(path_modify)
 {
-	StoreNodeValue *value;
+	Store *value;
 	Store *store = $(Store *, store, parseStoreString)(path_test_input);
 	TEST_ASSERT(store != NULL);
 
 	// check some path types
-	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "")->type == STORE_ARRAY);
-	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey")->type == STORE_LIST);
-	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/2")->type == STORE_ARRAY);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "")->type == STORE_ARRAY);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey")->type == STORE_LIST);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey/2")->type == STORE_ARRAY);
 
-	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/bird");
+	value = $(Store *, store, getStorePath)(store, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == STORE_STRING);
 	TEST_ASSERT(strcmp($(void *, store, getStoreValueContent)(value), "word") == 0);
 
 	// change value
-	value = ALLOCATE_OBJECT(StoreNodeValue);
+	value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_FLOAT_NUMBER;
 	value->content.float_number = 13.37;
 	TEST_ASSERT($(bool, store, setStorePath)(store, "somekey/2/subarray/bird", value));
 
 	// check if correctly changed
-	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/bird");
+	value = $(Store *, store, getStorePath)(store, "somekey/2/subarray/bird");
 	TEST_ASSERT(value->type == STORE_FLOAT_NUMBER);
 	TEST_ASSERT(*((double *) $(void *, store, getStoreValueContent)(value)) == 13.37);
 
-	value = $(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/answer");
+	value = $(Store *, store, getStorePath)(store, "somekey/2/subarray/answer");
 	TEST_ASSERT(value->type == STORE_INTEGER);
 	TEST_ASSERT(*((int *) $(void *, store, getStoreValueContent)(value)) == 42);
 
@@ -157,10 +157,10 @@ TEST_CASE(path_modify)
 	TEST_ASSERT($(bool, store, deleteStorePath)(store, "somekey/2/subarray/answer"));
 
 	// check if correctly deleted
-	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/2/subarray/answer") == NULL);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey/2/subarray/answer") == NULL);
 
 	// test list out of bounds handling
-	TEST_ASSERT($(StoreNodeValue *, store, getStorePath)(store, "somekey/1337") == NULL);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey/1337") == NULL);
 
 	$(void, store, freeStore)(store);
 
@@ -171,13 +171,13 @@ TEST_CASE(path_create)
 {
 	Store *store = $(Store *, store, createStore)();
 
-	TEST_ASSERT($(bool, store, setStorePath)(store, "string", $(StoreNodeValue *, store, createStoreStringValue)("\"e = mc^2\"")));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "integer", $(StoreNodeValue *, store, createStoreIntegerValue)(1337)));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "float number", $(StoreNodeValue *, store, createStoreFloatNumberValue)(3.141)));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "list", $(StoreNodeValue *, store, createStoreListValue)(NULL)));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "list/1", $(StoreNodeValue *, store, createStoreStringValue)("the bird is the word")));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "array", $(StoreNodeValue *, store, createStoreArrayValue)(NULL)));
-	TEST_ASSERT($(bool, store, setStorePath)(store, "array/some\\/sub\\\\array", $(StoreNodeValue *, store, createStoreArrayValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "string", $(Store *, store, createStoreStringValue)("\"e = mc^2\"")));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "integer", $(Store *, store, createStoreIntegerValue)(1337)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "float number", $(Store *, store, createStoreFloatNumberValue)(3.141)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "list", $(Store *, store, createStoreListValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "list/1", $(Store *, store, createStoreStringValue)("the bird is the word")));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "array", $(Store *, store, createStoreArrayValue)(NULL)));
+	TEST_ASSERT($(bool, store, setStorePath)(store, "array/some\\/sub\\\\array", $(Store *, store, createStoreArrayValue)(NULL)));
 
 	$(void, store, freeStore)(store);
 

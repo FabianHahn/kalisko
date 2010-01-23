@@ -153,13 +153,13 @@ API void saveConfig(ConfigFiles file)
  * @param	path			The path to search
  * @return	The first found value for given path or NULL
  */
-API StoreNodeValue *getConfigPathValue(char *path)
+API Store *getConfigPathValue(char *path)
 {
-	StoreNodeValue *value = NULL;
+	Store *value = NULL;
 
 	Store *overrideConfig = getConfig(CONFIG_USER_OVERRIDE);
 	if(overrideConfig) {
-		value = $(StoreNodeValue *, store, getStorePath)(overrideConfig, path);
+		value = $(Store *, store, getStorePath)(overrideConfig, path);
 		if(value) {
 			return value;
 		}
@@ -167,7 +167,7 @@ API StoreNodeValue *getConfigPathValue(char *path)
 
 	Store *userConfig = getConfig(CONFIG_USER);
 	if(userConfig) {
-		value = $(StoreNodeValue *, store, getStorePath)(userConfig, path);
+		value = $(Store *, store, getStorePath)(userConfig, path);
 		if(value) {
 			return value;
 		}
@@ -175,7 +175,7 @@ API StoreNodeValue *getConfigPathValue(char *path)
 
 	Store *globalConfig = getConfig(CONFIG_GLOBAL);
 	if(globalConfig) {
-		value = $(StoreNodeValue *, store, getStorePath)(globalConfig, path);
+		value = $(Store *, store, getStorePath)(globalConfig, path);
 		if(value) {
 			return value;
 		}

@@ -202,7 +202,7 @@ static void updateConfig() {
 		char *newColor = defaultValue;
 	#endif
 
-	StoreNodeValue *colorConfig = $(StoreNodeValue *, config, getConfigPathValue)(configPath);
+	Store *colorConfig = $(Store *, config, getConfigPathValue)(configPath);
 	if(colorConfig) {
 		#ifdef WIN32
 			if(colorConfig->type == CONFIG_INTEGER) {

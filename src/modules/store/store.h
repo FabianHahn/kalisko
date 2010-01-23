@@ -53,17 +53,17 @@ typedef union {
 	GQueue *list;
 	/** An associative array value */
 	GHashTable *array;
-} StoreNodeValueContent;
+} StoreValueContent;
 
 /**
- * Struct to represent a node value
+ * Struct to represent a store, respectively a node value in the tree
  */
 typedef struct {
 	/** The node value's type */
 	StoreValueType type;
 	/** The node value's content */
-	StoreNodeValueContent content;
-} StoreNodeValue;
+	StoreValueContent content;
+} Store;
 
 /**
  * Struct to represent a store node
@@ -72,8 +72,8 @@ typedef struct {
 typedef struct {
 	/** The node's key */
 	char *key;
-	/** The node's value */
-	StoreNodeValue *value;
+	/** The node's value, another store */
+	Store *value;
 } StoreNode;
 
 /**
@@ -98,20 +98,20 @@ typedef struct {
 	StoreReader *read;
 	/** The store's unreader */
 	StoreUnreader *unread;
-	/** The store's root array node if it's parsed */
-	StoreNodeValue *root;
-} Store;
+	/** The store's root array node to parse to */
+	Store *root;
+} StoreParser;
 
 API Store *createStore();
 API void freeStore(Store *store);
-API void freeStoreNodeValue(void *value);
-API void *getStoreValueContent(StoreNodeValue *value);
+API void freeStore(void *value);
+API void *getStoreValueContent(Store *value);
 API GString *escapeStoreString(char *string);
-API StoreNodeValue *createStoreStringValue(char *string);
-API StoreNodeValue *createStoreIntegerValue(int integer);
-API StoreNodeValue *createStoreFloatNumberValue(double float_number);
-API StoreNodeValue *createStoreListValue(GQueue *list);
-API StoreNodeValue *createStoreArrayValue(GHashTable *array);
+API Store *createStoreStringValue(char *string);
+API Store *createStoreIntegerValue(int integer);
+API Store *createStoreFloatNumberValue(double float_number);
+API Store *createStoreListValue(GQueue *list);
+API Store *createStoreArrayValue(GHashTable *array);
 API GHashTable *createStoreNodes();
 
 #endif

@@ -41,7 +41,7 @@ MODULE_INIT
 {
 	LOG_INFO("Requesting perform modules");
 
-	StoreNodeValue *modules = $(StoreNodeValue *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
+	Store *modules = $(Store *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
 	if(modules != NULL) {
 		if(modules->type != STORE_LIST) {
 			LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
@@ -51,7 +51,7 @@ MODULE_INIT
 		GQueue *list = modules->content.list;
 
 		for(GList *iter = list->head; iter != NULL; iter = iter->next) {
-			StoreNodeValue *moduleName = (StoreNodeValue *) iter->data;
+			Store *moduleName = (Store *) iter->data;
 
 			if(moduleName->type != STORE_STRING) {
 				LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);

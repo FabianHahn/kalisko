@@ -21,7 +21,7 @@
 #ifndef STORE_PATH_H
 #define STORE_PATH_H
 
-API StoreNodeValue *getStorePath(Store *store, char *path);
+API Store *getStorePath(Store *store, char *path);
 API bool setStorePath(Store *store, char *path, void *value);
 API bool deleteStorePath(Store *store, char *path);
 API GPtrArray *splitStorePath(char *path);

@@ -76,18 +76,17 @@ TEST_CASE(lexer)
 	YYSTYPE val;
 	YYLTYPE loc;
 
-	Store *store = ALLOCATE_OBJECT(Store);
-
-	store->resource = lexer_test_input;
-	store->read = &_storeStringRead;
-	store->unread = &_storeStringUnread;
+	StoreParser parser;
+	parser.resource = lexer_test_input;
+	parser.read = &_storeStringRead;
+	parser.unread = &_storeStringUnread;
 
 	solution_tokens = lexer_test_solution_tokens;
 	solution_values = lexer_test_solution_values;
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = $(int, store, yylex)(&val, &loc, store)) != 0) {
+	while((lexx = $(int, store, yylex)(&val, &loc, &parser)) != 0) {
 		TEST_ASSERT(lexx == *(solution_tokens++));
 
 		switch(lexx) {
@@ -106,8 +105,6 @@ TEST_CASE(lexer)
 		memset(&val, 0, sizeof(YYSTYPE));
 		solution_values++;
 	}
-
-	free(store);
 
 	TEST_PASS;
 }

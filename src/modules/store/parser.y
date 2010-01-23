@@ -161,5 +161,5 @@ array:		node // first element of the array
 
 void yyerror(YYLTYPE *lloc, Store *store, char *error)
 {
-	LOG_ERROR("Parse error in %s at line %d, column %d: %s", store->name, lloc->last_line, lloc->last_column - 1, error);
+	LOG_ERROR("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
 }

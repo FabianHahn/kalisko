@@ -40,29 +40,27 @@ API Store *parseStoreFile(char *filename)
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = strdup(filename);
-	store->resource = fopen(store->name, "r");
+	store->resource = fopen(filename, "r");
 	store->read = &storeFileRead;
 	store->unread = &storeFileUnread;
 
 	if(store->resource == NULL) {
-		LOG_SYSTEM_ERROR("Could not open store file %s", store->name);
-		free(store->name);
+		LOG_SYSTEM_ERROR("Could not open store file %s", filename);
 		free(store);
 		return NULL;
 	}
 
-	LOG_INFO("Parsing store file %s", store->name);
+	LOG_INFO("Parsing store file %s", filename);
 
 	if(yyparse(store) != 0) {
-		LOG_ERROR("Parsing store file %s failed", store->name);
-		free(store->name);
+		LOG_ERROR("Parsing store file %s failed", filename);
 		fclose(store->resource);
 		free(store);
 		return NULL;
 	}
 
 	fclose(store->resource);
+	store->resource = NULL; // make sure this doesn't get freed
 
 	return store;
 }
@@ -77,16 +75,15 @@ API Store *parseStoreString(char *string)
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = strdup(string);
-	store->resource = store->name;
+	store->resource = strdup(string);
 	store->read = &storeStringRead;
 	store->unread = &storeStringUnread;
 
-	LOG_INFO("Parsing store string: %s", store->name);
+	LOG_INFO("Parsing store string: %s", string);
 
 	if(yyparse(store) != 0) {
 		LOG_ERROR("Parsing store string failed");
-		free(store->name);
+		free(store->resource);
 		free(store);
 		return NULL;
 	}

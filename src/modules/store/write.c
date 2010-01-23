@@ -108,7 +108,7 @@ static void storeGStringWrite(Store *store, char *format, ...)
  */
 static void dumpStore(Store *store, StoreWriter *writer)
 {
-	LOG_INFO("Dumping store %s", store->name);
+	LOG_DEBUG("Dumping store");
 
 	StoreDumpContext *context = ALLOCATE_OBJECT(StoreDumpContext);
 	context->store = store;

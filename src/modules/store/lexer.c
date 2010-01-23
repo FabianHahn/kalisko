@@ -228,8 +228,7 @@ API GString *lexStoreString(char *string)
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = string;
-	store->resource = store->name;
+	store->resource = string;
 	store->read = &storeStringRead;
 	store->unread = &storeStringUnread;
 
@@ -250,7 +249,6 @@ API GString *lexStoreFile(char *filename)
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = filename;
 	store->resource = fopen(filename, "r");
 	store->read = &storeFileRead;
 	store->unread = &storeFileUnread;
@@ -276,7 +274,7 @@ static GString *dumpLex(Store *store)
 	YYLTYPE loc;
 
 	GString *ret = g_string_new("");
-	g_string_append_printf(ret, "Lexer dump for %s:\n", store->name);
+	g_string_append_printf(ret, "Lexer dump:\n");
 
 	memset(&val, 0, sizeof(YYSTYPE));
 

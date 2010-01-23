@@ -92,8 +92,6 @@ typedef void (StoreUnreader)(void *store, char c);
  * Struct to represent a store
  */
 typedef struct {
-	/** The store's identification name */
-	char *name;
 	/** The store's resource */
 	void *resource;
 	/** The store's reader */
@@ -104,7 +102,7 @@ typedef struct {
 	StoreNodeValue *root;
 } Store;
 
-API Store *createStore(char *name);
+API Store *createStore();
 API void freeStore(Store *store);
 API void freeStoreNodeValue(void *value);
 API void *getStoreValueContent(StoreNodeValue *value);

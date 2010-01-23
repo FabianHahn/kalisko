@@ -49,14 +49,12 @@ MODULE_FINALIZE
 /**
  * Creates an empty store
  *
- * @param name		the name for the new store
  * @result			the created store
  */
-API Store *createStore(char *name)
+API Store *createStore()
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = strdup(name);
 	store->resource = NULL;
 	store->read = NULL;
 	store->unread = NULL;
@@ -73,8 +71,7 @@ API Store *createStore(char *name)
 API void freeStore(Store *store)
 {
 	freeStoreNodeValue(store->root);
-	free(store->name);
-
+	free(store->resource);
 	free(store);
 }
 

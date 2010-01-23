@@ -190,7 +190,7 @@ static Store *getUserConfig()
 		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 
-		Store *userConfig = $(Store *, store, createStore)(USER_CONFIG_FILE_NAME);
+		Store *userConfig = $(Store *, store, createStore)();
 		$(void, store, writeStoreFile)(userConfigFilePath, userConfig);
 
 		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
@@ -208,7 +208,7 @@ static Store *getUserOverrideConfig()
 		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 
-		Store *globalConfig = $(Store *, store, createStore)(USER_OVERRIDE_CONFIG_FILE_NAME);
+		Store *globalConfig = $(Store *, store, createStore)();
 		$(void, store, writeStoreFile)(userOverrideConfigFilePath, globalConfig);
 
 		LOG_INFO("Created new configuration file: %s", userOverrideConfigFilePath);

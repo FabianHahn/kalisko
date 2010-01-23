@@ -47,26 +47,38 @@ static void dumpStore(Store *value, StoreDumpContext *context);
  * Writes a store from memory to a file
  *
  * @param filename		the filename to write to
- * @param store		the store to write
+ * @param store			the store to write
  */
 API void writeStoreFile(char *filename, Store *store)
 {
-	store->resource = fopen(filename, "w");
-	dumpStore(store, &storeFileWrite);
-	fclose(store->resource);
+	StoreDumpContext context;
+	context.store = store;
+	context.resource = fopen(filename, "w");
+	context.writer = &storeFileWrite;
+	context.level = 0;
+
+	dumpStore(&context);
+
+	fclose(context.resource);
 }
 
 /**
  * Writes a store from memory to a GString
  *
  * @param store		the store to write
- * @result				the written store string, must be freed with g_string_free
+ * @result			the written store string, must be freed with g_string_free
  */
 API GString *writeStoreGString(Store *store)
 {
-	store->resource = g_string_new("");
-	dumpStore(store, &storeGStringWrite);
-	return store->resource;
+	StoreDumpContext context;
+	context.store = store;
+	context.resource = g_string_new("");
+	context.writer = &storeGStringWrite;
+	context.level = 0;
+
+	dumpStore(&context);
+
+	return context.resource;
 }
 
 
@@ -76,13 +88,14 @@ API GString *writeStoreGString(Store *store)
  * @param store		the store to to write to
  * @param format		printf-like string to write
  */
-static void storeFileWrite(Store *store, char *format, ...)
+static void storeFileWrite(void *context_p, char *format, ...)
 {
-	va_list va;
+	StoreDumpContext *context = context_p;
 
+	va_list va;
 	va_start(va, format);
 
-	vfprintf(store->resource, format, va);
+	vfprintf(context->resource, format, va);
 }
 
 /**
@@ -91,13 +104,14 @@ static void storeFileWrite(Store *store, char *format, ...)
  * @param store		the store to to write to
  * @param format		printf-like string to write
  */
-static void storeGStringWrite(Store *store, char *format, ...)
+static void storeGStringWrite(void *context_p, char *format, ...)
 {
-	va_list va;
+	StoreDumpContext *context = context_p;
 
+	va_list va;
 	va_start(va, format);
 
-	g_string_append_vprintf(store->resource, format, va);
+	g_string_append_vprintf(context->resource, format, va);
 }
 
 /**
@@ -106,17 +120,12 @@ static void storeGStringWrite(Store *store, char *format, ...)
  * @param store		the store to dump
  * @param writer		the writer where the store should be dumped to
  */
-static void dumpStore(Store *store, StoreWriter *writer)
+static void dumpStore(StoreDumpContext *context)
 {
 	LOG_DEBUG("Dumping store");
 
-	StoreDumpContext *context = ALLOCATE_OBJECT(StoreDumpContext);
-	context->store = store;
-	context->writer = writer;
-	context->level = 0;
-
-	assert(store->root->type == STORE_ARRAY);
-	g_hash_table_foreach(store->root->content.array, &dumpStoreNode, context);
+	assert(context->store->type == STORE_ARRAY);
+	g_hash_table_foreach(context->store->content.array, &dumpStoreNode, context);
 
 	free(context);
 }

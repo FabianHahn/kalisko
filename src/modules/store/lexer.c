@@ -41,18 +41,19 @@
  */
 #define IS_DELIMITER(C) (isspace(c) || c == ';' || c == ',')
 
-static GString *dumpLex(Store *store) G_GNUC_WARN_UNUSED_RESULT;
+static GString *dumpLex(StoreParser *store) G_GNUC_WARN_UNUSED_RESULT;
 
-void yyerror(YYLTYPE *lloc, Store *store, char *error); // this can't go into a header because it doesn't have an API export
+void yyerror(YYLTYPE *lloc, char *error); // this can't go into a header because it doesn't have an API export
 
 /**
  * Lexes a token from a store
  *
  * @param lval		the lexer value target
- * @param store	the store to lex
+ * @param lloc		the lexer location
+ * @param store		the parser context to lex from
  * @result			the lexed token
  */
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 {
 	int c;
 	bool escaping = false;
@@ -65,7 +66,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 	int i = 0;
 
 	while(true) {
-		c = store->read(store);
+		c = parser->read(parser);
 		lloc->last_column++;
 
 		if(c == '\n') {
@@ -91,7 +92,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 						assemble[i] = '\0';
 						lval->string = strdup(assemble);
 						if(c != EOF) {
-							store->unread(store, c); // push back to stream
+							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
 						}
 						return STRING;
@@ -101,7 +102,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 						assemble[i] = '\0';
 						lval->float_number = atof(assemble);
 						if(c != EOF) {
-							store->unread(store, c); // push back to stream
+							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
 						}
 						return FLOAT_NUMBER;
@@ -109,7 +110,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 						assemble[i] = '\0';
 						lval->integer = atoi(assemble);
 						if(c != EOF) {
-							store->unread(store, c); // push back to stream
+							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
 						}
 						return INTEGER;
@@ -146,7 +147,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 				} // else just continue reading
 			} else {
 				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
-					yyerror(lloc, store, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
 					assemble[i] = '\0';
@@ -157,7 +158,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 		} else if(reading_numeric) {
 			if(c == '.') { // delimiter
 				if(numeric_is_float) {
-					yyerror(lloc, store, "Multiple occurences of delimiter '.' in numeric value");
+					yyerror(lloc, "Multiple occurences of delimiter '.' in numeric value");
 					return 0; // error
 				} else {
 					numeric_is_float = true;
@@ -175,7 +176,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 			} else if(!isdigit(c)) { // we're actually reading a non-delimited string
 				reading_numeric = false;
 				reading_string = true;
-				store->unread(store, c); // push back to stream
+				parser->unread(parser, c); // push back to stream
 				lloc->last_column--;
 				continue;
 			}
@@ -198,21 +199,21 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
 					string_is_delimited = true;
 					continue;
 				} else if(c == '\\') {
-					yyerror(lloc, store, "Escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, "Escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} // else just continue reading the non-delimited string
 			}
 		}
 
 		if(escaping) { // escape character wasn't used
-			yyerror(lloc, store, "Unused escape character '\\'");
+			yyerror(lloc, "Unused escape character '\\'");
 			return 0; // error
 		}
 
 		assemble[i++] = c;
 
 		if(i >= STORE_MAX_STRING_LENGTH) {
-			yyerror(lloc, store, "String value exceeded maximum length");
+			yyerror(lloc, "String value exceeded maximum length");
 			return 0; // error
 		}
 	}
@@ -226,17 +227,12 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store)
  */
 API GString *lexStoreString(char *string)
 {
-	Store *store = ALLOCATE_OBJECT(Store);
+	StoreParser parser;
+	parser.resource = string;
+	parser.read = &storeStringRead;
+	parser.unread = &storeStringUnread;
 
-	store->resource = string;
-	store->read = &storeStringRead;
-	store->unread = &storeStringUnread;
-
-	GString *ret = dumpLex(store);
-
-	free(store);
-
-	return ret;
+	return dumpLex(&parser);
 }
 
 /**
@@ -247,27 +243,24 @@ API GString *lexStoreString(char *string)
  */
 API GString *lexStoreFile(char *filename)
 {
-	Store *store = ALLOCATE_OBJECT(Store);
+	StoreParser parser;
+	parser.resource = fopen(filename, "r");
+	parser.read = &storeFileRead;
+	parser.unread = &storeFileUnread;
 
-	store->resource = fopen(filename, "r");
-	store->read = &storeFileRead;
-	store->unread = &storeFileUnread;
+	GString *ret = dumpLex(&parser);
 
-	GString *ret = dumpLex(store);
-
-	fclose(store->resource);
-	free(store);
-
+	fclose(parser.resource);
 	return ret;
 }
 
 /**
  * Lexes a store and dumps the result
  *
- * @param store		the store to lex and dump
+ * @param parser	the store parser context to lex and dump
  * @result			the store's lexer dump as a string, must be freed with g_string_free afterwards
  */
-static GString *dumpLex(Store *store)
+static GString *dumpLex(StoreParser *parser)
 {
 	int lexx;
 	YYSTYPE val;
@@ -278,7 +271,7 @@ static GString *dumpLex(Store *store)
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = yylex(&val, &loc, store)) != 0) {
+	while((lexx = yylex(&val, &loc, parser)) != 0) {
 		switch(lexx) {
 			case STRING:
 				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);

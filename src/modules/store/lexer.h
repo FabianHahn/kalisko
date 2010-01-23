@@ -26,7 +26,7 @@
 #include "parse.h"
 #include "parser.h"
 
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, Store *store);
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser);
 API GString *lexStoreString(char *string);
 API GString *lexStoreFile(char *filename);
 

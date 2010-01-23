@@ -78,8 +78,7 @@ TEST_CASE(lexer)
 
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->name = lexer_test_input;
-	store->resource = store->name;
+	store->resource = lexer_test_input;
 	store->read = &_storeStringRead;
 	store->unread = &_storeStringUnread;
 
@@ -170,7 +169,7 @@ TEST_CASE(path_modify)
 
 TEST_CASE(path_create)
 {
-	Store *store = $(Store *, store, createStore)("test store");
+	Store *store = $(Store *, store, createStore)();
 
 	TEST_ASSERT($(bool, store, setStorePath)(store, "string", $(StoreNodeValue *, store, createStoreStringValue)("\"e = mc^2\"")));
 	TEST_ASSERT($(bool, store, setStorePath)(store, "integer", $(StoreNodeValue *, store, createStoreIntegerValue)(1337)));

@@ -35,13 +35,12 @@
  *
  * @param FORMAT		printf-like format string
  */
-#define DUMP(FORMAT, ...) context->writer(context->store, FORMAT, ##__VA_ARGS__)
+#define DUMP(FORMAT, ...) context->writer(context, FORMAT, ##__VA_ARGS__)
 
-static void storeFileWrite(Store *store, char *format, ...);
-static void storeGStringWrite(Store *store, char *format, ...);
-static void dumpStore(Store *store, StoreWriter *writer);
-static void dumpStoreNode(void *key_p, void *value_p, void *data);
+static void storeFileWrite(void *context_p, char *format, ...);
+static void storeGStringWrite(void *context_p, char *format, ...);
 static void dumpStore(Store *value, StoreDumpContext *context);
+static void dumpStoreNode(void *key_p, void *value_p, void *data);
 
 /**
  * Writes a store from memory to a file
@@ -52,12 +51,12 @@ static void dumpStore(Store *value, StoreDumpContext *context);
 API void writeStoreFile(char *filename, Store *store)
 {
 	StoreDumpContext context;
-	context.store = store;
 	context.resource = fopen(filename, "w");
 	context.writer = &storeFileWrite;
 	context.level = 0;
 
-	dumpStore(&context);
+	LOG_DEBUG("Writing store to %s\n", filename);
+	dumpStore(store, &context);
 
 	fclose(context.resource);
 }
@@ -71,12 +70,12 @@ API void writeStoreFile(char *filename, Store *store)
 API GString *writeStoreGString(Store *store)
 {
 	StoreDumpContext context;
-	context.store = store;
 	context.resource = g_string_new("");
 	context.writer = &storeGStringWrite;
 	context.level = 0;
 
-	dumpStore(&context);
+	LOG_DEBUG("Dumping store to string");
+	dumpStore(store, &context);
 
 	return context.resource;
 }
@@ -114,54 +113,11 @@ static void storeGStringWrite(void *context_p, char *format, ...)
 	g_string_append_vprintf(context->resource, format, va);
 }
 
-/**
- * Dumps a parsed store from memory to a writer
- *
- * @param store		the store to dump
- * @param writer		the writer where the store should be dumped to
- */
-static void dumpStore(StoreDumpContext *context)
-{
-	LOG_DEBUG("Dumping store");
-
-	assert(context->store->type == STORE_ARRAY);
-	g_hash_table_foreach(context->store->content.array, &dumpStoreNode, context);
-
-	free(context);
-}
 
 /**
- * A GHFunc to dump a store node
+ * Dumps a store
  *
- * @param key_p		the key of the node
- * @param value_p	the value of the node
- * @param data		the dump's context
- */
-static void dumpStoreNode(void *key_p, void *value_p, void *data)
-{
-	char *key = key_p;
-	Store *value = value_p;
-	StoreDumpContext *context = data;
-
-	for(int i = 0; i < context->level; i++) {
-		DUMP("\t");
-	}
-
-	GString *escaped = escapeStoreString(key);
-
-	DUMP("\"%s\" = ", escaped->str);
-
-	g_string_free(escaped, TRUE);
-
-	dumpStore(value, context);
-
-	DUMP("\n");
-}
-
-/**
- * Dumps a store node value
- *
- * @param value		the value of the node
+ * @param value			the current store value to consider
  * @param context		the dump's context
  */
 static void dumpStore(Store *value, StoreDumpContext *context)
@@ -208,4 +164,32 @@ static void dumpStore(Store *value, StoreDumpContext *context)
 			DUMP("}");
 		break;
 	}
+}
+
+/**
+ * A GHFunc to dump a store node
+ *
+ * @param key_p		the key of the node
+ * @param value_p	the value of the node
+ * @param data		the dump's context
+ */
+static void dumpStoreNode(void *key_p, void *value_p, void *data)
+{
+	char *key = key_p;
+	Store *value = value_p;
+	StoreDumpContext *context = data;
+
+	for(int i = 0; i < context->level; i++) {
+		DUMP("\t");
+	}
+
+	GString *escaped = escapeStoreString(key);
+
+	DUMP("\"%s\" = ", escaped->str);
+
+	g_string_free(escaped, TRUE);
+
+	dumpStore(value, context);
+
+	DUMP("\n");
 }

@@ -80,13 +80,13 @@ typedef struct {
  * A store reader to retrieve characters from a source
  * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
  */
-typedef char (StoreReader)(Store *store);
+typedef char (StoreReader)(void *parser);
 
 /**
  * A store unreader to push back characters into a source
  * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
  */
-typedef void (StoreUnreader)(void *store, char c);
+typedef void (StoreUnreader)(void *parser, char c);
 
 /**
  * Struct to represent a store

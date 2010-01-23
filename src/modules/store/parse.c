@@ -28,7 +28,7 @@
 #include "parser.h"
 #include "lexer.h"
 
-int yyparse(Store *store); // this can't go into a header because it doesn't have an API export
+int yyparse(StoreParser *parser); // this can't go into a header because it doesn't have an API export
 
 /**
  * Parses a store file
@@ -46,7 +46,6 @@ API Store *parseStoreFile(char *filename)
 
 	if(parser.resource == NULL) {
 		LOG_SYSTEM_ERROR("Could not open store file %s", filename);
-		freeStore(store);
 		return NULL;
 	}
 
@@ -55,7 +54,6 @@ API Store *parseStoreFile(char *filename)
 	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store file %s failed", filename);
 		fclose(parser.resource);
-		freeStore(store);
 		return NULL;
 	}
 
@@ -82,7 +80,6 @@ API Store *parseStoreString(char *string)
 
 	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store string failed");
-		freeStore(store);
 		return NULL;
 	}
 

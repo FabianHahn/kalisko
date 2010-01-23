@@ -31,8 +31,6 @@ typedef void (StoreWriter)(void *context_p, char *format, ...);
  * A helper struct that's used to dump stores
  */
 typedef struct {
-	/** the store to dump */
-	Store *store;
 	/** the resource to dump to */
 	void *resource;
 	/** the store writer to use for dumping */

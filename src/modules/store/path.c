@@ -106,7 +106,7 @@ API Store *getStorePath(Store *parent, char *path)
 	if(*iter == '\0') {
 		return value;
 	} else {
-		return getStoreSubpath(iter, value);
+		return getStorePath(value, iter);
 	}
 }
 
@@ -204,7 +204,7 @@ API bool deleteStorePath(Store *store, char *path)
 			break;
 		}
 	} else {
-		retult = false;
+		result = false;
 	}
 
 	// Cleanup

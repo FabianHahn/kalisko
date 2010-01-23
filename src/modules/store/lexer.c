@@ -41,9 +41,9 @@
  */
 #define IS_DELIMITER(C) (isspace(c) || c == ';' || c == ',')
 
-static GString *dumpLex(StoreParser *store) G_GNUC_WARN_UNUSED_RESULT;
+static GString *dumpLex(StoreParser *parser) G_GNUC_WARN_UNUSED_RESULT;
 
-void yyerror(YYLTYPE *lloc, char *error); // this can't go into a header because it doesn't have an API export
+void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error); // this can't go into a header because it doesn't have an API export
 
 /**
  * Lexes a token from a store
@@ -147,7 +147,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 				} // else just continue reading
 			} else {
 				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
-					yyerror(lloc, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, parser, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
 					assemble[i] = '\0';
@@ -158,7 +158,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 		} else if(reading_numeric) {
 			if(c == '.') { // delimiter
 				if(numeric_is_float) {
-					yyerror(lloc, "Multiple occurences of delimiter '.' in numeric value");
+					yyerror(lloc, parser, "Multiple occurences of delimiter '.' in numeric value");
 					return 0; // error
 				} else {
 					numeric_is_float = true;
@@ -199,21 +199,21 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					string_is_delimited = true;
 					continue;
 				} else if(c == '\\') {
-					yyerror(lloc, "Escape character '\\' not allowed in non-delimited string");
+					yyerror(lloc, parser, "Escape character '\\' not allowed in non-delimited string");
 					return 0; // error
 				} // else just continue reading the non-delimited string
 			}
 		}
 
 		if(escaping) { // escape character wasn't used
-			yyerror(lloc, "Unused escape character '\\'");
+			yyerror(lloc, parser, "Unused escape character '\\'");
 			return 0; // error
 		}
 
 		assemble[i++] = c;
 
 		if(i >= STORE_MAX_STRING_LENGTH) {
-			yyerror(lloc, "String value exceeded maximum length");
+			yyerror(lloc, parser, "String value exceeded maximum length");
 			return 0; // error
 		}
 	}

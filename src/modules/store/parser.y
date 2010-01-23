@@ -44,7 +44,7 @@
 %lex-param {StoreParser *parser}
 
 %{
-	void yyerror(YYLTYPE *lloc, char *error);
+	void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error);
 %}
 
 %token <string> STRING
@@ -159,7 +159,7 @@ array:		node // first element of the array
 ;
 %%
 
-void yyerror(YYLTYPE *lloc, char *error)
+void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error)
 {
 	LOG_ERROR("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
 }

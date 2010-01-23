@@ -40,11 +40,11 @@
 
 %locations
 %define api.pure
-%parse-param {Store *store}
-%lex-param {Store *store}
+%parse-param {StoreParser *parser}
+%lex-param {StoreParser *parser}
 
 %{
-	void yyerror(YYLTYPE *lloc, Store *store, char *error);
+	void yyerror(YYLTYPE *lloc, char *error);
 %}
 
 %token <string> STRING
@@ -60,13 +60,13 @@
 %%
 root:		// empty string
 			{
-				store->root = createStoreArrayValue(NULL);
+				parser->store = createStoreArrayValue(NULL);
 			}
 		|	array
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				store->root = $1;
+				parser->store = $1;
 			}
 ;
 
@@ -159,7 +159,7 @@ array:		node // first element of the array
 ;
 %%
 
-void yyerror(YYLTYPE *lloc, Store *store, char *error)
+void yyerror(YYLTYPE *lloc, char *error)
 {
 	LOG_ERROR("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
 }

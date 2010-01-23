@@ -38,31 +38,30 @@ int yyparse(Store *store); // this can't go into a header because it doesn't hav
  */
 API Store *parseStoreFile(char *filename)
 {
-	Store *store = ALLOCATE_OBJECT(Store);
+	StoreParser parser;
+	parser.resource = fopen(filename, "r");
+	parser.read = &storeFileRead;
+	parser.unread = &storeFileUnread;
+	parser.store = NULL;
 
-	store->resource = fopen(filename, "r");
-	store->read = &storeFileRead;
-	store->unread = &storeFileUnread;
-
-	if(store->resource == NULL) {
+	if(parser.resource == NULL) {
 		LOG_SYSTEM_ERROR("Could not open store file %s", filename);
-		free(store);
+		freeStore(store);
 		return NULL;
 	}
 
 	LOG_INFO("Parsing store file %s", filename);
 
-	if(yyparse(store) != 0) {
+	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store file %s failed", filename);
-		fclose(store->resource);
-		free(store);
+		fclose(parser.resource);
+		freeStore(store);
 		return NULL;
 	}
 
-	fclose(store->resource);
-	store->resource = NULL;
+	fclose(parser.resource);
 
-	return store;
+	return parser.store;
 }
 
 /**
@@ -73,73 +72,71 @@ API Store *parseStoreFile(char *filename)
  */
 API Store *parseStoreString(char *string)
 {
-	Store *store = ALLOCATE_OBJECT(Store);
-
-	store->resource = string;
-	store->read = &storeStringRead;
-	store->unread = &storeStringUnread;
+	StoreParser parser;
+	parser.resource = string;
+	parser.read = &storeStringRead;
+	parser.unread = &storeStringUnread;
+	parser.store = NULL;
 
 	LOG_INFO("Parsing store string: %s", string);
 
-	if(yyparse(store) != 0) {
+	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store string failed");
-		free(store);
+		freeStore(store);
 		return NULL;
 	}
 
-	store->resource = NULL;
-
-	return store;
+	return parser.store;
 }
 
 /**
  * A StoreReader function for files
  *
- * @param store		the store to to read from
+ * @param parser_p		the parser to to read from
  * @result				the read character
  */
-API char storeFileRead(void *store)
+API char storeFileRead(void *parser_p)
 {
-	Store *cfg = store;
+	StoreParser *parser = parser_p;
 
-	return fgetc(cfg->resource);
+	return fgetc(parser->resource);
 }
 
 /**
  * A StoreUnreader function for files
  *
- * @param store		the store to to unread to
+ * @param parser_p		the parser to to unread to
  * @param c				the character to unread
  */
-API void storeFileUnread(void *store, char c)
+API void storeFileUnread(void *parser_p, char c)
 {
-	Store *cfg = store;
+	StoreParser *parser = parser_p;
 
-	ungetc(c, cfg->resource);
+	ungetc(c, parser->resource);
 }
 
 /**
  * A StoreReader function for strings
  *
- * @param store		the store to to read from
+ * @param parser_p		the parser to to read from
  * @result				the read character
  */
-API char storeStringRead(void *store)
+API char storeStringRead(void *parser_p)
 {
-	Store *cfg = store;
+	StoreParser *parser = parser_p;
 
-	return *((char *) cfg->resource++);
+	return *((char *) parser->resource++);
 }
 
 /**
  * A StoreUnreader function for strings
  *
- * @param store		the store to to unread to
+ * @param parser_p		the parser to to unread to
  * @param c				the character to unread
  */
-API void storeStringUnread(void *store, char c)
+API void storeStringUnread(void *parser_p, char c)
 {
-	Store *cfg = store;
+	StoreParser *parser = parser_p;
 
-	cfg->resource--;
+	parser->resource--;
 }

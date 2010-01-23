@@ -78,13 +78,13 @@ typedef struct {
 
 /**
  * A store reader to retrieve characters from a source
- * Note: The first param has only type void * and not StoreFile to get around C's single pass compilation restrictions
+ * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
  */
-typedef char (StoreReader)(void *store);
+typedef char (StoreReader)(Store *store);
 
 /**
  * A store unreader to push back characters into a source
- * Note: The first param has only type void * and not StoreFile to get around C's single pass compilation restrictions
+ * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
  */
 typedef void (StoreUnreader)(void *store, char c);
 
@@ -92,18 +92,17 @@ typedef void (StoreUnreader)(void *store, char c);
  * Struct to represent a store
  */
 typedef struct {
-	/** The store's resource */
+	/** The store parser's resource */
 	void *resource;
 	/** The store's reader */
 	StoreReader *read;
 	/** The store's unreader */
 	StoreUnreader *unread;
-	/** The store's root array node to parse to */
-	Store *root;
+	/** The store to parse to */
+	Store *store;
 } StoreParser;
 
 API Store *createStore();
-API void freeStore(Store *store);
 API void freeStore(void *value);
 API void *getStoreValueContent(Store *value);
 API GString *escapeStoreString(char *string);

@@ -32,8 +32,8 @@
 MODULE_NAME("store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The store module provides a recursive key-value data type that can be easily converted back and forth from a string and to its abstract memory representation");
-MODULE_VERSION(0, 3, 1);
-MODULE_BCVERSION(0, 3, 0);
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -53,25 +53,7 @@ MODULE_FINALIZE
  */
 API Store *createStore()
 {
-	Store *store = ALLOCATE_OBJECT(Store);
-
-	store->resource = NULL;
-	store->read = NULL;
-	store->unread = NULL;
-	store->root = createStoreArrayValue(createStoreNodes());
-
-	return store;
-}
-
-/**
- * Frees a store
- *
- * @param store		the store to free
- */
-API void freeStore(Store *store)
-{
-	freeStore(store->root);
-	free(store);
+	return createStoreArrayValue(NULL);
 }
 
 /**
@@ -83,7 +65,7 @@ API void freeStore(void *value_p)
 {
 	Store *value = value_p;
 
-	switch (value->type) {
+	switch(value->type) {
 		case STORE_STRING:
 			free(value->content.string);
 		break;
@@ -219,7 +201,7 @@ API Store *createStoreListValue(GQueue *list)
 /**
  * Creates an array value to be used in a store
  *
- * @param string		the content array
+ * @param string		the content array or NULL if an empty one should be created
  * @result				the created node value, must be freed with freeStore or by the store system
  */
 API Store *createStoreArrayValue(GHashTable *array)

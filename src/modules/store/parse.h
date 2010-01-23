@@ -43,9 +43,9 @@ typedef union {
 
 API Store *parseStoreFile(char *filename);
 API Store *parseStoreString(char *string);
-API char storeFileRead(void *store);
-API void storeFileUnread(void *store, char c);
-API char storeStringRead(void *store);
-API void storeStringUnread(void *store, char c);
+API char storeFileRead(void *parser_p);
+API void storeFileUnread(void *parser_p, char c);
+API char storeStringRead(void *parser_p);
+API void storeStringUnread(void *parser_p, char c);
 
 #endif

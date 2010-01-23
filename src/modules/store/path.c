@@ -137,14 +137,17 @@ API bool setStorePath(Store *store, char *path, void *value)
 			case STORE_ARRAY:
 				g_hash_table_insert(parent->content.array, key, value);
 				result = true;
+				// key doesn't need to be freed here since the hash table takes care of that
 			break;
 			case STORE_LIST:
 				i = atoi(key);
 				g_queue_push_nth(parent->content.list, value, i);
 				result = true;
+				free(key);
 			break;
 			default: // cannot write into a leaf value
 				result = false;
+				free(key);
 			break;
 		}
 	} else {
@@ -153,7 +156,6 @@ API bool setStorePath(Store *store, char *path, void *value)
 
 	// Cleanup
 	free(parentpath);
-	free(key);
 	for(i = 0; i < array->len - 1; i++) {
 		free(parts[i]);
 	}

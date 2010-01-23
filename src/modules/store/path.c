@@ -29,21 +29,84 @@
 #include "parse.h"
 #include "path.h"
 
-static Store *getStoreSubpath(char *subpath, Store *parent);
-
 /**
  * Fetches a store value by its path
  *
  * @param store		the store in which the lookup takes place
- * @param path			the path to the value without a leading / to search, use integers from base 0 for list elements
+ * @param path		the path to the value without a leading / to search, use integers from base 0 for list elements
  * @result				the store value, or NULL if not found
  */
-API Store *getStorePath(Store *store, char *path)
+API Store *getStorePath(Store *parent, char *path)
 {
-	if(strlen(path) == 0) { // empty path means the sections subtree itself
-		return store->root;
+	if(strlen(path) == 0) { // empty path means the parent itself
+		return parent;
+	}
+
+	GString *pathnode = g_string_new("");
+	bool escaping = false;
+	char *iter;
+
+	for(iter = path; *iter != '\0'; iter++) { // Read until next unescaped slash or end
+		if(*iter == '/') {
+			if(!escaping) {
+				iter++;
+				break;
+			} else {
+				escaping = false;
+			}
+		} else if(*iter == '\\') {
+			if(!escaping) {
+				escaping = true;
+				continue;
+			} else {
+				escaping = false;
+			}
+		}
+
+		if(escaping) { // we're still escaping, that's not possible
+			g_string_free(pathnode, TRUE);
+			return NULL;
+		}
+
+		g_string_append_c(pathnode, *iter);
+	}
+
+	Store *value;
+	int i;
+
+	switch(parent->type) {
+		case STORE_ARRAY:
+			value = g_hash_table_lookup(parent->content.array, pathnode->str);
+
+			if(value == NULL) {
+				g_string_free(pathnode, TRUE);
+				return NULL;
+			}
+		break;
+		case STORE_LIST:
+			i = atoi(pathnode->str);
+
+			if(i < 0 || i >= g_queue_get_length(parent->content.list)) { // out of bounds
+				g_string_free(pathnode, TRUE);
+				return NULL;
+			} else {
+				value = g_queue_peek_nth(parent->content.list, i);
+
+				assert(value != NULL);
+			}
+		break;
+		default:
+			g_string_free(pathnode, TRUE);
+			return NULL; // leaves don't have children
+		break;
+	}
+
+	g_string_free(pathnode, TRUE);
+
+	if(*iter == '\0') {
+		return value;
 	} else {
-		return getStoreSubpath(path, store->root);
+		return getStoreSubpath(iter, value);
 	}
 }
 
@@ -69,25 +132,28 @@ API bool setStorePath(Store *store, char *path, void *value)
 
 	int i;
 
-	switch(parent->type) {
-		case STORE_ARRAY:
-			g_hash_table_insert(parent->content.array, key, value);
-			result = true;
-		break;
-		case STORE_LIST:
-			i = atoi(key);
-			g_queue_push_nth(parent->content.list, value, i);
-			result = true;
-			free(key);
-		break;
-		default: // cannot write into a leaf value
-			result = false;
-			free(key);
-		break;
+	if(parent != NULL) {
+		switch(parent->type) {
+			case STORE_ARRAY:
+				g_hash_table_insert(parent->content.array, key, value);
+				result = true;
+			break;
+			case STORE_LIST:
+				i = atoi(key);
+				g_queue_push_nth(parent->content.list, value, i);
+				result = true;
+			break;
+			default: // cannot write into a leaf value
+				result = false;
+			break;
+		}
+	} else {
+		result = false;
 	}
 
 	// Cleanup
 	free(parentpath);
+	free(key);
 	for(i = 0; i < array->len - 1; i++) {
 		free(parts[i]);
 	}
@@ -118,25 +184,27 @@ API bool deleteStorePath(Store *store, char *path)
 	int i;
 	void *value;
 
-	switch(parent->type) {
-		case STORE_ARRAY:
-			if(g_hash_table_remove(parent->content.array, key)) { // The hash table frees the removed value automatically
-				result = true; // This is a bit nicer than assigning a gboolean to a boolean directly, even if it would work
-			}
-		break;
-		case STORE_LIST:
-			i = atoi(key);
-			value = g_queue_pop_nth(parent->content.list, i);
-			if(value != NULL) {
-				freeStore(value);
-				result = true;
-			} else {
+	if(parent != NULL) {
+		switch(parent->type) {
+			case STORE_ARRAY:
+				result = g_hash_table_remove(parent->content.array, key); // The hash table frees the removed value automatically
+			break;
+			case STORE_LIST:
+				i = atoi(key);
+				value = g_queue_pop_nth(parent->content.list, i);
+				if(value != NULL) {
+					freeStore(value);
+					result = true;
+				} else {
+					result = false;
+				}
+			break;
+			default: // cannot delete inside a leaf value
 				result = false;
-			}
-		break;
-		default: // cannot delete inside a leaf value
-			result = false;
-		break;
+			break;
+		}
+	} else {
+		retult = false;
 	}
 
 	// Cleanup
@@ -199,76 +267,4 @@ API GPtrArray *splitStorePath(char *path)
 	g_string_free(assemble, FALSE);
 
 	return array;
-}
-
-/**
- * Fetches a store subtree by its parent tree and its subpath
- *
- * @see getStorePath
- * @param subpath		the subpath to search
- * @param parent		the parent value to search in
- * @result				the store value, or NULL if not found
- */
-static Store *getStoreSubpath(char *subpath, Store *parent)
-{
-	GString *pathnode = g_string_new("");
-	bool escaping = false;
-	char *iter;
-
-	for(iter = subpath; *iter != '\0'; iter++) {
-		if(*iter == '/') {
-			if(!escaping) {
-				iter++;
-				break;
-			} else {
-				escaping = false;
-			}
-		} else if(*iter == '\\') {
-			if(!escaping) {
-				escaping = true;
-				continue;
-			} else {
-				escaping = false;
-			}
-		}
-
-		if(escaping) { // we're still escaping, that's not possible
-			return NULL;
-		}
-
-		g_string_append_c(pathnode, *iter);
-	}
-
-	Store *value;
-	int i;
-
-	switch(parent->type) {
-		case STORE_ARRAY:
-			value = g_hash_table_lookup(parent->content.array, pathnode->str);
-
-			if(value == NULL) {
-				return NULL;
-			}
-		break;
-		case STORE_LIST:
-			i = atoi(pathnode->str);
-
-			if(i < 0 || i >= g_queue_get_length(parent->content.list)) { // out of bounds
-				return NULL;
-			} else {
-				value = g_queue_peek_nth(parent->content.list, i);
-
-				assert(value != NULL);
-			}
-		break;
-		default:
-			return NULL; // leaves don't have children
-		break;
-	}
-
-	if(*iter == '\0') {
-		return value;
-	} else {
-		return getStoreSubpath(iter, value);
-	}
 }

@@ -60,7 +60,7 @@ API Store *parseStoreFile(char *filename)
 	}
 
 	fclose(store->resource);
-	store->resource = NULL; // make sure this doesn't get freed
+	store->resource = NULL;
 
 	return store;
 }
@@ -75,7 +75,7 @@ API Store *parseStoreString(char *string)
 {
 	Store *store = ALLOCATE_OBJECT(Store);
 
-	store->resource = strdup(string);
+	store->resource = string;
 	store->read = &storeStringRead;
 	store->unread = &storeStringUnread;
 
@@ -83,10 +83,11 @@ API Store *parseStoreString(char *string)
 
 	if(yyparse(store) != 0) {
 		LOG_ERROR("Parsing store string failed");
-		free(store->resource);
 		free(store);
 		return NULL;
 	}
+
+	store->resource = NULL;
 
 	return store;
 }

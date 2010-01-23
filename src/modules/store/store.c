@@ -71,7 +71,6 @@ API Store *createStore()
 API void freeStore(Store *store)
 {
 	freeStoreNodeValue(store->root);
-	free(store->resource);
 	free(store);
 }
 

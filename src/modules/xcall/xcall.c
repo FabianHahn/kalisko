@@ -92,6 +92,7 @@ API bool delXCall(const char *name)
  */
 API GString *invokeXCall(const char *xcall)
 {
+	/*
 	Store *xcallstore;
 	Store *retstore = $(Store *, store, createStore(NULL));
 
@@ -103,5 +104,8 @@ API GString *invokeXCall(const char *xcall)
 	Store *value;
 
 	//if((value = $(Store *, store, getstore)))
+	 */
+
+	return NULL;
 }
 

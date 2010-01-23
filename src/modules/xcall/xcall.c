@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "dll.h"
+#include "modules/store/store.h"
 #include "api.h"
 #include "xcall.h"
 
@@ -81,5 +82,26 @@ API bool delXCall(const char *name)
 	g_hash_table_remove(functions, name);
 
 	return true;
+}
+
+/**
+ * Invokes an xcall
+ *
+ * @param xcall		a string store containing the xcall
+ * @result			a string store containing the result of the xcall
+ */
+API GString *invokeXCall(const char *xcall)
+{
+	Store *xcallstore;
+	Store *retstore = $(Store *, store, createStore(NULL));
+
+	if((xcallstore = $(Store *, store, parseStoreString(xcall))) == NULL)
+	{
+
+	}
+
+	Store *value;
+
+	//if((value = $(Store *, store, getstore)))
 }
 

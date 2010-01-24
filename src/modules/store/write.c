@@ -53,7 +53,7 @@ API void writeStoreFile(char *filename, Store *store)
 	StoreDumpContext context;
 	context.resource = fopen(filename, "w");
 	context.writer = &storeFileWrite;
-	context.level = 0;
+	context.level = -1;
 
 	LOG_DEBUG("Writing store to %s\n", filename);
 	dumpStore(store, &context);
@@ -72,9 +72,9 @@ API GString *writeStoreGString(Store *store)
 	StoreDumpContext context;
 	context.resource = g_string_new("");
 	context.writer = &storeGStringWrite;
-	context.level = 0;
+	context.level = -1;
 
-	LOG_DEBUG("Dumping store to string");
+	LOG_DEBUG("Writing store to string");
 	dumpStore(store, &context);
 
 	return context.resource;
@@ -152,7 +152,10 @@ static void dumpStore(Store *value, StoreDumpContext *context)
 			DUMP(")");
 		break;
 		case STORE_ARRAY:
-			DUMP("{\n");
+			if(context->level >= 0) {
+				DUMP("{\n");
+			}
+
 			context->level++;
 			g_hash_table_foreach(value->content.array, &dumpStoreNode, context);
 			context->level--;
@@ -161,7 +164,9 @@ static void dumpStore(Store *value, StoreDumpContext *context)
 				DUMP("\t");
 			}
 
-			DUMP("}");
+			if(context->level >= 0) {
+				DUMP("}");
+			}
 		break;
 	}
 }

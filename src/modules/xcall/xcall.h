@@ -25,7 +25,7 @@
 /**
  * Function pointer type for an XCall function
  */
-typedef GString *(XCallFunction)(const char *xcall);
+typedef GString *(XCallFunction)(char *xcall);
 
 API bool addXCallFunction(const char *name, XCallFunction *func);
 API bool delXCall(const char *name);

@@ -134,7 +134,7 @@ API void saveConfig(ConfigFiles file)
 {
 	switch(file) {
 		case CONFIG_USER_OVERRIDE:
-			$(void, config, writeStoreFile)(userOverrideConfigFilePath, getConfig(file));
+			$(void, store, writeStoreFile)(userOverrideConfigFilePath, getConfig(file));
 		break;
 		default:
 			LOG_WARNING("Given configuration file can not be saved.");
@@ -198,7 +198,7 @@ static Store *getUserConfig()
 		free(dirPath);
 		return userConfig;
 	} else {
-		return $(Store *, config, parseStoreFile)(userConfigFilePath);
+		return $(Store *, store, parseStoreFile)(userConfigFilePath);
 	}
 }
 
@@ -207,16 +207,16 @@ static Store *getUserOverrideConfig()
 	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
 		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
 		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
-
+		
 		Store *globalConfig = $(Store *, store, createStore)();
 		$(void, store, writeStoreFile)(userOverrideConfigFilePath, globalConfig);
-
+		
 		LOG_INFO("Created new configuration file: %s", userOverrideConfigFilePath);
 
 		free(dirPath);
 		return globalConfig;
 	} else {
-		return $(Store *, config, parseStoreFile)(userOverrideConfigFilePath);
+		return $(Store *, store, parseStoreFile)(userOverrideConfigFilePath);
 	}
 }
 
@@ -227,15 +227,15 @@ static void finalize()
 	free(globalConfigFilePath);
 
 	if(userConfig) {
-		$(void, config, freeStore)(userConfig);
+		$(void, store, freeStore)(userConfig);
 	}
 
 	if(userOverrideConfig) {
-		$(void, config, freeStore)(userOverrideConfig);
+		$(void, store, freeStore)(userOverrideConfig);
 	}
 
 	if(globalConfig) {
-		$(void, config, freeStore)(globalConfig);
+		$(void, store, freeStore)(globalConfig);
 	}
 
 	HOOK_DEL(stdConfigChanged);

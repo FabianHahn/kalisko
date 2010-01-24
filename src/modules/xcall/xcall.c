@@ -22,16 +22,21 @@
 #include <string.h>
 
 #include "dll.h"
+#include "log.h"
 #include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/path.h"
+#include "modules/store/clone.h"
+#include "modules/store/write.h"
 #include "api.h"
 #include "xcall.h"
 
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 3, 0));
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 0));
 
 static GHashTable *functions;
 
@@ -88,24 +93,71 @@ API bool delXCall(const char *name)
  * Invokes an xcall
  *
  * @param xcall		a string store containing the xcall
- * @result			a string store containing the result of the xcall
+ * @result			a string store containing the result of the xcall, must be freed by the caller with g_string_free
  */
-API GString *invokeXCall(const char *xcall)
+API GString *invokeXCall(char *xcall)
 {
-	/*
-	Store *xcallstore;
-	Store *retstore = $(Store *, store, createStore(NULL));
+	Store *params;
+	GString *retstr = NULL;
+	Store *metaret = $(Store *, store, createStore());
+	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+	$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreIntegerValue)(0));
 
-	if((xcallstore = $(Store *, store, parseStoreString(xcall))) == NULL)
-	{
+	do { // dummy do-while to prevent mass if-then-else branching
+		if((params = $(Store *, store, parseStoreString(xcall))) == NULL) {
+			LOG_ERROR("XCall store parsing failed: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("XCall store parse error"));
+			break;
+		}
 
+		Store *meta;
+
+		if((meta = $(Store *, store, getStorePath)(params, "xcall")) == 0 || meta->type != STORE_ARRAY) {
+			LOG_ERROR("Failed to read XCall meta array: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall meta array"));
+			break;
+		}
+
+		meta = $(Store *, store, cloneStore)(meta); // clone meta since we're going to remove it
+		$(bool, store, deleteStorePath)(params, "xcall"); // remove meta data in order to reuse the rest
+		$(bool, store, setStorePath)(metaret, "xcall/params", params);
+
+		Store *func;
+
+		if((func = $(Store *, store, getStorePath)(meta, "function")) == NULL || func->type != STORE_STRING) {
+			LOG_ERROR("Failed to read XCall function name: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
+			$(void, store, freeStore)(meta); // we don't need meta anymore
+			break;
+		}
+
+		char *funcname = func->content.string;
+		$(bool, store, setStorePath)(metaret, "xcall/function", $(Store *, store, createStoreStringValue)(funcname));
+		$(void, store, freeStore)(meta); // we don't need meta anymore
+
+		XCallFunction *function;
+
+		if((function = g_hash_table_lookup(functions, funcname)) == NULL) {
+			LOG_ERROR("Requested XCall function '%s' not found: %s", funcname, xcall);
+			GString *err = g_string_new("");
+			g_string_append_printf(err, "Requested XCall function '%s' not found", funcname);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+			g_string_free(err, true);
+			break;
+		}
+
+		retstr = function(xcall);
+	} while(false);
+
+	if(retstr == NULL) { // error
+		retstr = g_string_new("");
 	}
 
-	Store *value;
+	GString *metaretstr = $(GString *, store, writeStoreGString(metaret));
+	$(void, store, freeStore)(metaret);
+	g_string_append(retstr, metaretstr->str); // we don't reparse the config and just append the metadata to save running time
+	g_string_free(metaretstr, true);
 
-	//if((value = $(Store *, store, getstore)))
-	 */
-
-	return NULL;
+	return retstr;
 }
 

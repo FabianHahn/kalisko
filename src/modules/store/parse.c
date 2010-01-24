@@ -49,7 +49,7 @@ API Store *parseStoreFile(char *filename)
 		return NULL;
 	}
 
-	LOG_INFO("Parsing store file %s", filename);
+	LOG_DEBUG("Parsing store file %s", filename);
 
 	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store file %s failed", filename);
@@ -76,7 +76,7 @@ API Store *parseStoreString(char *string)
 	parser.unread = &storeStringUnread;
 	parser.store = NULL;
 
-	LOG_INFO("Parsing store string: %s", string);
+	LOG_DEBUG("Parsing store string: %s", string);
 
 	if(yyparse(&parser) != 0) {
 		LOG_ERROR("Parsing store string failed");

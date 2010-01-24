@@ -111,7 +111,7 @@ API Store *getConfig(ConfigFiles file)
 			if(!globalConfig) {
 				// As this module should also work for a non root account
 				// we don't create the global config file if it doesn't exist.
-				globalConfig = $(Store *, config, parseStoreFile)(globalConfigFilePath);
+				globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
 			}
 			return globalConfig;
 		break;

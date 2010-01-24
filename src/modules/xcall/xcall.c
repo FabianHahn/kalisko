@@ -133,7 +133,6 @@ API GString *invokeXCall(char *xcall)
 
 		char *funcname = func->content.string;
 		$(bool, store, setStorePath)(metaret, "xcall/function", $(Store *, store, createStoreStringValue)(funcname));
-		$(void, store, freeStore)(meta); // we don't need meta anymore
 
 		XCallFunction *function;
 
@@ -146,7 +145,10 @@ API GString *invokeXCall(char *xcall)
 			break;
 		}
 
+		LOG_DEBUG("Invoking XCall function '%s'", funcname);
 		retstr = function(xcall);
+
+		$(void, store, freeStore)(meta); // we don't need meta anymore
 	} while(false);
 
 	if(retstr == NULL) { // error
@@ -155,6 +157,7 @@ API GString *invokeXCall(char *xcall)
 
 	GString *metaretstr = $(GString *, store, writeStoreGString(metaret));
 	$(void, store, freeStore)(metaret);
+	g_string_append(retstr, "\n");
 	g_string_append(retstr, metaretstr->str); // we don't reparse the config and just append the metadata to save running time
 	g_string_free(metaretstr, true);
 

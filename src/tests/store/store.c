@@ -30,11 +30,13 @@
 #include "modules/store/parser.h"
 #include "modules/store/lexer.h"
 #include "modules/store/path.h"
+#include "modules/store/clone.h"
+#include "modules/store/write.h"
 
 #include "api.h"
 
 TEST_CASE(lexer);
-TEST_CASE(parser);
+TEST_CASE(parser_clone_dump);
 TEST_CASE(path_modify);
 TEST_CASE(path_create);
 TEST_CASE(path_split);
@@ -56,13 +58,13 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 2, 2);
-MODULE_BCVERSION(0, 2, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 4, 0));
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 0));
 
 TEST_SUITE_BEGIN(store)
 	TEST_CASE_ADD(lexer);
-	TEST_CASE_ADD(parser);
+	TEST_CASE_ADD(parser_clone_dump);
 	TEST_CASE_ADD(path_modify);
 	TEST_CASE_ADD(path_create);
 	TEST_CASE_ADD(path_split);
@@ -109,13 +111,23 @@ TEST_CASE(lexer)
 	TEST_PASS;
 }
 
-TEST_CASE(parser)
+TEST_CASE(parser_clone_dump)
 {
 	Store *store;
+	GString *storeDump;
+	Store *clone;
+	GString *cloneDump;
 
 	TEST_ASSERT((store = $(Store *, store, parseStoreString)(parser_test_input)) != NULL);
-
+	TEST_ASSERT((storeDump = $(GString *, store, writeStoreGString)(store)) != NULL);
+	TEST_ASSERT((clone = $(Store *, store, cloneStore)(store)) != NULL);
 	$(void, store, freeStore)(store);
+	TEST_ASSERT((cloneDump = $(GString *, store, writeStoreGString)(clone)) != NULL);
+	$(void, store, freeStore)(clone);
+
+	TEST_ASSERT(g_strcmp0(storeDump->str, cloneDump->str) == 0);
+	g_string_free(storeDump, true);
+	g_string_free(cloneDump, true);
 
 	TEST_PASS;
 }

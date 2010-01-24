@@ -205,7 +205,7 @@ static void updateConfig() {
 	Store *colorConfig = $(Store *, config, getConfigPathValue)(configPath);
 	if(colorConfig) {
 		#ifdef WIN32
-			if(colorConfig->type == CONFIG_INTEGER) {
+			if(colorConfig->type == STORE_INTEGER) {
 				int color = colorConfig->content.integer;
 
 				if(!inWindowsColorRange(color)) {

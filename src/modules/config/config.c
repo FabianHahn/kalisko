@@ -22,17 +22,17 @@
 #include <stdlib.h>
 #include "dll.h"
 #include "hooks.h"
-#include "util.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/store/write.h"
 #include "modules/store/parse.h"
 #include "log.h"
 #include "types.h"
+#include "module.h"
 
 #include "api.h"
 #include "config.h"
-#include "util.h"
+#include "modules/config/util.h"
 
 #define CONFIG_DIR_NAME "kalisko"
 #define USER_CONFIG_FILE_NAME "user.cfg"

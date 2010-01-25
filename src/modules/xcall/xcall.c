@@ -95,7 +95,7 @@ API bool delXCall(const char *name)
  * @param xcall		a string store containing the xcall
  * @result			a string store containing the result of the xcall, must be freed by the caller with g_string_free
  */
-API GString *invokeXCall(char *xcall)
+API GString *invokeXCall(const char *xcall)
 {
 	Store *params;
 	GString *retstr = NULL;

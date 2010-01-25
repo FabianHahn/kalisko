@@ -36,7 +36,7 @@ int yyparse(StoreParser *parser); // this can't go into a header because it does
  * @param filename		the file name of the store file to parse
  * @result				the parsed store
  */
-API Store *parseStoreFile(char *filename)
+API Store *parseStoreFile(const char *filename)
 {
 	StoreParser parser;
 	parser.resource = fopen(filename, "r");
@@ -68,10 +68,10 @@ API Store *parseStoreFile(char *filename)
  * @param string		the store string to parse
  * @result				the parsed store
  */
-API Store *parseStoreString(char *string)
+API Store *parseStoreString(const char *string)
 {
 	StoreParser parser;
-	parser.resource = string;
+	parser.const_resource = string;
 	parser.read = &storeStringRead;
 	parser.unread = &storeStringUnread;
 	parser.store = NULL;
@@ -122,7 +122,7 @@ API char storeStringRead(void *parser_p)
 {
 	StoreParser *parser = parser_p;
 
-	return *((char *) parser->resource++);
+	return *((char *) parser->const_resource++);
 }
 
 /**
@@ -135,5 +135,5 @@ API void storeStringUnread(void *parser_p, char c)
 {
 	StoreParser *parser = parser_p;
 
-	parser->resource--;
+	parser->const_resource--;
 }

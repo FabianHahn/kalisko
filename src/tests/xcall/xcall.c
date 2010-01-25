@@ -44,7 +44,7 @@ TEST_SUITE_BEGIN(xcall)
 	TEST_CASE_ADD(xcall_error);
 TEST_SUITE_END
 
-static GString *testXCallFunction(char *xcall)
+static GString *testXCallFunction(const char *xcall)
 {
 	int fail = 0;
 	Store *xcs = $(Store *, store, parseStoreString)(xcall);

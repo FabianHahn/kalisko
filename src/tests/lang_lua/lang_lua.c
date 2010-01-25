@@ -45,7 +45,7 @@ TEST_SUITE_END
 
 TEST_CASE(xcall)
 {
-	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return invokeXCall('xcall = { function = test }');"));
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return invokeXCall('xcall = { function = some_non_existing_function }');"));
 
 	char *ret = $(char *, lang_lua, popLuaString)();
 

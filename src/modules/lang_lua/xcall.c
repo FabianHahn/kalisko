@@ -23,6 +23,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include "dll.h"
+#include "modules/xcall/xcall.h"
 #include "api.h"
 #include "xcall.h"
 
@@ -35,31 +36,23 @@ static int lua_invokeXCall(lua_State *state);
  */
 API void luaRegisterXCall(lua_State *state)
 {
-
+	lua_pushcfunction(state, &lua_invokeXCall);
+	lua_setglobal(state, "invokeXCall");
 }
 
+/**
+ * Lua C function to invoke an XCall
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
 static int lua_invokeXCall(lua_State *state)
 {
-	const char *path = luaL_checkstring(state, 1);
-#if 0
-	/* open directory */
-	dir = opendir(path);
-	if(dir == NULL) { /* error opening the directory? */
-		lua_pushnil(L); /* return nil and ... */
-		lua_pushstring(L, strerror(errno)); /* error message */
-		return 2; /* number of results */
-	}
+	const char *xcall = luaL_checkstring(state, 1);
 
-	/* create result table */
-	lua_newtable(L);
-	i = 1;
-	while((entry = readdir(dir)) != NULL) {
-		lua_pushnumber(L, i++); /* push key */
-		lua_pushstring(L, entry->d_name); /* push value */
-		lua_settable(L, -3);
-	}
+	GString *ret = $(GString *, xcall, invokeXCall)(xcall);
+	lua_pushstring(state, ret->str);
+	g_string_free(ret, true);
 
-	closedir(dir);
-	return 1; /* table is already on top */
-#endif
+	return 1;
 }

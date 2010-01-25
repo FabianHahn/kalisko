@@ -28,7 +28,7 @@
 	#include "memory_alloc.h"
 	#include "util.h"
 	#include "api.h"
-	#include "config.h"
+	#include "store.h"
 	#include "parse.h"
 	#include "lexer.h"
 /*
@@ -40,11 +40,11 @@
 
 %locations
 %define api.pure
-%parse-param {Config *config}
-%lex-param {Config *config}
+%parse-param {StoreParser *parser}
+%lex-param {StoreParser *parser}
 
 %{
-	void yyerror(YYLTYPE *lloc, Config *config, char *error);
+	void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error);
 %}
 
 %token <string> STRING
@@ -54,19 +54,19 @@
 %type <value> list
 %type <value> value
 %type <node> node
-%destructor { freeConfigNodeValue($$); } array list value
-%destructor { freeConfigNodeValue($$->value); free($$->key); free($$); } node
+%destructor { freeStore($$); } array list value
+%destructor { freeStore($$->value); free($$->key); free($$); } node
 
 %%
 root:		// empty string
 			{
-				config->root = createConfigArrayValue(NULL);
+				parser->store = createStoreArrayValue(NULL);
 			}
 		|	array
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				config->root = $1;
+				parser->store = $1;
 			}
 ;
 
@@ -74,7 +74,7 @@ node:	STRING '=' value
 		{
 			@$.last_line = @1.last_line;
 			@$.last_column = @1.last_column;
-			$$ = ALLOCATE_OBJECT(ConfigNode);
+			$$ = ALLOCATE_OBJECT(StoreNode);
 			$$->key = strdup($1);
 			$$->value = $3;
 		}
@@ -84,25 +84,25 @@ value:		STRING
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = createConfigStringValue($1);
+				$$ = createStoreStringValue($1);
 			}
 		|	INTEGER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = createConfigIntegerValue($1);
+				$$ = createStoreIntegerValue($1);
 			}
 		|	FLOAT_NUMBER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = createConfigFloatNumberValue($1);
+				$$ = createStoreFloatNumberValue($1);
 			}
 		|	'(' ')'
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
-				$$ = createConfigListValue(NULL);
+				$$ = createStoreListValue(NULL);
 			}
 		|	'(' list ')'
 			{
@@ -114,7 +114,7 @@ value:		STRING
 			{
 				@$.last_line = @2.last_line;
 				@$.last_column = @2.last_column;
-				$$ = createConfigArrayValue(NULL);
+				$$ = createStoreArrayValue(NULL);
 			}
 		|	'{' array '}'
 			{
@@ -128,7 +128,7 @@ list:		value // first element of the list
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = createConfigListValue(NULL);
+				$$ = createStoreListValue(NULL);
 				g_queue_push_head($$->content.list, $1);
 			}
 		|	list value // the list continues
@@ -144,7 +144,7 @@ array:		node // first element of the array
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
-				$$ = createConfigArrayValue(NULL);
+				$$ = createStoreArrayValue(NULL);
 				g_hash_table_insert($$->content.array, $1->key, $1->value);
 				free($1);
 			}
@@ -159,7 +159,7 @@ array:		node // first element of the array
 ;
 %%
 
-void yyerror(YYLTYPE *lloc, Config *config, char *error)
+void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error)
 {
-	LOG_ERROR("Parse error in %s at line %d, column %d: %s", config->name, lloc->last_line, lloc->last_column - 1, error);
+	LOG_ERROR("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
 }

@@ -42,8 +42,7 @@
 #include "memory_alloc.h"
 #include "module.h"
 #include "hooks.h"
-#include "modules/config_standard/config_standard.h"
-#include "modules/config_standard/util.h"
+#include "modules/config/config.h"
 
 #include "api.h"
 #include "socket.h"
@@ -54,9 +53,9 @@ static bool setSocketNonBlocking(int fd);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {
@@ -71,8 +70,8 @@ MODULE_INIT
 
 	int pollInterval = 100000;
 
-	ConfigNodeValue *configPollInterval = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("socket/pollInterval");
-	if(configPollInterval != NULL && configPollInterval->type == CONFIG_INTEGER) {
+	Store *configPollInterval = $(Store *, config, getConfigPathValue)("socket/pollInterval");
+	if(configPollInterval != NULL && configPollInterval->type == STORE_INTEGER) {
 		pollInterval = configPollInterval->content.integer;
 	} else {
 		LOG_WARNING("Could not determine config value socket/pollInterval, using default");

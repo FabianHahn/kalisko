@@ -28,8 +28,8 @@
 #include "module.h"
 #include "memory_alloc.h"
 #include "modules/gtk+/gtk+.h"
-#include "modules/config_standard/config_standard.h"
-#include "modules/config_standard/util.h"
+#include "modules/config/config.h"
+#include "modules/config/util.h"
 
 #include "api.h"
 #include "modules/log_viewer/log_viewer.h"
@@ -51,9 +51,9 @@ static int cmpStringItems(const void *a, const void *b);
 
 MODULE_INIT
 {
-	ConfigNodeValue *perform = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(PERFORM_CONFIG_PATH);
+	Store *perform = $(Store *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
 
-	if(perform != NULL && perform->type == CONFIG_LIST &&
+	if(perform != NULL && perform->type == STORE_LIST &&
 		g_queue_find_custom(perform->content.list, "log_viewer", (GCompareFunc)cmpStringItems) != NULL) {
 
 		LogViewerWindow *window = newLogViewerWindow();
@@ -232,7 +232,7 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 
 static int cmpStringItems(const void *a, const void *b)
 {
-	const ConfigNodeValue *aItem = (const ConfigNodeValue*) a;
+	const Store *aItem = (const Store*) a;
 	const char *bItem = (const char *) b;
 
 	return strcmp(aItem->content.string, bItem);

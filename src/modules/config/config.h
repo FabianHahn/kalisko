@@ -21,99 +21,32 @@
 #ifndef CONFIG_CONFIG_H
 #define CONFIG_CONFIG_H
 
-#include <glib.h>
+#include "modules/store/store.h"
 
 /**
- * Enumeration of the four standard log levels.
+ * Enumeration of the different configuration files.
  */
-typedef enum {
-	/** A string value */
-	CONFIG_STRING,
-	/** An integer value */
-	CONFIG_INTEGER,
-	/** A floating point number value */
-	CONFIG_FLOAT_NUMBER,
-	/** A list value */
-	CONFIG_LIST,
-	/** An associative array value */
-	CONFIG_ARRAY
-} ConfigValueType;
+typedef enum
+{
+	/**
+	 * The readonly per user configuration file.
+	 */
+	CONFIG_USER,
 
-/**
- * Union to store a node value's content
- */
-typedef union {
-	/** A string value */
-	char *string;
-	/** An integer value */
-	int integer;
-	/** A floating point number value */
-	double float_number;
-	/** A list value */
-	GQueue *list;
-	/** An associative array value */
-	GHashTable *array;
-} ConfigNodeValueContent;
+	/**
+	 * The writeable per user configuration file. This file override the
+	 * configuration of CONFIG_USER.
+	 */
+	CONFIG_USER_OVERRIDE,
 
-/**
- * Struct to represent a node value
- */
-typedef struct {
-	/** The node value's type */
-	ConfigValueType type;
-	/** The node value's content */
-	ConfigNodeValueContent content;
-} ConfigNodeValue;
+	/**
+	 * The readonly global (application) file.
+	 */
+	CONFIG_GLOBAL
+} ConfigFiles;
 
-/**
- * Struct to represent a config node
- * Note: This struct is only used internally to do the parsing, it is NOT used in the final parsed config's representation
- */
-typedef struct {
-	/** The node's key */
-	char *key;
-	/** The node's value */
-	ConfigNodeValue *value;
-} ConfigNode;
-
-/**
- * A config reader to retrieve characters from a source
- * Note: The first param has only type void * and not ConfigFile to get around C's single pass compilation restrictions
- */
-typedef char (ConfigReader)(void *config);
-
-/**
- * A config unreader to push back characters into a source
- * Note: The first param has only type void * and not ConfigFile to get around C's single pass compilation restrictions
- */
-typedef void (ConfigUnreader)(void *config, char c);
-
-/**
- * Struct to represent a config
- */
-typedef struct {
-	/** The config's identification name */
-	char *name;
-	/** The config's resource */
-	void *resource;
-	/** The config's reader */
-	ConfigReader *read;
-	/** The config's unreader */
-	ConfigUnreader *unread;
-	/** The config's root array node if it's parsed */
-	ConfigNodeValue *root;
-} Config;
-
-API Config *createConfig(char *name);
-API void freeConfig(Config *config);
-API void freeConfigNodeValue(void *value);
-API void *getConfigValueContent(ConfigNodeValue *value);
-API GString *escapeConfigString(char *string);
-API ConfigNodeValue *createConfigStringValue(char *string);
-API ConfigNodeValue *createConfigIntegerValue(int integer);
-API ConfigNodeValue *createConfigFloatNumberValue(double float_number);
-API ConfigNodeValue *createConfigListValue(GQueue *list);
-API ConfigNodeValue *createConfigArrayValue(GHashTable *array);
-API GHashTable *createConfigNodes();
+API Store *getConfig(ConfigFiles file);
+API void saveConfig(ConfigFiles file);
+API Store *getConfigPathValue(char *path);
 
 #endif

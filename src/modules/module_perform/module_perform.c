@@ -24,7 +24,7 @@
 #include "module.h"
 #include "types.h"
 #include "modules/config/config.h"
-#include "modules/config_standard/util.h"
+#include "modules/config/util.h"
 
 #include "api.h"
 
@@ -33,17 +33,17 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 MODULE_INIT
 {
 	LOG_INFO("Requesting perform modules");
 
-	ConfigNodeValue *modules = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)(PERFORM_CONFIG_PATH);
+	Store *modules = $(Store *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
 	if(modules != NULL) {
-		if(modules->type != CONFIG_LIST) {
+		if(modules->type != STORE_LIST) {
 			LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
 			return false;
 		}
@@ -51,9 +51,9 @@ MODULE_INIT
 		GQueue *list = modules->content.list;
 
 		for(GList *iter = list->head; iter != NULL; iter = iter->next) {
-			ConfigNodeValue *moduleName = (ConfigNodeValue *) iter->data;
+			Store *moduleName = (Store *) iter->data;
 
-			if(moduleName->type != CONFIG_STRING) {
+			if(moduleName->type != STORE_STRING) {
 				LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
 				continue;
 			}

@@ -17,4 +17,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.SharedLibrary('../kalisko_config_standard', Glob('*.c'))
+module.CFile('parser.c', 'parser.y');
+module.SharedLibrary('../kalisko_store', Glob('*.c'))

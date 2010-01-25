@@ -19,12 +19,11 @@
  */
 
 
-#ifndef CONFIG_STANDARD_UTIL_H
-#define CONFIG_STANDARD_UTIL_H
+#ifndef CONFIG_UTIL_H
+#define CONFIG_UTIL_H
 
-#include "modules/config/config.h"
+#include "modules/store/store.h"
 
-API ConfigNodeValue *getStandardConfigPathValue(char *path);
 API char *getGlobalKaliskoConfigPath();
 
 #endif

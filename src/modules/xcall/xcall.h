@@ -18,12 +18,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_PATH_H
-#define CONFIG_PATH_H
 
-API ConfigNodeValue *getConfigPath(Config *config, char *path);
-API bool setConfigPath(Config *config, char *path, void *value);
-API bool deleteConfigPath(Config *config, char *path);
-API GPtrArray *splitConfigPath(char *path);
+#ifndef XCALL_XCALL_H
+#define XCALL_XCALL_H
+
+/**
+ * Function pointer type for an XCall function
+ */
+typedef GString *(XCallFunction)(char *xcall);
+
+API bool addXCallFunction(const char *name, XCallFunction *func);
+API bool delXCall(const char *name);
+API GString *invokeXCall(char *xcall) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

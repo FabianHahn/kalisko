@@ -24,11 +24,16 @@ srcversion = cmd.read()
 matches = re.search('^.*: (\d+):', srcversion)
 srcversion = matches.group(1)
 
-# Build exclude list
+# Build lists from given arguments
 exclude = []
+cppdefines = []
 for key, value in ARGLIST:
 	if key == 'exclude':
 		exclude = exclude + [value]
+	elif key == 'define':
+		keyvalue = value.split(':', 1)
+		if len(keyvalue) == 2:
+			cppdefines = cppdefines + [(keyvalue[0], keyvalue[1])]		
 
 # Config section
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
@@ -37,11 +42,11 @@ ccflags = ['-std=gnu99', '-Wall', '-pipe']
 dummy = Environment(ENV = os.environ)
 
 if dummy['PLATFORM'] == 'win32':
-	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
-	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])
+	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
+	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])	
 else:
-	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)], CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
-	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)], CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
+	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
+	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 # Add glib support
 coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')

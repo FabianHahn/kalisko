@@ -21,55 +21,14 @@
 #include "dll.h"
 #include "types.h"
 #include "log.h"
-#include "modules/config/config.h"
-#include "modules/config/path.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 
 #include "api.h"
-#include "config_standard.h"
+#include "config.h"
 #include "util.h"
 
 #define KALISKO_DIR_NAME "kalisko"
-
-/**
- * Searches for the given path trough the standard configuration files
- * consider the weighting of the different configurations. The first found value
- * will be returned otherwise NULL.
- *
- * Do not free the returned value. This is handled by the config_standard module.
- *
- * @param	path			The path to search
- * @return	The first found value for given path or NULL
- */
-API ConfigNodeValue *getStandardConfigPathValue(char *path)
-{
-	ConfigNodeValue *value = NULL;
-
-	Config *overrideConfig = getStandardConfig(CONFIG_USER_OVERRIDE);
-	if(overrideConfig) {
-		value = $(ConfigNodeValue *, config, getConfigPath)(overrideConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	Config *userConfig = getStandardConfig(CONFIG_USER);
-	if(userConfig) {
-		value = $(ConfigNodeValue *, config, getConfigPath)(userConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	Config *globalConfig = getStandardConfig(CONFIG_GLOBAL);
-	if(globalConfig) {
-		value = $(ConfigNodeValue *, config, getConfigPath)(globalConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	return NULL;
-}
 
 /**
  * Returns the path to the Kalisko specific system wide configuration directory. This directory must not exist

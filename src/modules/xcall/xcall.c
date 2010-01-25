@@ -1,0 +1,166 @@
+/**
+ * @file
+ * <h3>Copyright</h3>
+ * Copyright (c) 2009, Kalisko Project Leaders
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ *
+ *     @li Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *     @li Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+ *       in the documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <glib.h>
+#include <string.h>
+
+#include "dll.h"
+#include "log.h"
+#include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/path.h"
+#include "modules/store/clone.h"
+#include "modules/store/write.h"
+#include "api.h"
+#include "xcall.h"
+
+MODULE_NAME("xcall");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 0));
+
+static GHashTable *functions;
+
+MODULE_INIT
+{
+	functions = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+
+	return true;
+}
+
+MODULE_FINALIZE
+{
+	g_hash_table_destroy(functions);
+}
+
+/**
+ * Adds a new XCall function
+ *
+ * @param name		the name of the hook
+ * @param func		the xcall to add
+ * @result			true if successful, false if the xcall already exists
+ */
+API bool addXCallFunction(const char *name, XCallFunction *func)
+{
+	if(g_hash_table_lookup(functions, name) != NULL) { // A xcall with that name already exists
+		return false;
+	}
+
+	// Insert the xcall
+	g_hash_table_insert(functions, strdup(name), func);
+
+	return true;
+}
+
+/**
+ * Deletes an existing xcall
+ *
+ * @param name		the name of the xcall
+ * @result			true if successful, if the xcall was not found
+ */
+API bool delXCall(const char *name)
+{
+	if(g_hash_table_lookup(functions, name) != NULL) { // A function with that name doesn't exist
+		return false;
+	}
+
+	// Remove the function
+	g_hash_table_remove(functions, name);
+
+	return true;
+}
+
+/**
+ * Invokes an xcall
+ *
+ * @param xcall		a string store containing the xcall
+ * @result			a string store containing the result of the xcall, must be freed by the caller with g_string_free
+ */
+API GString *invokeXCall(char *xcall)
+{
+	Store *params;
+	GString *retstr = NULL;
+	Store *metaret = $(Store *, store, createStore());
+	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+	$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreIntegerValue)(0));
+
+	do { // dummy do-while to prevent mass if-then-else branching
+		if((params = $(Store *, store, parseStoreString(xcall))) == NULL) {
+			LOG_ERROR("XCall store parsing failed: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("XCall store parse error"));
+			break;
+		}
+
+		Store *meta;
+
+		if((meta = $(Store *, store, getStorePath)(params, "xcall")) == 0 || meta->type != STORE_ARRAY) {
+			LOG_ERROR("Failed to read XCall meta array: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall meta array"));
+			break;
+		}
+
+		meta = $(Store *, store, cloneStore)(meta); // clone meta since we're going to remove it
+		$(bool, store, deleteStorePath)(params, "xcall"); // remove meta data in order to reuse the rest
+		$(bool, store, setStorePath)(metaret, "xcall/params", params);
+
+		Store *func;
+
+		if((func = $(Store *, store, getStorePath)(meta, "function")) == NULL || func->type != STORE_STRING) {
+			LOG_ERROR("Failed to read XCall function name: %s", xcall);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
+			$(void, store, freeStore)(meta); // we don't need meta anymore
+			break;
+		}
+
+		char *funcname = func->content.string;
+		$(bool, store, setStorePath)(metaret, "xcall/function", $(Store *, store, createStoreStringValue)(funcname));
+
+		XCallFunction *function;
+
+		if((function = g_hash_table_lookup(functions, funcname)) == NULL) {
+			LOG_ERROR("Requested XCall function '%s' not found: %s", funcname, xcall);
+			GString *err = g_string_new("");
+			g_string_append_printf(err, "Requested XCall function '%s' not found", funcname);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+			g_string_free(err, true);
+			break;
+		}
+
+		LOG_DEBUG("Invoking XCall function '%s'", funcname);
+		retstr = function(xcall);
+
+		$(void, store, freeStore)(meta); // we don't need meta anymore
+	} while(false);
+
+	if(retstr == NULL) { // error
+		retstr = g_string_new("");
+	}
+
+	GString *metaretstr = $(GString *, store, writeStoreGString(metaret));
+	$(void, store, freeStore)(metaret);
+	g_string_append(retstr, "\n");
+	g_string_append(retstr, metaretstr->str); // we don't reparse the config and just append the metadata to save running time
+	g_string_free(metaretstr, true);
+
+	return retstr;
+}
+

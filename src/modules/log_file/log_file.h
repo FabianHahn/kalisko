@@ -43,7 +43,7 @@ typedef struct {
 	FILE *fileAppend;
 
 	/**
-	 * If this is true the next log entry has to be ignored. This is used by config_standard.c to prevent endless
+	 * If this is true the next log entry has to be ignored. This is used by config.c to prevent endless
 	 * loops in case of errors.
 	 */
 	bool ignoreNextLog;

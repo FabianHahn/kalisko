@@ -108,7 +108,7 @@ typedef struct {
 	/**
 	 * The original unchanged irc message.
 	 */
-	char *ircMessage;
+	char *raw_message;
 } IrcMessage;
 
 API IrcMessage *parseIrcMessage(char *message);

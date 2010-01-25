@@ -25,7 +25,7 @@
 #include "dll.h"
 #include "log.h"
 #include "hooks.h"
-#include "modules/config_standard/util.h"
+#include "modules/config/config.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
 #include "modules/string_util/string_util.h"
@@ -36,9 +36,9 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config_standard", 0, 1, 1), MODULE_DEPENDENCY("socket", 0, 2, 2), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0), MODULE_DEPENDENCY("socket", 0, 2, 2), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 HOOK_LISTENER(irc_line);
 HOOK_LISTENER(irc_read);
@@ -52,7 +52,7 @@ static void checkForBufferLine();
 
 MODULE_INIT
 {
-	ConfigNodeValue *config;
+	Store *config;
 	char *server;
 	char *port;
 	char *user;
@@ -60,35 +60,35 @@ MODULE_INIT
 
 	buffer = g_string_new("");
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/server")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/server")) == NULL || config->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/server', aborting");
 		return false;
 	}
 
 	server = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/port")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/port")) == NULL || config->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/port', aborting");
 		return false;
 	}
 
 	port = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/user")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/user")) == NULL || config->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/user', aborting");
 		return false;
 	}
 
 	user = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/real")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/real")) == NULL || config->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/real', aborting");
 		return false;
 	}
 
 	real = config->content.string;
 
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/nick")) == NULL || config->type != CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/nick")) == NULL || config->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'irc/nick', aborting");
 		return false;
 	}
@@ -105,7 +105,7 @@ MODULE_INIT
 	ircSend("USER %s 0 0 :%s", user, real);
 	ircSend("NICK %s", nick);
 	
-	if((config = $(ConfigNodeValue *, config_standard, getStandardConfigPathValue)("irc/serverpass")) != NULL && config->type == CONFIG_STRING) {
+	if((config = $(Store *, config, getConfigPathValue)("irc/serverpass")) != NULL && config->type == STORE_STRING) {
 		ircSend("PASS %s", config->content.string);
 	}
 

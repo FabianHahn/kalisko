@@ -32,8 +32,8 @@
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 1), MODULE_DEPENDENCY("store", 0, 5, 0));
 
 TEST_CASE(xcall);

@@ -22,5 +22,6 @@
 #define LANG_LUA_LANG_LUA_H
 
 API bool evaluateLua(char *command);
+API char *popLuaString();
 
 #endif

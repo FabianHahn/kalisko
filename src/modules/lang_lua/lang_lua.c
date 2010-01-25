@@ -66,3 +66,15 @@ API bool evaluateLua(char *command)
 {
 	return luaL_dostring(state, command) == 0;
 }
+
+/**
+ * Pops the last returned string from Lua's stack
+ *
+ * @result		the last string on the stack, must be freed by the caller
+ */
+API char *popLuaString()
+{
+	char *string = strdup(lua_tostring(state, -1));
+	lua_pop(state, 1);
+	return string;
+}

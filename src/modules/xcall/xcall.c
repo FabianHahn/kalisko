@@ -34,8 +34,8 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 0));
 
 static GHashTable *functions;
@@ -95,7 +95,7 @@ API bool delXCall(const char *name)
  * @param xcall		a string store containing the xcall
  * @result			a string store containing the result of the xcall, must be freed by the caller with g_string_free
  */
-API GString *invokeXCall(char *xcall)
+API GString *invokeXCall(const char *xcall)
 {
 	Store *params;
 	GString *retstr = NULL;

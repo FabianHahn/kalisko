@@ -32,8 +32,8 @@
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 1), MODULE_DEPENDENCY("store", 0, 5, 0));
 
 TEST_CASE(xcall);
@@ -44,7 +44,7 @@ TEST_SUITE_BEGIN(xcall)
 	TEST_CASE_ADD(xcall_error);
 TEST_SUITE_END
 
-static GString *testXCallFunction(char *xcall)
+static GString *testXCallFunction(const char *xcall)
 {
 	int fail = 0;
 	Store *xcs = $(Store *, store, parseStoreString)(xcall);

@@ -25,10 +25,10 @@
 /**
  * Function pointer type for an XCall function
  */
-typedef GString *(XCallFunction)(char *xcall);
+typedef GString *(XCallFunction)(const char *xcall);
 
 API bool addXCallFunction(const char *name, XCallFunction *func);
 API bool delXCall(const char *name);
-API GString *invokeXCall(char *xcall) G_GNUC_WARN_UNUSED_RESULT;
+API GString *invokeXCall(const char *xcall) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

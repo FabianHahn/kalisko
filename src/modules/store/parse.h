@@ -28,7 +28,8 @@
 /**
  * Parser union for bison
  */
-typedef union {
+typedef union
+{
 	char *string;
 	int integer;
 	double float_number;
@@ -37,12 +38,44 @@ typedef union {
 } YYSTYPE;
 
 /**
+ * A store reader to retrieve characters from a source
+ * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
+ */
+typedef char ( StoreReader)(void *parser);
+
+/**
+ * A store unreader to push back characters into a source
+ * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
+ */
+typedef void ( StoreUnreader)(void *parser, char c);
+
+/**
+ * Struct to represent a store
+ */
+typedef struct
+{
+	union
+	{
+		/** The store parser's resource */
+		void *resource;
+		/** The store parser's const resource */
+		const void *const_resource;
+	};
+	/** The store's reader */
+	StoreReader *read;
+	/** The store's unreader */
+	StoreUnreader *unread;
+	/** The store to parse to */
+	Store *store;
+} StoreParser;
+
+/**
  * A store string's maximum length
  */
 #define STORE_MAX_STRING_LENGTH 1024
 
-API Store *parseStoreFile(char *filename);
-API Store *parseStoreString(char *string);
+API Store *parseStoreFile(const char *filename);
+API Store *parseStoreString(const char *string);
 API char storeFileRead(void *parser_p);
 API void storeFileUnread(void *parser_p, char c);
 API char storeStringRead(void *parser_p);

@@ -18,50 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <glib.h>
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include "dll.h"
-#include "hooks.h"
-#include "log.h"
-#include "api.h"
-#include "lang_lua.h"
-#include "xcall.h"
 
-MODULE_NAME("lang_lua");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 0));
+#ifndef LANG_LUA_XCALL_H
+#define LANG_LUA_XCALL_H
 
-static lua_State *state;
+API void luaRegisterXCall(lua_State *state);
 
-MODULE_INIT
-{
-	if((state = lua_open()) == NULL) {
-		LOG_ERROR("Could not initialize the Lua interpreter");
-		return false;
-	}
-
-	luaL_openlibs(state);
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	lua_close(state);
-}
-
-/**
- * Evaluates a lua command
- *
- * @param cpmmand		Lua code to evaluate
- * @result				true if successful
- */
-API bool evaluateLua(char *command)
-{
-	return luaL_dostring(state, command) == 0;
-}
+#endif

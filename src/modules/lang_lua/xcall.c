@@ -23,45 +23,43 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include "dll.h"
-#include "hooks.h"
-#include "log.h"
 #include "api.h"
-#include "lang_lua.h"
 #include "xcall.h"
 
-MODULE_NAME("lang_lua");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 0));
-
-static lua_State *state;
-
-MODULE_INIT
-{
-	if((state = lua_open()) == NULL) {
-		LOG_ERROR("Could not initialize the Lua interpreter");
-		return false;
-	}
-
-	luaL_openlibs(state);
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	lua_close(state);
-}
+static int lua_invokeXCall(lua_State *state);
 
 /**
- * Evaluates a lua command
+ * Registers the lua xcall C functions for an interpreter
  *
- * @param cpmmand		Lua code to evaluate
- * @result				true if successful
+ * @param state		the lua interpreter state to register the xcall functions with
  */
-API bool evaluateLua(char *command)
+API void luaRegisterXCall(lua_State *state)
 {
-	return luaL_dostring(state, command) == 0;
+
+}
+
+static int lua_invokeXCall(lua_State *state)
+{
+	const char *path = luaL_checkstring(state, 1);
+#if 0
+	/* open directory */
+	dir = opendir(path);
+	if(dir == NULL) { /* error opening the directory? */
+		lua_pushnil(L); /* return nil and ... */
+		lua_pushstring(L, strerror(errno)); /* error message */
+		return 2; /* number of results */
+	}
+
+	/* create result table */
+	lua_newtable(L);
+	i = 1;
+	while((entry = readdir(dir)) != NULL) {
+		lua_pushnumber(L, i++); /* push key */
+		lua_pushstring(L, entry->d_name); /* push value */
+		lua_settable(L, -3);
+	}
+
+	closedir(dir);
+	return 1; /* table is already on top */
+#endif
 }

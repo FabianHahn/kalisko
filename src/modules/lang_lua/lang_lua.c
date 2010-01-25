@@ -32,9 +32,9 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 2));
 
 static lua_State *state;
 
@@ -46,6 +46,7 @@ MODULE_INIT
 	}
 
 	luaL_openlibs(state);
+	luaRegisterXCall(state);
 
 	return true;
 }

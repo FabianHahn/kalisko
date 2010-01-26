@@ -33,9 +33,9 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 0), MODULE_DEPENDENCY("xcall", 0, 1, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 4);
+MODULE_BCVERSION(0, 1, 4);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 2), MODULE_DEPENDENCY("xcall", 0, 1, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(xcall_invoke);
 TEST_CASE(xcall_define);
@@ -82,6 +82,8 @@ TEST_CASE(xcall_define)
 	$(void, store, freeStore)(retstore);
 	g_string_free(ret, true);
 
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("delXCallFunction('luatest')"));
+
 	TEST_PASS;
 }
 
@@ -89,9 +91,9 @@ TEST_CASE(xcall_define_error)
 {
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("function g() return 42 end"));
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("function f(x) return g end"));
-	TEST_ASSERT($(bool, lang_lua, evaluateLua)("addXCallFunction('luatest2', f)"));
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("addXCallFunction('luatest', f)"));
 
-	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = luatest2 }");
+	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = luatest }");
 
 	Store *retstore = $(Store *, store, parseStoreString)(ret->str);
 
@@ -101,6 +103,8 @@ TEST_CASE(xcall_define_error)
 
 	$(void, store, freeStore)(retstore);
 	g_string_free(ret, true);
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("delXCallFunction('luatest')"));
 
 	TEST_PASS;
 }

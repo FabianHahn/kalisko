@@ -27,6 +27,7 @@
 #include <unistd.h> // readlink
 #endif
 
+#include <stdio.h>
 #include <glib.h>
 #include <assert.h>
 
@@ -176,4 +177,14 @@ API int compareTimes(const void *a, const void *b, void *data)
 			return 0;
 		}
 	}
+}
+
+/**
+ * Utility function to set breakpoints if the debugger doesn't support setting module breakpoints from the beginning of execution
+ * Usage: Just call this function whereever you'd like to set a breakpoint inside a module but set the breakpoint in your debugger HERE
+ */
+API void breakpoint()
+{
+	int i = 0;
+	i++;
 }

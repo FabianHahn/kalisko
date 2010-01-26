@@ -19,7 +19,6 @@
  */
 
 #include <glib.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "dll.h"
@@ -32,7 +31,7 @@
 #include "modules/store/path.h"
 #include "modules/store/clone.h"
 #include "modules/store/write.h"
-
+#include "modules/store/merge.h"
 #include "api.h"
 
 TEST_CASE(lexer);
@@ -40,6 +39,7 @@ TEST_CASE(parser_clone_dump);
 TEST_CASE(path_modify);
 TEST_CASE(path_create);
 TEST_CASE(path_split);
+TEST_CASE(merge);
 
 static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
 static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -58,7 +58,7 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -68,6 +68,7 @@ TEST_SUITE_BEGIN(store)
 	TEST_CASE_ADD(path_modify);
 	TEST_CASE_ADD(path_create);
 	TEST_CASE_ADD(path_split);
+	TEST_CASE_ADD(merge);
 TEST_SUITE_END
 
 TEST_CASE(lexer)
@@ -203,6 +204,28 @@ TEST_CASE(path_split)
 	}
 
 	g_ptr_array_free(array, TRUE);
+
+	TEST_PASS;
+}
+
+TEST_CASE(merge)
+{
+	Store *store = $(Store *, store, parseStoreString)("replaced = 13; listmerged = (1 2); recursive = { first = beginning }");
+	Store *import = $(Store *, store, parseStoreString)("replaced = 3.14159; listmerged = (3); recursive = { last = end }");
+	Store *solution = $(Store *, store, parseStoreString)("replaced = 3.14159; listmerged = (1 2 3); recursive = { first = beginning; last = end }");
+
+	TEST_ASSERT($(bool, store, mergeStore)(store, import));
+	$(void, store, freeStore)(import);
+
+	GString *mergestr = $(GString *, store, writeStoreGString)(store);
+	GString *solutionstr = $(GString *, store, writeStoreGString)(solution);
+
+	TEST_ASSERT(g_strcmp0(mergestr->str, solutionstr->str) == 0);
+
+	g_string_free(mergestr, true);
+	g_string_free(solutionstr, true);
+	$(void, store, freeStore)(store);
+	$(void, store, freeStore)(solution);
 
 	TEST_PASS;
 }

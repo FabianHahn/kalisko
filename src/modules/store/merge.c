@@ -18,68 +18,71 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#include <glib.h>
 #include <assert.h>
 #include <string.h>
-
+#include <glib.h>
 #include "dll.h"
 #include "api.h"
 #include "store.h"
+#include "merge.h"
+#include "clone.h"
 
-static void cloneStoreArrayNode(void *key_p, void *value_p, void *data_p);
+static void mergeIntoArray(void *key_p, void *value_p, void *data_p);
 
 /**
- * Clones a store and returns a second, identical one
+ * Imports the content of the import store into the target store
  *
- * @param source	the store to copy from
- * @result			an identical store
+ * @param target	the store to merge to
+ * @param import	the store to import from
+ * @param bool		true if successful
  */
-API Store *cloneStore(Store *source)
+API bool mergeStore(Store *target, Store *import)
 {
-	assert(source != NULL);
+	assert(target != NULL);
+	assert(import != NULL);
 
-	Store *clone;
+	if(target->type != import->type) { // Cannot merge stores from different types
+		return false;
+	}
 
-	switch(source->type) {
+	switch(import->type) {
 		case STORE_ARRAY:
-			clone = createStoreArrayValue(NULL);
-			g_hash_table_foreach(source->content.array, &cloneStoreArrayNode, clone->content.array);
-			return clone;
+			g_hash_table_foreach(import->content.array, &mergeIntoArray, target->content.array);
 		break;
 		case STORE_LIST:
-			clone = createStoreListValue(NULL);
-			for(GList *iter = source->content.list->head; iter != NULL; iter = iter->next) {
-				g_queue_push_tail(clone->content.list, cloneStore(iter->data));
+			for(GList *iter = import->content.list->head; iter != NULL; iter = iter->next) {
+				g_queue_push_tail(target->content.list, cloneStore(iter->data)); // Clone and insert
 			}
-			return clone;
 		break;
-		case STORE_STRING:
-			return createStoreStringValue(strdup(source->content.string));
-		break;
-		case STORE_INTEGER:
-			return createStoreIntegerValue(source->content.integer);
-		break;
-		case STORE_FLOAT_NUMBER:
-			return createStoreFloatNumberValue(source->content.float_number);
+		default:
+			return false; // Cannot merge non-container store
 		break;
 	}
 
-	return NULL;
+	return true;
 }
 
 /**
- * A GHFunc to clone a store array node
+ * A GHFunc to merge a store array value into another store array
  *
- * @param key_p		a pointer to the array key
- * @param value_p	a pointer to the store value
- * @param data_p	the hash table to add the cloned store value to
+ * @param key_p		the key of the store array node to merge
+ * @param value_p	the value of the store array node to merge
+ * @param data_p	the store array to merge into
  */
-static void cloneStoreArrayNode(void *key_p, void *value_p, void *data_p)
+static void mergeIntoArray(void *key_p, void *value_p, void *data_p)
 {
 	char *key = key_p;
 	Store *value = value_p;
 	GHashTable *target = data_p;
 
-	g_hash_table_insert(target, strdup(key), cloneStore(value));
+	Store *candidate = g_hash_table_lookup(target, key);
+
+	if(candidate == NULL) { // there is no node with that key in the target
+		g_hash_table_insert(target, strdup(key), cloneStore(value)); // clone and insert
+	} else {
+		// try to merge the two
+		if(!mergeStore(candidate, value)) { // if merging doesn't work, we need to replace our candidate
+			g_hash_table_replace(target, strdup(key), cloneStore(value)); // clone and replace
+		}
+	}
 }

@@ -18,17 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API int compareIntegers(const void *a, const void *b, void *data);
-API int compareTimes(const void *a, const void *b, void *data);
-API char **getArgv();
-API void setArgv(char **args);
-API int getArgc();
-API void setArgc(int count);
-API void breakpoint();
+#ifndef STORE_MERGE_H
+#define STORE_MERGE_H
+
+#include "store.h"
+
+API bool mergeStore(Store *target, Store *import);
 
 #endif

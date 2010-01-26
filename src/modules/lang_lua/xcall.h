@@ -22,6 +22,13 @@
 #ifndef LANG_LUA_XCALL_H
 #define LANG_LUA_XCALL_H
 
-API void luaRegisterXCall(lua_State *state);
+#include "types.h"
+#include "lang_lua.h"
+
+API void luaInitXCall();
+API void luaFreeXCall();
+
+API bool luaInitStateXCall(lua_State *state);
+API bool luaFreeStateXCall(lua_State *state);
 
 #endif

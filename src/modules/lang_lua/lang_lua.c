@@ -25,6 +25,7 @@
 #include "dll.h"
 #include "hooks.h"
 #include "log.h"
+#include "modules/xcall/xcall.h"
 #include "api.h"
 #include "lang_lua.h"
 #include "xcall.h"
@@ -32,28 +33,33 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static lua_State *state;
 
 MODULE_INIT
 {
+	luaInitXCall();
+
 	if((state = lua_open()) == NULL) {
 		LOG_ERROR("Could not initialize the Lua interpreter");
 		return false;
 	}
 
 	luaL_openlibs(state);
-	luaRegisterXCall(state);
+	luaInitStateXCall(state);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	luaFreeStateXCall(state);
 	lua_close(state);
+
+	luaFreeXCall();
 }
 
 /**

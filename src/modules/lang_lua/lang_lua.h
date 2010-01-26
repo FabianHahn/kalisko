@@ -21,6 +21,8 @@
 #ifndef LANG_LUA_LANG_LUA_H
 #define LANG_LUA_LANG_LUA_H
 
+#include <glib.h>
+
 API bool evaluateLua(char *command);
 API char *popLuaString();
 

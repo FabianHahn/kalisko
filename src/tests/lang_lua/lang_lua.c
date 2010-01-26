@@ -33,9 +33,9 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 1, 4);
-MODULE_BCVERSION(0, 1, 4);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 2), MODULE_DEPENDENCY("xcall", 0, 1, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 5);
+MODULE_BCVERSION(0, 1, 5);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 3), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(xcall_invoke);
 TEST_CASE(xcall_define);

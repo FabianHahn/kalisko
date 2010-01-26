@@ -28,15 +28,16 @@
 #include "modules/store/path.h"
 #include "modules/store/clone.h"
 #include "modules/store/write.h"
+#include "modules/store/merge.h"
 #include "api.h"
 #include "xcall.h"
 
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
 static GHashTable *functions;
 
@@ -98,7 +99,7 @@ API bool delXCall(const char *name)
 API GString *invokeXCall(const char *xcall)
 {
 	Store *params;
-	GString *retstr = NULL;
+	Store *retstore = NULL;
 	Store *metaret = $(Store *, store, createStore());
 	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 	$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreIntegerValue)(0));
@@ -142,25 +143,36 @@ API GString *invokeXCall(const char *xcall)
 			g_string_append_printf(err, "Requested XCall function '%s' not found", funcname);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 			g_string_free(err, true);
+			$(void, store, freeStore)(meta); // we don't need meta anymore
 			break;
 		}
 
 		LOG_DEBUG("Invoking XCall function '%s'", funcname);
-		retstr = function(xcall);
+		GString *retstr = function(xcall);
 
+		retstore = $(Store *, store, parseStoreString)(retstr->str);
+
+		if(retstore == NULL) { // Invalid returned store
+			LOG_ERROR("Requested XCall function '%s' returned invalid store: %s", funcname, retstr->str);
+			GString *err = g_string_new("");
+			g_string_append_printf(err, "Requested XCall function '%s' returned invalid store: %s", funcname, retstr->str);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+			g_string_free(err, true);
+			g_string_free(retstr, true);
+			$(void, store, freeStore)(meta); // we don't need meta anymore
+			break;
+		}
+
+		$(bool, store, mergeStore)(metaret, retstore); // merge result from xcall function into metadata so it can override stuff like the error message
+
+		$(void, store, freeStore)(retstore);
+		g_string_free(retstr, true);
 		$(void, store, freeStore)(meta); // we don't need meta anymore
 	} while(false);
 
-	if(retstr == NULL) { // error
-		retstr = g_string_new("");
-	}
-
-	GString *metaretstr = $(GString *, store, writeStoreGString(metaret));
+	GString *result = $(GString *, store, writeStoreGString)(metaret);
 	$(void, store, freeStore)(metaret);
-	g_string_append(retstr, "\n");
-	g_string_append(retstr, metaretstr->str); // we don't reparse the config and just append the metadata to save running time
-	g_string_free(metaretstr, true);
 
-	return retstr;
+	return result;
 }
 

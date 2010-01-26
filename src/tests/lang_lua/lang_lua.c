@@ -33,17 +33,19 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 1, 1), MODULE_DEPENDENCY("xcall", 0, 1, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 0), MODULE_DEPENDENCY("xcall", 0, 1, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
 
-TEST_CASE(xcall);
+TEST_CASE(xcall_invoke);
+TEST_CASE(xcall_define);
 
 TEST_SUITE_BEGIN(lang_lua)
-	TEST_CASE_ADD(xcall);
+	TEST_CASE_ADD(xcall_invoke);
+	TEST_CASE_ADD(xcall_define);
 TEST_SUITE_END
 
-TEST_CASE(xcall)
+TEST_CASE(xcall_invoke)
 {
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return invokeXCall('xcall = { function = some_non_existing_function }');"));
 
@@ -57,6 +59,26 @@ TEST_CASE(xcall)
 
 	$(void, store, freeStore)(retstore);
 	free(ret);
+
+	TEST_PASS;
+}
+
+TEST_CASE(xcall_define)
+{
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("function f(x) return 'bird = word' end"));
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("addXCallFunction('luatest', f)"));
+
+	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = luatest }");
+
+	Store *retstore = $(Store *, store, parseStoreString)(ret->str);
+
+	Store *bird;
+	TEST_ASSERT((bird = $(Store *, store, getStorePath)(retstore, "bird")) != NULL);
+	TEST_ASSERT(bird->type == STORE_STRING);
+	TEST_ASSERT(g_strcmp0(bird->content.string, "word") == 0);
+
+	$(void, store, freeStore)(retstore);
+	g_string_free(ret, true);
 
 	TEST_PASS;
 }

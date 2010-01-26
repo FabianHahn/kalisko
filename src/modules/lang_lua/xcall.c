@@ -39,6 +39,7 @@ static bool unregisterLuaXCallFunctions(void *key_p, void *value_p, void *data_p
 static bool unregisterLuaXCallFunction(void *key_p, void *value_p, void *data_p);
 static int lua_invokeXCall(lua_State *state);
 static int lua_addXCallFunction(lua_State *state);
+static int lua_delXCallFunction(lua_State *state);
 static GString *luaXCallFunction(const char *xcall);
 
 static GHashTable *stateFunctions;
@@ -85,6 +86,8 @@ API bool luaInitStateXCall(lua_State *state)
 	lua_setglobal(state, "invokeXCall");
 	lua_pushcfunction(state, &lua_addXCallFunction);
 	lua_setglobal(state, "addXCallFunction");
+	lua_pushcfunction(state, &lua_delXCallFunction);
+	lua_setglobal(state, "delXCallFunction");
 
 	return true;
 }
@@ -185,6 +188,7 @@ static int lua_addXCallFunction(lua_State *state)
 	}
 
 	if(!$(bool, xcall, addXCallFunction)(name, &luaXCallFunction)) { // Failed to add XCall
+		LOG_ERROR("lua_addXCallFunction: Failed to add XCall function '%s'", name);
 		lua_pushboolean(state, false);
 		return 1;
 	}
@@ -197,6 +201,49 @@ static int lua_addXCallFunction(lua_State *state)
 	g_hash_table_insert(functionState, dupname, state);
 
 	LOG_INFO("Added Lua XCall function '%s'", name);
+
+	lua_pushboolean(state, true);
+	return 1;
+}
+
+/**
+ * Lua C function to removes an XCall function
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
+static int lua_delXCallFunction(lua_State *state)
+{
+	const char *name = luaL_checkstring(state, 1);
+
+	lua_State *fstate = g_hash_table_lookup(functionState, name);
+
+	if(fstate == NULL) {
+		LOG_ERROR("lua_delXCallFunction: Cannot find Lua state for Lua XCall function name '%s'", name);
+		lua_pushboolean(state, false);
+		return 1;
+	}
+
+	GHashTable *functionRefs = g_hash_table_lookup(stateFunctions, fstate);
+
+	if(functionRefs == NULL) {
+		LOG_ERROR("lua_delXCallFunction: Cannot find functionRefs table for Lua XCall function name '%s' in state %p", name, fstate);
+		lua_pushboolean(state, false);
+		return 1;
+	}
+
+	int *refp = g_hash_table_lookup(functionRefs, name);
+
+	if(refp == NULL) {
+		LOG_ERROR("lua_delXCallFunction: Cannot find Lua XCall function reference for Lua XCall function name '%s' in state %p", name, fstate);
+		lua_pushboolean(state, false);
+		return 1;
+	}
+
+	unregisterLuaXCallFunction((char *) name, refp, fstate); // nothing will happen to the name pointer, I promise :)
+	g_hash_table_remove(functionRefs, name);
+
+	LOG_INFO("Removed Lua XCall function '%s'", name);
 
 	lua_pushboolean(state, true);
 	return 1;

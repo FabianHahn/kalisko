@@ -24,8 +24,8 @@
 #include <string.h>
 
 #include "dll.h"
-#include "store.h"
 #include "api.h"
+#include "store.h"
 
 static void cloneStoreArrayNode(void *key_p, void *value_p, void *data_p);
 

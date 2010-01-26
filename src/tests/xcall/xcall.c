@@ -32,8 +32,8 @@
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall module");
-MODULE_VERSION(0, 1, 4);
-MODULE_BCVERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
+MODULE_BCVERSION(0, 1, 5);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(xcall);
@@ -98,7 +98,7 @@ TEST_CASE(xcall)
 	TEST_ASSERT(fail->content.integer == 0);
 
 	$(void, store, freeStore)(rets);
-	$(void, xcall, delXCall)("test");
+	$(void, xcall, delXCallFunction)("test");
 
 	TEST_PASS;
 }

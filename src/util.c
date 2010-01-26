@@ -177,13 +177,3 @@ API int compareTimes(const void *a, const void *b, void *data)
 		}
 	}
 }
-
-/**
- * A GDestroyNotify wrapper around g_hash_table_destroy
- *
- * @param table		the hash table to destroy
- */
-API void destroyGHashTable(void *table)
-{
-	g_hash_table_destroy(table);
-}

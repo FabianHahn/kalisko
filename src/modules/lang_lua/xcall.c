@@ -141,7 +141,7 @@ static bool unregisterLuaXCallFunction(void *key_p, void *value_p, void *data_p)
 	int *ref = value_p;
 	lua_State *state = data_p;
 
-	$(bool, xcall, delXCall)(name); // delete the actual xcall
+	$(bool, xcall, delXCallFunction)(name); // delete the actual xcall
 	luaL_unref(state, LUA_REGISTRYINDEX, *ref); // unref the stored lua function
 
 	g_hash_table_remove(functionState, name); // also remove the functionState entry as long as the key is not freed yet ;)

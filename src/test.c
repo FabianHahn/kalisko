@@ -44,6 +44,10 @@ int main(int argc, char **argv)
 	initLog();
 	initModules();
 
+#ifdef TEST_LOG_DEFAULT
+	requestModule("log_default");
+#endif
+
 	printf("Running test cases...\n");
 
 	char *execpath = getExecutablePath();

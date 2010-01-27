@@ -54,11 +54,14 @@ typedef struct {
 	 * The prefix is the part of an irc message which you pass to parseIrcUserMask.
 	 *
 	 * @par Example messages
-	 * Example message: @code EU.GameSurge.net PRIVMSG #kalisko :Hello World @endcode
-	 * Prefix value: @code EU.GameSurge.net @endcode
-	 *
-	 * Example message: :Someone!someone@Someone.user.gamesurge PRIVMSG #php.de :Hello World @endcode
-	 * Prefix value: @code Someone!someone@Someone.user.gamesurge @endcode
+	 * Example message:
+	 * @code EU.GameSurge.net PRIVMSG #kalisko :Hello World @endcode
+	 * Prefix value:
+	 * @code EU.GameSurge.net @endcode @n
+	 * Example message:
+	 * @code :Someone!someone@Someone.user.gamesurge PRIVMSG #php.de :Hello World @endcode
+	 * Prefix value:
+	 * @code Someone!someone@Someone.user.gamesurge @endcode
 	 */
 	char *prefix;
 
@@ -66,11 +69,14 @@ typedef struct {
 	 * The command is the part between the prefix and the trailing whitespace.
 	 *
 	 * @par Example messages
-	 * Example message: @code PING :EU.GameSurge.net @endcode
-	 * Command value: @code PING @endcode
-	 *
-	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
-	 * Command value: @code NOTICE @endcode
+	 * Example message:
+	 * @code PING :EU.GameSurge.net @endcode
+	 * Command value:
+	 * @code PING @endcode @n
+	 * Example message:
+	 * @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Command value:
+	 * @code NOTICE @endcode
 	 * Information: 'AUTH' is a param as between 'NOTICE' and 'AUTH' is a whitespace
 	 */
 	char *command;
@@ -81,10 +87,13 @@ typedef struct {
 	 * An irc message parameter is between the command and a ':'.
 	 *
 	 * @par Example messages
-	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
-	 * Params values:
-	 * [0] @code AUTH @endcode
-	 * [1] @code NULL @endcode
+	 * Example message:
+	 * @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Params values: @n
+	 * [0]
+	 * @code AUTH @endcode
+	 * [1]
+	 * @code NULL @endcode
 	 */
 	char **params;
 	
@@ -97,11 +106,14 @@ typedef struct {
 	 * The trailing part is everything after the ':'.
 	 *
 	 * @par Example messages
-	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
-	 * Trailing value: @code *** Looking up your hostname @endcode
-	 *
-	 * Example value: @code PING :EU.GameSurge.net @endcode
-	 * Trailing value: @code EU.GameSurge.net @endcode
+	 * Example message:
+	 * @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Trailing value:
+	 * @code *** Looking up your hostname @endcode @n
+	 * Example value:
+	 * @code PING :EU.GameSurge.net @endcode
+	 * Trailing value:
+	 * @code EU.GameSurge.net @endcode
 	 */
 	char *trailing;
 

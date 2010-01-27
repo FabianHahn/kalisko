@@ -39,9 +39,9 @@
 MODULE_NAME("lang_php");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides support for the PHP scripting language");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5));
 
 static int ub_write(const char *str, unsigned int str_length TSRMLS_DC);
 static void log_message(char *message);

@@ -32,6 +32,7 @@
 #include "dll.h"
 #include "log.h"
 #include "module.h"
+#include "modules/xcall/xcall.h"
 #include "api.h"
 #include "phpext_kalisko.h"
 
@@ -45,42 +46,27 @@ PHP_MSHUTDOWN_FUNCTION(kalisko)
 	return SUCCESS;
 }
 
-PHP_FUNCTION(kalisko_request_module)
+/**
+ * PHP C function to invoke an XCall
+ */
+PHP_FUNCTION(invokeXCall)
 {
-	char *module;
+	char *xcall;
 	int length;
 
-	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &module, &length) == FAILURE)
+	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &xcall, &length) == FAILURE)
 	{
 		return;
 	}
 
-	bool ret = $$(bool, requestModule)(module);
-
-	if(!ret) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to load kalisko module '%s', check log for details", module);
-	}
-
-	RETURN_BOOL(ret);
-}
-
-PHP_FUNCTION(kalisko_revoke_module)
-{
-	char *module;
-	int length;
-
-	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &module, &length) == FAILURE)
-	{
-		return;
-	}
-
-	$$(void, revokeModule)(module);
+	GString *ret = $(GString *, xcall, invokeXCall)(xcall);
+	ZVAL_STRING(return_value, ret->str, true);
+	g_string_free(ret, true);
 }
 
 function_entry php_kalisko_ext_functions[] =
 {
-	PHP_FE(kalisko_request_module, NULL)
-	PHP_FE(kalisko_revoke_module, NULL)
+	PHP_FE(invokeXCall, NULL)
 };
 
 zend_module_entry php_kalisko_ext_entry = {

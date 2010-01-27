@@ -6,5 +6,8 @@ syntax: glob
 # ignore dot files
 .*
 
+# ignore tmp files
+*~
+
 # ignore built source code
 bin/*

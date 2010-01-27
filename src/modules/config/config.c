@@ -19,233 +19,224 @@
  */
 
 #include <glib.h>
-#include <string.h>
-
+#include <stdlib.h>
 #include "dll.h"
+#include "hooks.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
+#include "modules/store/write.h"
+#include "modules/store/parse.h"
+#include "log.h"
 #include "types.h"
-#include "memory_alloc.h"
-#include "util.h"
+#include "module.h"
 
 #include "api.h"
 #include "config.h"
+#include "modules/config/util.h"
+
+#define CONFIG_DIR_NAME "kalisko"
+#define USER_CONFIG_FILE_NAME "user.cfg"
+#define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
+#define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
+#define USER_CONFIG_DIR_PERMISSION 0700
+
+static char *userConfigFilePath;
+static char *userOverrideConfigFilePath;
+static char *globalConfigFilePath;
+
+static Store *userConfig = NULL;
+static Store *userOverrideConfig = NULL;
+static Store *globalConfig = NULL;
+
+static Store *getUserConfig();
+static Store *getUserOverrideConfig();
+static void finalize();
 
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The config module provides an API to parse, create, edit and write config files");
-MODULE_VERSION(0, 2, 1);
+MODULE_DESCRIPTION("The config module provides access to config files represented by a store that override each other");
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 MODULE_INIT
 {
-	return true;
+	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
+	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+
+	char *globalDir = getGlobalKaliskoConfigPath();
+	globalConfigFilePath = g_build_path("/", globalDir, GLOBAL_CONFIG_FILE_NAME, NULL);
+	free(globalDir);
+
+	if(!HOOK_ADD(stdConfigChanged)) {
+		finalize();
+		return false;
+	} else {
+		return true;
+	}
 }
 
 MODULE_FINALIZE
 {
+	if(userOverrideConfig) {
+		saveConfig(CONFIG_USER_OVERRIDE);
+	}
 
+	finalize();
 }
 
 /**
- * Creates an empty config
+ * Returns the configuration for the given configuration file.
  *
- * @param name		the name for the new config
- * @result			the created config
+ * @param file	The configuration file to open
+ * @return		The Config reference for the given file
+ * @see	ConfigFiles
  */
-API Config *createConfig(char *name)
+API Store *getConfig(ConfigFiles file)
 {
-	Config *config = ALLOCATE_OBJECT(Config);
-
-	config->name = strdup(name);
-	config->resource = NULL;
-	config->read = NULL;
-	config->unread = NULL;
-	config->root = createConfigArrayValue(createConfigNodes());
-
-	return config;
-}
-
-/**
- * Frees a config
- *
- * @param config		the config to free
- */
-API void freeConfig(Config *config)
-{
-	freeConfigNodeValue(config->root);
-	free(config->name);
-
-	free(config);
-}
-
-/**
- * A GDestroyNotify function to free a config node value
- *
- * @param config		the config node value to free
- */
-API void freeConfigNodeValue(void *value_p)
-{
-	ConfigNodeValue *value = value_p;
-
-	switch (value->type) {
-		case CONFIG_STRING:
-			free(value->content.string);
-		break;
-		case CONFIG_LIST:
-			for(GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-				freeConfigNodeValue(iter->data);
+	switch(file) {
+		case CONFIG_USER:
+			if(!userConfig) {
+				userConfig = getUserConfig();
 			}
-
-			g_queue_free(value->content.list);
+			return userConfig;
 		break;
-		case CONFIG_ARRAY:
-			g_hash_table_destroy(value->content.array);
+		case CONFIG_USER_OVERRIDE:
+			if(!userOverrideConfig) {
+				userOverrideConfig = getUserOverrideConfig();
+			}
+			return userOverrideConfig;
 		break;
-		default:
-			// No need to free ints or doubles
-		break;
-	}
-
-	free(value);
-}
-
-
-/**
- * Returns a node value's actual content
- *
- * @param value		the config node value
- * @result 			the node value's content
- */
-API void *getConfigValueContent(ConfigNodeValue *value)
-{
-	switch(value->type) {
-		case CONFIG_STRING:
-			return value->content.string;
-		break;
-		case CONFIG_LIST:
-			return value->content.list;
-		break;
-		case CONFIG_ARRAY:
-			return value->content.array;
+		case CONFIG_GLOBAL:
+			if(!globalConfig) {
+				// As this module should also work for a non root account
+				// we don't create the global config file if it doesn't exist.
+				globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
+			}
+			return globalConfig;
 		break;
 		default:
-			return &value->content;
+			LOG_ERROR("Unknown configuration file requested.");
+			return NULL;
 		break;
 	}
 }
 
-/**
- * Escapes a config string for output in a dump
- *
- * @param string		the string to escape
- * @result				the escaped string, must be freed with g_string_free
- */
-API GString *escapeConfigString(char *string)
-{
-	GString *escaped = g_string_new("");
 
-	for(char *iter = string; *iter != '\0'; iter++) {
-		if(*iter == '"' || *iter == '\\') {
-			g_string_append_printf(escaped, "\\%c", *iter); // escape the character
-		} else {
-			g_string_append_c(escaped, *iter);
+/**
+ * Saves the given configuration file.
+ *
+ * Attention: Only the "override" configuration files are writeable.
+ *
+ * @param file	The configuration file to save
+ */
+API void saveConfig(ConfigFiles file)
+{
+	switch(file) {
+		case CONFIG_USER_OVERRIDE:
+			$(void, store, writeStoreFile)(userOverrideConfigFilePath, getConfig(file));
+		break;
+		default:
+			LOG_WARNING("Given configuration file can not be saved.");
+			return;
+		break;
+	}
+}
+
+/**
+ * Searches for the given path trough the configuration files
+ * consider the weighting of the different configurations. The first found value
+ * will be returned otherwise NULL.
+ *
+ * Do not free the returned value. This is handled by the config module.
+ *
+ * @param	path			The path to search
+ * @return	The first found value for given path or NULL
+ */
+API Store *getConfigPathValue(char *path)
+{
+	Store *value = NULL;
+
+	Store *overrideConfig = getConfig(CONFIG_USER_OVERRIDE);
+	if(overrideConfig) {
+		value = $(Store *, store, getStorePath)(overrideConfig, path);
+		if(value) {
+			return value;
 		}
 	}
 
-	return escaped;
-}
-
-/**
- * Creates a string value to be used in a config
- *
- * @param string		the content string
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
- */
-API ConfigNodeValue *createConfigStringValue(char *string)
-{
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_STRING;
-	value->content.string = strdup(string);
-
-	return value;
-}
-
-/**
- * Creates an integer value to be used in a config
- *
- * @param string		the content integer
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
- */
-API ConfigNodeValue *createConfigIntegerValue(int integer)
-{
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_INTEGER;
-	value->content.integer = integer;
-
-	return value;
-}
-
-/**
- * Creates a float number value to be used in a config
- *
- * @param string		the content float number
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
- */
-API ConfigNodeValue *createConfigFloatNumberValue(double float_number)
-{
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_FLOAT_NUMBER;
-	value->content.float_number = float_number;
-
-	return value;
-}
-
-/**
- * Creates a list value to be used in a config
- *
- * @param string		the content list or NULL for an empty list
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
- */
-API ConfigNodeValue *createConfigListValue(GQueue *list)
-{
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_LIST;
-
-	if(list != NULL) {
-		value->content.list = list;
-	} else {
-		value->content.list = g_queue_new();
+	Store *userConfig = getConfig(CONFIG_USER);
+	if(userConfig) {
+		value = $(Store *, store, getStorePath)(userConfig, path);
+		if(value) {
+			return value;
+		}
 	}
 
-	return value;
-}
-
-/**
- * Creates an array value to be used in a config
- *
- * @param string		the content array
- * @result				the created node value, must be freed with freeConfigNodeValue or by the config system
- */
-API ConfigNodeValue *createConfigArrayValue(GHashTable *array)
-{
-	ConfigNodeValue *value = ALLOCATE_OBJECT(ConfigNodeValue);
-	value->type = CONFIG_ARRAY;
-
-	if(array != NULL) {
-		value->content.array = array;
-	} else {
-		value->content.array = createConfigNodes();
+	Store *globalConfig = getConfig(CONFIG_GLOBAL);
+	if(globalConfig) {
+		value = $(Store *, store, getStorePath)(globalConfig, path);
+		if(value) {
+			return value;
+		}
 	}
 
-	return value;
+	return NULL;
 }
 
-/**
- * Creates an empty config nodes table to be used as a section or an array in a config
- *
- * @result			the created nodes table, must be freed with g_hash_table_destroy or the config system
- */
-API GHashTable *createConfigNodes()
+static Store *getUserConfig()
 {
-	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConfigNodeValue);
+	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
+
+		Store *userConfig = $(Store *, store, createStore)();
+		$(void, store, writeStoreFile)(userConfigFilePath, userConfig);
+
+		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
+
+		free(dirPath);
+		return userConfig;
+	} else {
+		return $(Store *, store, parseStoreFile)(userConfigFilePath);
+	}
+}
+
+static Store *getUserOverrideConfig()
+{
+	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
+		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
+		
+		Store *globalConfig = $(Store *, store, createStore)();
+		$(void, store, writeStoreFile)(userOverrideConfigFilePath, globalConfig);
+		
+		LOG_INFO("Created new configuration file: %s", userOverrideConfigFilePath);
+
+		free(dirPath);
+		return globalConfig;
+	} else {
+		return $(Store *, store, parseStoreFile)(userOverrideConfigFilePath);
+	}
+}
+
+static void finalize()
+{
+	free(userConfigFilePath);
+	free(userOverrideConfigFilePath);
+	free(globalConfigFilePath);
+
+	if(userConfig) {
+		$(void, store, freeStore)(userConfig);
+	}
+
+	if(userOverrideConfig) {
+		$(void, store, freeStore)(userOverrideConfig);
+	}
+
+	if(globalConfig) {
+		$(void, store, freeStore)(globalConfig);
+	}
+
+	HOOK_DEL(stdConfigChanged);
 }

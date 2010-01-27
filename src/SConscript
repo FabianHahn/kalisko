@@ -17,12 +17,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('core')
 Import('corefiles')
+import sys
 
 # core configure checks
 if not core.GetOption('clean'):
 	conf = Configure(core)
 
-	if conf.env['PLATFORM'] == 'posix':
+	if sys.platform.startswith('linux'):
 		conf.env.Append(LIBS = ['dl'])
 	elif conf.env['PLATFORM'] == 'win32':
 		if not conf.CheckCHeader('windows.h'):

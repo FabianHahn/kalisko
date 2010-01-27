@@ -27,7 +27,7 @@
 
 #include "api.h"
 
-MODULE_NAME("irc_parser_tests");
+MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_parser module");
 MODULE_VERSION(0, 0, 1);
@@ -62,6 +62,7 @@ TEST_CASE(utf8Trailing)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "Зарегистрируйтесь Unicode แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช 1234567890 ╔══╦══╗  ┌──┬──┐  ╭──┬──╮  ╭──┬──╮") == 0);
 
 	TEST_ASSERT(parsedMessage->params == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 0);
 	TEST_ASSERT(parsedMessage->prefix == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
@@ -85,6 +86,7 @@ TEST_CASE(whitespaces)
 	TEST_ASSERT(strcmp(parsedMessage->params[1], "@") == 0);
 	TEST_ASSERT(strcmp(parsedMessage->params[2], "#php.de") == 0);
 	TEST_ASSERT(parsedMessage->params[3] == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 3);
 
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "    Do         something!") == 0);
 
@@ -143,6 +145,7 @@ TEST_CASE(noticeAuth)
 	TEST_ASSERT(parsedMessage->prefix == NULL);
 	TEST_ASSERT(strcmp(parsedMessage->params[0], "AUTH") == 0);
 	TEST_ASSERT(parsedMessage->params[1] == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 1);
 	TEST_ASSERT(strcmp(parsedMessage->command, "NOTICE") == 0);
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Looking up your hostname") == 0);
 
@@ -162,6 +165,7 @@ TEST_CASE(serverNotice)
 	TEST_ASSERT(strcmp(parsedMessage->prefix, "Staff.CA.US.GameSurge.net") == 0);
 	TEST_ASSERT(strcmp(parsedMessage->params[0], "*") == 0);
 	TEST_ASSERT(parsedMessage->params[1] == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 1);
 	TEST_ASSERT(strcmp(parsedMessage->command, "NOTICE") == 0);
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)") == 0);
 

@@ -18,13 +18,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <glib.h>
+// First include all used system headers (those NOT in the project folder)
+#include <stdio.h> // we're going to use printf later, so make sure it's declared
+#include <glib.h> // we don't really use glib in this module, but since it's used in almost every serious module, we include it here to show you where its include line should be placed :)
 
 // The first include after system headers must always be dll.h
 #include "dll.h"
 // Next, headers from other modules or the core follow
 #include "hooks.h"
+// The following three headers declare the core macros we're going to use as an example below
 #include "log.h"
 #include "types.h"
 #include "timer.h"
@@ -34,37 +36,46 @@
 // Include our own header only after api.h
 #include "sample.h"
 
-MODULE_NAME("sample");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("This is a sample module intended to show new module developers how the Kalisko module system works.");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+// Ok, everything included, let's define all the module's metadata
+MODULE_NAME("sample"); // this name must be equal to the module's folder and the library name (without prefix) in the SConscript makefile
+MODULE_AUTHOR("The Kalisko team"); // specifies who wrote the module
+MODULE_DESCRIPTION("This is a sample module intended to show new module developers how the Kalisko module system works."); // short description of what the module does
+MODULE_VERSION(0, 1, 0); // this module's major, minor and patch version (integer numbers), a source version from svn/hg will be appended automatically as fourth version component
+MODULE_BCVERSION(0, 1, 0); // the version this module is backwards compatible to, i.e. the oldest version other modules can still depend on to use this module
+MODULE_NODEPS; // module dependencies of this module, this one has none at all; to specify a module dependency, use the MODULE_DEPENDS macro and specify several MODULE_DEPENDENCY entries as arguments (see the sample test suite for an example)
 
-TIMER_CALLBACK(sample);
+TIMER_CALLBACK(sample); // forward declaration of the timer callback we're going to define later
+static GTimeVal *timeout; // an identifier for our scheduled timeout callback
 
-MODULE_INIT
+// The actual code of the module starts here...
+
+MODULE_INIT // This function is called upon initialization of the module and can perform further startup work. Modules can expect all dependency modules to be already loaded at this point. The function must return true if the initialization is successful - if it returns false, the module is immediately unloaded.
 {
-	LOG_INFO("This is a log message from the sample module. Hi there!");
-	HOOK_ADD(sample);
-	TIMER_ADD_TIMEOUT(10 * G_USEC_PER_SEC, sample);
+	LOG_INFO("This is a log message from the sample module. Hi there!"); // This macro broadcasts an info log message to all registered log providers
+	HOOK_ADD(sample); // Adds a sample hook that can be triggered to notify all its possible listeners
+	timeout = TIMER_ADD_TIMEOUT(10 * G_USEC_PER_SEC, sample); // schedules the sample callback to be executed after 10 seconds
 
-	return true;
+	return true; // initialization successful
 }
 
-MODULE_FINALIZE
+MODULE_FINALIZE // This function is called before the module is finally unloaded, so all cleanup work must be done here. Be sure to unregister
 {
-	HOOK_DEL(sample);
+	if(timeout != NULL) { // check if the timeout needs to be unregistered
+		TIMER_DEL(timeout); // unregister the timeout if it was not yet called, so nothing evil will happen
+	}
+
+	HOOK_DEL(sample); // also remove the hook we created before
 }
 
-TIMER_CALLBACK(sample)
+TIMER_CALLBACK(sample) // sample callback function
 {
-	printf("Hello world from timer!\n");
+	printf("Hello world from timer!\n"); // print hello world to standard output ;)
+	timeout = NULL; // make sure we don't free the timeout in finalization since it's gone now
 }
 
 // Every function that could be called from another module must have an API marker
 // This is a function that's exported to the global scope, hence it needs the API marker
 API int add(int a, int b)
 {
-	return a+b;
+	return a + b; // just add two ints and return
 }

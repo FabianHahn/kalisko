@@ -34,7 +34,7 @@
 MODULE_NAME("irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Parses and creates IRC messages");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
@@ -51,14 +51,14 @@ MODULE_FINALIZE
  * This function parses an IRC message as described in RFC 1459 (Chapter 2.3.1).
  *
  * @param message	An IRC message. Has to be on heap.
- * @return A struct containing the different parts of the message. If an error occured NULL is returned.
+ * @return 			A struct containing the different parts of the message. If an error occured NULL is returned.
  */
 API IrcMessage *parseIrcMessage(char *message)
 {
 	IrcMessage *ircMessage = ALLOCATE_OBJECT(IrcMessage);
 	memset(ircMessage, 0, sizeof(IrcMessage));
 
-	ircMessage->ircMessage = g_strdup(message);
+	ircMessage->raw_message = g_strdup(message);
 
 	char *prefixEnd = message;
 
@@ -79,7 +79,7 @@ API IrcMessage *parseIrcMessage(char *message)
 	g_strchug(prefixEnd);
 	char *commandEnd = strchr(prefixEnd, ' ');
 	if(commandEnd == NULL) {
-		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->ircMessage);
+		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->raw_message);
 		freeIrcMessage(ircMessage);
 		return NULL;
 	}
@@ -104,6 +104,11 @@ API IrcMessage *parseIrcMessage(char *message)
 		$(void, string_util, stripDuplicateWhitespace)(paramsText);
 
 		ircMessage->params = g_strsplit(paramsText, " ", 0);
+		// I haven't found any glib function doing this, so I'll count manually
+		for(ircMessage->params_count = 0; ircMessage->params[ircMessage->params_count] != NULL; ircMessage->params_count++) {
+			// Nothing left to do
+		}
+
 		free(paramsText);
 	}
 
@@ -123,7 +128,7 @@ API IrcMessage *parseIrcMessage(char *message)
  * See for further information RFC 1459.
  *
  * @param prefix	The prefix part of an IRC message.
- * @return A struct containing the different parts of a user mask or NULL if an error occurred.
+ * @return 			A struct containing the different parts of a user mask or NULL if an error occurred.
  */
 API IrcUserMask *parseIrcUserMask(char *prefix)
 {
@@ -168,8 +173,8 @@ API void freeIrcMessage(IrcMessage *message)
 		free(message->command);
 	}
 
-	if(message->ircMessage) {
-		free(message->ircMessage);
+	if(message->raw_message) {
+		free(message->raw_message);
 	}
 
 	if(message->params) {

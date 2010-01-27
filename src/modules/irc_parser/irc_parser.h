@@ -28,29 +28,87 @@ typedef struct {
 	/**
 	 * The nick of the user but could also be the server name as it is not possible to determine if the
 	 * IRC message prefix is a user mask or the server name.
+	 *
+	 * If the prefix is a user mask this var contains the user's nick name. It's the irc message part before '!'.
 	 */
 	char *nick;
+
+	/**
+	 * (optional) The user part if the prefix is a user mask. It's the irc message part after '!' and before '@'.
+	 */
 	char *user;
+
+	/**
+	 * (optional) The host of the user if the prefix is a user mask. It's the irc message part after '@'.
+	 */
 	char *host;
 } IrcUserMask;
 
 /**
- * Represents an IRC message as defined in RFC 1459.
+ * Represents an irc message as defined in RFC 1459.
  */
 typedef struct {
+	/**
+	 * The prefix of a irc message is optional. If set it contains the server name or the user mask.
+	 *
+	 * The prefix is the part of an irc message which you pass to parseIrcUserMask.
+	 *
+	 * @par Example messages
+	 * Example message: @code EU.GameSurge.net PRIVMSG #kalisko :Hello World @endcode
+	 * Prefix value: @code EU.GameSurge.net @endcode
+	 *
+	 * Example message: :Someone!someone@Someone.user.gamesurge PRIVMSG #php.de :Hello World @endcode
+	 * Prefix value: @code Someone!someone@Someone.user.gamesurge @endcode
+	 */
 	char *prefix;
+
+	/**
+	 * The command is the part between the prefix and the trailing whitespace.
+	 *
+	 * @par Example messages
+	 * Example message: @code PING :EU.GameSurge.net @endcode
+	 * Command value: @code PING @endcode
+	 *
+	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Command value: @code NOTICE @endcode
+	 * Information: 'AUTH' is a param as between 'NOTICE' and 'AUTH' is a whitespace
+	 */
 	char *command;
 
 	/**
 	 * NULL-terminated array of parameter strings.
+	 *
+	 * An irc message parameter is between the command and a ':'.
+	 *
+	 * @par Example messages
+	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Params values:
+	 * [0] @code AUTH @endcode
+	 * [1] @code NULL @endcode
 	 */
 	char **params;
+	
+	/**
+	 * Amount of given parameters (in params)
+	 */
+	unsigned int params_count;
+
+	/**
+	 * The trailing part is everything after the ':'.
+	 *
+	 * @par Example messages
+	 * Example message: @code NOTICE AUTH :*** Looking up your hostname @endcode
+	 * Trailing value: @code *** Looking up your hostname @endcode
+	 *
+	 * Example value: @code PING :EU.GameSurge.net @endcode
+	 * Trailing value: @code EU.GameSurge.net @endcode
+	 */
 	char *trailing;
 
 	/**
-	 * The original unchanged IRC message.
+	 * The original unchanged irc message.
 	 */
-	char *ircMessage;
+	char *raw_message;
 } IrcMessage;
 
 API IrcMessage *parseIrcMessage(char *message);

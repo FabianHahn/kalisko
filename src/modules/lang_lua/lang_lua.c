@@ -33,7 +33,7 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -76,10 +76,14 @@ API bool evaluateLua(char *command)
 /**
  * Pops the last returned string from Lua's stack
  *
- * @result		the last string on the stack, must be freed by the caller
+ * @result		the last string on the stack, must be freed by the caller. returns NULL if top stack element is no string
  */
 API char *popLuaString()
 {
+	if(!lua_isstring(state, -1)) {
+		return NULL;
+	}
+
 	char *string = strdup(lua_tostring(state, -1));
 	lua_pop(state, 1);
 	return string;

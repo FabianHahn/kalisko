@@ -25,5 +25,6 @@
 #include "modules/store/store.h"
 
 API char *getGlobalKaliskoConfigPath();
+API char *getUserKaliskoConfigPath();
 
 #endif

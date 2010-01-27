@@ -60,3 +60,18 @@ API char *getGlobalKaliskoConfigPath()
 	}
 #endif
 }
+
+/**
+ * Returns the path to the per user config directory. This directory must not exist yet.
+ *
+ * @return	The directory for kalisko user config files. This string must be freed.
+ */
+API char *getUserKaliskoConfigPath()
+{
+// We do not really like the path GLib returns on *nix systems. So we do it our way.
+#if defined(__unix__) || defined(__linux__)
+	return g_build_path("/", g_get_home_dir(), "." KALISKO_DIR_NAME, NULL);
+#else
+	return g_get_user_config_dir();
+#endif
+}

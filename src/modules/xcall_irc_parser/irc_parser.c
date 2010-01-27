@@ -63,6 +63,31 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("parseIrcUserMask");
 }
 
+/**
+ * XCall wrapper for parseIrcMessage function implemented in irc_parser. The XCall functoin
+ * expects a string node "message" with the irc message.
+ * @code
+ * message = "some irc message line"
+ * @endcode
+ * @see parseIrcMessagee
+ *
+ * The return value is an array 'ircMessage' with optional string nodes 'prefix', 'command', 'trailing',
+ * 'raw_message', an integer node 'params_count' and a list with string values 'params'.
+ * @code
+ * ircMessage = {
+ * 	prefix = ""
+ * 	command = ""
+ * 	trailing = ""
+ * 	raw_message = ""
+ * 	params_count = 0
+ *  params = ()
+ * }
+ * @endcode
+ * @see IrcMessage
+ *
+ * @param xcall
+ * @return
+ */
 static GString *parseIrcMessageXCall(const char *xcall)
 {
 	Store *call = $(Store *, store, parseStoreString)(xcall);
@@ -117,6 +142,27 @@ static GString *parseIrcMessageXCall(const char *xcall)
 	return  retStr;
 }
 
+/**
+ * XCall wrapper for parseIrcUserMask function implemented in irc_parser. The XCall functoin
+ * expects a string node "prefix" with the irc message prefix.
+ * @code
+ * prefix = "some irc message prefix"
+ * @endcode
+ * @see parseIrcUserMask
+ *
+ * The return value is an array 'ircUserMask' with tree optional string nodes.
+ * @code
+ * ircUserMask = {
+ * 	host = ""
+ * 	nick = ""
+ * 	user = ""
+ * }
+ * @endcode
+ * @see IrcUserMask
+ *
+ * @param xcall
+ * @return
+ */
 static GString *parseIrcUserMaskXCall(const char *xcall)
 {
 	Store *call = $(Store *, store, parseStoreString)(xcall);

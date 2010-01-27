@@ -55,7 +55,7 @@ API void writeStoreFile(char *filename, Store *store)
 	context.writer = &storeFileWrite;
 	context.level = -1;
 
-	LOG_DEBUG("Writing store to %s\n", filename);
+	LOG_DEBUG("Writing store to %s", filename);
 	dumpStore(store, &context);
 
 	fclose(context.resource);

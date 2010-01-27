@@ -34,7 +34,6 @@
 #include "config.h"
 #include "modules/config/util.h"
 
-#define CONFIG_DIR_NAME "kalisko"
 #define USER_CONFIG_FILE_NAME "user.cfg"
 #define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
@@ -55,14 +54,16 @@ static void finalize();
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files represented by a store that override each other");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 MODULE_INIT
 {
-	userConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_CONFIG_FILE_NAME, NULL);
-	userOverrideConfigFilePath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	char *userDir = getUserKaliskoConfigPath();
+	userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
+	userOverrideConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	free(userDir);
 
 	char *globalDir = getGlobalKaliskoConfigPath();
 	globalConfigFilePath = g_build_path("/", globalDir, GLOBAL_CONFIG_FILE_NAME, NULL);
@@ -187,7 +188,7 @@ API Store *getConfigPathValue(char *path)
 static Store *getUserConfig()
 {
 	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		char *dirPath = getUserKaliskoConfigPath();
 		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 
 		Store *userConfig = $(Store *, store, createStore)();
@@ -205,7 +206,7 @@ static Store *getUserConfig()
 static Store *getUserOverrideConfig()
 {
 	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = g_build_path("/", g_get_user_config_dir(), CONFIG_DIR_NAME, NULL);
+		char *dirPath = getUserKaliskoConfigPath();
 		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
 		
 		Store *globalConfig = $(Store *, store, createStore)();

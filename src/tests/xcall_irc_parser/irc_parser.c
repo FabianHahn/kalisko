@@ -33,7 +33,7 @@
 MODULE_NAME("test_xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_irc_parser module");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 1, 1));
 
@@ -41,12 +41,14 @@ TEST_CASE(xcall_irc_parse);
 TEST_CASE(xcall_irc_parse_user_mask);
 TEST_CASE(xcall_irc_parse_error);
 TEST_CASE(xcall_irc_parse_no_message);
+TEST_CASE(xcall_irc_parse_user_mask_no_prefix);
 
 TEST_SUITE_BEGIN(xcall_irc_parser)
 	TEST_CASE_ADD(xcall_irc_parse);
 	TEST_CASE_ADD(xcall_irc_parse_user_mask);
 	TEST_CASE_ADD(xcall_irc_parse_error);
 	TEST_CASE_ADD(xcall_irc_parse_no_message);
+	TEST_CASE_ADD(xcall_irc_parse_user_mask_no_prefix);
 TEST_SUITE_END
 
 TEST_CASE(xcall_irc_parse)
@@ -88,7 +90,7 @@ TEST_CASE(xcall_irc_parse_error)
 	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.not_parseable") == 0);
+	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);
 
 	$(void, store, freeStore)(retStore);
 	g_string_free(ret, true);
@@ -99,6 +101,19 @@ TEST_CASE(xcall_irc_parse_error)
 TEST_CASE(xcall_irc_parse_no_message)
 {
 	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = \"parseIrcMessage\" }");
+	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+
+	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
+
+	$(void, store, freeStore)(retStore);
+	g_string_free(ret, true);
+
+	TEST_PASS;
+}
+
+TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
+{
+	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = \"parseIrcUserMask\" }");
 	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);

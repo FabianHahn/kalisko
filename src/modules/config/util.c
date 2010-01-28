@@ -72,6 +72,6 @@ API char *getUserKaliskoConfigPath()
 #if defined(__unix__) || defined(__linux__)
 	return g_build_path("/", g_get_home_dir(), "." KALISKO_DIR_NAME, NULL);
 #else
-	return g_get_user_config_dir();
+	return g_build_path("/", g_get_user_config_dir(), KALISKO_DIR_NAME, NULL);
 #endif
 }

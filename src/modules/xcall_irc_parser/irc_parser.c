@@ -40,7 +40,7 @@ static GString *xcall_parseIrcUserMask(const char *xcall);
 MODULE_NAME("xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall Module for irc_parser");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -144,10 +144,8 @@ static GString *xcall_parseIrcMessage(const char *xcall)
 	$(bool, store, setStorePath)(ret, "ircMessage/params_count", $(Store *, store, createStoreIntegerValue)(ircMessage->params_count));
 
 	GQueue *paramQueue = g_queue_new();
-	for(int i = 0; i <= ircMessage->params_count; i++) {
-		if(ircMessage->params[i]) {
+	for(int i = 0; i < ircMessage->params_count; i++) {
 			g_queue_push_tail(paramQueue, $(Store *, store, createStoreStringValue)(strdup(ircMessage->params[i])));
-		}
 	}
 	$(bool, store, setStorePath)(ret, "ircMessage/params", $(Store *, store, createStoreListValue)(paramQueue));
 

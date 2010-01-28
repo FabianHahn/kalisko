@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 5);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -100,12 +100,12 @@ API GString *invokeXCall(const char *xcall)
 {
 	Store *params;
 	Store *retstore = NULL;
-	Store *metaret = $(Store *, store, createStore());
+	Store *metaret = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 	$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreIntegerValue)(0));
 
 	do { // dummy do-while to prevent mass if-then-else branching
-		if((params = $(Store *, store, parseStoreString(xcall))) == NULL) {
+		if((params = $(Store *, store, parseStoreString)(xcall)) == NULL) {
 			LOG_ERROR("XCall store parsing failed: %s", xcall);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("XCall store parse error"));
 			break;

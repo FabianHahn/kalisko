@@ -294,7 +294,7 @@ static GString *luaXCallFunction(const char *xcall)
 		LOG_ERROR(err->str);
 		Store *retstore = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-		$(bool, stote, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
 		GString *ret = $(GString *, store, writeStoreGString)(retstore);
 		$(void, store, freeStore)(retstore);

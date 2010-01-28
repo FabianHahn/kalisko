@@ -34,23 +34,23 @@
 
 #include "api.h"
 
-static GString *parseIrcMessageXCall(const char *xcall);
-static GString *parseIrcUserMaskXCall(const char *xcall);
+static GString *xcall_parseIrcMessage(const char *xcall);
+static GString *xcall_parseIrcUserMask(const char *xcall);
 
 MODULE_NAME("xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall Module for irc_parser");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 MODULE_INIT
 {
-	if(!$(bool, xcall, addXCallFunction)("parseIrcMessage", &parseIrcMessageXCall)) {
+	if(!$(bool, xcall, addXCallFunction)("parseIrcMessage", &xcall_parseIrcMessage)) {
 		return false;
 	}
 
-	if(!$(bool, xcall, addXCallFunction)("parseIrcUserMask", &parseIrcUserMaskXCall)) {
+	if(!$(bool, xcall, addXCallFunction)("parseIrcUserMask", &xcall_parseIrcUserMask)) {
 		return false;
 	}
 
@@ -64,49 +64,65 @@ MODULE_FINALIZE
 }
 
 /**
- * XCall wrapper for parseIrcMessage function implemented in irc_parser. The XCall functoin
- * expects a string node "message" with the irc message.
- * @code
- * message = "some irc message line"
- * @endcode
- * @see parseIrcMessagee
+ * XCall function for parseIrcMessage of irc_parser module.
  *
- * The return value is an array 'ircMessage' with optional string nodes 'prefix', 'command', 'trailing',
- * 'raw_message', an integer node 'params_count' and a list with string values 'params'.
- * @code
- * ircMessage = {
- * 	prefix = ""
- * 	command = ""
- * 	trailing = ""
- * 	raw_message = ""
- * 	params_count = 0
- *  params = ()
- * }
- * @endcode
+ * XCall parameters:
+ * 	* string 'message'		the IRC message line to parse
+ * XCall result on success:
+ *  * integer 'success' = 1
+ * 	* array 'ircMessage':	an array representing a valid IRC message
+ *    * string 'prefix'			the prefix part of the IRC message
+ *    * string 'command'		the command part of the IRC message
+ *    * string 'trailing'		the trailing part of the IRC message
+ *    * string 'raw_message'	the original IRC message as it was given to the parser
+ *    * integer 'params_count'	count of IRC params
+ *    * list 'params'			list of string values representing IRC parameters
+ *
+ * XCall result on failure:
+ *  * integer 'success' = 0
+ *  * array 'error':		an array with informations about an error
+ *    * string 'id'			an identifier to identify the error
+ *    * string 'message'	a message what went wrong.
+ *
  * @see IrcMessage
+ * @see parseIrcMessage
  *
- * @param xcall
- * @return
+ * @param xcall		the xcall in serialized store form
+ * @return			a return value in serialized store form
  */
-static GString *parseIrcMessageXCall(const char *xcall)
+static GString *xcall_parseIrcMessage(const char *xcall)
 {
 	Store *call = $(Store *, store, parseStoreString)(xcall);
 	Store *message = $(Store *, store, getStorePath)(call, "message");
+	Store *ret = $(Store *, store, createStore)();
 
 	if(message == NULL || message->type != STORE_STRING) {
 		$(void, store, freeStore(call));
-		// error
-		return NULL;
+
+		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
+
+		GString *retStr = $(GString *, store, writeStoreGString)(ret);
+		$(void, store, freeStore(ret));
+
+		return retStr;
 	}
 
 	IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message->content.string);
 	if(ircMessage == NULL) {
 		$(void, store, freeStore(call));
-		// error
-		return NULL;
+
+		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(ret, "error", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "error/id", $(Store *, store, createStoreStringValue)("irc_parser.not_parseable"));
+		$(bool, store, setStorePath)(ret, "error/message", $(Store *, store, createStoreStringValue)("Given IRC message is not parseable."));
+
+		GString *retStr = $(GString *, store, writeStoreGString)(ret);
+		$(void, store, freeStore(ret));
+
+		return retStr;
 	}
 
-	Store *ret = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(ret, "ircMessage", $(Store *, store, createStoreArrayValue)(NULL));
 	if(ircMessage->prefix) {
 		$(bool, store, setStorePath)(ret, "ircMessage/prefix", $(Store *, store, createStoreStringValue)(strdup(ircMessage->prefix)));
@@ -133,6 +149,8 @@ static GString *parseIrcMessageXCall(const char *xcall)
 		}
 	}
 	$(bool, store, setStorePath)(ret, "ircMessage/params", $(Store *, store, createStoreListValue)(paramQueue));
+
+	$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(1));
 
 	$(void, irc_parser, freeIrcMessage)(ircMessage);
 
@@ -163,7 +181,7 @@ static GString *parseIrcMessageXCall(const char *xcall)
  * @param xcall
  * @return
  */
-static GString *parseIrcUserMaskXCall(const char *xcall)
+static GString *xcall_parseIrcUserMask(const char *xcall)
 {
 	Store *call = $(Store *, store, parseStoreString)(xcall);
 	Store *prefix = $(Store *, store, getStorePath)(call, "prefix");

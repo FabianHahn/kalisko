@@ -34,7 +34,7 @@ static void mergeIntoArray(void *key_p, void *value_p, void *data_p);
  *
  * @param target	the store to merge to
  * @param import	the store to import from
- * @param bool		true if successful
+ * @result			true if successful
  */
 API bool mergeStore(Store *target, Store *import)
 {

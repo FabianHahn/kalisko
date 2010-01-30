@@ -50,7 +50,7 @@ void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error); // this can't go 
  *
  * @param lval		the lexer value target
  * @param lloc		the lexer location
- * @param store		the parser context to lex from
+ * @param parser	the parser context to lex from
  * @result			the lexed token
  */
 API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)

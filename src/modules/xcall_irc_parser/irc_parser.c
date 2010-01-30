@@ -145,7 +145,7 @@ static GString *xcall_parseIrcMessage(const char *xcall)
 
 	GQueue *paramQueue = g_queue_new();
 	for(int i = 0; i < ircMessage->params_count; i++) {
-			g_queue_push_tail(paramQueue, $(Store *, store, createStoreStringValue)(strdup(ircMessage->params[i])));
+		g_queue_push_tail(paramQueue, $(Store *, store, createStoreStringValue)(strdup(ircMessage->params[i])));
 	}
 	$(bool, store, setStorePath)(ret, "ircMessage/params", $(Store *, store, createStoreListValue)(paramQueue));
 

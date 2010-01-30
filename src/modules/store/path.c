@@ -32,9 +32,9 @@
 /**
  * Fetches a store value by its path
  *
- * @param store		the store in which the lookup takes place
+ * @param parent	the store in which the lookup takes place
  * @param path		the path to the value without a leading / to search, use integers from base 0 for list elements
- * @result				the store value, or NULL if not found
+ * @result			the store value, or NULL if not found
  */
 API Store *getStorePath(Store *parent, char *path)
 {

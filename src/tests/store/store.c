@@ -234,7 +234,7 @@ TEST_CASE(merge)
  * A local wrapper around storeStringRead
  *
  * @param store		the store to to read from
- * @result				the read character
+ * @result			the read character
  */
 static char _storeStringRead(void *store)
 {
@@ -245,7 +245,7 @@ static char _storeStringRead(void *store)
  * A local wrapper around storeStringUnread
  *
  * @param store		the store to to read from
- * @result				the read character
+ * @param c			the read character
  */
 static void _storeStringUnread(void *store, char c)
 {

@@ -278,7 +278,7 @@ static GString *luaXCallFunction(const char *xcall)
 	if(lua_pcall(state, 1, 1, 0) != 0) {
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': %s", funcname, lua_tostring(state, -1));
-		LOG_ERROR(err->str);
+		LOG_ERROR("%s", err->str);
 		Store *retstore = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, stote, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
@@ -291,7 +291,7 @@ static GString *luaXCallFunction(const char *xcall)
 	if(!lua_isstring(state, -1)) {
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is no string", funcname);
-		LOG_ERROR(err->str);
+		LOG_ERROR("%s", err->str);
 		Store *retstore = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));

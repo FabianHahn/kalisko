@@ -89,6 +89,6 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 			logMessage(LOG_TYPE_DEBUG, "%s: %s", fixedDomain, message);
 			break;
 		default:
-			logMessage(LOG_TYPE_WARNING, "Unknown '%s' log type: '%s', message: '%s'", fixedDomain, logLevel, message);
+			logMessage(LOG_TYPE_WARNING, "Unknown '%s' log type: %d, message: '%s'", fixedDomain, logLevel, message);
 	}
 }

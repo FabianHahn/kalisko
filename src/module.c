@@ -434,7 +434,7 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 		// Call module initializer
 		logMessage(LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
 		if(!init_func()) {
-			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s");
+			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s", mod->name);
 			unneedModule(mod->name, mod, NULL);
 			return false;
 		}

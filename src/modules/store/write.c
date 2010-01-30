@@ -37,8 +37,8 @@
  */
 #define DUMP(FORMAT, ...) context->writer(context, FORMAT, ##__VA_ARGS__)
 
-static void storeFileWrite(void *context_p, char *format, ...);
-static void storeGStringWrite(void *context_p, char *format, ...);
+static void storeFileWrite(void *context_p, char *format, ...) G_GNUC_PRINTF(2,3);
+static void storeGStringWrite(void *context_p, char *format, ...) G_GNUC_PRINTF(2,3);
 static void dumpStore(Store *value, StoreDumpContext *context);
 static void dumpStoreNode(void *key_p, void *value_p, void *data);
 
@@ -84,7 +84,7 @@ API GString *writeStoreGString(Store *store)
 /**
  * A StoreWriter function for files
  *
- * @param store		the store to to write to
+ * @param context_p		a pointer to the store dump context to write to
  * @param format		printf-like string to write
  */
 static void storeFileWrite(void *context_p, char *format, ...)
@@ -100,7 +100,7 @@ static void storeFileWrite(void *context_p, char *format, ...)
 /**
  * A StoreWriter function for GStrings
  *
- * @param store		the store to to write to
+ * @param context_p		a pointer to the store dump context to write to
  * @param format		printf-like string to write
  */
 static void storeGStringWrite(void *context_p, char *format, ...)

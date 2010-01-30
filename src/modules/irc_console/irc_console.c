@@ -207,7 +207,7 @@ static void appendMessage(char *tabname, char *message, IrcConsoleMessageType ty
 	IrcConsoleTab *tab = g_hash_table_lookup(tabs, tabname);
 
 	if(tab == NULL) {
-		LOG_ERROR("Requested unknown tab '%s'", tab);
+		LOG_ERROR("Requested unknown tab '%s'", tabname);
 		return;
 	}
 

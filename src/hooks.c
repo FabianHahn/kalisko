@@ -27,7 +27,7 @@
 #include "memory_alloc.h"
 
 static void addHookStatsEntry(void *key, void *value, void *data);
-static gboolean freeList(void *hook_name, void *list, void *user_data);
+static gboolean freeHookListenerList(void *hook_name, void *list, void *user_data);
 
 static GHashTable *hooks;
 
@@ -45,7 +45,7 @@ API void initHooks()
 API void freeHooks()
 {
 	// Remove all keys and free them
-	g_hash_table_foreach_remove(hooks, &freeList, NULL);
+	g_hash_table_foreach_remove(hooks, &freeHookListenerList, NULL);
 
 	// Destroy hash table struct as well
 	g_hash_table_destroy(hooks);
@@ -84,7 +84,7 @@ API bool delHook(char *hook_name)
 	}
 
 	// Free the hook's listener list
-	freeList(NULL, hook, NULL);
+	freeHookListenerList(NULL, hook, NULL);
 
 	// Remove the hook from the hooks table
 	g_hash_table_remove(hooks, hook_name);
@@ -247,22 +247,25 @@ static void addHookStatsEntry(void *key, void *value, void *data)
 }
 
 /**
- * Helper function to free a list
+ * GHRFunc to free a hook listener list
  *
- * @param list		The list to free
+ * @param key_p		a pointer to the hook name
+ * @param value_p	a pointer to the list to free
+ * @param data		unused
+ * @result			true if the entry should be removed from the table
  */
-static gboolean freeList(void *hook_name, void *list, void *user_data)
+static gboolean freeHookListenerList(void *key_p, void *value_p, void *data)
 {
 	HookListenerEntry *entry;
-	GList *hook = list;
+	GList *list = value_p;
 
-	for(; hook != NULL; hook = hook->next) {
-		entry = hook->data;
+	for(; list != NULL; list = list->next) {
+		entry = list->data;
 
 		free(entry);
 	}
 
-	g_list_free((GList *) list);
+	g_list_free((GList *) value_p);
 
 	return TRUE;
 }

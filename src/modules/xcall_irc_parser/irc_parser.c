@@ -156,9 +156,8 @@ static GString *xcall_parseIrcMessage(const char *xcall)
 	GString *retStr = $(GString *, store, writeStoreGString)(ret);
 	$(void, store, freeStore(ret));
 
-	return  retStr;
+	return retStr;
 }
-
 
 /**
  * XCall function for parseIrcUserMask of irc_parser module.

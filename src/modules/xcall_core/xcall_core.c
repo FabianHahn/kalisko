@@ -195,7 +195,7 @@ HOOK_LISTENER(xcall_log)
 	Store *xcs = $(Store *, store, parseStoreString)(ret->str);
 	g_string_free(ret, true);
 
-	Store *error = $(Store *, xcall, getStorePath)(xcs, "xcall/error");
+	Store *error = $(Store *, store, getStorePath)(xcs, "xcall/error");
 
 	if(error->type == STORE_STRING) { // XCall error
 		detachLogListener(listener); // detach the listener

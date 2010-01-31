@@ -52,9 +52,11 @@ static void freeLogListenerEntry(void *listener_p);
 HOOK_LISTENER(xcall_log);
 
 GHashTable *logListeners;
+static bool logExecuting;
 
 MODULE_INIT
 {
+	logExecuting = false;
 	logListeners = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeLogListenerEntry);
 
 	$(bool, xcall, addXCallFunction)("attachLog", &xcall_attachLog);
@@ -146,6 +148,12 @@ static GString *xcall_detachLog(const char *xcall)
 
 HOOK_LISTENER(xcall_log)
 {
+	if(logExecuting) {
+		return; // Prevent infinite loop
+	}
+
+	logExecuting = true;
+
 	LogType type = HOOK_ARG(LogType);
 	char *message = HOOK_ARG(char *);
 	char *listener = custom_data;
@@ -184,10 +192,12 @@ HOOK_LISTENER(xcall_log)
 
 	if(error->type == STORE_STRING) { // XCall error
 		detachLogListener(listener); // detach the listener
-		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string); // trigger error AFTER detaching, so we don't get an infinite error loop :o)
+		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string);
 	}
 
 	$(void, store, freeStore)(xcall);
+
+	logExecuting = false;
 }
 
 /**

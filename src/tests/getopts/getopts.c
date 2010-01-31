@@ -31,9 +31,9 @@
 MODULE_NAME("test_getopts");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the getopts module");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 1));
 
 TEST_CASE(getopts);
 
@@ -59,35 +59,35 @@ TEST_CASE(getopts)
 		NULL
 	};
 
-	setArgv(argv);
-	setArgc(13);
+	$$(void, setArgv)(argv);
+	$$(void, setArgc)(13);
 
 	char *opt;
 	// Short option without argument, should have an empty value (!= NULL)
-	TEST_ASSERT((opt = getOpt("a")) != NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOpt)("a")) != NULL);
 	TEST_ASSERT(*opt == '\0');
 
 	// Short option with argument
-	TEST_ASSERT((opt = getOpt("b")) != NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOpt)("b")) != NULL);
 	TEST_ASSERT(strcmp(opt, "100") == 0);
 
 	// Long option without argument, again expecting an empty value
-	TEST_ASSERT((opt = getOpt("c")) != NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOpt)("c")) != NULL);
 	TEST_ASSERT(*opt == '\0');
 
 	// Long option with empty argument
-	TEST_ASSERT((opt = getOpt("d")) != NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOpt)("d")) != NULL);
 	TEST_ASSERT(*opt == '\0');
 
 	// Long option with argument
-	TEST_ASSERT((opt = getOpt("e")) != NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOpt)("e")) != NULL);
 	TEST_ASSERT(strcmp(opt, "foo") == 0);
 
 	// A few options that should NOT exist
-	TEST_ASSERT(getOpt("f") == NULL);
-	TEST_ASSERT(getOpt("g") == NULL);
-	TEST_ASSERT(getOpt("-") == NULL);
-	TEST_ASSERT(getOpt("==") == NULL);
+	TEST_ASSERT($(char *, getopts, getOpt)("f") == NULL);
+	TEST_ASSERT($(char *, getopts, getOpt)("g") == NULL);
+	TEST_ASSERT($(char *, getopts, getOpt)("-") == NULL);
+	TEST_ASSERT($(char *, getopts, getOpt)("==") == NULL);
 
 	TEST_PASS;
 }

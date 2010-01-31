@@ -229,7 +229,7 @@ static gboolean inputActivate(GtkWidget *widget, gpointer data)
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(widget));
 
 	if(g_strcmp0(tab, "*status") == 0) {
-		$(void, irc, ircSend)(command);
+		$(void, irc, ircSend)("%s", command);
 	} else {
 		$(void, irc, ircSend)("PRIVMSG %s :%s", tab, command);
 		char *nick = $(char *, irc, getNick)();

@@ -55,7 +55,6 @@ API void writeStoreFile(char *filename, Store *store)
 	context.writer = &storeFileWrite;
 	context.level = -1;
 
-	LOG_DEBUG("Writing store to %s", filename);
 	dumpStore(store, &context);
 
 	fclose(context.resource);
@@ -74,7 +73,6 @@ API GString *writeStoreGString(Store *store)
 	context.writer = &storeGStringWrite;
 	context.level = -1;
 
-	LOG_DEBUG("Writing store to string");
 	dumpStore(store, &context);
 
 	return context.resource;

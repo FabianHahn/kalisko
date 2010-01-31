@@ -22,6 +22,7 @@
 #include "dll.h"
 #include "log.h"
 #include "module.h"
+#include "modules/getopts/getopts.h"
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "api.h"
@@ -29,17 +30,26 @@
 MODULE_NAME("profile");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("The profile module allows you to define sets of modules that belong together and load them together");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 MODULE_INIT
 {
 	char *profile;
 
+	// Check for --profile
+	if((profile = $(char *, getopts, getOpt)("profile")) == NULL || *profile == '\0') {
+		// Not found, check for -p
+		if((profile = $(char *, getopts, getOpt)("p")) == NULL || *profile == '\0') {
+			LOG_ERROR("Could not find profile command line option, use '-p [profile]' or '--profile=[profile]'");
+			return false;
+		}
+	}
+
 	Store *profiles = $(Store *, config, getConfigPathValue)("profiles");
 
-	if(profiles == NULL || store->type != STORE_ARRAY) {
+	if(profiles == NULL || profiles->type != STORE_ARRAY) {
 		LOG_ERROR("Failed to load profiles config section");
 		return false;
 	}
@@ -50,13 +60,13 @@ MODULE_INIT
 		return false;
 	}
 
-	if(profileset->content.array != STORE_LIST) {
+	if(profileset->type != STORE_LIST) {
 		LOG_ERROR("Profile config section '%s' is not a list", profile);
 		return false;
 	}
 
 	LOG_INFO("Loading profile '%s'", profile);
-	for(GList *iter = profileset->content.list; iter != NULL; iter = iter->next) {
+	for(GList *iter = profileset->content.list->head; iter != NULL; iter = iter->next) {
 		Store *entry = iter->data;
 
 		if(entry->type != STORE_STRING) {

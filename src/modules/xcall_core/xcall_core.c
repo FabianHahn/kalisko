@@ -37,15 +37,28 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
 
+static GString *xcall_attachLog(const char *xcall);
+static GString *xcall_detachLog(const char *xcall);
 static GString *xcall_requestModule(const char *xcall);
 static GString *xcall_revokeModule(const char *xcall);
+static bool attachLogListener(char *listener);
+static bool detachLogListener(char *listener);
+static void freeLogListenerEntry(void *listener_p);
+
+HOOK_LISTENER(xcall_log);
+
+GHashTable *logListeners;
 
 MODULE_INIT
 {
+	logListeners = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeLogListenerEntry);
+
+	$(bool, xcall, addXCallFunction)("attachLog", &xcall_attachLog);
+	$(bool, xcall, addXCallFunction)("detachLog", &xcall_detachLog);
 	$(bool, xcall, addXCallFunction)("requestModule", &xcall_requestModule);
 	$(bool, xcall, addXCallFunction)("revokeModule", &xcall_revokeModule);
 
@@ -54,8 +67,175 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(bool, xcall, delXCallFunction)("attachLog");
+	$(bool, xcall, delXCallFunction)("detachLog");
 	$(bool, xcall, delXCallFunction)("requestModule");
 	$(bool, xcall, delXCallFunction)("revokeModule");
+
+	g_hash_table_destroy(logListeners);
+}
+
+/**
+ * XCallFunction to attach an XCall function listener to a log hook
+ * XCall parameters:
+ *  * string listener	the xcall function to attach to the hook
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_attachLog(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *listener = $(Store *, store, getStorePath)(xcs, "listener");
+
+	if(listener == NULL || listener->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
+	} else {
+		char *function = listener->content.string;
+		bool attached = attachLogListener(function);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to detach an XCall function listener from the log hook
+ * XCall parameters:
+ *  * string listener	the xcall function to attach to the hook
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_detachLog(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *listener = $(Store *, store, getStorePath)(xcs, "listener");
+
+	if(listener == NULL || listener->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
+	} else {
+		char *function = listener->content.string;
+		bool attached = detachLogListener(function);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+
+HOOK_LISTENER(xcall_log)
+{
+	LogType type = HOOK_ARG(LogType);
+	char *message = HOOK_ARG(char *);
+	char *listener = custom_data;
+
+	Store *xcall = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+	$(bool, store, setStorePath)(xcall, "xcall/function", $(Store *, store, createStoreStringValue)(listener));
+
+	switch(type) {
+		case LOG_TYPE_DEBUG:
+			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("debug"));
+		break;
+		case LOG_TYPE_INFO:
+			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("info"));
+		break;
+		case LOG_TYPE_WARNING:
+			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("warning"));
+		break;
+		case LOG_TYPE_ERROR:
+			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("error"));
+		break;
+	}
+
+	$(bool, store, setStorePath)(xcall, "message", $(Store *, store, createStoreStringValue)(message));
+
+	GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
+	$(void, store, freeStore)(xcall);
+
+	GString *ret = $(GString *, xcall, invokeXCall)(xcallstr->str);
+	g_string_free(xcallstr, true);
+
+	Store *xcs = $(Store *, store, parseStoreString)(ret->str);
+	g_string_free(ret, true);
+
+	Store *error = $(Store *, xcall, getStorePath)(xcs, "xcall/error");
+
+	if(error->type == STORE_STRING) { // XCall error
+		detachLogListener(listener); // detach the listener
+		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string); // trigger error AFTER detaching, so we don't get an infinite error loop :o)
+	}
+
+	$(void, store, freeStore)(xcall);
+}
+
+/**
+ * Attaches an XCall function listener to the log hook
+ * @param listener		the listener to be detached
+ * @result				true if successful
+ */
+static bool attachLogListener(char *listener)
+{
+	if(g_hash_table_lookup(logListeners, listener) != NULL) { // Listener with that name already exists
+		return false;
+	}
+
+	char *identifier = strdup(listener);
+
+	g_hash_table_insert(logListeners, identifier, identifier);
+	return HOOK_ATTACH_EX(log, xcall_log, identifier);
+}
+
+/**
+ * Detaches an attached XCall function listener to the log hook
+ * @param listener		the listener to be detached
+ * @result				true if successful
+ */
+static bool detachLogListener(char *listener)
+{
+	char *identifier;
+
+	if((identifier = g_hash_table_lookup(logListeners, listener)) == NULL) {
+		return false;
+	}
+
+	freeLogListenerEntry(identifier);
+
+	return true;
+}
+
+/**
+ * GDestroyNotify to free an attached XCall function listener to the log hook
+ * @param listener_p		a pointer to the listener to be freed
+ */
+static void freeLogListenerEntry(void *listener_p)
+{
+	char *listener = listener_p;
+
+	HOOK_DETACH_EX(log, xcall_log, listener_p);
+
+	free(listener);
 }
 
 /**

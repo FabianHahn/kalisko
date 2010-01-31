@@ -36,6 +36,10 @@ MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
+#ifndef LOG_DEFAULT_LEVEL
+#define LOG_DEFAULT_LEVEL LOG_TYPE_DEBUG
+#endif
+
 HOOK_LISTENER(log);
 
 MODULE_INIT
@@ -60,19 +64,19 @@ HOOK_LISTENER(log)
 	g_get_current_time(now);
 	char *dateTime = g_time_val_to_iso8601(now);
 
-	switch(type) {
-		case LOG_TYPE_ERROR:
-			fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
-		break;
-		case LOG_TYPE_WARNING:
-			fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
-		break;
-		case LOG_TYPE_INFO:
-			fprintf(stderr, "%s INFO: %s\n", dateTime, message);
-		break;
+	switch(LOG_DEFAULT_LEVEL) {
 		case LOG_TYPE_DEBUG:
-			fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
-		break;
+			if(type == LOG_TYPE_DEBUG)
+				fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
+		case LOG_TYPE_INFO:
+			if(type == LOG_TYPE_INFO)
+				fprintf(stderr, "%s INFO: %s\n", dateTime, message);
+		case LOG_TYPE_WARNING:
+			if(type == LOG_TYPE_WARNING)
+				fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
+		case LOG_TYPE_ERROR:
+			if(type == LOG_TYPE_ERROR)
+				fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
 	}
 
 	free(now);

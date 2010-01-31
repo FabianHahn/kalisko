@@ -33,7 +33,7 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -65,12 +65,23 @@ MODULE_FINALIZE
 /**
  * Evaluates a lua command
  *
- * @param cpmmand		Lua code to evaluate
+ * @param command		Lua code to evaluate
  * @result				true if successful
  */
 API bool evaluateLua(char *command)
 {
 	return luaL_dostring(state, command) == 0;
+}
+
+/**
+ * Evaluates a lua script
+ *
+ * @param filename		filename of the Lua script to evaluate
+ * @result				true if successful
+ */
+API bool evaluateLuaScript(char *filename)
+{
+	return luaL_dofile(state, filename) == 0;
 }
 
 /**

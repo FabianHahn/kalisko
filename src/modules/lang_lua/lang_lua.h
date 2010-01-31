@@ -24,6 +24,7 @@
 #include <glib.h>
 
 API bool evaluateLua(char *command);
+API bool evaluateLuaScript(char *filename);
 API char *popLuaString();
 
 #endif

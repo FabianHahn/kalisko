@@ -23,7 +23,7 @@
 #define IRC_IRC_H
 
 API char *getNick();
-API bool ircSend(char *message, ...);
+API bool ircSend(char *message, ...) G_GNUC_PRINTF(1, 2);
 
 /**
  * The maximal length for a log message.

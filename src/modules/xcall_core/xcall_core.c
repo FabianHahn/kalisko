@@ -37,7 +37,7 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -102,6 +102,10 @@ static GString *xcall_attachLog(const char *xcall)
 		char *function = listener->content.string;
 		bool attached = attachLogListener(function);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
+
+		if(attached) {
+			LOG_INFO("Attached XCall function '%s' to log hook", function);
+		}
 	}
 
 	GString *ret = $(GString *, store, writeStoreGString)(retstore);
@@ -136,6 +140,10 @@ static GString *xcall_detachLog(const char *xcall)
 		char *function = listener->content.string;
 		bool attached = detachLogListener(function);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
+
+		if(attached) {
+			LOG_INFO("Detached XCall function '%s' from log hook", function);
+		}
 	}
 
 	GString *ret = $(GString *, store, writeStoreGString)(retstore);

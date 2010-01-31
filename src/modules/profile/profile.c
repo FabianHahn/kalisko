@@ -26,11 +26,12 @@
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "api.h"
+#include "profile.h"
 
 MODULE_NAME("profile");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("The profile module allows you to define sets of modules that belong together and load them together");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -47,6 +48,22 @@ MODULE_INIT
 		}
 	}
 
+	return loadProfile(profile);
+}
+
+MODULE_FINALIZE
+{
+
+}
+
+/**
+ * Loads a module profile
+ *
+ * @param profile	the name of the profile to load
+ * @result			true if the profile was successfully loaded including all its modules
+ */
+API bool loadProfile(char *profile)
+{
 	Store *profiles = $(Store *, config, getConfigPathValue)("profiles");
 
 	if(profiles == NULL || profiles->type != STORE_ARRAY) {
@@ -83,9 +100,4 @@ MODULE_INIT
 	}
 
 	return true;
-}
-
-MODULE_FINALIZE
-{
-
 }

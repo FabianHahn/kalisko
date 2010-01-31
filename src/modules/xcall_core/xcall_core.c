@@ -18,9 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <stdarg.h>
 #include <glib.h>
-
 #include "dll.h"
 #include "hooks.h"
 #include "log.h"
@@ -203,7 +202,7 @@ HOOK_LISTENER(xcall_log)
 		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string);
 	}
 
-	$(void, store, freeStore)(xcall);
+	$(void, store, freeStore)(xcs);
 
 	logExecuting = false;
 }
@@ -232,15 +231,7 @@ static bool attachLogListener(char *listener)
  */
 static bool detachLogListener(char *listener)
 {
-	char *identifier;
-
-	if((identifier = g_hash_table_lookup(logListeners, listener)) == NULL) {
-		return false;
-	}
-
-	freeLogListenerEntry(identifier);
-
-	return true;
+	return g_hash_table_remove(logListeners, listener);
 }
 
 /**

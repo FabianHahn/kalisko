@@ -147,7 +147,6 @@ API GString *invokeXCall(const char *xcall)
 			break;
 		}
 
-		LOG_DEBUG("Invoking XCall function '%s'", funcname);
 		GString *retstr = function(xcall);
 
 		retstore = $(Store *, store, parseStoreString)(retstr->str);

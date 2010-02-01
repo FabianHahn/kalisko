@@ -73,7 +73,7 @@ MODULE_INIT
 	$(bool, xcall, addXCallFunction)("getModuleVersion", &xcall_getModuleVersion);
 	$(bool, xcall, addXCallFunction)("getModuleBcVersion", &xcall_getModuleBcVersion);
 	$(bool, xcall, addXCallFunction)("getModuleReferenceCount", &xcall_getModuleReferenceCount);
-	$(bool, xcall, addXCallFunction)("getActiveModule", &xcall_getActiveModules);
+	$(bool, xcall, addXCallFunction)("getActiveModules", &xcall_getActiveModules);
 	$(bool, xcall, addXCallFunction)("isModuleLoaded", &xcall_isModuleLoaded);
 	$(bool, xcall, addXCallFunction)("requestModule", &xcall_requestModule);
 	$(bool, xcall, addXCallFunction)("revokeModule", &xcall_revokeModule);

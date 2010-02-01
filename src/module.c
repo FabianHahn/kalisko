@@ -102,6 +102,108 @@ API void freeModules()
 }
 
 /**
+ * Returns the module author of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module author or NULL if the module isn't at least loading
+ */
+API char *getModuleAuthor(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return mod->author;
+}
+
+/**
+ * Returns the module description of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module description or NULL if the module isn't at least loading
+ */
+API char *getModuleDescription(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return mod->description;
+}
+
+/**
+ * Returns the module version of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module version or NULL if the module isn't at least loading
+ */
+API Version *getModuleVersion(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return mod->version;
+}
+
+/**
+ * Returns the module backwards compatible version of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module backwards compatible version or NULL if the module isn't at least loading
+ */
+API Version *getModuleBcVersion(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return mod->bcversion;
+}
+
+/**
+ * Returns the module reference count of a loaded module. A module is automatically unloaded once its reference count reaches zero
+ *
+ * @param name		the name of the module to check
+ * @result			the module reference count or -1 if the module isn't at least loading
+ */
+API int getModuleReferenceCount(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return -1;
+	}
+
+	return mod->rc;
+}
+
+/**
+ * Checks whether a module with a given name is loaded. Note that modules currently loading are reported as not being loaded yet.
+ *
+ * @param name		the name of the module to check
+ * @result			true if the module is loaded
+ */
+API bool isModuleLoaded(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return false;
+	}
+
+	return mod->loaded;
+}
+
+/**
  * Requests a module
  *
  * @param name		the module's name

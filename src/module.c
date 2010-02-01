@@ -187,6 +187,16 @@ API int getModuleReferenceCount(const char *name)
 }
 
 /**
+ * Returns a list of active modules. A module is considered active if it's either already loaded or currently loading
+ *
+ * @result			a list of active modules, must not be modified but freed with g_list_free after use
+ */
+API GList *getActiveModules()
+{
+	return g_hash_table_get_keys(modules);
+}
+
+/**
  * Checks whether a module with a given name is loaded. Note that modules currently loading are reported as not being loaded yet.
  *
  * @param name		the name of the module to check

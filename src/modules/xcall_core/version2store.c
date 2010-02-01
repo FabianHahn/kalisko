@@ -42,7 +42,7 @@ API Store *version2Store(Version *version)
 	$(bool, store, setStorePath)(ret, "revision", $(Store *, store, createStoreIntegerValue)(version->revision));
 
 	GString *string = $$(GString *, dumpVersion)(version);
-	$(bool, store, setStorePath)(ret, "string", $(Store *, store, createStoreIntegerValue)(string->str));
+	$(bool, store, setStorePath)(ret, "string", $(Store *, store, createStoreStringValue)(string->str));
 	g_string_free(string, true);
 
 	return ret;

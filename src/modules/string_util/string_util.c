@@ -31,7 +31,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -42,9 +42,10 @@ MODULE_INIT
 	return true;
 }
 
-/*MODULE_FINALIZE
+MODULE_FINALIZE
 {
-}*/
+
+}
 
 /**
  * Replaces all multiple spaces by a single one within the given string.

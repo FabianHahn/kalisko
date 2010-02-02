@@ -85,7 +85,7 @@ static void parseLuaStore(lua_State *state, Store *store)
 		break;
 		case STORE_LIST:
 			lua_newtable(state);
-			int i = 0;
+			int i = 1;
 			for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next) {
 				lua_pushinteger(state, i++); // create key for Lua table entry
 				parseLuaStore(state, iter->data); // create value for Lua table entry

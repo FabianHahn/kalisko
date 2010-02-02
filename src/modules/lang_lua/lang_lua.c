@@ -29,11 +29,12 @@
 #include "api.h"
 #include "lang_lua.h"
 #include "xcall.h"
+#include "store.h"
 
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -50,6 +51,7 @@ MODULE_INIT
 
 	luaL_openlibs(state);
 	luaInitStateXCall(state);
+	luaInitStateStore(state);
 
 	return true;
 }

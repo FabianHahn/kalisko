@@ -33,19 +33,54 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 5);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 2, 3), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 3, 1), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
+TEST_CASE(store);
 TEST_CASE(xcall_invoke);
 TEST_CASE(xcall_define);
 TEST_CASE(xcall_define_error);
 
 TEST_SUITE_BEGIN(lang_lua)
+	TEST_CASE_ADD(store);
 	TEST_CASE_ADD(xcall_invoke);
 	TEST_CASE_ADD(xcall_define);
 	TEST_CASE_ADD(xcall_define_error);
 TEST_SUITE_END
+
+TEST_CASE(store)
+{
+	char *check;
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("store = parseStore('bird = word; array = { key = value; list = (1 1 2 3 5 7 13 21) }')"));
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return store.bird"));
+	check = $(char *, lang_lua, popLuaString)();
+	TEST_ASSERT(g_strcmp0(check, "word") == 0);
+	free(check);
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return type(store.array)"));
+	check = $(char *, lang_lua, popLuaString)();
+	TEST_ASSERT(g_strcmp0(check, "table") == 0);
+	free(check);
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return type(store.array.list)"));
+	check = $(char *, lang_lua, popLuaString)();
+	TEST_ASSERT(g_strcmp0(check, "table") == 0);
+	free(check);
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return # store.array.list"));
+	check = $(char *, lang_lua, popLuaString)();
+	TEST_ASSERT(g_strcmp0(check, "8") == 0);
+	free(check);
+
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return store.array.list[7]"));
+	check = $(char *, lang_lua, popLuaString)();
+	TEST_ASSERT(g_strcmp0(check, "13") == 0);
+	free(check);
+
+	TEST_PASS;
+}
 
 TEST_CASE(xcall_invoke)
 {

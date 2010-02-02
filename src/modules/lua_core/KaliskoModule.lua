@@ -1,5 +1,12 @@
+KaliskoModule = {}
+
 function KaliskoModule:new(name)
+	if name == nil then
+		return nil
+	end
+	
 	instance = {}
+	self.__index = self
 	setmetatable(instance, self)
 	instance.name = name
 	return instance

@@ -91,3 +91,17 @@ function KaliskoModule:revoke()
 	xcs = parseStore(xcall)
 	return xcs.success > 0
 end
+
+function KaliskoModule:getActiveModules() -- declared as method for convenience, doesn't really need a self
+	xcall = invokeXCall('xcall = { function = getActiveModules }')
+	xcs = parseStore(xcall)
+	
+	ret = {}
+	
+	for i, modname in ipairs(xcs.modules) do
+		table.insert(ret, KaliskoModule:new(modname))
+	end
+	
+	return ret
+end
+	

@@ -38,7 +38,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_javascript module");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 2, 0), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 2, 1), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static char *testJSScript = "\
 function hello(xcall) \
@@ -46,10 +46,10 @@ function hello(xcall) \
 	return \"hello = world, xcall = { function = jsHello }\";\
 }\
 \
-addXCallFunction(\"jsHello\", hello);";
+xcall.addFunction(\"jsHello\", hello);";
 
-static char *callHelloJSScript = "invokeXCall(\"xcall = { function = jsHello }\");";
-static char *removeHelloJSScript = "delXCall(\"jsHello\")";
+static char *callHelloJSScript = "xcall.invoke(\"xcall = { function = jsHello }\");";
+static char *removeHelloJSScript = "xcall.delFunction(\"jsHello\")";
 
 static void tearUp();
 
@@ -71,6 +71,7 @@ static void tearUp()
 
 TEST_CASE(callJSFunction)
 {
+
 	char *call = "xcall = { function = jsHello }";
 
 	GString *retStr = $(GString *, xcall, invokeXCall)(call);

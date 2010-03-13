@@ -49,6 +49,14 @@ typedef struct {
 	JSFunction *function;
 } JSFunctionInfo;
 
+JSClass xcallClass = {
+		"xcall",
+		JSCLASS_GLOBAL_FLAGS,
+		JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+		JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
+		JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 /**
  * The key is the name of a registered JavaScript function and the value
  * is a reference to a JSFunctionInfo.
@@ -71,9 +79,10 @@ API void jsXCallInit()
  */
 API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 {
-	JS_DefineFunction(context, globalObject, "invokeXCall", &js_invokeXCall, 1, 0);
-	JS_DefineFunction(context, globalObject, "addXCallFunction", &js_addXCallFunction, 2, 0);
-	JS_DefineFunction(context, globalObject, "delXCall", &js_delXCallFunction, 1, 0);
+	JSObject *xcallObj = JS_DefineObject(context, globalObject, "xcall", &xcallClass, NULL, 0);
+	JS_DefineFunction(context, xcallObj, "invoke", &js_invokeXCall, 1, 0);
+	JS_DefineFunction(context, xcallObj, "addFunction", &js_addXCallFunction, 2, 0);
+	JS_DefineFunction(context, xcallObj, "delFunction", &js_delXCallFunction, 1, 0);
 }
 
 /**

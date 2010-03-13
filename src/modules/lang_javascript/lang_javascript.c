@@ -118,6 +118,11 @@ MODULE_FINALIZE
 	JS_ShutDown();
 }
 
+/**
+ * Runs the given JavaScript script.
+ *
+ * @param script	The JavaScript script.
+ */
 API bool evaluateJavaScript(char *script)
 {
 	JSScript *compiledScript = JS_CompileScript(envInfo.context, envInfo.globalObject, script, strlen(script), "_inline", 0);
@@ -145,6 +150,11 @@ API bool evaluateJavaScript(char *script)
 	return true;
 }
 
+/**
+ * Runs the given JavaScript script file.
+ *
+ * @param filename	file path to a JavaScript file.
+ */
 API bool evaluateJavaScriptFile(char *filename)
 {
 	JSScript *compiledScript = JS_CompileFile(envInfo.context, envInfo.globalObject, filename);
@@ -172,16 +182,37 @@ API bool evaluateJavaScriptFile(char *filename)
 	return true;
 }
 
+/**
+ * Return the last result returned by JS_ExecuteScript.
+ *
+ * Can be used to get the result after calling evaluateJavaScript or evaluateJavaScriptFile.
+ *
+ * @return The last result returned by JS_ExecuteScript.
+ */
 API jsval getJavaScriptLastResult()
 {
 	return lastReturnValue;
 }
 
+/**
+ * Returns the globally used JavaScript environment (Runtime, Context, Global Object).
+ *
+ * This can be used to interact directly with the JavaScript environment.
+ *
+ * @return The JavaScript environment.
+ */
 API JSEnvInfo getJavaScriptEnvInfo()
 {
 	return envInfo;
 }
 
+/**
+ * Bridge function to put not handled JavaScript errors into the log system.
+ *
+ * @param context
+ * @param message
+ * @param report
+ */
 static void reportError(JSContext *context, const char *message, JSErrorReport *report)
 {
 	LOG_ERROR("JavaScript error in '%s':'%i': %s", report->filename, (unsigned int)report->lineno, message);

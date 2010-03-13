@@ -55,11 +55,20 @@ typedef struct {
  */
 static GHashTable *functions;
 
+/**
+ * Initialize needed variables, structures and so on.
+ */
 API void jsXCallInit()
 {
 	functions = g_hash_table_new(&g_str_hash, &g_str_equal);
 }
 
+/**
+ * Modifies given context and global object to be able to use XCall in JavaScript.
+ *
+ * @param context
+ * @param globalObject
+ */
 API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 {
 	JS_DefineFunction(context, globalObject, "invokeXCall", &js_invokeXCall, 1, 0);
@@ -67,6 +76,16 @@ API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 	JS_DefineFunction(context, globalObject, "delXCall", &js_delXCallFunction, 1, 0);
 }
 
+/**
+ * Native function representing the 'invokeXCall' function in JavaScript.
+ *
+ * @param context
+ * @param object
+ * @param argc
+ * @param argv
+ * @param rval
+ * @return
+ */
 static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
 	// convert the given parameter
@@ -87,6 +106,16 @@ static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, j
 
 }
 
+/**
+ * Native function representing the 'addXCallFunction' in JavaScript.
+ *
+ * @param context
+ * @param object
+ * @param argc
+ * @param argv
+ * @param rval
+ * @return
+ */
 static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
 	// convert the given parameters
@@ -123,6 +152,16 @@ static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN ar
 	return JS_TRUE;
 }
 
+/**
+ * Native function representing the 'delXCallFunction' in JavaScript.
+ *
+ * @param context
+ * @param object
+ * @param argc
+ * @param argv
+ * @param rval
+ * @return
+ */
 static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
 	// convert the given parameters
@@ -146,6 +185,12 @@ static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN ar
 	return JS_TRUE;
 }
 
+/**
+ * Bridge between the XCall invoke an the registered function in the JavaScript world.
+ *
+ * @param xcall
+ * @return
+ */
 static GString *jsInvokeXCallFunction(const char *xcall)
 {
 	Store *store = $(Store *, store, parseStoreString)(xcall);

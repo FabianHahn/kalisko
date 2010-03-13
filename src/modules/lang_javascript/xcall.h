@@ -19,20 +19,10 @@
  */
 
 
-#ifndef LANG_JAVASCRIPT_LANG_JAVASCRIPT_H
-#define LANG_JAVASCRIPT_LANG_JAVASCRIPT_H
+#ifndef LANG_JAVASCRIPT_XCALL_H
+#define LANG_JAVASCRIPT_XCALL_H
 
-#include <js/jsapi.h>
-
-typedef struct {
-	JSContext *context;
-	JSRuntime *runtime;
-	JSObject *globalObject;
-} JSEnvInfo;
-
-API bool evaluateJavaScript(char *script);
-API bool evaluateJavaScriptFile(char *filename);
-API jsval getJavaScriptLastResult();
-API JSEnvInfo getJavaScriptEnvInfo();
+API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject);
+API void jsXCallInit();
 
 #endif

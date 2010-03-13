@@ -21,24 +21,27 @@
 
 #include <glib.h>
 #include <js/jsapi.h>
+#include <js/jsstr.h>
 
 #include "dll.h"
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "modules/lang_javascript/xcall.h"
+#include "modules/xcall/xcall.h"
 
 #include "api.h"
+#include "modules/lang_javascript/lang_javascript.h"
 
 
 MODULE_NAME("lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_DESCRIPTION("This module provides access to the JavaScript scripting language");
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("xcall", 0, 1, 6));
 
 static void reportError(JSContext *context, const char *message, JSErrorReport *report);
-static JSBool js_logError(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 
 static JSClass globalClass = {
 		"global", JSCLASS_GLOBAL_FLAGS,
@@ -47,67 +50,139 @@ static JSClass globalClass = {
 	    JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-static JSRuntime *runtime;
-static JSContext *context;
-static JSObject *globalObject;
+JSEnvInfo envInfo;
+jsval lastReturnValue;
 
+GList *scripts;
 
 MODULE_INIT
 {
-	runtime = JS_NewRuntime(8L * 1024L * 1024L);
-	if(!runtime) {
+	JS_CStringsAreUTF8();
+
+	envInfo.runtime = JS_NewRuntime(8L * 1024L * 1024L); // GC after 8MBytes were used
+	if(!envInfo.runtime) {
 		LOG_ERROR("Could not create JavaScript Runtime.");
+		JS_ShutDown();
+
 		return false;
 	}
 
-	context = JS_NewContext(runtime, 8192);
-	if(!context) {
+	envInfo.context = JS_NewContext(envInfo.runtime, 8192);
+	if(!envInfo.context) {
 		LOG_ERROR("Could not create JavaScript Context.");
-		JS_DestroyRuntime(runtime);
+		JS_DestroyRuntime(envInfo.runtime);
+		JS_ShutDown();
 
 		return false;
 	}
 
-	JS_SetOptions(context, JSOPTION_VAROBJFIX);
-	JS_SetVersion(context, JSVERSION_DEFAULT);
-	JS_SetErrorReporter(context, reportError);
+	JS_SetOptions(envInfo.context, JSOPTION_VAROBJFIX);
+	JS_SetVersion(envInfo.context, JSVERSION_DEFAULT);
+	JS_SetErrorReporter(envInfo.context, reportError);
 
-	globalObject = JS_NewObject(context, &globalClass, NULL, NULL);
-	if(!globalObject) {
+	envInfo.globalObject = JS_NewObject(envInfo.context, &globalClass, NULL, NULL);
+	if(!envInfo.globalObject) {
 		LOG_ERROR("Could not create global JavaScript object");
-		JS_DestroyContext(context);
-		JS_DestroyRuntime(runtime);
+		JS_DestroyContext(envInfo.context);
+		JS_DestroyRuntime(envInfo.runtime);
+		JS_ShutDown();
 
 		return false;
 	}
 
+	if(!JS_InitStandardClasses(envInfo.context, envInfo.globalObject)) {
+		LOG_ERROR("Could not initialize standard classes for global JavaScript object.");
+		JS_DestroyContext(envInfo.context);
+		JS_DestroyRuntime(envInfo.runtime);
+		JS_ShutDown();
 
-	JS_DefineFunction(context, globalObject, "logError", js_logError, 1, 0);
-	jsval value;
-	char *testScript = "logError('Ich bin ein JavaScript, das in Kalisko ausgeführt wurde!!!');";
-	JS_EvaluateScript(context, globalObject, testScript, strlen(testScript), "inline", 0, &value);
+		return false;
+	}
+
+	jsXCallInit();
+	jsAddXCallFunctions(envInfo.context, envInfo.globalObject);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	JS_DestroyContext(context);
-	JS_DestroyRuntime(runtime);
+	for(GList *iter = scripts; iter != NULL; iter = iter->next) {
+		JS_RemoveRoot(envInfo.context, iter->data);
+	}
+	g_list_free(scripts);
+	scripts = NULL;
+
+	JS_DestroyContext(envInfo.context);
+	JS_DestroyRuntime(envInfo.runtime);
 	JS_ShutDown();
+}
+
+API bool evaluateJavaScript(char *script)
+{
+	JSScript *compiledScript = JS_CompileScript(envInfo.context, envInfo.globalObject, script, strlen(script), "_inline", 0);
+	if(!compiledScript) {
+		LOG_WARNING("Could not compile given JavaScript script.");
+		return false;
+	}
+
+	JSObject *scriptObj = JS_NewScriptObject(envInfo.context, compiledScript);
+	if(!scriptObj) {
+		LOG_WARNING("Could not create script object for given JavaScript script.");
+		JS_DestroyScript(envInfo.context, compiledScript);
+
+		return false;
+	}
+
+	JS_AddRoot(envInfo.context, &scriptObj);
+
+	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
+		LOG_WARNING("Could not execute given JavaScript script.");
+		return false;
+	}
+
+	scripts = g_list_append(scripts, compiledScript);
+	return true;
+}
+
+API bool evaluateJavaScriptFile(char *filename)
+{
+	JSScript *compiledScript = JS_CompileFile(envInfo.context, envInfo.globalObject, filename);
+	if(!compiledScript) {
+		LOG_WARNING("Could not compile given JavaScript file: %s.", filename);
+		return false;
+	}
+
+	JSObject *scriptObj = JS_NewScriptObject(envInfo.context, compiledScript);
+	if(!scriptObj) {
+		LOG_WARNING("Could not create script object for given JavaScript script.");
+		JS_DestroyScript(envInfo.context, compiledScript);
+
+		return false;
+	}
+
+	JS_AddRoot(envInfo.context, &scriptObj);
+
+	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
+		LOG_WARNING("Could not execute given JavaScript script.");
+		return false;
+	}
+
+	scripts = g_list_append(scripts, compiledScript);
+	return true;
+}
+
+API jsval getJavaScriptLastResult()
+{
+	return lastReturnValue;
+}
+
+API JSEnvInfo getJavaScriptEnvInfo()
+{
+	return envInfo;
 }
 
 static void reportError(JSContext *context, const char *message, JSErrorReport *report)
 {
-	LOG_ERROR("Following error occured in JavaScript Engine: %s", message);
-}
-
-static JSBool js_logError(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval)
-{
-	const char *str;
-	JS_ConvertArguments(context, argc, argv, "s", &str);
-
-	LOG_ERROR("----------> %s", str);
-
-	return JS_TRUE;
+	LOG_ERROR("JavaScript error in '%s':'%i': %s", report->filename, (unsigned int)report->lineno, message);
 }

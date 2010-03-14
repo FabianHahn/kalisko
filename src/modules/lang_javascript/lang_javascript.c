@@ -32,6 +32,7 @@
 
 #include "api.h"
 #include "modules/lang_javascript/lang_javascript.h"
+#include "modules/lang_javascript/store.h"
 
 
 MODULE_NAME("lang_javascript");
@@ -103,6 +104,7 @@ MODULE_INIT
 
 	jsXCallInit();
 	jsAddXCallFunctions(envInfo.context, envInfo.globalObject);
+	jsAddStoreFunctions(envInfo.context, envInfo.globalObject);
 
 	return true;
 }

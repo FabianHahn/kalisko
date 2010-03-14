@@ -30,6 +30,7 @@
 #include "modules/store/path.h"
 #include "modules/xcall/xcall.h"
 #include "modules/lang_javascript/lang_javascript.h"
+#include "modules/lang_javascript/store.h"
 
 #include "api.h"
 
@@ -41,7 +42,7 @@ MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 2, 1), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static char *testJSScript = "\
-function hello(xcall) \
+function hello(xcall)\
 {\
 	return \"hello = world, xcall = { function = jsHello }\";\
 }\
@@ -71,7 +72,6 @@ static void tearUp()
 
 TEST_CASE(callJSFunction)
 {
-
 	char *call = "xcall = { function = jsHello }";
 
 	GString *retStr = $(GString *, xcall, invokeXCall)(call);

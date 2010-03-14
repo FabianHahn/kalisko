@@ -46,7 +46,7 @@ static GString *jsInvokeXCallFunction(const char *xcall);
 typedef struct {
 	JSContext *context;
 	JSObject *object;
-	JSFunction *function;
+	jsval *function;
 } JSFunctionInfo;
 
 JSClass xcallClass = {
@@ -86,7 +86,7 @@ API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 }
 
 /**
- * Native function representing the 'invokeXCall' function in JavaScript.
+ * Native function representing the 'xcall.invokeXCall' function in JavaScript.
  *
  * @param context
  * @param object
@@ -116,7 +116,7 @@ static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, j
 }
 
 /**
- * Native function representing the 'addXCallFunction' in JavaScript.
+ * Native function representing the 'xcall.addXCallFunction' in JavaScript.
  *
  * @param context
  * @param object
@@ -140,13 +140,13 @@ static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN ar
 		return JS_FALSE;
 	}
 
-	JSFunction *function = JS_ValueToFunction(context, argv[1]);
-
 	// add the function to the known JavaScript functions
 	JSFunctionInfo *info = ALLOCATE_OBJECT(JSFunctionInfo);
 	info->context = context;
 	info->object = object;
-	info->function = function;
+	info->function = JS_malloc(context, sizeof(jsval));
+
+	JS_ConvertValue(context, argv[1], JSTYPE_FUNCTION, info->function);
 
 	g_hash_table_insert(functions, strdup(functionName), info);
 
@@ -158,11 +158,13 @@ static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN ar
 		return JS_FALSE;
 	}
 
+	LOG_ERROR("Added JavaScript function as XCall function: %s", functionName);
+
 	return JS_TRUE;
 }
 
 /**
- * Native function representing the 'delXCallFunction' in JavaScript.
+ * Native function representing the 'xcall.delXCallFunction' in JavaScript.
  *
  * @param context
  * @param object
@@ -191,6 +193,7 @@ static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN ar
 		return JS_FALSE;
 	}
 
+	LOG_ERROR("Removed JavaScript function as XCall function: %s", functionName);
 	return JS_TRUE;
 }
 
@@ -208,13 +211,27 @@ static GString *jsInvokeXCallFunction(const char *xcall)
 	assert(functionName->type == STORE_STRING);
 
 	JSFunctionInfo *function = g_hash_table_lookup(functions, functionName->content.string);
+	if(!function) {
+		GString *errorStr = g_string_new("");
+		g_string_append_printf(errorStr, "Could not find JavaScript function '%s'.", functionName->content.string);
+
+		$(bool, store, setStorePath)(store, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(store, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
+
+		g_string_free(errorStr, true);
+
+		GString *storeStr =  $(GString *, store, writeStoreGString)(store);
+		$(void, store, freeStore)(store);
+
+		return storeStr;
+	}
 
 	jsval retValue;
 	jsval argv[1];
 
 	argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(function->context, xcall));
 
-	if(!JS_CallFunction(function->context, function->object, function->function, 1, argv, &retValue)) {
+	if(!JS_CallFunctionValue(function->context, function->object, *function->function, 1, argv, &retValue)) {
 		GString *errorStr = g_string_new("");
 		g_string_append_printf(errorStr, "Failed calling JavaScript function '%s'.", functionName->content.string);
 

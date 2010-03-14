@@ -52,6 +52,10 @@ static GString *xcall_getActiveModules(const char *xcall);
 static GString *xcall_isModuleLoaded(const char *xcall);
 static GString *xcall_requestModule(const char *xcall);
 static GString *xcall_revokeModule(const char *xcall);
+static GString *xcall_logError(const char *xcall);
+static GString *xcall_logWarning(const char *xcall);
+static GString *xcall_logInfo(const char *xcall);
+static GString *xcall_logDebug(const char *xcall);
 static bool attachLogListener(char *listener);
 static bool detachLogListener(char *listener);
 static void freeLogListenerEntry(void *listener_p);
@@ -77,6 +81,10 @@ MODULE_INIT
 	$(bool, xcall, addXCallFunction)("isModuleLoaded", &xcall_isModuleLoaded);
 	$(bool, xcall, addXCallFunction)("requestModule", &xcall_requestModule);
 	$(bool, xcall, addXCallFunction)("revokeModule", &xcall_revokeModule);
+	$(bool, xcall, addXCallFunction)("logError", &xcall_logError);
+	$(bool, xcall, addXCallFunction)("logWarning", &xcall_logWarning);
+	$(bool, xcall, addXCallFunction)("logInfo", &xcall_logInfo);
+	$(bool, xcall, addXCallFunction)("logDebug", &xcall_logDebug);
 
 	return true;
 }
@@ -94,6 +102,10 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("isModuleLoaded");
 	$(bool, xcall, delXCallFunction)("requestModule");
 	$(bool, xcall, delXCallFunction)("revokeModule");
+	$(bool, xcall, delXCallFunction)("logError");
+	$(bool, xcall, delXCallFunction)("logWarning");
+	$(bool, xcall, delXCallFunction)("logInfo");
+	$(bool, xcall, delXCallFunction)("logDebug");
 
 	g_hash_table_destroy(logListeners);
 }
@@ -581,6 +593,138 @@ static GString *xcall_revokeModule(const char *xcall)
 		char *modname = module->content.string;
 		bool loaded = $$(bool, revokeModule)(modname);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to log an error message
+ * XCall parameters:
+ *  * string error		the text to log
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_logError(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *text = $(Store *, store, getStorePath)(xcs, "error");
+
+	if(text == NULL || text->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'error'"));
+	} else {
+		LOG_ERROR(text->content.string, NULL);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to log a warning message
+ * XCall parameters:
+ *  * string warning		the text to log
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_logWarning(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *text = $(Store *, store, getStorePath)(xcs, "warning");
+
+	if(text == NULL || text->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'warning'"));
+	} else {
+		LOG_WARNING(text->content.string, NULL);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to log an info message
+ * XCall parameters:
+ *  * string info		the text to log
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_logInfo(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *text = $(Store *, store, getStorePath)(xcs, "info");
+
+	if(text == NULL || text->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'info'"));
+	} else {
+		LOG_INFO(text->content.string, NULL);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to log a debug message
+ * XCall parameters:
+ *  * string debug		the text to log
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_logDebug(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *text = $(Store *, store, getStorePath)(xcs, "debug");
+
+	if(text == NULL || text->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'debug'"));
+	} else {
+		LOG_DEBUG(text->content.string, NULL);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
 	GString *ret = $(GString *, store, writeStoreGString)(retstore);

@@ -25,8 +25,10 @@
 #include <glib.h>
 
 // support java-like boolean syntax
+#ifndef __cplusplus
 typedef gboolean bool;
 #define true TRUE
 #define false FALSE
+#endif
 
 #endif

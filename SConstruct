@@ -33,7 +33,9 @@ for key, value in ARGLIST:
 	elif key == 'define':
 		keyvalue = value.split(':', 1)
 		if len(keyvalue) == 2:
-			cppdefines = cppdefines + [(keyvalue[0], keyvalue[1])]		
+			cppdefines = cppdefines + [(keyvalue[0], keyvalue[1])]
+		elif len(keyvalue) == 1:
+			cppdefines = cppdefines + [keyvalue[0]]
 
 # Config section
 ccflags = ['-std=gnu99', '-Wall', '-pipe']

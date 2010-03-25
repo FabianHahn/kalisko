@@ -129,10 +129,7 @@ static jsval parseJSStoreValue(Store *store, JSContext *context)
 		}
 		case STORE_STRING:
 		{
-			jsval jstr = STRING_TO_JSVAL(JS_NewStringCopyZ(context, store->content.string));
-			JS_AddRoot(context, &jstr);
-
-			return jstr;
+			return STRING_TO_JSVAL(JS_NewStringCopyZ(context, store->content.string));
 		}
 		case STORE_ARRAY:
 		{

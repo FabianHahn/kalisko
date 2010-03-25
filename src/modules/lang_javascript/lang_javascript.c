@@ -77,13 +77,13 @@ MODULE_INIT
 		return false;
 	}
 
+	JS_SetOptions(envInfo.context, JSOPTION_VAROBJFIX);
+	JS_SetVersion(envInfo.context, JSVERSION_LATEST);
+	JS_SetErrorReporter(envInfo.context, reportError);
+
 #ifdef JS_GC_ZEAL
 	JS_SetGCZeal(envInfo.context, 2);
 #endif
-
-	JS_SetOptions(envInfo.context, JSOPTION_VAROBJFIX);
-	JS_SetVersion(envInfo.context, JSVERSION_DEFAULT);
-	JS_SetErrorReporter(envInfo.context, reportError);
 
 	envInfo.globalObject = JS_NewObject(envInfo.context, &globalClass, NULL, NULL);
 	if(!envInfo.globalObject) {
@@ -94,8 +94,6 @@ MODULE_INIT
 
 		return false;
 	}
-
-	JS_SetGlobalObject(envInfo.context, envInfo.globalObject);
 
 	if(!JS_InitStandardClasses(envInfo.context, envInfo.globalObject)) {
 		LOG_ERROR("Could not initialize standard classes for global JavaScript object.");
@@ -154,7 +152,7 @@ API bool evaluateJavaScript(char *script)
 		return false;
 	}
 
-	scripts = g_list_append(scripts, compiledScript);
+	scripts = g_list_append(scripts, &scriptObj);
 	return true;
 }
 
@@ -186,7 +184,7 @@ API bool evaluateJavaScriptFile(char *filename)
 		return false;
 	}
 
-	scripts = g_list_append(scripts, compiledScript);
+	scripts = g_list_append(scripts, &scriptObj);
 	return true;
 }
 

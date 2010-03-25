@@ -17,6 +17,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.ParseConfig('pkg-config --cflags --libs mozilla-js')
+module.ParseConfig('js-config --libs --cflags')
 
 module.SharedLibrary('../kalisko_lang_javascript', Glob('*.c'))

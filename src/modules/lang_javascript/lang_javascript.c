@@ -20,6 +20,7 @@
 
 
 #include <glib.h>
+#include <assert.h>
 #include <jsapi.h>
 
 #include "dll.h"
@@ -146,7 +147,7 @@ API bool evaluateJavaScript(char *script)
 		return false;
 	}
 
-	JS_AddRoot(envInfo.context, &scriptObj);
+	assert(JS_AddNamedRoot(envInfo.context, &scriptObj, "Kalisko JavaScript script"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
 		LOG_WARNING("Could not execute given JavaScript script.");
@@ -172,13 +173,13 @@ API bool evaluateJavaScriptFile(char *filename)
 
 	JSObject *scriptObj = JS_NewScriptObject(envInfo.context, compiledScript);
 	if(!scriptObj) {
-		LOG_WARNING("Could not create script object for given JavaScript script.");
+		LOG_WARNING("Could not create script object for given JavaScript file: %s", filename);
 		JS_DestroyScript(envInfo.context, compiledScript);
 
 		return false;
 	}
 
-	JS_AddRoot(envInfo.context, &scriptObj);
+	assert(JS_AddNamedRoot(envInfo.context, &scriptObj, "Kalisko JavaScript file"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
 		LOG_WARNING("Could not execute given JavaScript script.");

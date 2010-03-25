@@ -76,6 +76,10 @@ MODULE_INIT
 		return false;
 	}
 
+#ifdef JS_GC_ZEAL
+	JS_SetGCZeal(envInfo.context, 2);
+#endif
+
 	JS_SetOptions(envInfo.context, JSOPTION_VAROBJFIX);
 	JS_SetVersion(envInfo.context, JSVERSION_DEFAULT);
 	JS_SetErrorReporter(envInfo.context, reportError);

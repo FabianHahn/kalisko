@@ -20,8 +20,7 @@
 
 #include <glib.h>
 #include <string.h>
-#include <js/jsapi.h>
-#include <js/jsstr.h>
+#include <jsapi.h>
 
 #include "dll.h"
 #include "test.h"

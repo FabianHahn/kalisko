@@ -22,7 +22,7 @@
 #ifndef LANG_JAVASCRIPT_LANG_JAVASCRIPT_H
 #define LANG_JAVASCRIPT_LANG_JAVASCRIPT_H
 
-#include <js/jsapi.h>
+#include <jsapi.h>
 
 typedef struct {
 	JSContext *context;

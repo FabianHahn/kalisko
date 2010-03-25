@@ -20,8 +20,7 @@
 
 
 #include <glib.h>
-#include <js/jsapi.h>
-#include <js/jsarray.h>
+#include <jsapi.h>
 
 #include "dll.h"
 #include "hooks.h"

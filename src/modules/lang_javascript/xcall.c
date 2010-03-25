@@ -21,7 +21,7 @@
 
 #include <glib.h>
 #include <assert.h>
-#include <js/jsapi.h>
+#include <jsapi.h>
 
 #include "dll.h"
 #include "hooks.h"

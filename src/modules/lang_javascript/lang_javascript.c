@@ -38,7 +38,7 @@
 MODULE_NAME("lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the JavaScript scripting language");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("xcall", 0, 1, 6));
 
@@ -113,8 +113,9 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	printf("\n-FREE-\n");
 	for(GList *iter = scripts; iter != NULL; iter = iter->next) {
-		JS_RemoveRoot(envInfo.context, iter->data);
+		JS_RemoveRoot(envInfo.context, &(iter->data));
 	}
 	g_list_free(scripts);
 	scripts = NULL;
@@ -131,13 +132,15 @@ MODULE_FINALIZE
  */
 API bool evaluateJavaScript(char *script)
 {
+	GList *scriptObj = g_list_alloc();
+
 	JSScript *compiledScript = JS_CompileScript(envInfo.context, envInfo.globalObject, script, strlen(script), "_inline", 0);
 	if(!compiledScript) {
 		LOG_WARNING("Could not compile given JavaScript script.");
 		return false;
 	}
 
-	JSObject *scriptObj = JS_NewScriptObject(envInfo.context, compiledScript);
+	scriptObj->data = JS_NewScriptObject(envInfo.context, compiledScript);
 	if(!scriptObj) {
 		LOG_WARNING("Could not create script object for given JavaScript script.");
 		JS_DestroyScript(envInfo.context, compiledScript);
@@ -145,14 +148,15 @@ API bool evaluateJavaScript(char *script)
 		return false;
 	}
 
-	assert(JS_AddNamedRoot(envInfo.context, &scriptObj, "Kalisko JavaScript script"));
+	assert(JS_AddNamedRoot(envInfo.context, &(scriptObj->data), "Kalisko JavaScript script"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
 		LOG_WARNING("Could not execute given JavaScript script.");
 		return false;
 	}
 
-	scripts = g_list_append(scripts, &scriptObj);
+	scripts = g_list_concat(scripts, scriptObj);
+
 	return true;
 }
 
@@ -163,13 +167,15 @@ API bool evaluateJavaScript(char *script)
  */
 API bool evaluateJavaScriptFile(char *filename)
 {
+	GList *scriptObj = g_list_alloc();
+
 	JSScript *compiledScript = JS_CompileFile(envInfo.context, envInfo.globalObject, filename);
 	if(!compiledScript) {
 		LOG_WARNING("Could not compile given JavaScript file: %s.", filename);
 		return false;
 	}
 
-	JSObject *scriptObj = JS_NewScriptObject(envInfo.context, compiledScript);
+	scriptObj->data = JS_NewScriptObject(envInfo.context, compiledScript);
 	if(!scriptObj) {
 		LOG_WARNING("Could not create script object for given JavaScript file: %s", filename);
 		JS_DestroyScript(envInfo.context, compiledScript);
@@ -177,14 +183,15 @@ API bool evaluateJavaScriptFile(char *filename)
 		return false;
 	}
 
-	assert(JS_AddNamedRoot(envInfo.context, &scriptObj, "Kalisko JavaScript file"));
+	assert(JS_AddNamedRoot(envInfo.context, &(scriptObj->data), "Kalisko JavaScript file"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
 		LOG_WARNING("Could not execute given JavaScript script.");
 		return false;
 	}
 
-	scripts = g_list_append(scripts, &scriptObj);
+	scripts = g_list_concat(scripts, scriptObj);
+
 	return true;
 }
 

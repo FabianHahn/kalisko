@@ -90,7 +90,7 @@ TEST_CASE(callJSFunction)
 
 TEST_CASE(jsCallsXCall)
 {
-	JSEnvInfo envInfo = getJavaScriptEnvInfo();
+	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
 	char *retStr;
 
@@ -107,7 +107,7 @@ TEST_CASE(jsCallsXCall)
 
 TEST_CASE(delXCall)
 {
-	JSEnvInfo envInfo = getJavaScriptEnvInfo();
+	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
 	char *retStr;
 

@@ -33,9 +33,9 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 3, 1), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 2, 1);
+MODULE_BCVERSION(0, 2, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 4, 0), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(store);
 TEST_CASE(xcall_invoke);
@@ -105,9 +105,7 @@ TEST_CASE(xcall_define)
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("function f(x) return 'bird = word' end"));
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("addXCallFunction('luatest', f)"));
 
-	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = luatest }");
-
-	Store *retstore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retstore = $(Store *, xcall, invokeXCallByString)("xcall = { function = luatest }");
 
 	Store *bird;
 	TEST_ASSERT((bird = $(Store *, store, getStorePath)(retstore, "bird")) != NULL);
@@ -115,7 +113,6 @@ TEST_CASE(xcall_define)
 	TEST_ASSERT(g_strcmp0(bird->content.string, "word") == 0);
 
 	$(void, store, freeStore)(retstore);
-	g_string_free(ret, true);
 
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("delXCallFunction('luatest')"));
 
@@ -128,16 +125,13 @@ TEST_CASE(xcall_define_error)
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("function f(x) return g end"));
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("addXCallFunction('luatest', f)"));
 
-	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = luatest }");
-
-	Store *retstore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retstore = $(Store *, xcall, invokeXCallByString)("xcall = { function = luatest }");
 
 	Store *error;
 	TEST_ASSERT((error = $(Store *, store, getStorePath)(retstore, "xcall/error")) != NULL);
 	TEST_ASSERT(error->type == STORE_STRING);
 
 	$(void, store, freeStore)(retstore);
-	g_string_free(ret, true);
 
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("delXCallFunction('luatest')"));
 

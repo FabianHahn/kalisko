@@ -113,7 +113,6 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	printf("\n-FREE-\n");
 	for(GList *iter = scripts; iter != NULL; iter = iter->next) {
 		JS_RemoveRoot(envInfo.context, &(iter->data));
 	}

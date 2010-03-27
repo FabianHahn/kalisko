@@ -32,7 +32,7 @@
 MODULE_NAME("php_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical PHP console using GTK+");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_php", 0, 1, 2));
 
@@ -162,7 +162,7 @@ static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(input));
 	appendMessage(command, MESSAGE_IN);
-	evaluatePhp(command);
+	$(PhpEvalRet, lang_php, evaluatePhp)(command);
 	char *delimiter = "\n";
 	char *str = buffer->str;
 	g_string_free(buffer, false);

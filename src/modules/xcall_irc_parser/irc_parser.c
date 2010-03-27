@@ -34,15 +34,15 @@
 
 #include "api.h"
 
-static GString *xcall_parseIrcMessage(const char *xcall);
-static GString *xcall_parseIrcUserMask(const char *xcall);
+static Store *xcall_parseIrcMessage(Store *xcall);
+static Store *xcall_parseIrcUserMask(Store *xcall);
 
 MODULE_NAME("xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall Module for irc_parser");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 MODULE_INIT
 {
@@ -88,40 +88,29 @@ MODULE_FINALIZE
  * @see IrcMessage
  * @see parseIrcMessage
  *
- * @param xcall		the xcall in serialized store form
- * @return			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_parseIrcMessage(const char *xcall)
+static Store *xcall_parseIrcMessage(Store *xcall)
 {
-	Store *call = $(Store *, store, parseStoreString)(xcall);
-	Store *message = $(Store *, store, getStorePath)(call, "message");
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
 	Store *ret = $(Store *, store, createStore)();
 
 	if(message == NULL || message->type != STORE_STRING) {
-		$(void, store, freeStore(call));
-
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 
-		GString *retStr = $(GString *, store, writeStoreGString)(ret);
-		$(void, store, freeStore(ret));
-
-		return retStr;
+		return ret;
 	}
 
 	IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message->content.string);
 	if(ircMessage == NULL) {
-		$(void, store, freeStore(call));
-
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(ret, "error", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(ret, "error/id", $(Store *, store, createStoreStringValue)("irc_parser.irc_message.parse_not_possible"));
 		$(bool, store, setStorePath)(ret, "error/message", $(Store *, store, createStoreStringValue)("Given IRC message cannot be parsed."));
 
-		GString *retStr = $(GString *, store, writeStoreGString)(ret);
-		$(void, store, freeStore(ret));
-
-		return retStr;
+		return ret;
 	}
 
 	$(bool, store, setStorePath)(ret, "ircMessage", $(Store *, store, createStoreArrayValue)(NULL));
@@ -153,10 +142,7 @@ static GString *xcall_parseIrcMessage(const char *xcall)
 
 	$(void, irc_parser, freeIrcMessage)(ircMessage);
 
-	GString *retStr = $(GString *, store, writeStoreGString)(ret);
-	$(void, store, freeStore(ret));
-
-	return retStr;
+	return ret;
 }
 
 /**
@@ -181,40 +167,29 @@ static GString *xcall_parseIrcMessage(const char *xcall)
  * @see IrcUserMask
  * @see parseIrcUserMask
  *
- * @param xcall		the xcall in serialized store form
- * @return			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_parseIrcUserMask(const char *xcall)
+static Store *xcall_parseIrcUserMask(Store *xcall)
 {
-	Store *call = $(Store *, store, parseStoreString)(xcall);
-	Store *prefix = $(Store *, store, getStorePath)(call, "prefix");
+	Store *prefix = $(Store *, store, getStorePath)(xcall, "prefix");
 	Store *ret = $(Store *, store, createStore)();
 
 	if(prefix == NULL || prefix->type != STORE_STRING) {
-		$(void, store, freeStore)(call);
-
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'prefix'"));
 
-		GString *retStr = $(GString *, store, writeStoreGString)(ret);
-		$(void, store, freeStore(ret));
-
-		return retStr;
+		return ret;
 	}
 
 	IrcUserMask *userMask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(prefix->content.string);
 	if(userMask == NULL) {
-		$(void, store, freeStore)(call);
-
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(ret, "error", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(ret, "error/id", $(Store *, store, createStoreStringValue)("irc_parser.irc_user_mask.parse_not_possible"));
 		$(bool, store, setStorePath)(ret, "error/message", $(Store *, store, createStoreStringValue)("Given IRC user mask cannot be parsed."));
 
-		GString *retStr = $(GString *, store, writeStoreGString)(ret);
-		$(void, store, freeStore(ret));
-
-		return retStr;
+		return ret;
 	}
 
 	$(bool, store, setStorePath)(ret, "ircUserMask", $(Store *, store, createStoreArrayValue)(NULL));
@@ -233,8 +208,5 @@ static GString *xcall_parseIrcUserMask(const char *xcall)
 
 	$(void, irc_parser, freeIrcUserMask)(userMask);
 
-	GString *retStr = $(GString *, store, writeStoreGString)(ret);
-	$(void, store, freeStore(ret));
-
-	return retStr;
+	return ret;
 }

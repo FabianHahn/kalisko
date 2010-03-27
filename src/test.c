@@ -70,7 +70,9 @@ int main(int argc, char **argv)
 		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
 
-			requestModule(modname);
+			if(!requestModule(modname)) {
+				reportTestResult(modname, "load", 0, "Failed to load module");
+			}
 
 			free(modname);
 		}

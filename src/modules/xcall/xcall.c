@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -114,9 +114,9 @@ API Store *invokeXCall(Store *xcall)
 			break;
 		}
 
-		meta = $(Store *, store, cloneStore)(meta); // clone meta since we're going to remove it
-		$(bool, store, deleteStorePath)(xcall, "xcall"); // remove meta data in order to reuse the rest
-		$(bool, store, setStorePath)(metaret, "xcall/params", xcall);
+		Store *params = $(Store *, store, cloneStore)(xcall);
+		$(bool, store, deleteStorePath)(params, "xcall"); // remove meta data from params in order to reuse the rest
+		$(bool, store, setStorePath)(metaret, "xcall/params", params);
 
 		Store *func;
 
@@ -125,7 +125,6 @@ API Store *invokeXCall(Store *xcall)
 			LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
 			g_string_free(xcallstr, true);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
-			$(void, store, freeStore)(meta); // we don't need meta anymore
 			break;
 		}
 
@@ -142,7 +141,6 @@ API Store *invokeXCall(Store *xcall)
 			g_string_append_printf(err, "Requested XCall function '%s' not found", funcname);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 			g_string_free(err, true);
-			$(void, store, freeStore)(meta); // we don't need meta anymore
 			break;
 		}
 
@@ -154,13 +152,10 @@ API Store *invokeXCall(Store *xcall)
 			g_string_append_printf(err, "Requested XCall function '%s' returned invalid store", funcname);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 			g_string_free(err, true);
-			$(void, store, freeStore)(meta); // we don't need meta anymore
 			break;
 		}
 
 		$(bool, store, mergeStore)(retstore, metaret); // merge metadata into returned store
-
-		$(void, store, freeStore)(meta); // we don't need meta anymore
 		$(void, store, freeStore)(metaret); // since we won't use metaret anymore, we can safely delete it
 	} while(false);
 
@@ -186,6 +181,7 @@ API Store *invokeXCallByString(const char *xcallstr)
 		ret = $(Store *, store, createStore)();
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Failed to parse XCall store string: %s", xcallstr);
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
 	} else {

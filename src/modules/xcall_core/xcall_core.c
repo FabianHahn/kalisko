@@ -605,7 +605,7 @@ static GString *xcall_revokeModule(const char *xcall)
 /**
  * XCallFunction to log an error message
  * XCall parameters:
- *  * string error		the text to log
+ *  * string text		the text to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -618,7 +618,7 @@ static GString *xcall_logError(const char *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "error");
+	Store *text = $(Store *, store, getStorePath)(xcs, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -638,7 +638,7 @@ static GString *xcall_logError(const char *xcall)
 /**
  * XCallFunction to log a warning message
  * XCall parameters:
- *  * string warning		the text to log
+ *  * string text		the text to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -651,7 +651,7 @@ static GString *xcall_logWarning(const char *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "warning");
+	Store *text = $(Store *, store, getStorePath)(xcs, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -671,7 +671,7 @@ static GString *xcall_logWarning(const char *xcall)
 /**
  * XCallFunction to log an info message
  * XCall parameters:
- *  * string info		the text to log
+ *  * string text		the text to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -684,7 +684,7 @@ static GString *xcall_logInfo(const char *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "info");
+	Store *text = $(Store *, store, getStorePath)(xcs, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -704,7 +704,7 @@ static GString *xcall_logInfo(const char *xcall)
 /**
  * XCallFunction to log a debug message
  * XCall parameters:
- *  * string debug		the text to log
+ *  * string text		the text to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -717,7 +717,7 @@ static GString *xcall_logDebug(const char *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "debug");
+	Store *text = $(Store *, store, getStorePath)(xcs, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));

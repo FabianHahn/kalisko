@@ -27,11 +27,11 @@
 
 #include "api.h"
 
-MODULE_NAME("string_util_tests");
+MODULE_NAME("test_string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the string_util module");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
+MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
 TEST_CASE(stripspaces);

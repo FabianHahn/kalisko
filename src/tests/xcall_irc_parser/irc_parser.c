@@ -33,9 +33,9 @@
 MODULE_NAME("test_xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_irc_parser module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 1, 1));
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 2, 0));
 
 TEST_CASE(xcall_irc_parse);
 TEST_CASE(xcall_irc_parse_user_mask);
@@ -53,8 +53,7 @@ TEST_SUITE_END
 
 TEST_CASE(xcall_irc_parse)
 {
-	GString *ret = $(GString *, xcall, invokeXCall)("message = \":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n\"; xcall = { function = \"parseIrcMessage\" }");
-	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n\"; xcall = { function = \"parseIrcMessage\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 1);
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/prefix")->content.string, "irc.gamesurge.net") == 0);
@@ -63,22 +62,19 @@ TEST_CASE(xcall_irc_parse)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/params/0")->content.string, "Gregor") == 0);
 
 	$(void, store, freeStore)(retStore);
-	g_string_free(ret, true);
 
 	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_user_mask)
 {
-	GString *ret = $(GString *, xcall, invokeXCall)("prefix = \"Gregor!kalisko@kalisko.org\"; xcall = { function = \"parseIrcUserMask\" }");
-	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("prefix = \"Gregor!kalisko@kalisko.org\"; xcall = { function = \"parseIrcUserMask\" }");
 
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/nick")->content.string, "Gregor") == 0);
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/user")->content.string, "kalisko") == 0);
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/host")->content.string, "kalisko.org") == 0);
 
 	$(void, store, freeStore)(retStore);
-	g_string_free(ret, true);
 
 	TEST_PASS;
 }
@@ -86,40 +82,34 @@ TEST_CASE(xcall_irc_parse_user_mask)
 
 TEST_CASE(xcall_irc_parse_error)
 {
-	GString *ret = $(GString *, xcall, invokeXCall)("message = \"nothing\"; xcall = { function = \"parseIrcMessage\" }");
-	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \"nothing\"; xcall = { function = \"parseIrcMessage\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);
 
 	$(void, store, freeStore)(retStore);
-	g_string_free(ret, true);
 
 	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_no_message)
 {
-	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = \"parseIrcMessage\" }");
-	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcMessage\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
-	g_string_free(ret, true);
 
 	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
 {
-	GString *ret = $(GString *, xcall, invokeXCall)("xcall = { function = \"parseIrcUserMask\" }");
-	Store *retStore = $(Store *, store, parseStoreString)(ret->str);
+	Store *retStore = $(GString *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcUserMask\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
-	g_string_free(ret, true);
 
 	TEST_PASS;
 }

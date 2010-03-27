@@ -38,9 +38,9 @@
 MODULE_NAME("lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the JavaScript scripting language");
-MODULE_VERSION(0, 2, 3);
-MODULE_BCVERSION(0, 2, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("xcall", 0, 1, 6));
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3));
 
 static void reportError(JSContext *context, const char *message, JSErrorReport *report);
 

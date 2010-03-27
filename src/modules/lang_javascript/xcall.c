@@ -41,7 +41,7 @@ static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, j
 static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 
-static GString *jsInvokeXCallFunction(const char *xcall);
+static Store *jsInvokeXCallFunction(Store *xcall);
 
 typedef struct {
 	JSContext *context;
@@ -105,7 +105,9 @@ static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, j
 	}
 
 	// do the call
-	GString *xcallReturn = $(GString *, xcall, invokeXCall)(xcall);
+	Store *ret = $(GString *, xcall, invokeXCallByString)(xcall);
+	GString *xcallReturn = $(GString *, store, writeStoreGString)(ret);
+	$(void, store, freeStore)(ret);
 
 	// prepare returned string for JavaScript environment and return it
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(context, xcallReturn->str));
@@ -203,11 +205,9 @@ static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN ar
  * @param xcall
  * @return
  */
-static GString *jsInvokeXCallFunction(const char *xcall)
+static Store *jsInvokeXCallFunction(Store *xcall)
 {
-	Store *store = $(Store *, store, parseStoreString)(xcall);
-
-	Store *functionName = $(Store *, store, getStorePath)(store, "xcall/function");
+	Store *functionName = $(Store *, store, getStorePath)(xcall, "xcall/function");
 	assert(functionName->type == STORE_STRING);
 
 	JSFunctionInfo *function = g_hash_table_lookup(functions, functionName->content.string);
@@ -215,53 +215,48 @@ static GString *jsInvokeXCallFunction(const char *xcall)
 		GString *errorStr = g_string_new("");
 		g_string_append_printf(errorStr, "Could not find JavaScript function '%s'.", functionName->content.string);
 
-		$(bool, store, setStorePath)(store, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-		$(bool, store, setStorePath)(store, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
+		Store *ret = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
 
 		g_string_free(errorStr, true);
 
-		GString *storeStr =  $(GString *, store, writeStoreGString)(store);
-		$(void, store, freeStore)(store);
-
-		return storeStr;
+		return ret;
 	}
 
 	jsval retValue;
 	jsval argv[1];
 
-	argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(function->context, xcall));
+	// FIXME: use store.h to create js store representation instead of string (see lang_lua/xcall.c)
+	GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
+	argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(function->context, xcallstr->str));
+	g_string_free(xcallstr, true);
 
 	if(!JS_CallFunctionValue(function->context, function->object, *function->function, 1, argv, &retValue)) {
 		GString *errorStr = g_string_new("");
 		g_string_append_printf(errorStr, "Failed calling JavaScript function '%s'.", functionName->content.string);
 
-		$(bool, store, setStorePath)(store, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-		$(bool, store, setStorePath)(store, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
+		Store *ret = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
 
 		g_string_free(errorStr, true);
 
-		GString *storeStr =  $(GString *, store, writeStoreGString)(store);
-		$(void, store, freeStore)(store);
-
-		return storeStr;
+		return ret;
 	}
 
 	if(!JSVAL_IS_STRING(retValue)) {
 		GString *errorStr = g_string_new("");
 		g_string_append_printf(errorStr, "JavaScript function '%s' did not return a string.", functionName->content.string);
 
-		$(bool, store, setStorePath)(store, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-		$(bool, store, setStorePath)(store, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
+		Store *ret = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
 
 		g_string_free(errorStr, true);
 
-		GString *storeStr =  $(GString *, store, writeStoreGString)(store);
-		$(void, store, freeStore)(store);
-
-		return storeStr;
+		return ret;
 	}
 
-	GString *retStr = g_string_new(JS_GetStringBytes(JS_ValueToString(function->context, retValue)));
-
-	return retStr;
+	return $(Store *, store, parseStoreString)(JS_GetStringBytes(JS_ValueToString(function->context, retValue)));
 }

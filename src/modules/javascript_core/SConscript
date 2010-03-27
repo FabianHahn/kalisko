@@ -16,8 +16,21 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+import os
 
-module.ParseConfig('js-config --libs --cflags')
+if module['PLATFORM'] == 'win32':
+	thirdPartyDir = os.path.join(module.GetLaunchDir(), '3rd_party')
+	
+	if os.path.exists(thirdPartyDir):
+		module.Append(LIBPATH = [thirdPartyDir + '/lib'])
+		module.Append(CPPPATH = [thirdPartyDir + '/include'])
+		module.Append(LIBS=['mozjs'])
+		
+		module.SharedLibrary('../kalisko_javascript_core', Glob('*.c'))
+		module.Command("Kalisko.js", File("Kalisko.js").srcnode(), Copy("$TARGET", "$SOURCE"))
 
-module.SharedLibrary('../kalisko_javascript_core', Glob('*.c'))
-module.Command("Kalisko.js", File("Kalisko.js").srcnode(), Copy("$TARGET", "$SOURCE"))
+else:
+	module.ParseConfig('js-config --libs --cflags')
+	module.SharedLibrary('../kalisko_javascript_core', Glob('*.c'))
+	
+	module.Command("Kalisko.js", File("Kalisko.js").srcnode(), Copy("$TARGET", "$SOURCE"))

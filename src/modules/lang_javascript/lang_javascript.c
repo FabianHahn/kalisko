@@ -27,12 +27,12 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
-#include "modules/lang_javascript/xcall.h"
 #include "modules/xcall/xcall.h"
 
 #include "api.h"
 #include "modules/lang_javascript/lang_javascript.h"
 #include "modules/lang_javascript/store.h"
+#include "modules/lang_javascript/xcall.h"
 
 
 MODULE_NAME("lang_javascript");

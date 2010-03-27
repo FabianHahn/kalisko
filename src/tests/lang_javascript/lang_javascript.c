@@ -69,7 +69,7 @@ TEST_SUITE_END
 
 static void tearUp()
 {
-	evaluateJavaScript(testJSScript);
+	$(bool, lang_javascript, evaluateJavaScript)(testJSScript);
 }
 
 TEST_CASE(callJSFunction)
@@ -130,7 +130,7 @@ TEST_CASE(logWrappedXCall)
 {
 	$(bool, lang_javascript, evaluateJavaScript)("kalisko.logWarning(\"Hallo Welt\");");
 
-	jsval ret = getJavaScriptLastResult();
+	jsval ret = $(bool, lang_javascript, getJavaScriptLastResult)();
 
 	TEST_ASSERT(JSVAL_IS_BOOLEAN(ret));
 	TEST_ASSERT(JSVAL_TO_BOOLEAN(ret));

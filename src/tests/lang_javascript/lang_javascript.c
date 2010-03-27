@@ -36,10 +36,9 @@
 MODULE_NAME("test_lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_javascript module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 2, 1), MODULE_DEPENDENCY("javascript_core", 0, 1, 0),
-		MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 3, 0), MODULE_DEPENDENCY("javascript_core", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static char *testJSScript = "\
 function hello(xcall)\
@@ -76,12 +75,7 @@ TEST_CASE(callJSFunction)
 {
 	char *call = "xcall = { function = jsHello }";
 
-	GString *retStr = $(GString *, xcall, invokeXCall)(call);
-	TEST_ASSERT(retStr != NULL);
-
-	Store *ret = $(Store *, store, parseStoreString)(retStr->str);
-	TEST_ASSERT(ret != NULL);
-	g_string_free(retStr, true);
+	Store *ret = $(Store *, xcall, invokeXCallByString)(call);
 
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(ret, "hello")->content.string, "world") == 0);
 

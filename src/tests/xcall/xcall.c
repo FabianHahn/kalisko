@@ -32,8 +32,8 @@
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall module");
-MODULE_VERSION(0, 1, 6);
-MODULE_BCVERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
+MODULE_BCVERSION(0, 1, 7);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(xcall);
@@ -82,8 +82,7 @@ TEST_CASE(xcall)
 	TEST_ASSERT(params->type == STORE_ARRAY);
 
 	Store *error;
-	TEST_ASSERT((error = $(Store *, store, getStorePath)(rets, "xcall/error")) != NULL);
-	TEST_ASSERT(error->type == STORE_INTEGER);
+	TEST_ASSERT((error = $(Store *, store, getStorePath)(rets, "xcall/error")) == NULL);
 
 	Store *fail;
 	TEST_ASSERT((fail = $(Store *, store, getStorePath)(rets, "fail")) != NULL);

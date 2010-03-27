@@ -37,25 +37,25 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 2, 1);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
-static GString *xcall_attachLog(const char *xcall);
-static GString *xcall_detachLog(const char *xcall);
-static GString *xcall_getModuleAuthor(const char *xcall);
-static GString *xcall_getModuleDescription(const char *xcall);
-static GString *xcall_getModuleVersion(const char *xcall);
-static GString *xcall_getModuleBcVersion(const char *xcall);
-static GString *xcall_getModuleReferenceCount(const char *xcall);
-static GString *xcall_getActiveModules(const char *xcall);
-static GString *xcall_isModuleLoaded(const char *xcall);
-static GString *xcall_requestModule(const char *xcall);
-static GString *xcall_revokeModule(const char *xcall);
-static GString *xcall_logError(const char *xcall);
-static GString *xcall_logWarning(const char *xcall);
-static GString *xcall_logInfo(const char *xcall);
-static GString *xcall_logDebug(const char *xcall);
+static Store *xcall_attachLog(Store *xcall);
+static Store *xcall_detachLog(Store *xcall);
+static Store *xcall_getModuleAuthor(Store *xcall);
+static Store *xcall_getModuleDescription(Store *xcall);
+static Store *xcall_getModuleVersion(Store *xcall);
+static Store *xcall_getModuleBcVersion(Store *xcall);
+static Store *xcall_getModuleReferenceCount(Store *xcall);
+static Store *xcall_getActiveModules(Store *xcall);
+static Store *xcall_isModuleLoaded(Store *xcall);
+static Store *xcall_requestModule(Store *xcall);
+static Store *xcall_revokeModule(Store *xcall);
+static Store *xcall_logError(Store *xcall);
+static Store *xcall_logWarning(Store *xcall);
+static Store *xcall_logInfo(Store *xcall);
+static Store *xcall_logDebug(Store *xcall);
 static bool attachLogListener(char *listener);
 static bool detachLogListener(char *listener);
 static void freeLogListenerEntry(void *listener_p);
@@ -117,16 +117,15 @@ MODULE_FINALIZE
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_attachLog(const char *xcall)
+static Store *xcall_attachLog(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *listener = $(Store *, store, getStorePath)(xcs, "listener");
+	Store *listener = $(Store *, store, getStorePath)(xcall, "listener");
 
 	if(listener == NULL || listener->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -141,11 +140,7 @@ static GString *xcall_attachLog(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -155,16 +150,15 @@ static GString *xcall_attachLog(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_detachLog(const char *xcall)
+static Store *xcall_detachLog(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *listener = $(Store *, store, getStorePath)(xcs, "listener");
+	Store *listener = $(Store *, store, getStorePath)(xcall, "listener");
 
 	if(listener == NULL || listener->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -179,11 +173,7 @@ static GString *xcall_detachLog(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 HOOK_LISTENER(xcall_log)
@@ -219,23 +209,17 @@ HOOK_LISTENER(xcall_log)
 
 	$(bool, store, setStorePath)(xcall, "message", $(Store *, store, createStoreStringValue)(message));
 
-	GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
+	Store *ret = $(Store *, xcall, invokeXCall)(xcall);
 	$(void, store, freeStore)(xcall);
 
-	GString *ret = $(GString *, xcall, invokeXCall)(xcallstr->str);
-	g_string_free(xcallstr, true);
-
-	Store *xcs = $(Store *, store, parseStoreString)(ret->str);
-	g_string_free(ret, true);
-
-	Store *error = $(Store *, store, getStorePath)(xcs, "xcall/error");
+	Store *error = $(Store *, store, getStorePath)(ret, "xcall/error");
 
 	if(error->type == STORE_STRING) { // XCall error
 		detachLogListener(listener); // detach the listener
 		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string);
 	}
 
-	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(ret);
 
 	logExecuting = false;
 }
@@ -287,16 +271,15 @@ static void freeLogListenerEntry(void *listener_p)
  * XCall result:
  * 	* string author		the author of the module if it's at least loading
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getModuleAuthor(const char *xcall)
+static Store *xcall_getModuleAuthor(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -309,11 +292,7 @@ static GString *xcall_getModuleAuthor(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -323,16 +302,15 @@ static GString *xcall_getModuleAuthor(const char *xcall)
  * XCall result:
  * 	* string description	the description of the module if it's at least loading
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getModuleDescription(const char *xcall)
+static Store *xcall_getModuleDescription(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -345,11 +323,7 @@ static GString *xcall_getModuleDescription(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -364,16 +338,15 @@ static GString *xcall_getModuleDescription(const char *xcall)
  * 	* int version/revision		the revision version of the module
  *  * string version/string		the whole version as string
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getModuleVersion(const char *xcall)
+static Store *xcall_getModuleVersion(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -386,11 +359,7 @@ static GString *xcall_getModuleVersion(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -405,16 +374,15 @@ static GString *xcall_getModuleVersion(const char *xcall)
  * 	* int bcversion/revision		the revision backwards compatible of the module
  *  * string bcversion/string		the whole backwards compatible version as string
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getModuleBcVersion(const char *xcall)
+static Store *xcall_getModuleBcVersion(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -427,11 +395,7 @@ static GString *xcall_getModuleBcVersion(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -441,16 +405,15 @@ static GString *xcall_getModuleBcVersion(const char *xcall)
  * XCall result:
  * 	* int reference_count	the current reference count of the module if it's at least loaded
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getModuleReferenceCount(const char *xcall)
+static Store *xcall_getModuleReferenceCount(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -463,11 +426,7 @@ static GString *xcall_getModuleReferenceCount(const char *xcall)
 		}
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -475,10 +434,10 @@ static GString *xcall_getModuleReferenceCount(const char *xcall)
  * XCall result:
  * 	* list modules 			a string list of all active modules
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_getActiveModules(const char *xcall)
+static Store *xcall_getActiveModules(Store *xcall)
 {
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
@@ -493,10 +452,7 @@ static GString *xcall_getActiveModules(const char *xcall)
 	$(bool, store, setStorePath)(retstore, "modules", modulesStore);
 	g_list_free(modules);
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 
@@ -507,16 +463,15 @@ static GString *xcall_getActiveModules(const char *xcall)
  * XCall result:
  * 	* int loaded			positive if the module is loaded
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_isModuleLoaded(const char *xcall)
+static Store *xcall_isModuleLoaded(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
@@ -526,11 +481,7 @@ static GString *xcall_isModuleLoaded(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "loaded", $(Store *, store, createStoreIntegerValue)(loaded));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 
@@ -541,16 +492,15 @@ static GString *xcall_isModuleLoaded(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_requestModule(const char *xcall)
+static Store *xcall_requestModule(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -561,11 +511,7 @@ static GString *xcall_requestModule(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -575,16 +521,15 @@ static GString *xcall_requestModule(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_revokeModule(const char *xcall)
+static Store *xcall_revokeModule(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *module = $(Store *, store, getStorePath)(xcs, "module");
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
 
 	if(module == NULL || module->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -595,11 +540,7 @@ static GString *xcall_revokeModule(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -609,16 +550,15 @@ static GString *xcall_revokeModule(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_logError(const char *xcall)
+static Store *xcall_logError(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "text");
+	Store *text = $(Store *, store, getStorePath)(xcall, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -628,11 +568,7 @@ static GString *xcall_logError(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -642,16 +578,15 @@ static GString *xcall_logError(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_logWarning(const char *xcall)
+static Store *xcall_logWarning(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "text");
+	Store *text = $(Store *, store, getStorePath)(xcall, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -661,11 +596,7 @@ static GString *xcall_logWarning(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -675,16 +606,15 @@ static GString *xcall_logWarning(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_logInfo(const char *xcall)
+static Store *xcall_logInfo(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "text");
+	Store *text = $(Store *, store, getStorePath)(xcall, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -694,11 +624,7 @@ static GString *xcall_logInfo(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -708,16 +634,15 @@ static GString *xcall_logInfo(const char *xcall)
  * XCall result:
  * 	* int success		nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_logDebug(const char *xcall)
+static Store *xcall_logDebug(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcs, "text");
+	Store *text = $(Store *, store, getStorePath)(xcall, "text");
 
 	if(text == NULL || text->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -727,9 +652,5 @@ static GString *xcall_logDebug(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }

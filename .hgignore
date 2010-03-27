@@ -11,3 +11,4 @@ syntax: glob
 
 # ignore built source code
 bin/*
+3rd_party/*

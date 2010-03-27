@@ -33,11 +33,10 @@
 #include "api.h"
 #include "version2store.h"
 
-
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -352,7 +351,7 @@ static Store *xcall_getModuleVersion(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
 		char *modname = module->content.string;
-		Version *version = $$(char *, getModuleVersion)(modname);
+		Version *version = $$(Version *, getModuleVersion)(modname);
 
 		if(version != NULL) {
 			$(bool, store, setStorePath)(retstore, "version", version2Store(version));
@@ -388,7 +387,7 @@ static Store *xcall_getModuleBcVersion(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
 		char *modname = module->content.string;
-		Version *bcversion = $$(char *, getModuleBcVersion)(modname);
+		Version *bcversion = $$(Version *, getModuleBcVersion)(modname);
 
 		if(bcversion != NULL) {
 			$(bool, store, setStorePath)(retstore, "bcversion", version2Store(bcversion));
@@ -419,7 +418,7 @@ static Store *xcall_getModuleReferenceCount(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
 		char *modname = module->content.string;
-		int rc = $$(char *, getModuleReferenceCount)(modname);
+		int rc = $$(int, getModuleReferenceCount)(modname);
 
 		if(rc >= 0) {
 			$(bool, store, setStorePath)(retstore, "reference_count", $(Store *, store, createStoreIntegerValue)(rc));
@@ -442,7 +441,7 @@ static Store *xcall_getActiveModules(Store *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	GList *modules = $$(char *, getActiveModules)();
+	GList *modules = $$(GList *, getActiveModules)();
 	Store *modulesStore = $(Store *, store, createStoreListValue)(NULL);
 
 	for(GList *iter = modules; iter != NULL; iter = iter->next) {
@@ -477,7 +476,7 @@ static Store *xcall_isModuleLoaded(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
 		char *modname = module->content.string;
-		bool loaded = $$(char *, isModuleLoaded)(modname);
+		bool loaded = $$(bool, isModuleLoaded)(modname);
 		$(bool, store, setStorePath)(retstore, "loaded", $(Store *, store, createStoreIntegerValue)(loaded));
 	}
 

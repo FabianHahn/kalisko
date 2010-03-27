@@ -37,8 +37,8 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 1);
-MODULE_BCVERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 2);
+MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 static Store *xcall_attachLog(Store *xcall);
@@ -546,7 +546,7 @@ static Store *xcall_revokeModule(Store *xcall)
 /**
  * XCallFunction to log an error message
  * XCall parameters:
- *  * string text		the text to log
+ *  * string message		the message to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -558,13 +558,13 @@ static Store *xcall_logError(Store *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcall, "text");
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
 
-	if(text == NULL || text->type != STORE_STRING) {
+	if(message == NULL || message->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'error'"));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_ERROR(text->content.string, NULL);
+		LOG_ERROR("%s", message->content.string);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
@@ -574,7 +574,7 @@ static Store *xcall_logError(Store *xcall)
 /**
  * XCallFunction to log a warning message
  * XCall parameters:
- *  * string text		the text to log
+ *  * string message		the message to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -586,13 +586,13 @@ static Store *xcall_logWarning(Store *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcall, "text");
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
 
-	if(text == NULL || text->type != STORE_STRING) {
+	if(message == NULL || message->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'warning'"));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_WARNING(text->content.string, NULL);
+		LOG_WARNING("%s", message->content.string);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
@@ -602,7 +602,7 @@ static Store *xcall_logWarning(Store *xcall)
 /**
  * XCallFunction to log an info message
  * XCall parameters:
- *  * string text		the text to log
+ *  * string message		the message to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -614,13 +614,13 @@ static Store *xcall_logInfo(Store *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcall, "text");
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
 
-	if(text == NULL || text->type != STORE_STRING) {
+	if(message == NULL || message->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'info'"));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_INFO(text->content.string, NULL);
+		LOG_INFO("%s", message->content.string);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
@@ -630,7 +630,7 @@ static Store *xcall_logInfo(Store *xcall)
 /**
  * XCallFunction to log a debug message
  * XCall parameters:
- *  * string text		the text to log
+ *  * string message		the message to log
  * XCall result:
  * 	* int success		nonzero if successful
  *
@@ -642,13 +642,13 @@ static Store *xcall_logDebug(Store *xcall)
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *text = $(Store *, store, getStorePath)(xcall, "text");
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
 
-	if(text == NULL || text->type != STORE_STRING) {
+	if(message == NULL || message->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'debug'"));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_DEBUG(text->content.string, NULL);
+		LOG_DEBUG(message->content.string, NULL);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 

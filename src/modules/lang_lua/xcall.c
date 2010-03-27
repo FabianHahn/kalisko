@@ -174,6 +174,7 @@ static int lua_invokeXCall(lua_State *state)
 	GString *retstr = $(GString *, store, writeStoreGString)(ret);
 	lua_pushstring(state, retstr->str);
 	g_string_free(retstr, true);
+	$(void, store, freeStore)(ret);
 
 	return 1;
 }

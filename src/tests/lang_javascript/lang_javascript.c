@@ -57,12 +57,14 @@ static void tearUp();
 TEST_CASE(callJSFunction);
 TEST_CASE(jsCallsXCall);
 TEST_CASE(delXCall);
+TEST_CASE(logWrappedXCall);
 
 TEST_SUITE_BEGIN(lang_javascript)
 	tearUp();
 	TEST_CASE_ADD(callJSFunction);
 	TEST_CASE_ADD(jsCallsXCall);
 	TEST_CASE_ADD(delXCall);
+	TEST_CASE_ADD(logWrappedXCall);
 TEST_SUITE_END
 
 static void tearUp()
@@ -120,6 +122,18 @@ TEST_CASE(delXCall)
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "xcall/error")->content.string);
 
 	$(void, store, freeStore)(retStore);
+
+	TEST_PASS;
+}
+
+TEST_CASE(logWrappedXCall)
+{
+	$(bool, lang_javascript, evaluateJavaScript)("kalisko.logWarning(\"Hallo Welt\");");
+
+	jsval ret = getJavaScriptLastResult();
+
+	TEST_ASSERT(JSVAL_IS_BOOLEAN(ret));
+	TEST_ASSERT(JSVAL_TO_BOOLEAN(ret));
 
 	TEST_PASS;
 }

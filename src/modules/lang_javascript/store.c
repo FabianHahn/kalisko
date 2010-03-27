@@ -20,6 +20,7 @@
 
 
 #include <glib.h>
+#include <assert.h>
 #include <jsapi.h>
 
 #include "dll.h"
@@ -33,14 +34,8 @@
 #include "api.h"
 #include "modules/lang_javascript/store.h"
 
-typedef struct {
-	JSContext *context;
-	JSObject *parentObj;
-} JSParseStoreInfo;
-
 static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 static jsval parseJSStoreValue(Store *store, JSContext *context);
-static void parseJSStoreArrayNode(void *key_p, void *value_p, void *state_p);
 
 /**
  * Adds to the given global object functions to work with Store in the JavaScript world.
@@ -55,7 +50,7 @@ API void jsAddStoreFunctions(JSContext *context, JSObject *globalObj)
 
 /**
  * Native implementation of the JavaScript function 'parseStore'. It parses
- * a Store string into a JavaScript object.
+ * a Store string into a JavaScript object/value.
  *
  * @param context
  * @param object
@@ -80,8 +75,18 @@ static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, js
 		return JS_FALSE;
 	}
 
+	// Entering a local root scope: All created JavaScript things are not GCed
+	if(!JS_EnterLocalRootScope(context)) {
+		JS_ReportError(context, "Could not create Local Root Scope.");
+		return JS_FALSE;
+	}
+
 	jsval ret = parseJSStoreValue(store, context);
 	*rval = ret;
+
+	// After we set the return value and referenced our new object we can let GC run again
+	JS_LeaveLocalRootScope(context);
+	JS_MaybeGC(context);
 
 	$(void, store, freeStore)(store);
 
@@ -89,28 +94,41 @@ static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, js
 }
 
 /**
- * Converts a single Store value for the JavaScript world.
+ * Parses a Store into a native JavaScript value.
  *
- * @param store
- * @param context
- * @return
+ * <b>Attention</b>: This function must be called surrounded by JS_EnterLocalRootScope() and JS_LeaveLocalRootScope().
+ *
+ * @param store		The Store to convert
+ * @param context	The context in which the jsval should be
+ * @return A jsval representing the Store
  */
 static jsval parseJSStoreValue(Store *store, JSContext *context)
 {
+	assert(store != NULL);
 	switch(store->type) {
-		case STORE_FLOAT_NUMBER:
+		case STORE_ARRAY:
 		{
-			jsval val;
-			JS_NewDoubleValue(context, store->content.float_number, &val);
+			GHashTableIter iter;
+			void *key;
+			void *value;
 
-			return val;
-		}
-		case STORE_INTEGER:
-		{
-			jsval val;
-			JS_NewNumberValue(context, store->content.integer, &val);
+			g_hash_table_iter_init(&iter, store->content.array);
 
-			return val;
+			JSObject *obj = JS_NewObject(context, NULL, NULL, NULL);
+			if(!obj) {
+				JS_ReportError(context, "Could not create new object for Store Array");
+				return JSVAL_NULL;
+			}
+
+			while(g_hash_table_iter_next(&iter, &key, &value)) {
+				char *keyStr = key;
+				Store *valueStore = value;
+
+				jsval value = parseJSStoreValue(valueStore, context);
+				assert(JS_DefineProperty(context, obj, keyStr, value, NULL, NULL, 0));
+			}
+
+			return OBJECT_TO_JSVAL(obj);
 		}
 		case STORE_LIST:
 		{
@@ -125,42 +143,32 @@ static jsval parseJSStoreValue(Store *store, JSContext *context)
 				*list++ = parseJSStoreValue(iter->data, context);
 			}
 
-			return OBJECT_TO_JSVAL(JS_NewArrayObject(context, store->content.list->length, list));
+			assert(JS_NewArrayObject(context, store->content.list->length, list));
+			return *list;
+		}
+		case STORE_FLOAT_NUMBER:
+		{
+			jsval val;
+			assert(JS_NewNumberValue(context, store->content.float_number, &val));
+
+			return val;
+		}
+		case STORE_INTEGER:
+		{
+			jsval val;
+			assert(JS_NewNumberValue(context, store->content.integer, &val));
+
+			return val;
 		}
 		case STORE_STRING:
 		{
-			return STRING_TO_JSVAL(JS_NewStringCopyZ(context, store->content.string));
-		}
-		case STORE_ARRAY:
-		{
-			JSObject *obj = JS_NewObject(context, NULL, NULL, NULL);
-			JSParseStoreInfo info;
+			JSString *str = JS_NewStringCopyZ(context, store->content.string);
+			assert(str);
 
-			info.context = context;
-			info.parentObj = obj;
-
-			g_hash_table_foreach(store->content.array, &parseJSStoreArrayNode, &info);
-
-			return OBJECT_TO_JSVAL(obj);
+			return STRING_TO_JSVAL(str);
 		}
 		default:
-			LOG_WARNING("Unknown Store type. Could not convert it for JavaScript.");
+			LOG_ERROR("Unknown Store Type. This is a bug, please report it");
 			return JSVAL_NULL;
 	}
-}
-
-/**
- * Converts a single Array element for the JavaScript world.
- *
- * @param key_p
- * @param value_p
- * @param state_p
- */
-static void parseJSStoreArrayNode(void *key_p, void *value_p, void *state_p)
-{
-	char *key = key_p;
-	Store *value = value_p;
-	JSParseStoreInfo *info = state_p;
-
-	JS_DefineProperty(info->context, info->parentObj, key, parseJSStoreValue(value, info->context), NULL, NULL, 0);
 }

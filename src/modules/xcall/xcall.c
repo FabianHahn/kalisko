@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -101,7 +101,6 @@ API Store *invokeXCall(Store *xcall)
 	Store *retstore = NULL;
 	Store *metaret = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-	$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreIntegerValue)(0));
 
 	do { // dummy do-while to prevent mass if-then-else branching
 		Store *meta;

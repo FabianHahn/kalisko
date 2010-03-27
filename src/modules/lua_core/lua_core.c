@@ -30,13 +30,15 @@
 MODULE_NAME("lua_core");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("The lua_core module provides a Lua API to the Kalisko core");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 3, 2), MODULE_DEPENDENCY("lang_lua", 0, 4, 1));
 
 MODULE_INIT
 {
-	GString *path = g_string_new($$(char *, getExecutablePath)());
+	GString *path;
+
+	path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_core/KaliskoModule.lua");
 
 	if(!$(bool, lang_lua, evaluateLuaScript)(path->str)) {
@@ -48,6 +50,20 @@ MODULE_INIT
 	}
 
 	g_string_free(path, true);
+
+	path = g_string_new($$(char *, getExecutablePath)());
+	g_string_append(path, "/modules/lua_core/KaliskoLog.lua");
+
+	if(!$(bool, lang_lua, evaluateLuaScript)(path->str)) {
+		char *error = $(char *, lang_lua, popLuaString)();
+		LOG_ERROR("Failed to run KaliskoLog.lua script: %s", error);
+		free(error);
+		g_string_free(path, true);
+		return false;
+	}
+
+	g_string_free(path, true);
+
 	return true;
 }
 

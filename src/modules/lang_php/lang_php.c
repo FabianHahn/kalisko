@@ -39,7 +39,7 @@
 MODULE_NAME("lang_php");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides support for the PHP scripting language");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5));
 
@@ -99,7 +99,7 @@ static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 static void log_message(char *message)
 {
 	HOOK_TRIGGER(php_log, message);
-	LOG_WARNING(message);
+	LOG_WARNING("%s", message);
 }
 
 static void sapi_error(int type, const char *fmt, ...)

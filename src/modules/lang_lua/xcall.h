@@ -22,6 +22,9 @@
 #ifndef LANG_LUA_XCALL_H
 #define LANG_LUA_XCALL_H
 
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 #include "types.h"
 #include "lang_lua.h"
 

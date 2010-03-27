@@ -34,7 +34,6 @@
 #include "store.h"
 
 static int lua_parseStore(lua_State *state);
-static void parseLuaStore(lua_State *state, Store *store);
 static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p);
 
 /**
@@ -50,33 +49,12 @@ API void luaInitStateStore(lua_State *state)
 }
 
 /**
- * Lua C function to parse a store string into a Lua table
- *
- * @param state		the lua interpreter state during execution of the C function
- * @result			the number of parameters on the lua stack
- */
-static int lua_parseStore(lua_State *state)
-{
-	const char *storestr = luaL_checkstring(state, 1);
-
-	Store *store = $(Store *, store, parseStoreString)(storestr);
-
-	if(store == NULL) {
-		lua_newtable(state);
-	} else {
-		parseLuaStore(state, store);
-	}
-
-	return 1;
-}
-
-/**
  * Parses a store into a Lua table
  *
  * @param state		the state in which the store should be parsed into a table
  * @param store		the store to parse
  */
-static void parseLuaStore(lua_State *state, Store *store)
+API void parseLuaStore(lua_State *state, Store *store)
 {
 	switch(store->type) {
 		case STORE_ARRAY:
@@ -102,6 +80,27 @@ static void parseLuaStore(lua_State *state, Store *store)
 			lua_pushnumber(state, store->content.float_number);
 		break;
 	}
+}
+
+/**
+ * Lua C function to parse a store string into a Lua table
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
+static int lua_parseStore(lua_State *state)
+{
+	const char *storestr = luaL_checkstring(state, 1);
+
+	Store *store = $(Store *, store, parseStoreString)(storestr);
+
+	if(store == NULL) {
+		lua_newtable(state);
+	} else {
+		parseLuaStore(state, store);
+	}
+
+	return 1;
 }
 
 /**

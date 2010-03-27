@@ -34,15 +34,16 @@
 #include "api.h"
 #include "lang_lua.h"
 #include "xcall.h"
+#include "store.h"
 
 static bool unregisterLuaXCallFunctions(void *key_p, void *value_p, void *data_p);
 static bool unregisterLuaXCallFunction(void *key_p, void *value_p, void *data_p);
 static int lua_invokeXCall(lua_State *state);
 static int lua_addXCallFunction(lua_State *state);
 static int lua_delXCallFunction(lua_State *state);
-static GString *luaXCallFunction(const char *xcall);
-static GString *xcall_evaluateLua(const char *xcall);
-static GString *xcall_evaluateLuaScript(const char *xcall);
+static Store *xcall_luaXCallFunction(Store *xcall);
+static Store *xcall_evaluateLua(Store *xcall);
+static Store *xcall_evaluateLuaScript(Store *xcall);
 
 static GHashTable *stateFunctions;
 static GHashTable *functionState;
@@ -169,9 +170,10 @@ static int lua_invokeXCall(lua_State *state)
 {
 	const char *xcall = luaL_checkstring(state, 1);
 
-	GString *ret = $(GString *, xcall, invokeXCall)(xcall);
-	lua_pushstring(state, ret->str);
-	g_string_free(ret, true);
+	Store *ret = $(Store *, xcall, invokeXCallByString)(xcall);
+	GString *retstr = $(GString *, store, writeStoreGString)(ret);
+	lua_pushstring(state, retstr->str);
+	g_string_free(retstr, true);
 
 	return 1;
 }
@@ -197,7 +199,7 @@ static int lua_addXCallFunction(lua_State *state)
 		return 1;
 	}
 
-	if(!$(bool, xcall, addXCallFunction)(name, &luaXCallFunction)) { // Failed to add XCall
+	if(!$(bool, xcall, addXCallFunction)(name, &xcall_luaXCallFunction)) { // Failed to add XCall
 		LOG_ERROR("lua_addXCallFunction: Failed to add XCall function '%s'", name);
 		lua_pushboolean(state, false);
 		return 1;
@@ -262,14 +264,13 @@ static int lua_delXCallFunction(lua_State *state)
 /**
  * A XCallFunction for lua XCall functions
  *
- * @param xcall			the xcall in serialized store format
- * @result				the xcall's return value in serialized store format
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *luaXCallFunction(const char *xcall)
+static Store *xcall_luaXCallFunction(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
-
-	Store *function = $(Store *, store, getStorePath)(xcs, "xcall/function"); // retrieve function name
+	Store *function = $(Store *, store, getStorePath)(xcall, "xcall/function"); // retrieve function name
+	Store *retstore = $(Store *, store, createStore)();
 
 	assert(function != NULL && function->type == STORE_STRING);
 
@@ -283,41 +284,33 @@ static GString *luaXCallFunction(const char *xcall)
 	assert(refp != NULL);
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, *refp); // push lua xcall function to stack
-	lua_pushstring(state, xcall);
+	parseLuaStore(state, xcall); // parse the store into lua format and push it onto stack
 
 	if(lua_pcall(state, 1, 1, 0) != 0) {
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': %s", funcname, lua_tostring(state, -1));
 		LOG_ERROR("%s", err->str);
-		Store *retstore = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, stote, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
-		GString *ret = $(GString *, store, writeStoreGString)(retstore);
-		$(void, store, freeStore)(retstore);
-		return ret;
+		return retstore;
 	}
 
 	if(!lua_isstring(state, -1)) {
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is no string", funcname);
 		LOG_ERROR("%s", err->str);
-		Store *retstore = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
-		GString *ret = $(GString *, store, writeStoreGString)(retstore);
-		$(void, store, freeStore)(retstore);
-		return ret;
+		return retstore;
 	}
 
 	const char *ret = lua_tostring(state, -1); // Fetch return value from stack
-	GString *retstr = g_string_new(ret);
+	retstore = $(Store *, store, parseStoreString)(ret);
 	lua_pop(state, 1);
 
-	$(void, store, freeStore)(xcs);
-
-	return retstr;
+	return retstore;
 }
 
 /**
@@ -327,16 +320,15 @@ static GString *luaXCallFunction(const char *xcall)
  * XCall result:
  * 	* int success	nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_evaluateLua(const char *xcall)
+static Store *xcall_evaluateLua(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *eval = $(Store *, store, getStorePath)(xcs, "eval");
+	Store *eval = $(Store *, store, getStorePath)(xcall, "eval");
 
 	if(eval == NULL || eval->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -347,11 +339,7 @@ static GString *xcall_evaluateLua(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 
 /**
@@ -361,16 +349,15 @@ static GString *xcall_evaluateLua(const char *xcall)
  * XCall result:
  * 	* int success	nonzero if successful
  *
- * @param xcall		the xcall in serialized store form
- * @result			a return value in serialized store form
+ * @param xcall		the xcall as store
+ * @result			a return value as store
  */
-static GString *xcall_evaluateLuaScript(const char *xcall)
+static Store *xcall_evaluateLuaScript(Store *xcall)
 {
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 	Store *retstore = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
-	Store *file = $(Store *, store, getStorePath)(xcs, "file");
+	Store *file = $(Store *, store, getStorePath)(xcall, "file");
 
 	if(file == NULL || file->type != STORE_STRING) {
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
@@ -381,10 +368,6 @@ static GString *xcall_evaluateLuaScript(const char *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
 	}
 
-	GString *ret = $(GString *, store, writeStoreGString)(retstore);
-	$(void, store, freeStore)(xcs);
-	$(void, store, freeStore)(retstore);
-
-	return ret;
+	return retstore;
 }
 

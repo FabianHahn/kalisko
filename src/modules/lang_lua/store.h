@@ -22,6 +22,12 @@
 #ifndef LANG_LUA_STORE_H
 #define LANG_LUA_STORE_H
 
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#include "modules/store/store.h"
+
 API void luaInitStateStore(lua_State *state);
+API void parseLuaStore(lua_State *state, Store *store);
 
 #endif

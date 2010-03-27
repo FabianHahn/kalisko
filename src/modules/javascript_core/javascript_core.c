@@ -30,9 +30,9 @@
 MODULE_NAME("javascript_core");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("Provides a JavaScript API to the Kalisko core");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 3, 0), MODULE_DEPENDENCY("xcall_core", 0, 3, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 3, 0), MODULE_DEPENDENCY("xcall_core", 0, 3, 2));
 
 MODULE_INIT
 {

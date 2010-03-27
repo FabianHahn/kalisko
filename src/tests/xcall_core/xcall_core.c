@@ -32,9 +32,9 @@
 MODULE_NAME("test_xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_core module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 3, 2), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 TEST_CASE(log_hook);
 

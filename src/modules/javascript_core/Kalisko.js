@@ -3,40 +3,40 @@ function isset(x) {
 }
 
 var kalisko = {
-	logError: function(text)
+	logError: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logError }');
+			'message = "' + message + '", xcall = { function = logError }');
 
 		var parsedRet = parseStore(ret);
 
 		return isset(parsedRet) && isset(parsedRet.success) && parsedRet.success > 0;
 	},
 
-	logWarning: function(text)
+	logWarning: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logWarning }');
+			'message = "' + message + '", xcall = { function = logWarning }');
 
 		var parsedRet = parseStore(ret);
 
 		return isset(parsedRet) && isset(parsedRet.success) && parsedRet.success > 0;
 	},
 
-	logInfo: function(text)
+	logInfo: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logInfo }');
+			'message = "' + message + '", xcall = { function = logInfo }');
 
 		var parsedRet = parseStore(ret);
 
 		return isset(parsedRet) && isset(parsedRet.success) && parsedRet.success > 0;
 	},
 
-	logDebug: function(text)
+	logDebug: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logDebug }');
+			'message = "' + message + '", xcall = { function = logDebug }');
 
 		var parsedRet = parseStore(ret);
 

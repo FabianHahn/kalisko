@@ -30,9 +30,9 @@
 MODULE_NAME("lua_core");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("The lua_core module provides a Lua API to the Kalisko core");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 3, 1), MODULE_DEPENDENCY("lang_lua", 0, 4, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 3, 2), MODULE_DEPENDENCY("lang_lua", 0, 4, 1));
 
 MODULE_INIT
 {

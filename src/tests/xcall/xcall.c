@@ -32,9 +32,9 @@
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall module");
-MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 5);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 6);
+MODULE_BCVERSION(0, 1, 6);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_CASE(xcall);
 TEST_CASE(xcall_error);
@@ -44,40 +44,33 @@ TEST_SUITE_BEGIN(xcall)
 	TEST_CASE_ADD(xcall_error);
 TEST_SUITE_END
 
-static GString *testXCallFunction(const char *xcall)
+static Store *testXCallFunction(Store *xcall)
 {
 	int fail = 0;
-	Store *xcs = $(Store *, store, parseStoreString)(xcall);
 
 	do { // dummy do-while to prevent mass if-then-else branching
 		Store *function;
-		if((function = $(Store *, store, getStorePath)(xcs, "xcall/function")) == NULL || function->type != STORE_STRING || g_strcmp0(function->content.string, "test") != 0) { // check if function name matches
+		if((function = $(Store *, store, getStorePath)(xcall, "xcall/function")) == NULL || function->type != STORE_STRING || g_strcmp0(function->content.string, "test") != 0) { // check if function name matches
 			fail = 1;
 			break;
 		}
 
 		Store *param;
-		if((param = $(Store *, store, getStorePath)(xcs, "param")) == NULL || param->type != STORE_INTEGER || param->content.integer != 42) { // check if parameter correct
+		if((param = $(Store *, store, getStorePath)(xcall, "param")) == NULL || param->type != STORE_INTEGER || param->content.integer != 42) { // check if parameter correct
 			fail = 2;
 			break;
 		}
 	} while(false);
 
-	$(void, store, freeStore)(xcs);
-
-	GString *ret = g_string_new("");
-	g_string_append_printf(ret, "fail = %d", fail);
+	Store *ret = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(ret, "fail", $(Store *, store, createStoreIntegerValue)(fail));
 	return ret;
 }
 
 TEST_CASE(xcall)
 {
 	TEST_ASSERT($(bool, xcall, addXCallFunction)("test", &testXCallFunction));
-	GString *ret = $(GString *, xcall, invokeXCall)("param = 42; xcall = { function = test }");
-
-	Store *rets = $(Store *, store, parseStoreString)(ret->str);
-
-	g_string_free(ret, true);
+	Store *rets = $(Store *, xcall, invokeXCallByString)("param = 42; xcall = { function = test }");
 
 	Store *function;
 	TEST_ASSERT((function = $(Store *, store, getStorePath)(rets, "xcall/function")) != NULL);
@@ -105,14 +98,11 @@ TEST_CASE(xcall)
 
 TEST_CASE(xcall_error)
 {
-	GString *ret;
 	Store *rets;
 	Store *function;
 	Store *error;
 
-	ret = $(GString *, xcall, invokeXCall)("xcall = { function = does_not_exist }");
-	rets = $(Store *, store, parseStoreString)(ret->str);
-	g_string_free(ret, true);
+	rets = $(Store *, xcall, invokeXCallByString)("xcall = { function = does_not_exist }");
 
 	TEST_ASSERT((function = $(Store *, store, getStorePath)(rets, "xcall/function")) != NULL);
 	TEST_ASSERT(function->type == STORE_STRING);
@@ -123,18 +113,14 @@ TEST_CASE(xcall_error)
 
 	$(void, store, freeStore)(rets);
 
-	ret = $(GString *, xcall, invokeXCall)("error{{)({}error");
-	rets = $(Store *, store, parseStoreString)(ret->str);
-	g_string_free(ret, true);
+	rets = $(Store *, xcall, invokeXCallByString)("error{{)({}error");
 
 	TEST_ASSERT((error = $(Store *, store, getStorePath)(rets, "xcall/error")) != NULL);
 	TEST_ASSERT(error->type == STORE_STRING);
 
 	$(void, store, freeStore)(rets);
 
-	ret = $(GString *, xcall, invokeXCall)("valid = { but = useless}");
-	rets = $(Store *, store, parseStoreString)(ret->str);
-	g_string_free(ret, true);
+	rets = $(Store *, xcall, invokeXCallByString)("valid = { but = useless}");
 
 	TEST_ASSERT((error = $(Store *, store, getStorePath)(rets, "xcall/error")) != NULL);
 	TEST_ASSERT(error->type == STORE_STRING);

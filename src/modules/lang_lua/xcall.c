@@ -41,6 +41,8 @@ static int lua_invokeXCall(lua_State *state);
 static int lua_addXCallFunction(lua_State *state);
 static int lua_delXCallFunction(lua_State *state);
 static GString *luaXCallFunction(const char *xcall);
+static GString *xcall_evaluateLua(const char *xcall);
+static GString *xcall_evaluateLuaScript(const char *xcall);
 
 static GHashTable *stateFunctions;
 static GHashTable *functionState;
@@ -50,6 +52,10 @@ static GHashTable *functionState;
  */
 API void luaInitXCall()
 {
+	// Register global xcall functions
+	$(bool, xcall, addXCallFunction)("evaluateLua", &xcall_evaluateLua);
+	$(bool, xcall, addXCallFunction)("evaluateLuaScript", &xcall_evaluateLuaScript);
+
 	stateFunctions = g_hash_table_new(&g_direct_hash, &g_direct_equal);
 	functionState = g_hash_table_new(&g_str_hash, &g_str_equal);
 }
@@ -59,6 +65,10 @@ API void luaInitXCall()
  */
 API void luaFreeXCall()
 {
+	// Unregister global xcall functions
+	$(bool, xcall, delXCallFunction)("evaluateLua");
+	$(bool, xcall, delXCallFunction)("evaluateLuaScript");
+
 	g_hash_table_foreach_remove(stateFunctions, &unregisterLuaXCallFunctions, NULL);
 	g_hash_table_destroy(stateFunctions);
 	g_hash_table_destroy(functionState);
@@ -309,3 +319,72 @@ static GString *luaXCallFunction(const char *xcall)
 
 	return retstr;
 }
+
+/**
+ * XCallFunction to evaluate Lua code
+ * XCall parameters:
+ *  * string eval	the lua code to evaluate
+ * XCall result:
+ * 	* int success	nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_evaluateLua(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *eval = $(Store *, store, getStorePath)(xcs, "eval");
+
+	if(eval == NULL || eval->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'eval'"));
+	} else {
+		char *code = eval->content.string;
+		bool evaluated = evaluateLua(code);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+
+/**
+ * XCallFunction to evaluate a Lua script
+ * XCall parameters:
+ *  * string file	the lua code to evaluate
+ * XCall result:
+ * 	* int success	nonzero if successful
+ *
+ * @param xcall		the xcall in serialized store form
+ * @result			a return value in serialized store form
+ */
+static GString *xcall_evaluateLuaScript(const char *xcall)
+{
+	Store *xcs = $(Store *, store, parseStoreString)(xcall);
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *file = $(Store *, store, getStorePath)(xcs, "file");
+
+	if(file == NULL || file->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'file'"));
+	} else {
+		char *filename = file->content.string;
+		bool evaluated = evaluateLuaScript(filename);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
+	}
+
+	GString *ret = $(GString *, store, writeStoreGString)(retstore);
+	$(void, store, freeStore)(xcs);
+	$(void, store, freeStore)(retstore);
+
+	return ret;
+}
+

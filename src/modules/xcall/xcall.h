@@ -22,13 +22,15 @@
 #ifndef XCALL_XCALL_H
 #define XCALL_XCALL_H
 
+#include "modules/store/store.h"
+
 /**
  * Function pointer type for an XCall function
  */
-typedef GString *(XCallFunction)(const char *xcall);
+typedef Store *(XCallFunction)(Store *xcall);
 
 API bool addXCallFunction(const char *name, XCallFunction *func);
 API bool delXCallFunction(const char *name);
-API GString *invokeXCall(const char *xcall) G_GNUC_WARN_UNUSED_RESULT;
+API Store *invokeXCall(Store *xcall) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

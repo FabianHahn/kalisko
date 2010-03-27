@@ -33,6 +33,8 @@
 #include "log.h"
 #include "module.h"
 #include "modules/xcall/xcall.h"
+#include "modules/store/store.h"
+#include "modules/store/write.h"
 #include "api.h"
 #include "phpext_kalisko.h"
 
@@ -59,9 +61,11 @@ PHP_FUNCTION(invokeXCall)
 		return;
 	}
 
-	GString *ret = $(GString *, xcall, invokeXCall)(xcall);
-	ZVAL_STRING(return_value, ret->str, true);
-	g_string_free(ret, true);
+	Store *ret = $(Store *, xcall, invokeXCallByString)(xcall);
+	GString *retstr = $(GString *, store, writeStoreGString)(ret);
+	ZVAL_STRING(return_value, retstr->str, true);
+	g_string_free(retstr, true);
+	$(void, store, freeStore)(ret);
 }
 
 function_entry php_kalisko_ext_functions[] =

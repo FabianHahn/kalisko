@@ -36,7 +36,7 @@
 MODULE_NAME("test_lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_javascript module");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 2, 1), MODULE_DEPENDENCY("javascript_core", 0, 1, 0),
 		MODULE_DEPENDENCY("xcall", 0, 1, 5), MODULE_DEPENDENCY("store", 0, 5, 3));

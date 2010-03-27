@@ -6,7 +6,7 @@ var kalisko = {
 	logError: function(text)
 	{
 		var ret = xcall.invoke(
-			'error = "' + text + '", xcall = { function = logError }');
+			'text = "' + text + '", xcall = { function = logError }');
 
 		var parsedRet = parseStore(ret);
 
@@ -16,17 +16,17 @@ var kalisko = {
 	logWarning: function(text)
 	{
 		var ret = xcall.invoke(
-			'warning = "' + text + '", xcall = { function = logWarning }');
+			'text = "' + text + '", xcall = { function = logWarning }');
 
 		var parsedRet = parseStore(ret);
 
-		return true;
+		return isset(parsedRet) && isset(parsedRet.success) && parsedRet.success > 0;
 	},
 
 	logInfo: function(text)
 	{
 		var ret = xcall.invoke(
-			'info = "' + text + '", xcall = { function = logInfo }');
+			'text = "' + text + '", xcall = { function = logInfo }');
 
 		var parsedRet = parseStore(ret);
 
@@ -36,7 +36,7 @@ var kalisko = {
 	logDebug: function(text)
 	{
 		var ret = xcall.invoke(
-			'debug = "' + text + '", xcall = { function = logDebug }');
+			'text = "' + text + '", xcall = { function = logDebug }');
 
 		var parsedRet = parseStore(ret);
 

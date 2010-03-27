@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -93,8 +93,8 @@ API bool delXCallFunction(const char *name)
 /**
  * Invokes an xcall
  *
- * @param xcall		a string store containing the xcall
- * @result			a string store containing the result of the xcall, must be freed by the caller with g_string_free
+ * @param xcall		a store containing the xcall
+ * @result			a store containing the result of the xcall, must be freed by the caller with freeStore
  */
 API Store *invokeXCall(Store *xcall)
 {
@@ -169,5 +169,29 @@ API Store *invokeXCall(Store *xcall)
 	}
 
 	return retstore;
+}
+
+/**
+ * Invokes an xcall by a string store
+ *
+ * @param xcallstr	a store string containing the xcall
+ * @result			a store containing the result of the xcall, must be freed by the caller with freeStore
+ */
+API Store *invokeXCallByString(const char *xcallstr)
+{
+	Store *ret;
+	Store *xcall = $(Store *, store, parseStoreString)(xcallstr);
+
+	if(xcall == NULL) {
+		ret = $(Store *, store, createStore)();
+		GString *err = g_string_new("");
+		g_string_append_printf(err, "Failed to parse XCall store string: %s", xcallstr);
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+		g_string_free(err, true);
+	} else {
+		ret = invokeXCall(xcall);
+	}
+
+	return ret;
 }
 

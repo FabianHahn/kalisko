@@ -32,5 +32,6 @@ typedef Store *(XCallFunction)(Store *xcall);
 API bool addXCallFunction(const char *name, XCallFunction *func);
 API bool delXCallFunction(const char *name);
 API Store *invokeXCall(Store *xcall) G_GNUC_WARN_UNUSED_RESULT;
+API Store *invokeXCallByString(const char *xcallstr) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

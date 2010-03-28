@@ -36,17 +36,27 @@
 MODULE_NAME("test_lang_javascript");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_javascript module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 3, 0), MODULE_DEPENDENCY("javascript_core", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_javascript", 0, 3, 1), MODULE_DEPENDENCY("javascript_core", 0, 1, 4), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static char *testJSScript = "\
 function hello(xcall)\
 {\
-	return \"hello = world, xcall = { function = jsHello }\";\
+	var ret = {};\
+	ret.hello = \"world\";\
+	ret.xcall = {};\
+	ret.xcall.function = \"jsHello\";\
+	return ret;\
 }\
 \
 xcall.addFunction(\"jsHello\", hello);";
+
+static char *callHelloJSScriptWithObj = "\
+		var call = {};\
+		call.xcall = {};\
+		call.xcall.function = \"jsHello\";\
+		xcall.invoke(call);";
 
 static char *callHelloJSScript = "xcall.invoke(\"xcall = { function = jsHello }\");";
 static char *removeHelloJSScript = "xcall.delFunction(\"jsHello\")";
@@ -57,11 +67,13 @@ TEST_CASE(callJSFunction);
 TEST_CASE(jsCallsXCall);
 TEST_CASE(delXCall);
 TEST_CASE(logWrappedXCall);
+TEST_CASE(callJSFunctionWithObj);
 
 TEST_SUITE_BEGIN(lang_javascript)
 	tearUp();
 	TEST_CASE_ADD(callJSFunction);
 	TEST_CASE_ADD(jsCallsXCall);
+	TEST_CASE_ADD(callJSFunctionWithObj);
 	TEST_CASE_ADD(delXCall);
 	TEST_CASE_ADD(logWrappedXCall);
 TEST_SUITE_END
@@ -88,12 +100,11 @@ TEST_CASE(jsCallsXCall)
 {
 	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
-	char *retStr;
 
 	TEST_ASSERT(JS_EvaluateScript(envInfo.context, envInfo.globalObject, callHelloJSScript, strlen(callHelloJSScript), "test", 0, &ret));
-	TEST_ASSERT(JS_ConvertArguments(envInfo.context, 1, &ret, "s", &retStr));
 
-	Store *retStore = $(Store *, store, parseStoreString)(retStr);
+	Store *retStore = $(Store *, lang_javascript, javaScriptValueToStore)(ret, envInfo.context);
+
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "hello")->content.string, "world") == 0);
 
 	$(void, store, freeStore)(retStore);
@@ -105,14 +116,12 @@ TEST_CASE(delXCall)
 {
 	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
-	char *retStr;
 
 	TEST_ASSERT(JS_EvaluateScript(envInfo.context, envInfo.globalObject, removeHelloJSScript, strlen(removeHelloJSScript), "test", 0, NULL));
 
 	TEST_ASSERT(JS_EvaluateScript(envInfo.context, envInfo.globalObject, callHelloJSScript, strlen(callHelloJSScript), "test", 0, &ret));
-	TEST_ASSERT(JS_ConvertArguments(envInfo.context, 1, &ret, "s", &retStr));
 
-	Store *retStore = $(Store *, store, parseStoreString)(retStr);
+	Store *retStore = $(Store *, lang_javascript, javaScriptValueToStore)(ret, envInfo.context);
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "xcall/error")->content.string);
 
 	$(void, store, freeStore)(retStore);
@@ -128,6 +137,22 @@ TEST_CASE(logWrappedXCall)
 
 	TEST_ASSERT(JSVAL_IS_BOOLEAN(ret));
 	TEST_ASSERT(JSVAL_TO_BOOLEAN(ret));
+
+	TEST_PASS;
+}
+
+TEST_CASE(callJSFunctionWithObj)
+{
+	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
+	jsval ret;
+
+	TEST_ASSERT(JS_EvaluateScript(envInfo.context, envInfo.globalObject, callHelloJSScriptWithObj, strlen(callHelloJSScriptWithObj), "test", 0, &ret));
+
+	Store *retStore = $(Store *, lang_javascript, javaScriptValueToStore)(ret, envInfo.context);
+
+	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "hello")->content.string, "world") == 0);
+
+	$(void, store, freeStore)(retStore);
 
 	TEST_PASS;
 }

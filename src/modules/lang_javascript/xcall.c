@@ -28,7 +28,6 @@
 #include "log.h"
 #include "types.h"
 #include "memory_alloc.h"
-#include "modules/lang_javascript/xcall.h"
 #include "modules/store/parse.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
@@ -36,6 +35,9 @@
 #include "modules/xcall/xcall.h"
 
 #include "api.h"
+#include "modules/lang_javascript/lang_javascript.h"
+#include "modules/lang_javascript/store.h"
+#include "modules/lang_javascript/xcall.h"
 
 static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
@@ -87,6 +89,7 @@ API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 
 /**
  * Native function representing the 'xcall.invokeXCall' function in JavaScript.
+ * The function takes a string or an object representing a XCall.
  *
  * @param context
  * @param object
@@ -99,19 +102,36 @@ static JSBool js_invokeXCall(JSContext *context, JSObject *object, uintN argc, j
 {
 	// convert the given parameter
 	char *xcall;
-	if(!JS_ConvertArguments(context, 1, argv, "s", &xcall)) {
-		JS_ReportError(context, "Given parameter must be a string.");
+	Store *ret;
+	if(JSVAL_IS_OBJECT(argv[0])) {
+		Store *convStore = $(Store *, lang_javascript, javaScriptValueToStore)(argv[0], context);
+
+		if(!convStore) {
+			JS_ReportError(context, "Given parameter must be a object representing a XCall.");
+			return JS_FALSE;
+		}
+
+		ret = $(Store *, xcall, invokeXCall)(convStore);
+
+		$(void, store, freeStore)(convStore);
+	} else if(JS_ConvertArguments(context, 1, argv, "s", &xcall)) {
+		ret = $(Store *, xcall, invokeXCallByString)(xcall);
+	} else {
+		JS_ReportError(context, "Given parameter must be a string or object representing a XCall.");
 		return JS_FALSE;
 	}
 
-	// do the call
-	Store *ret = $(GString *, xcall, invokeXCallByString)(xcall);
-	GString *xcallReturn = $(GString *, store, writeStoreGString)(ret);
-	$(void, store, freeStore)(ret);
+	if(!JS_EnterLocalRootScope(context)) {
+		JS_ReportError(context, "Could not enter Local Root Scope.");
+		return JS_FALSE;
+	}
 
-	// prepare returned string for JavaScript environment and return it
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(context, xcallReturn->str));
-	g_string_free(xcallReturn, true);
+	// return the result as JavaScript store object
+	*rval = storeToJavaScriptValue(ret, context);
+
+	JS_LeaveLocalRootScope(context);
+
+	$(void, store, freeStore)(ret);
 
 	return JS_TRUE;
 
@@ -227,10 +247,20 @@ static Store *jsInvokeXCallFunction(Store *xcall)
 	jsval retValue;
 	jsval argv[1];
 
-	// FIXME: use store.h to create js store representation instead of string (see lang_lua/xcall.c)
-	GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-	argv[0] = STRING_TO_JSVAL(JS_NewStringCopyZ(function->context, xcallstr->str));
-	g_string_free(xcallstr, true);
+	if(!JS_EnterLocalRootScope(function->context)) {
+		char *errStr = "Could not enter local root scope. XCall Invoke stopped";
+		LOG_WARNING("%s", errStr);
+
+		Store *ret = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(errStr));
+
+		JS_LeaveLocalRootScope(function->context);
+
+		return ret;
+	}
+
+	argv[0] = storeToJavaScriptValue(xcall, function->context);
 
 	if(!JS_CallFunctionValue(function->context, function->object, *function->function, 1, argv, &retValue)) {
 		GString *errorStr = g_string_new("");
@@ -242,12 +272,15 @@ static Store *jsInvokeXCallFunction(Store *xcall)
 
 		g_string_free(errorStr, true);
 
+		JS_LeaveLocalRootScope(function->context);
+
 		return ret;
 	}
 
-	if(!JSVAL_IS_STRING(retValue)) {
+	if(!JSVAL_IS_OBJECT(retValue)) {
 		GString *errorStr = g_string_new("");
-		g_string_append_printf(errorStr, "JavaScript function '%s' did not return a string.", functionName->content.string);
+
+		g_string_append_printf(errorStr, "JavaScript function '%s' did not return an object.", functionName->content.string);
 
 		Store *ret = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
@@ -255,8 +288,30 @@ static Store *jsInvokeXCallFunction(Store *xcall)
 
 		g_string_free(errorStr, true);
 
+		JS_LeaveLocalRootScope(function->context);
+
 		return ret;
 	}
 
-	return $(Store *, store, parseStoreString)(JS_GetStringBytes(JS_ValueToString(function->context, retValue)));
+	Store *retStore = javaScriptValueToStore(retValue, function->context);
+
+	if(!retStore) {
+		GString *errorStr = g_string_new("");
+
+		g_string_append_printf(errorStr, "JavaScript function '%s' did not return a parseable Store JavaScript object.", functionName->content.string);
+
+		Store *ret = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)(errorStr->str));
+
+		g_string_free(errorStr, true);
+
+		JS_LeaveLocalRootScope(function->context);
+
+		return ret;
+	}
+
+	JS_LeaveLocalRootScope(function->context);
+
+	return retStore;
 }

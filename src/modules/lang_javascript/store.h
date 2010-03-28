@@ -23,5 +23,7 @@
 #define LANG_JAVASCRIPT_STORE_H
 
 API void jsAddStoreFunctions(JSContext *context, JSObject *globalObj);
+API jsval storeToJavaScriptValue(Store *store, JSContext *context);
+API Store *javaScriptValueToStore(jsval value, JSContext *context);
 
 #endif

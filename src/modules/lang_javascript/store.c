@@ -33,9 +33,9 @@
 
 #include "api.h"
 #include "modules/lang_javascript/store.h"
+#include "modules/lang_javascript/xcall.h"
 
 static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
-static jsval parseJSStoreValue(Store *store, JSContext *context);
 
 /**
  * Adds to the given global object functions to work with Store in the JavaScript world.
@@ -81,7 +81,7 @@ static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, js
 		return JS_FALSE;
 	}
 
-	jsval ret = parseJSStoreValue(store, context);
+	jsval ret = storeToJavaScriptValue(store, context);
 	*rval = ret;
 
 	// After we set the return value and referenced our new object we can let GC run again
@@ -102,7 +102,7 @@ static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, js
  * @param context	The context in which the jsval should be
  * @return A jsval representing the Store
  */
-static jsval parseJSStoreValue(Store *store, JSContext *context)
+API jsval storeToJavaScriptValue(Store *store, JSContext *context)
 {
 	assert(store != NULL);
 	switch(store->type) {
@@ -124,8 +124,7 @@ static jsval parseJSStoreValue(Store *store, JSContext *context)
 				char *keyStr = key;
 				Store *valueStore = value;
 
-				jsval value = parseJSStoreValue(valueStore, context);
-				assert(JS_DefineProperty(context, obj, keyStr, value, NULL, NULL, 0));
+				assert(JS_DefineProperty(context, obj, keyStr, storeToJavaScriptValue(valueStore, context), NULL, NULL, JSPROP_ENUMERATE));
 			}
 
 			return OBJECT_TO_JSVAL(obj);
@@ -140,7 +139,7 @@ static jsval parseJSStoreValue(Store *store, JSContext *context)
 			}
 
 			for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next) {
-				*list++ = parseJSStoreValue(iter->data, context);
+				*list++ = storeToJavaScriptValue(iter->data, context);
 			}
 
 			assert(JS_NewArrayObject(context, store->content.list->length, list));
@@ -170,5 +169,70 @@ static jsval parseJSStoreValue(Store *store, JSContext *context)
 		default:
 			LOG_ERROR("Unknown Store Type. This is a bug, please report it");
 			return JSVAL_NULL;
+	}
+}
+
+API Store *javaScriptValueToStore(jsval value, JSContext *context)
+{
+	switch(JS_TypeOfValue(context, value)) {
+		case JSTYPE_OBJECT:
+		{
+			JSObject *obj = JSVAL_TO_OBJECT(value);
+			if(JS_IsArrayObject(context, obj)) {
+				GQueue *list = g_queue_new();
+				unsigned int length;
+
+				JS_GetArrayLength(context, obj, &length);
+
+				for(unsigned int i = 0; i < length; i++) {
+					jsval ret;
+					assert(JS_GetElement(context, obj, i, &ret));
+					g_queue_push_tail(list, javaScriptValueToStore(ret, context));
+				}
+
+				Store *store = $(Store *, store, createStoreListValue)(list);
+
+				return store;
+			} else {
+				GHashTable *array = g_hash_table_new(&g_str_hash, &g_str_equal);
+
+				JSIdArray *arrIDs = JS_Enumerate(context, obj);
+				for(int i = 0; i < arrIDs->length; i++) {
+					jsval propVal;
+					jsval propName;
+
+					assert(JS_IdToValue(context, arrIDs->vector[i], &propName));
+					assert(JS_GetPropertyById(context, obj, arrIDs->vector[i], &propVal));
+
+					g_hash_table_insert(array, JS_GetStringBytes(JS_ValueToString(context, propName)),
+							javaScriptValueToStore(propVal, context));
+				}
+
+				JS_DestroyIdArray(context, arrIDs);
+
+				Store *store = $(Store *, store, createStoreArrayValue)(array);
+
+				return store;
+			}
+		}
+		case JSTYPE_STRING:
+			return $(Store *, store, createStoreStringValue)(JS_GetStringBytes(JSVAL_TO_STRING(value)));
+		case JSTYPE_NUMBER:
+			if(JSVAL_IS_INT(value)) {
+				int convValue;
+				assert(JS_ValueToInt32(context, value, &convValue));
+
+				return $(Store *, store, createStoreIntegerValue)(convValue);
+			} else if(JSVAL_IS_DOUBLE(value)) {
+				double convValue;
+				assert(JS_ValueToNumber(context, value, &convValue));
+
+				return $(Store *, store, createStoreFloatNumberValue)(convValue);
+			}
+		case JSTYPE_BOOLEAN:
+			return $(Store *, store, createStoreIntegerValue)(JSVAL_IS_BOOLEAN(value) ? 1 : 0);
+		default:
+			LOG_WARNING("Could not convert JavaScript Type for Store.");
+			return $(Store *, store, createStore)();
 	}
 }

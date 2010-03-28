@@ -1,32 +1,32 @@
 var kalisko = {
-	logError: function(text)
+	logError: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logError }');
+			'message = "' + message + '", xcall = { function = logError }');
 
 		return ret.success > 0;
 	},
 
-	logWarning: function(text)
+	logWarning: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logWarning }');
+			'message = "' + message + '", xcall = { function = logWarning }');
 
 		return ret.success > 0;
 	},
 
-	logInfo: function(text)
+	logInfo: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logInfo }');
+			'message = "' + message + '", xcall = { function = logInfo }');
 
 		return ret.success > 0;
 	},
 
-	logDebug: function(text)
+	logDebug: function(message)
 	{
 		var ret = xcall.invoke(
-			'text = "' + text + '", xcall = { function = logDebug }');
+			'message = "' + message + '", xcall = { function = logDebug }');
 
 		return ret.success > 0;
 	}

@@ -33,8 +33,8 @@
 MODULE_NAME("test_xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_irc_parser module");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
+MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 2, 0));
 
 TEST_CASE(xcall_irc_parse);
@@ -105,7 +105,7 @@ TEST_CASE(xcall_irc_parse_no_message)
 
 TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
 {
-	Store *retStore = $(GString *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcUserMask\" }");
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcUserMask\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 

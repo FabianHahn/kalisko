@@ -163,7 +163,7 @@ API bool connectSocket(Socket *s)
 		s->connected = true;
 
 		int param = 1;
-		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *)&param, sizeof(int))) {
+		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *)&param, sizeof(int)) == -1) {
 			LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
 			freeSocket(s);
 
@@ -387,15 +387,20 @@ API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client)
 	*client = NULL;
 
 	struct sockaddr_storage remoteAddr;
-	int remoteAddrSize = sizeof(remoteAddr);
+	socklen_t remoteAddrSize = sizeof(remoteAddr);
 
 	int ret = accept(server->fd, (struct sockaddr *)&remoteAddr, &remoteAddrSize);
 
-	if(WSAGetLastError() == WSAEWOULDBLOCK || ret == EAGAIN) {
-		return SERVER_SOCKET_NO_CONNECTION;
-	}
-
 	if(ret == -1) {
+#ifdef WIN32
+		if(WSAGetLastError() == WSAEWOULDBLOCK) {
+			return SERVER_SOCKET_NO_CONNECTION;
+		}
+#else
+		if(errno == EAGAIN) {
+			return SERVER_SOCKET_NO_CONNECTION;
+		}
+#endif
 		server->connected = false;
 
 		return SERVER_SOCKET_ERROR;

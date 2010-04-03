@@ -126,7 +126,7 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 	Socket *socket = socket_p;
 
 	if(!socket->connected) { // Remove socket from poll list if disconnected
-		LOG_WARNING("Polling not connected socket %p, removing from list", socket);
+		LOG_WARNING("Polling not connected socket %d, removing from list", socket->fd);
 		return TRUE;
 	}
 
@@ -146,10 +146,15 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 		Socket *clientSocket;
 		bool serverSockStatus = serverSocketAccept(socket, &clientSocket);
 
-		if(serverSockStatus == SERVER_SOCKET_NEW_CONNECTION) {
-			HOOK_TRIGGER(socket_client_connected, clientSocket);
-		} else if(serverSockStatus = SERVER_SOCKET_ERROR) {
-			HOOK_TRIGGER(sock_error, socket);
+		switch(serverSockStatus) {
+			case SERVER_SOCKET_NEW_CONNECTION:
+				HOOK_TRIGGER(socket_client_connected, clientSocket);
+				break;
+			case SERVER_SOCKET_ERROR:
+				HOOK_TRIGGER(sock_error, socket);
+
+				LOG_SYSTEM_ERROR("Server socket error occured on socket %d", socket->fd);
+				break;
 		}
 	}
 

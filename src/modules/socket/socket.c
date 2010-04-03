@@ -160,22 +160,36 @@ API bool connectSocket(Socket *s)
 			return false;
 		}
 
+		s->connected = true;
+
+		int param = 1;
+		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *)&param, sizeof(int))) {
+			LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
+			freeSocket(s);
+
+			return false;
+		}
+
 		if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
 			LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
+			freeSocket(s);
+
 			return false;
 		}
 
 		if(listen(s->fd, 5) == -1) {
 			LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
+			freeSocket(s);
+
 			return false;
 		}
 
 		if(!setSocketNonBlocking(s->fd)) {
 			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+			freeSocket(s);
+
 			return false;
 		}
-
-		s->connected = true;
 
 		freeaddrinfo(server);
 
@@ -199,17 +213,21 @@ API bool connectSocket(Socket *s)
 			return false;
 		}
 
+		s->connected = true;
+
 		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
 			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
+			freeSocket(s);
+
 			return false;
 		}
 
 		if(!setSocketNonBlocking(s->fd)) {
 			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+			freeSocket(s);
+
 			return false;
 		}
-
-		s->connected = true;
 
 		freeaddrinfo(server);
 	}

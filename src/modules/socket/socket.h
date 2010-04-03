@@ -32,11 +32,20 @@ typedef struct {
 	bool connected;
 } Socket;
 
+typedef enum {
+		SERVER_SOCKET_NO_CONNECTION = false,
+		SERVER_SOCKET_NEW_CONNECTION = true,
+		SERVER_SOCKET_ERROR = -1
+} ServerSocketStatus;
+
 API Socket *createClientSocket(char *host, char *port);
+API Socket *createServerSocket(char *port);
 API bool connectSocket(Socket *s);
 API bool disconnectSocket(Socket *s);
 API bool freeSocket(Socket *s);
 API bool socketWriteRaw(Socket *s, void *buffer, int size);
 API int socketReadRaw(Socket *s, void *buffer, int size);
+API bool setSocketNonBlocking(int fd);
+API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client);
 
 #endif

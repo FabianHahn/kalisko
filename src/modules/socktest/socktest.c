@@ -41,16 +41,16 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 2));
 
-static Socket *sock;
-
 HOOK_LISTENER(sample_read);
 HOOK_LISTENER(sample_disconnect);
+HOOK_LISTENER(sample_client_connected);
 
 MODULE_INIT
 {
 	testSocket();
 	HOOK_ATTACH(socket_read, sample_read);
 	HOOK_ATTACH(socket_disconnect, sample_disconnect);
+	HOOK_ATTACH(socket_client_connected, sample_client_connected);
 
 	return true;
 }
@@ -66,26 +66,33 @@ HOOK_LISTENER(sample_read)
 	Socket *s = HOOK_ARG(Socket *);
 	char *read = HOOK_ARG(char *);
 
-	if(s == sock) {
-		printf("%s", read);
-		fflush(stdout);
-	}
+	printf("\n--%d--\n%s\n--------\n", s->fd, read);
 }
 
 HOOK_LISTENER(sample_disconnect)
 {
 	Socket *s = HOOK_ARG(Socket *);
 
-	if(s == sock) {
-		$(bool, socket, freeSocket)(sock);
-	}
+	$(bool, socket, freeSocket)(s);
+}
+
+HOOK_LISTENER(sample_client_connected)
+{
+	Socket *s = HOOK_ARG(Socket *);
+
+	$(bool, socket, setSocketNonBlocking)(s->fd);
+	$(bool, socket, enableSocketPolling)(s);
 }
 
 static void testSocket()
 {
-	sock = $(Socket *, socket, createClientSocket)("www.smf68.ch", "http");
+	Socket *sock = $(Socket *, socket, createClientSocket)("www.smf68.ch", "http");
 	$(bool, socket, connectSocket)(sock);
 	$(bool, socket, enableSocketPolling)(sock);
 
 	$(bool, socket, socketWriteRaw)(sock, REQUEST, sizeof(REQUEST));
+
+	Socket *server = $(Socket *, socket, createServerSocket)("23");
+	$(bool, socket, connectSocket)(server);
+	$(bool, socket, enableSocketPolling)(server);
 }

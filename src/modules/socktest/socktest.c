@@ -29,10 +29,10 @@
 
 #include "api.h"
 
-static void testSocket();
-
 #define BUF 4096
 #define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
+#define ANSWER "Hello there!\nThis is the Kalisko socktest module and client connections are apparently working.\nBye bye :-)"
+static Socket *server;
 
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
@@ -43,14 +43,20 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 2));
 
 HOOK_LISTENER(sample_read);
 HOOK_LISTENER(sample_disconnect);
-HOOK_LISTENER(sample_client_connected);
+HOOK_LISTENER(sample_accept);
 
 MODULE_INIT
 {
-	testSocket();
 	HOOK_ATTACH(socket_read, sample_read);
 	HOOK_ATTACH(socket_disconnect, sample_disconnect);
-	HOOK_ATTACH(socket_client_connected, sample_client_connected);
+	HOOK_ATTACH(socket_accept, sample_accept);
+
+	Socket *http = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
+	$(bool, socket, connectSocket)(http);
+	$(bool, socket, socketWriteRaw)(http, REQUEST, sizeof(REQUEST));
+
+	server = $(Socket *, socket, createServerSocket)("1337");
+	$(bool, socket, connectSocket)(server);
 
 	return true;
 }
@@ -59,6 +65,9 @@ MODULE_FINALIZE
 {
 	HOOK_DETACH(socket_read, sample_read);
 	HOOK_DETACH(socket_disconnect, sample_disconnect);
+	HOOK_DETACH(socket_accept, sample_accept);
+
+	$(bool, socket, freeSocket)(server);
 }
 
 HOOK_LISTENER(sample_read)
@@ -66,7 +75,8 @@ HOOK_LISTENER(sample_read)
 	Socket *s = HOOK_ARG(Socket *);
 	char *read = HOOK_ARG(char *);
 
-	printf("\n--%d--\n%s\n--------\n", s->fd, read);
+	printf("[%d] %s\n", s->fd, read);
+	fflush(stdout);
 }
 
 HOOK_LISTENER(sample_disconnect)
@@ -76,23 +86,8 @@ HOOK_LISTENER(sample_disconnect)
 	$(bool, socket, freeSocket)(s);
 }
 
-HOOK_LISTENER(sample_client_connected)
+HOOK_LISTENER(sample_accept)
 {
 	Socket *s = HOOK_ARG(Socket *);
-
-	$(bool, socket, setSocketNonBlocking)(s->fd);
-	$(bool, socket, enableSocketPolling)(s);
-}
-
-static void testSocket()
-{
-	Socket *sock = $(Socket *, socket, createClientSocket)("www.smf68.ch", "http");
-	$(bool, socket, connectSocket)(sock);
-	$(bool, socket, enableSocketPolling)(sock);
-
-	$(bool, socket, socketWriteRaw)(sock, REQUEST, sizeof(REQUEST));
-
-	Socket *server = $(Socket *, socket, createServerSocket)("23");
-	$(bool, socket, connectSocket)(server);
-	$(bool, socket, enableSocketPolling)(server);
+	$(bool, socket, socketWriteRaw)(s, ANSWER, sizeof(ANSWER));
 }

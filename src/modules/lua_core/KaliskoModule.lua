@@ -118,6 +118,12 @@ function KaliskoModule:revoke()
 	return xcs.success > 0
 end
 
+function KaliskoModule:forceUnload()
+	xcall = invokeXCall('xcall = { function = forceUnloadModule }; module = ' .. self.name)
+	xcs = parseStore(xcall)
+	return xcs.success > 0
+end
+
 function KaliskoModule:getActiveModules() -- declared as method for convenience, doesn't really need a self
 	xcall = invokeXCall('xcall = { function = getActiveModules }')
 	xcs = parseStore(xcall)

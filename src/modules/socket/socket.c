@@ -407,6 +407,10 @@ API Socket *socketAccept(Socket *server)
 		return NULL;
 	}
 
+	if(!setSocketNonBlocking(fd)) {
+		return NULL;
+	}
+
 	GString *ip = ip2str(remoteAddress.sin_addr.s_addr);
 	GString *port = g_string_new("");
 	g_string_append_printf(port, "%d", remoteAddress.sin_port);

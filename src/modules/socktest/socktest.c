@@ -37,8 +37,8 @@ static Socket *server;
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
+MODULE_BCVERSION(0, 2, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 3, 0));
 
 HOOK_LISTENER(sample_read);
@@ -54,9 +54,11 @@ MODULE_INIT
 	Socket *http = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
 	$(bool, socket, connectSocket)(http);
 	$(bool, socket, socketWriteRaw)(http, REQUEST, sizeof(REQUEST));
+	$(bool, socket, enableSocketPolling)(http);
 
 	server = $(Socket *, socket, createServerSocket)("1337");
 	$(bool, socket, connectSocket)(server);
+	$(bool, socket, enableSocketPolling)(server);
 
 	return true;
 }
@@ -75,8 +77,10 @@ HOOK_LISTENER(sample_read)
 	Socket *s = HOOK_ARG(Socket *);
 	char *read = HOOK_ARG(char *);
 
-	printf("[%d] %s\n", s->fd, read);
-	fflush(stdout);
+	if(s != NULL) {
+		printf("%s", read);
+		fflush(stdout);
+	}
 }
 
 HOOK_LISTENER(sample_disconnect)
@@ -90,4 +94,5 @@ HOOK_LISTENER(sample_accept)
 {
 	Socket *s = HOOK_ARG(Socket *);
 	$(bool, socket, socketWriteRaw)(s, ANSWER, sizeof(ANSWER));
+	$(bool, socket, freeSocket)(s);
 }

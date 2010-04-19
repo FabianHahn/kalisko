@@ -48,7 +48,10 @@
 #include "socket.h"
 #include "poll.h"
 
+#define IP_STR_LEN 16
 static bool setSocketNonBlocking(int fd);
+static char *ip2str(unsigned int ip);
+
 
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
@@ -165,7 +168,7 @@ API bool connectSocket(Socket *s)
 		s->connected = true;
 
 		int param = 1;
-		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *)&param, sizeof(int)) == -1) {
+		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *) &param, sizeof(int)) == -1) {
 			LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
 			freeSocket(s);
 
@@ -378,46 +381,45 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 }
 
 /**
- * Checks a server socket for new connections.
+ * Accepts a client socket from a listening server socket
  *
  * @param server		the server socket
- * @param client		out parameter referencing the socket to the connected client
- * @return ServerSocketStatus
+ * @return Socket		the accepted socket
  */
-API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client)
+API Socket *socketAccept(Socket *server)
 {
-	*client = NULL;
+	struct sockaddr_in remoteAddress;
+	socklen_t remoteAddressSize = sizeof(remoteAddr);
 
-	struct sockaddr_storage remoteAddr;
-	socklen_t remoteAddrSize = sizeof(remoteAddr);
-
-	int ret = accept(server->fd, (struct sockaddr *)&remoteAddr, &remoteAddrSize);
+	int fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize);
 
 	if(ret == -1) {
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
-			return SERVER_SOCKET_NO_CONNECTION;
-		}
 #else
-		if(errno == EAGAIN) {
-			return SERVER_SOCKET_NO_CONNECTION;
-		}
+		if(errno == EAGAIN || errno = EWOULDBLOCK) {
 #endif
-		server->connected = false;
+		} else {
+			LOG_SYSTEM_ERROR("Failed to accept client socket from server socket %d", server->fd);
+			disconnectSocket(server);
+		}
 
-		return SERVER_SOCKET_ERROR;
+		return NULL;
 	}
 
-	Socket *clientSock = ALLOCATE_OBJECT(Socket);
-	clientSock->fd = ret;
-	clientSock->connected = true;
-	clientSock->host = NULL;
-	clientSock->port = NULL;
-	clientSock->server = false;
+	GString *ip = ip2str(remoteAddress.sin_addr.s_addr);
+	LOG_INFO("Incoming connection %d from %s:%d on server socket %d", fd, ip, remoteAddress.sin_port, server->fd);
 
-	*client = clientSock;
+	Socket *client = ALLOCATE_OBJECT(Socket);
+	client->fd = fd;
+	client->connected = true;
+	client->host = ip->str;
+	client->port = remoteAddress.sin_port;
+	client->server = false;
 
-	return SERVER_SOCKET_NEW_CONNECTION;
+	g_string_free(ip, false);
+
+	return client;
 }
 
 /**
@@ -448,4 +450,11 @@ static bool setSocketNonBlocking(int fd)
 #endif
 
 	return true;
+}
+
+static GString *ip2str(unsigned int ip)
+{
+	GString *ipstr = g_string_new();
+	g_string_append_printf("%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
+	return ipstr;
 }

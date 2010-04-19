@@ -50,7 +50,7 @@ API void initPoll(int interval)
 	HOOK_ADD(socket_read);
 	HOOK_ADD(socket_error);
 	HOOK_ADD(socket_disconnect);
-	HOOK_ADD(socket_client_connected);
+	HOOK_ADD(socket_accept);
 
 	poll_table = g_hash_table_new(&g_int_hash, &g_int_equal);
 
@@ -67,7 +67,7 @@ API void freePoll()
 	HOOK_DEL(socket_read);
 	HOOK_DEL(socket_error);
 	HOOK_DEL(socket_disconnect);
-	HOOK_DEL(socket_client_connected);
+	HOOK_DEL(socket_accept);
 
 	g_hash_table_destroy(poll_table);
 }
@@ -144,17 +144,11 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 		}
 	} else {
 		Socket *clientSocket;
-		bool serverSockStatus = serverSocketAccept(socket, &clientSocket);
 
-		switch(serverSockStatus) {
-			case SERVER_SOCKET_NEW_CONNECTION:
-				HOOK_TRIGGER(socket_client_connected, clientSocket);
-				break;
-			case SERVER_SOCKET_ERROR:
-				HOOK_TRIGGER(sock_error, socket);
-
-				LOG_SYSTEM_ERROR("Server socket error occured on socket %d", socket->fd);
-				break;
+		if((clientSocket = socketAccept(socket)) != NULL) {
+			HOOK_TRIGGER(socket_accept, clientSocket);
+		} else {
+			HOOK_TRIGGER(socket_error, socket);
 		}
 	}
 

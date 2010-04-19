@@ -48,6 +48,8 @@
 #include "socket.h"
 #include "poll.h"
 
+static bool setSocketNonBlocking(int fd);
+
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
@@ -424,7 +426,7 @@ API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client)
  * @param fd		the descriptor of the socket to set non-blocking
  * @result			true if successful
  */
-API bool setSocketNonBlocking(int fd)
+static bool setSocketNonBlocking(int fd)
 {
 #ifdef WIN32
 	unsigned long nbmode = 1;

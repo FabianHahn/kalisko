@@ -45,7 +45,6 @@ API bool disconnectSocket(Socket *s);
 API bool freeSocket(Socket *s);
 API bool socketWriteRaw(Socket *s, void *buffer, int size);
 API int socketReadRaw(Socket *s, void *buffer, int size);
-API bool setSocketNonBlocking(int fd);
 API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client);
 
 #endif

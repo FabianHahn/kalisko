@@ -81,7 +81,7 @@ function KaliskoModule:getReferenceCount()
 end
 
 function KaliskoModule:getDependencies()
-	xcall = invokeXCall('xcall = { function = getModuleDependencies }')
+	xcall = invokeXCall('xcall = { function = getModuleDependencies }; module = ' .. self.name)
 	xcs = parseStore(xcall)
 	
 	ret = {}
@@ -94,7 +94,7 @@ function KaliskoModule:getDependencies()
 end
 
 function KaliskoModule:getReverseDependencies()
-	xcall = invokeXCall('xcall = { function = getModuleReverseDependencies }')
+	xcall = invokeXCall('xcall = { function = getModuleReverseDependencies }; module = ' .. self.name)
 	xcs = parseStore(xcall)
 	
 	ret = {}

@@ -35,15 +35,18 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
+
+static Store *xcall_getXCallFunctions(Store *xcall);
 
 static GHashTable *functions;
 
 MODULE_INIT
 {
 	functions = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	addXCallFunction("getXCallFunctions", &xcall_getXCallFunctions);
 
 	return true;
 }
@@ -51,6 +54,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	g_hash_table_destroy(functions);
+	delXCallFunction("getXCallFunctions");
 }
 
 /**
@@ -188,5 +192,31 @@ API Store *invokeXCallByString(const char *xcallstr)
 	}
 
 	return ret;
+}
+
+/**
+ * XCallFunction to fetch all available XCall functions
+ * XCall result:
+ * 	* list functions		a string list of all available xcall functions
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getXCallFunctions(Store *xcall)
+{
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	GList *funcs = g_hash_table_get_keys(functions);
+	Store *functionsStore = $(Store *, store, createStoreListValue)(NULL);
+
+	for(GList *iter = funcs; iter != NULL; iter = iter->next) {
+		g_queue_push_tail(functionsStore->content.list, $(Store *, store, createStoreStringValue)(iter->data));
+	}
+
+	$(bool, store, setStorePath)(retstore, "functions", functionsStore);
+	g_list_free(funcs);
+
+	return retstore;
 }
 

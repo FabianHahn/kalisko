@@ -48,8 +48,6 @@
 #include "socket.h"
 #include "poll.h"
 
-static bool setSocketNonBlocking(int fd);
-
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
@@ -111,6 +109,25 @@ API Socket *createClientSocket(char *host, char *port)
 }
 
 /**
+ * Create a server socket
+ *
+ * @param port		the port for server connections
+ * @result			the created socket
+ */
+API Socket *createServerSocket(char *port)
+{
+	Socket *s = ALLOCATE_OBJECT(Socket);
+
+	s->fd = -1;
+	s->host = NULL;
+	s->port = strdup(port);
+	s->server = true;
+	s->connected = false;
+
+	return s;
+}
+
+/**
  * Connects a socket
  *
  * @param s			the socket to connect
@@ -124,7 +141,58 @@ API bool connectSocket(Socket *s)
 	}
 
 	if(s->server) {
-		LOG_ERROR("connectSocket not yet implemented for server sockets");
+		struct addrinfo hints;
+		struct addrinfo *server;
+
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_PASSIVE; // fill in the IP automaticly
+
+		int ret;
+		if((ret = getaddrinfo(NULL, s->port, &hints, &server)) == -1) {
+			LOG_ERROR("Failed to create address info for server socket");
+			return false;
+		}
+
+		if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
+			LOG_SYSTEM_ERROR("Failed to create server socket");
+			return false;
+		}
+
+		s->connected = true;
+
+		int param = 1;
+		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *)&param, sizeof(int)) == -1) {
+			LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
+			freeSocket(s);
+
+			return false;
+		}
+
+		if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
+			LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
+			freeSocket(s);
+
+			return false;
+		}
+
+		if(listen(s->fd, 5) == -1) {
+			LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
+			freeSocket(s);
+
+			return false;
+		}
+
+		if(!setSocketNonBlocking(s->fd)) {
+			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+			freeSocket(s);
+
+			return false;
+		}
+
+		freeaddrinfo(server);
+
 	} else {
 		struct addrinfo hints;
 		struct addrinfo *server;
@@ -145,17 +213,21 @@ API bool connectSocket(Socket *s)
 			return false;
 		}
 
+		s->connected = true;
+
 		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
 			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
+			freeSocket(s);
+
 			return false;
 		}
 
 		if(!setSocketNonBlocking(s->fd)) {
 			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+			freeSocket(s);
+
 			return false;
 		}
-
-		s->connected = true;
 
 		freeaddrinfo(server);
 	}
@@ -204,8 +276,14 @@ API bool freeSocket(Socket *s)
 		}
 	}
 
-	free(s->host);
-	free(s->port);
+	if(s->host) {
+		free(s->host);
+	}
+
+	if(s->port) {
+		free(s->port);
+	}
+
 	free(s);
 
 	return true;
@@ -298,12 +376,55 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 }
 
 /**
+ * Checks a server socket for new connections.
+ *
+ * @param server		the server socket
+ * @param client		out parameter referencing the socket to the connected client
+ * @return ServerSocketStatus
+ */
+API ServerSocketStatus serverSocketAccept(Socket *server, Socket **client)
+{
+	*client = NULL;
+
+	struct sockaddr_storage remoteAddr;
+	socklen_t remoteAddrSize = sizeof(remoteAddr);
+
+	int ret = accept(server->fd, (struct sockaddr *)&remoteAddr, &remoteAddrSize);
+
+	if(ret == -1) {
+#ifdef WIN32
+		if(WSAGetLastError() == WSAEWOULDBLOCK) {
+			return SERVER_SOCKET_NO_CONNECTION;
+		}
+#else
+		if(errno == EAGAIN) {
+			return SERVER_SOCKET_NO_CONNECTION;
+		}
+#endif
+		server->connected = false;
+
+		return SERVER_SOCKET_ERROR;
+	}
+
+	Socket *clientSock = ALLOCATE_OBJECT(Socket);
+	clientSock->fd = ret;
+	clientSock->connected = true;
+	clientSock->host = NULL;
+	clientSock->port = NULL;
+	clientSock->server = false;
+
+	*client = clientSock;
+
+	return SERVER_SOCKET_NEW_CONNECTION;
+}
+
+/**
  * Sets a socket to non-blocking I/O mode
  *
  * @param fd		the descriptor of the socket to set non-blocking
  * @result			true if successful
  */
-static bool setSocketNonBlocking(int fd)
+API bool setSocketNonBlocking(int fd)
 {
 #ifdef WIN32
 	unsigned long nbmode = 1;

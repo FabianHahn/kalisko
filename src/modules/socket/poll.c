@@ -50,6 +50,7 @@ API void initPoll(int interval)
 	HOOK_ADD(socket_read);
 	HOOK_ADD(socket_error);
 	HOOK_ADD(socket_disconnect);
+	HOOK_ADD(socket_client_connected);
 
 	poll_table = g_hash_table_new(&g_int_hash, &g_int_equal);
 
@@ -66,6 +67,7 @@ API void freePoll()
 	HOOK_DEL(socket_read);
 	HOOK_DEL(socket_error);
 	HOOK_DEL(socket_disconnect);
+	HOOK_DEL(socket_client_connected);
 
 	g_hash_table_destroy(poll_table);
 }
@@ -124,20 +126,36 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 	Socket *socket = socket_p;
 
 	if(!socket->connected) { // Remove socket from poll list if disconnected
-		LOG_WARNING("Polling not connected socket %p, removing from list", socket);
+		LOG_WARNING("Polling not connected socket %d, removing from list", socket->fd);
 		return TRUE;
 	}
 
-	if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
-		if(!socket->connected) { // socket was disconnected
-			HOOK_TRIGGER(socket_disconnect, socket);
-		} else { // error
-			HOOK_TRIGGER(socket_error, socket);
-		}
+	if(!socket->server) {
+		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
+			if(!socket->connected) { // socket was disconnected
+				HOOK_TRIGGER(socket_disconnect, socket);
+			} else { // error
+				HOOK_TRIGGER(socket_error, socket);
+			}
 
-		return TRUE;
-	} else if(ret > 0) { // we actually read something
-		HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
+			return TRUE;
+		} else if(ret > 0) { // we actually read something
+			HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
+		}
+	} else {
+		Socket *clientSocket;
+		bool serverSockStatus = serverSocketAccept(socket, &clientSocket);
+
+		switch(serverSockStatus) {
+			case SERVER_SOCKET_NEW_CONNECTION:
+				HOOK_TRIGGER(socket_client_connected, clientSocket);
+				break;
+			case SERVER_SOCKET_ERROR:
+				HOOK_TRIGGER(sock_error, socket);
+
+				LOG_SYSTEM_ERROR("Server socket error occured on socket %d", socket->fd);
+				break;
+		}
 	}
 
 	return FALSE;

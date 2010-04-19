@@ -47,6 +47,8 @@ static Store *xcall_getModuleDescription(Store *xcall);
 static Store *xcall_getModuleVersion(Store *xcall);
 static Store *xcall_getModuleBcVersion(Store *xcall);
 static Store *xcall_getModuleReferenceCount(Store *xcall);
+static Store *xcall_getModuleDependencies(Store *xcall);
+static Store *xcall_getModuleReverseDependencies(Store *xcall);
 static Store *xcall_getActiveModules(Store *xcall);
 static Store *xcall_isModuleLoaded(Store *xcall);
 static Store *xcall_requestModule(Store *xcall);
@@ -76,6 +78,8 @@ MODULE_INIT
 	$(bool, xcall, addXCallFunction)("getModuleVersion", &xcall_getModuleVersion);
 	$(bool, xcall, addXCallFunction)("getModuleBcVersion", &xcall_getModuleBcVersion);
 	$(bool, xcall, addXCallFunction)("getModuleReferenceCount", &xcall_getModuleReferenceCount);
+	$(bool, xcall, addXCallFunction)("getModuleDependencies", &xcall_getModuleDependencies);
+	$(bool, xcall, addXCallFunction)("getModuleReverseDependencies", &xcall_getModuleReverseDependencies);
 	$(bool, xcall, addXCallFunction)("getActiveModules", &xcall_getActiveModules);
 	$(bool, xcall, addXCallFunction)("isModuleLoaded", &xcall_isModuleLoaded);
 	$(bool, xcall, addXCallFunction)("requestModule", &xcall_requestModule);
@@ -97,6 +101,8 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("getModuleVersion");
 	$(bool, xcall, delXCallFunction)("getModuleBcVersion");
 	$(bool, xcall, delXCallFunction)("getModuleReferenceCount");
+	$(bool, xcall, delXCallFunction)("getModuleDependencies");
+	$(bool, xcall, delXCallFunction)("getModuleReverseDependencies");
 	$(bool, xcall, delXCallFunction)("getActiveModule");
 	$(bool, xcall, delXCallFunction)("isModuleLoaded");
 	$(bool, xcall, delXCallFunction)("requestModule");
@@ -423,6 +429,78 @@ static Store *xcall_getModuleReferenceCount(Store *xcall)
 		if(rc >= 0) {
 			$(bool, store, setStorePath)(retstore, "reference_count", $(Store *, store, createStoreIntegerValue)(rc));
 		}
+	}
+
+	return retstore;
+}
+
+/**
+ * XCallFunction to fetch a module's dependencies
+ * XCall parameters:
+ *  * string module		the module to check
+ * XCall result:
+ * 	* list modules 		a string list of all dependency modules of the given module
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getModuleDependencies(Store *xcall)
+{
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
+
+	if(module == NULL || module->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
+	} else {
+		char *modname = module->content.string;
+
+		GList *modules = $$(GList *, getModuleDependencies)(modname);
+		Store *modulesStore = $(Store *, store, createStoreListValue)(NULL);
+
+		for(GList *iter = modules; iter != NULL; iter = iter->next) {
+			g_queue_push_tail(modulesStore->content.list, $(Store *, store, createStoreStringValue)(iter->data));
+		}
+
+		$(bool, store, setStorePath)(retstore, "modules", modulesStore);
+		g_list_free(modules);
+	}
+
+	return retstore;
+}
+
+/**
+ * XCallFunction to fetch a module's reverse dependencies
+ * XCall parameters:
+ *  * string module		the module to check
+ * XCall result:
+ * 	* list modules 		a string list of all reverse dependency modules of the given module
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getModuleReverseDependencies(Store *xcall)
+{
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
+
+	if(module == NULL || module->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
+	} else {
+		char *modname = module->content.string;
+
+		GList *modules = $$(GList *, getModuleReverseDependencies)(modname);
+		Store *modulesStore = $(Store *, store, createStoreListValue)(NULL);
+
+		for(GList *iter = modules; iter != NULL; iter = iter->next) {
+			g_queue_push_tail(modulesStore->content.list, $(Store *, store, createStoreStringValue)(iter->data));
+		}
+
+		$(bool, store, setStorePath)(retstore, "modules", modulesStore);
+		g_list_free(modules);
 	}
 
 	return retstore;

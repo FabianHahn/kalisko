@@ -36,7 +36,7 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -53,6 +53,7 @@ static Store *xcall_getActiveModules(Store *xcall);
 static Store *xcall_isModuleLoaded(Store *xcall);
 static Store *xcall_requestModule(Store *xcall);
 static Store *xcall_revokeModule(Store *xcall);
+static Store *xcall_forceUnloadModule(Store *xcall);
 static Store *xcall_logError(Store *xcall);
 static Store *xcall_logWarning(Store *xcall);
 static Store *xcall_logInfo(Store *xcall);
@@ -84,6 +85,7 @@ MODULE_INIT
 	$(bool, xcall, addXCallFunction)("isModuleLoaded", &xcall_isModuleLoaded);
 	$(bool, xcall, addXCallFunction)("requestModule", &xcall_requestModule);
 	$(bool, xcall, addXCallFunction)("revokeModule", &xcall_revokeModule);
+	$(bool, xcall, addXCallFunction)("forceUnloadModule", &xcall_forceUnloadModule);
 	$(bool, xcall, addXCallFunction)("logError", &xcall_logError);
 	$(bool, xcall, addXCallFunction)("logWarning", &xcall_logWarning);
 	$(bool, xcall, addXCallFunction)("logInfo", &xcall_logInfo);
@@ -107,6 +109,7 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("isModuleLoaded");
 	$(bool, xcall, delXCallFunction)("requestModule");
 	$(bool, xcall, delXCallFunction)("revokeModule");
+	$(bool, xcall, delXCallFunction)("forceUnloadModule");
 	$(bool, xcall, delXCallFunction)("logError");
 	$(bool, xcall, delXCallFunction)("logWarning");
 	$(bool, xcall, delXCallFunction)("logInfo");
@@ -614,6 +617,35 @@ static Store *xcall_revokeModule(Store *xcall)
 	} else {
 		char *modname = module->content.string;
 		bool loaded = $$(bool, revokeModule)(modname);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+	}
+
+	return retstore;
+}
+
+/**
+ * XCallFunction to force unload a module
+ * XCall parameters:
+ *  * string module		the module to force unload
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_forceUnloadModule(Store *xcall)
+{
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *module = $(Store *, store, getStorePath)(xcall, "module");
+
+	if(module == NULL || module->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
+	} else {
+		char *modname = module->content.string;
+		bool loaded = $$(bool, forceUnloadModule)(modname);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
 	}
 

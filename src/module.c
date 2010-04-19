@@ -339,7 +339,14 @@ API bool forceUnloadModule(char *name)
 		}
 	}
 
-	return revokeModule(name);
+	// Look up ourselves again
+	mod = g_hash_table_lookup(modules, name);
+
+	if(mod != NULL) { // The module is still loaded but should not have anymore other modules depending on it
+		return revokeModule(name);
+	} else { // We got freed in the process, that's fine too
+		return true;
+	}
 }
 
 /**

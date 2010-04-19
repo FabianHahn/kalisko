@@ -50,7 +50,7 @@
 
 #define IP_STR_LEN 16
 static bool setSocketNonBlocking(int fd);
-static char *ip2str(unsigned int ip);
+static GString *ip2str(unsigned int ip);
 
 
 MODULE_NAME("socket");
@@ -389,15 +389,15 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 API Socket *socketAccept(Socket *server)
 {
 	struct sockaddr_in remoteAddress;
-	socklen_t remoteAddressSize = sizeof(remoteAddr);
+	socklen_t remoteAddressSize = sizeof(remoteAddress);
 
-	int fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize);
+	int fd;
 
-	if(ret == -1) {
+	if((fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize)) == -1) {
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
 #else
-		if(errno == EAGAIN || errno = EWOULDBLOCK) {
+		if(errno == EAGAIN || errno == EWOULDBLOCK) {
 #endif
 		} else {
 			LOG_SYSTEM_ERROR("Failed to accept client socket from server socket %d", server->fd);
@@ -408,16 +408,20 @@ API Socket *socketAccept(Socket *server)
 	}
 
 	GString *ip = ip2str(remoteAddress.sin_addr.s_addr);
-	LOG_INFO("Incoming connection %d from %s:%d on server socket %d", fd, ip, remoteAddress.sin_port, server->fd);
+	GString *port = g_string_new("");
+	g_string_append_printf(port, "%d", remoteAddress.sin_port);
 
 	Socket *client = ALLOCATE_OBJECT(Socket);
 	client->fd = fd;
 	client->connected = true;
 	client->host = ip->str;
-	client->port = remoteAddress.sin_port;
+	client->port = port->str;
 	client->server = false;
 
+	LOG_INFO("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
+
 	g_string_free(ip, false);
+	g_string_free(port, false);
 
 	return client;
 }
@@ -454,7 +458,7 @@ static bool setSocketNonBlocking(int fd)
 
 static GString *ip2str(unsigned int ip)
 {
-	GString *ipstr = g_string_new();
-	g_string_append_printf("%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
+	GString *ipstr = g_string_new("");
+	g_string_append_printf(ipstr, "%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
 	return ipstr;
 }

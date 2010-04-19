@@ -60,6 +60,8 @@ API char *getModuleDescription(const char *name);
 API Version *getModuleVersion(const char *name);
 API Version *getModuleBcVersion(const char *name);
 API int getModuleReferenceCount(const char *name);
+API GList *getModuleDependencies(const char *name);
+API GList *getModuleReverseDependencies(const char *name);
 API GList *getActiveModules();
 API bool isModuleLoaded(const char *name);
 API bool requestModule(char *name);

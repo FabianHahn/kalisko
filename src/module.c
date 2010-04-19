@@ -203,6 +203,40 @@ API int getModuleReferenceCount(const char *name)
 }
 
 /**
+ * Returns the module dependencies of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
+ */
+API GList *getModuleDependencies(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return g_hash_table_get_keys(mod->dependencies);
+}
+
+/**
+ * Returns the module reverse dependencies of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module reverse dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
+ */
+API GList *getModuleReverseDependencies(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		return NULL;
+	}
+
+	return g_hash_table_get_keys(mod->rdeps);
+}
+
+/**
  * Returns a list of active modules. A module is considered active if it's either already loaded or currently loading
  *
  * @result			a list of active modules, must not be modified but freed with g_list_free after use

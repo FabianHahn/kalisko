@@ -31,7 +31,7 @@
 
 #define BUF 4096
 #define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"
-#define ANSWER "Hello there!\nThis is the Kalisko socktest module and client connections are apparently working.\nBye bye :-)"
+#define ANSWER "Hello there!\nThis is the Kalisko socktest module and client connections are apparently working.\nBye bye :-)\n"
 static Socket *server;
 
 MODULE_NAME("socktest");

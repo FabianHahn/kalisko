@@ -37,6 +37,7 @@ typedef struct {
 	void *handle;
 	int rc;
 	GHashTable *dependencies;
+	GHashTable *rdeps;
 	bool loaded;
 	bool skip_reload;
 } Module;

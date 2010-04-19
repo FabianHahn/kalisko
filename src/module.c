@@ -47,12 +47,12 @@
 #define MODULE_RELPATH "/modules/"
 
 static GHashTable *modules;
-static GHashTable *root_set;
+static Module *core;
 static char *modpath;
 
-static bool needModule(char *name, Version *needver, GHashTable *parent);
-static void unneedModule(void *name_p, void *mod_p, void *data);
-static gboolean unneedModuleWrapper(void *name_p, void *mod_p, void *data);
+static bool needModule(char *name, Version *needver, Module *parent);
+static void unneedModule(void *name_p, void *mod_p, void *parent_p);
+static bool unneedModuleWrapper(void *name_p, void *mod_p, void *parent_p);
 static void *getLibraryFunction(Module *mod, char *funcname);
 static bool loadDynamicLibrary(Module *mod, bool lazy);
 static void unloadDynamicLibrary(Module *mod);
@@ -63,7 +63,6 @@ static void unloadDynamicLibrary(Module *mod);
 API void initModules()
 {
 	modules = g_hash_table_new(&g_str_hash, &g_str_equal);
-	root_set = g_hash_table_new(&g_str_hash, &g_str_equal);
 
 	char *execpath = getExecutablePath();
 
@@ -80,6 +79,18 @@ API void initModules()
 		logMessage(LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
 	}
 #endif
+
+	// Construct our own symbolic core module
+	core = allocateMemory(sizeof(Module));
+	core->name = "core";
+	core->description = "The Kalisko application framework core.";
+	core->author = "The Kalisko team";
+	core->version = createVersion(0, 0, 0, 0);
+	core->bcversion = createVersion(0, 0, 0, 0);
+	core->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
+	core->rdeps = g_hash_table_new(&g_str_hash, &g_str_equal);
+	core->skip_reload = false;
+	core->loaded = true;
 }
 
 /**
@@ -88,17 +99,22 @@ API void initModules()
 API void freeModules()
 {
 	logMessage(LOG_TYPE_INFO, "Revoking all modules...");
-	g_hash_table_foreach_remove(root_set, &unneedModuleWrapper, NULL);
+	g_hash_table_foreach_remove(core->dependencies, &unneedModuleWrapper, core);
 
-	assert(g_hash_table_size(root_set) == 0);
+	assert(g_hash_table_size(core->rdeps) == 0);
 	assert(g_hash_table_size(modules) == 0);
 
 	logMessage(LOG_TYPE_INFO, "All modules successfully revoked");
 
-	g_hash_table_destroy(root_set);
 	g_hash_table_destroy(modules);
 
 	free(modpath);
+
+	g_hash_table_destroy(core->dependencies);
+	g_hash_table_destroy(core->rdeps);
+	freeVersion(core->version);
+	freeVersion(core->bcversion);
+	free(core);
 }
 
 /**
@@ -221,14 +237,14 @@ API bool isModuleLoaded(const char *name)
  */
 API bool requestModule(char *name)
 {
-	if(g_hash_table_lookup(root_set, name) != NULL) {
+	if(g_hash_table_lookup(core->dependencies, name) != NULL) {
 		logMessage(LOG_TYPE_ERROR, "Cannot request already requested module %s", name);
 		return false;
 	}
 
 	logMessage(LOG_TYPE_INFO, "Requesting module %s", name);
 
-	return needModule(name, NULL, root_set);
+	return needModule(name, NULL, core);
 }
 
 /**
@@ -239,7 +255,7 @@ API bool requestModule(char *name)
  */
 API bool revokeModule(char *name)
 {
-	Module *mod = g_hash_table_lookup(root_set, name);
+	Module *mod = g_hash_table_lookup(core->dependencies, name);
 
 	if(mod == NULL) {
 		logMessage(LOG_TYPE_ERROR, "Cannot revoke unrequested module %s", name);
@@ -250,12 +266,12 @@ API bool revokeModule(char *name)
 
 	// This needs to be done BEFORE unneedModule because modules enter themselves by their own name into the hashtables
 	// and after unneedModule, their names are freed
-	if(!g_hash_table_remove(root_set, name)) {
+	if(!g_hash_table_remove(core->dependencies, name)) {
 		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from root set", name);
 		exit(EXIT_FAILURE);
 	}
 
-	unneedModule(name, mod, NULL);
+	unneedModule(name, mod, core);
 
 	return true;
 }
@@ -355,10 +371,10 @@ static void unloadDynamicLibrary(Module *mod)
  *
  * @param name			the module's name
  * @param needversion	the needed version of the module
- * @param parent		the module's parent tree
+ * @param parent		the module's parent
  * @result				true if successful, false on error
  */
-static bool needModule(char *name, Version *needversion, GHashTable *parent)
+static bool needModule(char *name, Version *needversion, Module *parent)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
@@ -398,6 +414,7 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 
 		mod->name = strdup(name);
 		mod->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
+		mod->rdeps = g_hash_table_new(&g_str_hash, &g_str_equal);
 		mod->skip_reload = false;
 		mod->rc = 1;
 		mod->loaded = false;
@@ -521,9 +538,9 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 			g_string_free(depver, TRUE);
 
 			// Need the dependency
-			if(!needModule(dep->name, &dep->version, mod->dependencies)) {
+			if(!needModule(dep->name, &dep->version, mod)) {
 				// Propagate down loading failure
-				unneedModule(mod->name, mod, NULL);
+				unneedModule(mod->name, mod, parent);
 				return false;
 			}
 		}
@@ -533,13 +550,13 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 
 		// Load dynamic library
 		if(!loadDynamicLibrary(mod, false)) {
-			unneedModule(mod->name, mod, NULL);
+			unneedModule(mod->name, mod, parent);
 			return false;
 		}
 
 		// Initialize module
 		if((init_func = getLibraryFunction(mod, MODULE_INITIALIZER_FUNC)) == NULL) {
-			unneedModule(mod->name, mod, NULL);
+			unneedModule(mod->name, mod, parent);
 			return false;
 		}
 
@@ -547,7 +564,7 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 		logMessage(LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
 		if(!init_func()) {
 			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s", mod->name);
-			unneedModule(mod->name, mod, NULL);
+			unneedModule(mod->name, mod, parent);
 			return false;
 		}
 
@@ -556,7 +573,10 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
 		logMessage(LOG_TYPE_INFO, "Module %s loaded", mod->name);
 	}
 
-	g_hash_table_insert(parent, mod->name, mod);
+	// Add dependency
+	g_hash_table_insert(parent->dependencies, mod->name, mod);
+	// Add reverse dependency
+	g_hash_table_insert(mod->rdeps, parent->name, parent);
 
 	return true;
 }
@@ -566,14 +586,19 @@ static bool needModule(char *name, Version *needversion, GHashTable *parent)
  *
  * @param name		the module's name
  * @param mod_p		the module
- * @param data		unused
+ * @param data		the module's parent by which it is no longer needed
  */
-static void unneedModule(void *name, void *mod_p, void *data)
+static void unneedModule(void *name, void *mod_p, void *parent_p)
 {
 	Module *mod = mod_p;
+	Module *parent = parent_p;
 
 	assert(mod != NULL);
+	assert(parent != NULL);
 	assert(strcmp(name, mod->name) == 0);
+
+	// Remove reverse dependency
+	g_hash_table_remove(mod->rdeps, parent->name);
 
 	mod->rc--;
 
@@ -595,7 +620,7 @@ static void unneedModule(void *name, void *mod_p, void *data)
 	}
 
 	// Tell our dependencies they are no longer needed
-	g_hash_table_foreach(mod->dependencies, &unneedModule, NULL);
+	g_hash_table_foreach_remove(mod->dependencies, &unneedModuleWrapper, mod);
 
 	// Unload dynamic library
 	unloadDynamicLibrary(mod);
@@ -606,6 +631,7 @@ static void unneedModule(void *name, void *mod_p, void *data)
 	}
 
 	g_hash_table_destroy(mod->dependencies);
+	g_hash_table_destroy(mod->rdeps);
 
 	free(mod->author);
 	free(mod->description);
@@ -623,11 +649,11 @@ static void unneedModule(void *name, void *mod_p, void *data)
  *
  * @param name_p	the module's name
  * @param mod_p		the module
- * @param data		unused
- * @result			always TRUE
+ * @param parent_p	the module's parent by which it is no longer needed
+ * @result			always true
  */
-static gboolean unneedModuleWrapper(void *name_p, void *mod_p, void *data)
+static bool unneedModuleWrapper(void *name_p, void *mod_p, void *parent_p)
 {
-	unneedModule(name_p, mod_p, data);
-	return TRUE;
+	unneedModule(name_p, mod_p, parent_p);
+	return true;
 }

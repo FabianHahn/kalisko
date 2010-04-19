@@ -66,6 +66,7 @@ API GList *getActiveModules();
 API bool isModuleLoaded(const char *name);
 API bool requestModule(char *name);
 API bool revokeModule(char *name);
+API bool forceUnloadModule(char *name);
 
 #define MODULE_NAME_FUNC "module_name"
 #define MODULE_AUTHOR_FUNC "module_author"

@@ -311,6 +311,38 @@ API bool revokeModule(char *name)
 }
 
 /**
+ * Unloads a module by force, i.e. first unloads its reverse dependencies recursively and then the module itself
+ *
+ * @param name		the module to force unload
+ * @result			true if successful, false on error
+ */
+API bool forceUnloadModule(char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod == NULL) {
+		logMessage(LOG_TYPE_ERROR, "Cannot revoke unloaded module %s", name);
+		return false;
+	}
+
+	logMessage(LOG_TYPE_INFO, "Force unloading module %s", name);
+
+	GList *rdeps = g_hash_table_get_keys(mod->rdeps);
+
+	for(GList *iter = rdeps; iter != NULL; iter = iter->next) {
+		if(g_strcmp0(iter->data, "core") == 0) { // arrived at root set
+			continue; // skip core
+		}
+
+		if(!forceUnloadModule(iter->data)) {
+			return false;
+		}
+	}
+
+	return revokeModule(name);
+}
+
+/**
  * Fetches a function from a dynamic library of a module
  *
  * @param mod			the module

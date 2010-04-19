@@ -80,6 +80,32 @@ function KaliskoModule:getReferenceCount()
 	return xcs.reference_count
 end
 
+function KaliskoModule:getDependencies()
+	xcall = invokeXCall('xcall = { function = getModuleDependencies }')
+	xcs = parseStore(xcall)
+	
+	ret = {}
+	
+	for i, modname in ipairs(xcs.modules) do
+		table.insert(ret, KaliskoModule:new(modname))
+	end
+	
+	return ret
+end
+
+function KaliskoModule:getReverseDependencies()
+	xcall = invokeXCall('xcall = { function = getModuleReverseDependencies }')
+	xcs = parseStore(xcall)
+	
+	ret = {}
+	
+	for i, modname in ipairs(xcs.modules) do
+		table.insert(ret, KaliskoModule:new(modname))
+	end
+	
+	return ret
+end
+
 function KaliskoModule:request()
 	xcall = invokeXCall('xcall = { function = requestModule }; module = ' .. self.name)
 	xcs = parseStore(xcall)

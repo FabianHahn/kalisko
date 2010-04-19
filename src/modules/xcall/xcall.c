@@ -53,8 +53,8 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	g_hash_table_destroy(functions);
 	delXCallFunction("getXCallFunctions");
+	g_hash_table_destroy(functions);
 }
 
 /**

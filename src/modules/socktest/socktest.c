@@ -37,9 +37,9 @@ static Socket *server;
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 1, 2));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 3, 0));
 
 HOOK_LISTENER(sample_read);
 HOOK_LISTENER(sample_disconnect);

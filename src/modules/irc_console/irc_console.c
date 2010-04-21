@@ -26,6 +26,7 @@
 #include "module.h"
 #include "modules/gtk+/gtk+.h"
 #include "modules/irc/irc.h"
+#include "modules/config/config.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "timer.h"
 #include "api.h"
@@ -33,9 +34,9 @@
 MODULE_NAME("irc_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 1, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
 // Columns
 typedef enum {
@@ -66,12 +67,17 @@ static void freeConsoleTab(void *tab_p);
 HOOK_LISTENER(irc_send);
 HOOK_LISTENER(irc_line);
 
+static IrcConnection *irc;
 static GHashTable *tabs;
 static GtkWidget *window;
 static GtkWidget *notebook;
 
 MODULE_INIT
 {
+	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)($(Store *, config, getConfigPathValue)("irc"))) == NULL) {
+		return false;
+	}
+
 	tabs = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConsoleTab);
 
 	// window
@@ -100,6 +106,8 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(void, irc, freeIrcConnection)(irc);
+
 	HOOK_DETACH(irc_send, irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	gtk_widget_destroy(GTK_WIDGET(window));
@@ -121,7 +129,7 @@ HOOK_LISTENER(irc_line)
 	if(g_strcmp0(message->command, "JOIN") == 0) {
 		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
 		if(mask != NULL) {
-			char *nick = $(char *, irc, getNick)();
+			char *nick = irc->nick;
 
 			if(g_strcmp0(mask->nick, nick) == 0) { // it's-a-me!
 				if(message->params != NULL && message->params[0] != NULL) { // usually, the channel is being sent straight as parameter
@@ -229,10 +237,10 @@ static gboolean inputActivate(GtkWidget *widget, gpointer data)
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(widget));
 
 	if(g_strcmp0(tab, "*status") == 0) {
-		$(void, irc, ircSend)("%s", command);
+		$(void, irc, ircSend)(irc, "%s", command);
 	} else {
-		$(void, irc, ircSend)("PRIVMSG %s :%s", tab, command);
-		char *nick = $(char *, irc, getNick)();
+		$(void, irc, ircSend)(irc, "PRIVMSG %s :%s", tab, command);
+		char *nick = irc->nick;
 		GString *msg = g_string_new("");
 		g_string_append_printf(msg, "<%s> %s", nick, command);
 		appendMessage(tab, msg->str, MESSAGE_SEND);

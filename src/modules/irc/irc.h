@@ -22,6 +22,7 @@
 #define IRC_IRC_H
 
 #include <glib.h>
+#include "modules/store/store.h"
 #include "modules/socket/socket.h"
 
 /**

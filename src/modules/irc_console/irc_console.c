@@ -34,7 +34,7 @@
 MODULE_NAME("irc_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
@@ -74,7 +74,13 @@ static GtkWidget *notebook;
 
 MODULE_INIT
 {
-	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)($(Store *, config, getConfigPathValue)("irc"))) == NULL) {
+	Store *config = $(Store *, config, getConfigPathValue)("irc");
+
+	if(config == NULL) {
+		return false;
+	}
+
+	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
 		return false;
 	}
 
@@ -117,13 +123,23 @@ MODULE_FINALIZE
 
 HOOK_LISTENER(irc_send)
 {
+	IrcConnection *connection = HOOK_ARG(IrcConnection *);
 	char *message = HOOK_ARG(char *);
-	appendMessage("*status", message, MESSAGE_SEND);
+
+	if(irc == connection) {
+		appendMessage("*status", message, MESSAGE_SEND);
+	}
 }
 
 HOOK_LISTENER(irc_line)
 {
+	IrcConnection *connection = HOOK_ARG(IrcConnection *);
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
+
+	if(irc != connection) {
+		return;
+	}
+
 	appendMessage("*status", message->raw_message, MESSAGE_LINE);
 
 	if(g_strcmp0(message->command, "JOIN") == 0) {

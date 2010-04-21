@@ -38,7 +38,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -108,7 +108,11 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 {
 	IrcConnection *irc = ALLOCATE_OBJECT(IrcConnection);
 	irc->user = strdup(user);
-	irc->password = strdup(password);
+	if(password != NULL) {
+		irc->password = strdup(password);
+	} else {
+		irc->password = NULL;
+	}
 	irc->real = strdup(real);
 	irc->nick = strdup(nick);
 	irc->ibuffer = g_string_new("");
@@ -122,6 +126,10 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 
 	ircSend(irc, "USER %s 0 0 :%s", user, real);
 	ircSend(irc, "NICK %s", nick);
+
+	if(irc->password != NULL) {
+		ircSend(irc, "PASS %s", irc->password);
+	}
 
 	g_hash_table_insert(connections, irc->socket, irc);
 

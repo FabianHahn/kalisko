@@ -25,7 +25,9 @@
 #include "dll.h"
 #include "log.h"
 #include "hooks.h"
-#include "modules/config/config.h"
+#include "memory_alloc.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
 #include "modules/string_util/string_util.h"
@@ -36,81 +38,22 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0), MODULE_DEPENDENCY("socket", 0, 3, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 HOOK_LISTENER(irc_line);
 HOOK_LISTENER(irc_read);
-HOOK_LISTENER(irc_disconnect);
 
-static Socket *sock;
-static GString *buffer;
-static char *nick;
+static GHashTable *connections;
 
-static void checkForBufferLine();
+static void checkForBufferLine(IrcConnection *irc);
 
 MODULE_INIT
 {
-	Store *config;
-	char *server;
-	char *port;
-	char *user;
-	char *real;
-
-	buffer = g_string_new("");
-
-	if((config = $(Store *, config, getConfigPathValue)("irc/server")) == NULL || config->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'irc/server', aborting");
-		return false;
-	}
-
-	server = config->content.string;
-
-	if((config = $(Store *, config, getConfigPathValue)("irc/port")) == NULL || config->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'irc/port', aborting");
-		return false;
-	}
-
-	port = config->content.string;
-
-	if((config = $(Store *, config, getConfigPathValue)("irc/user")) == NULL || config->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'irc/user', aborting");
-		return false;
-	}
-
-	user = config->content.string;
-
-	if((config = $(Store *, config, getConfigPathValue)("irc/real")) == NULL || config->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'irc/real', aborting");
-		return false;
-	}
-
-	real = config->content.string;
-
-	if((config = $(Store *, config, getConfigPathValue)("irc/nick")) == NULL || config->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'irc/nick', aborting");
-		return false;
-	}
-
-	nick = config->content.string;
-
-	sock = $(Socket *, socket, createClientSocket)(server, port);
-
-	if(!$(bool, socket, connectSocket)(sock) || !$(bool, socket, enableSocketPolling)(sock)) {
-		LOG_ERROR("Failed to connect IRC socket");
-		$(void, socket, freeSocket)(sock);
-	}
-
-	ircSend("USER %s 0 0 :%s", user, real);
-	ircSend("NICK %s", nick);
-	
-	if((config = $(Store *, config, getConfigPathValue)("irc/serverpass")) != NULL && config->type == STORE_STRING) {
-		ircSend("PASS %s", config->content.string);
-	}
+	connections = g_hash_table_new(NULL, NULL);
 
 	HOOK_ATTACH(socket_read, irc_read);
-	HOOK_ATTACH(socket_disconnect, irc_disconnect);
 	HOOK_ADD(irc_send);
 	HOOK_ADD(irc_line);
 	HOOK_ATTACH(irc_line, irc_line);
@@ -120,58 +63,159 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	ircSend("QUIT :Kalisko module unload :(");
+	g_hash_table_destroy(connections);
 
 	HOOK_DEL(irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	HOOK_DEL(irc_line);
 	HOOK_DETACH(socket_read, irc_read);
-	HOOK_DETACH(socket_disconnect, irc_disconnect);
-	$(void, socket, freeSocket)(sock);
 }
 
 HOOK_LISTENER(irc_read)
 {
-	Socket *readSocket = HOOK_ARG(Socket *);
+	Socket *socket = HOOK_ARG(Socket *);
 	char *message = HOOK_ARG(char *);
 
-	if(readSocket == sock) {
-		g_string_append(buffer, message);
-		checkForBufferLine();
-	}
-}
-
-HOOK_LISTENER(irc_disconnect)
-{
-	Socket *readSocket = HOOK_ARG(Socket *);
-
-	if(readSocket == sock) {
-		LOG_WARNING("IRC socket disconnected!");
+	IrcConnection *irc;
+	if((irc = g_hash_table_lookup(connections, socket)) != NULL) {
+		g_string_append(irc->ibuffer, message);
+		checkForBufferLine(irc);
 	}
 }
 
 HOOK_LISTENER(irc_line)
 {
+	IrcConnection *irc = HOOK_ARG(IrcConnection *);
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
 
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
-		ircSend("PONG :%s", challenge);
+		ircSend(irc, "PONG :%s", challenge);
 	}
 }
 
-API char *getNick()
+/**
+ * Creates an IRC connection
+ *
+ * @param server		IRC server to connect to
+ * @param port			IRC server's port to connect to
+ * @param user			user name to use
+ * @param real			real name to use
+ * @param nick			nick to use
+ * @result				the created IRC connection or NULL on failure
+ */
+API IrcConnection *createIrcConnection(char *server, char *port, char *password, char *user, char *real, char *nick)
 {
-	return nick;
+	IrcConnection *irc = ALLOCATE_OBJECT(IrcConnection);
+	irc->user = strdup(user);
+	irc->password = strdup(password);
+	irc->real = strdup(real);
+	irc->nick = strdup(nick);
+	irc->ibuffer = g_string_new("");
+	irc->socket = $(Socket *, socket, createClientSocket)(server, port);
+
+	if(!$(bool, socket, connectSocket)(irc->socket) || !$(bool, socket, enableSocketPolling)(irc->socket)) {
+		LOG_ERROR("Failed to connect IRC connection socket");
+		$(void, socket, freeIrcConnection)(irc);
+		return NULL;
+	}
+
+	ircSend(irc, "USER %s 0 0 :%s", user, real);
+	ircSend(irc, "NICK %s", nick);
+
+	g_hash_table_insert(connections, irc->socket, irc);
+
+	return irc;
 }
 
 /**
- * Sens a message to the IRC socket
+ * Creates an IRC connection by reading the required parameters from a store
  *
+ * @param params		the store to read the parameters from
+ * @result				the created IRC connection or NULL on failure
+ */
+API IrcConnection *createIrcConnectionByStore(Store *params)
+{
+	Store *param;
+	char *server;
+	char *port;
+	char *password;
+	char *user;
+	char *real;
+	char *nick;
+
+	if((param = $(Store *, config, getStorePath)(params, "server")) == NULL || param->type != STORE_STRING) {
+		LOG_ERROR("Could not find required params value 'server', aborting IRC connection");
+		return NULL;
+	}
+
+	server = param->content.string;
+
+	if((param = $(Store *, config, getStorePath)(params, "port")) == NULL || param->type != STORE_STRING) {
+		LOG_ERROR("Could not find required params value 'port', aborting IRC connection");
+		return NULL;
+	}
+
+	port = param->content.string;
+
+	if((param = $(Store *, config, getStorePath)(params, "password")) == NULL || param->type != STORE_STRING) {
+		password = param->content.string;
+	} else {
+		password = NULL;
+	}
+
+	if((param = $(Store *, config, getStorePath)(params, "user")) == NULL || param->type != STORE_STRING) {
+		LOG_ERROR("Could not find required params value 'user', aborting IRC connection");
+		return NULL;
+	}
+
+	user = param->content.string;
+
+	if((param = $(Store *, config, getStorePath)(params, "real")) == NULL || param->type != STORE_STRING) {
+		LOG_ERROR("Could not find required params value 'real', aborting IRC connection");
+		return NULL;
+	}
+
+	real = param->content.string;
+
+	if((param = $(Store *, config, getStorePath)(params, "nick")) == NULL || param->type != STORE_STRING) {
+		LOG_ERROR("Could not find required params value 'nick', aborting IRC connection");
+		return NULL;
+	}
+
+	nick = param->content.string;
+
+	return createIrcConnection(server, port, password, user, real, nick);
+}
+
+/**
+ * Frees an IRC connection
+ *
+ * @param irc		the IRC connection to free
+ */
+API void freeIrcConnection(IrcConnection *irc)
+{
+	g_hash_table_remove(connections, irc->socket);
+
+	$(bool, socket, freeSocket)(irc->socket);
+	free(irc->password);
+	free(irc->user);
+	free(irc->real);
+	free(irc->nick);
+	g_string_free(irc->ibuffer, true);
+
+	// Last, free the irc connection object itself
+	free(irc);
+}
+
+/**
+ * Sends a message to the IRC socket
+ *
+ * @param irc			the IRC connection to use for sending the message
  * @param message		frintf-style message to send to the socket
  * @result				true if successful, false on error
  */
-API bool ircSend(char *message, ...)
+API bool ircSend(IrcConnection *irc, char *message, ...)
 {
 	va_list va;
 	char buffer[IRC_SEND_MAXLEN];
@@ -179,12 +223,12 @@ API bool ircSend(char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
 
-	HOOK_TRIGGER(irc_send, buffer);
+	HOOK_TRIGGER(irc_send, irc, buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
 
-	bool ret = $(bool, socket, socketWriteRaw)(sock, nlmessage->str, nlmessage->len);
+	bool ret = $(bool, socket, socketWriteRaw)(irc->socket, nlmessage->str, nlmessage->len);
 
 	g_string_free(nlmessage, true);
 
@@ -193,13 +237,15 @@ API bool ircSend(char *message, ...)
 
 /**
  * Checks for a new newline terminated line in the buffer and parses it
+ *
+ * @param irc			the IRC connection to check for buffer lines
  */
-static void checkForBufferLine()
+static void checkForBufferLine(IrcConnection *irc)
 {
-	char *message = buffer->str;
+	char *message = irc->ibuffer->str;
 
 	if(strstr(message, "\n") != NULL) { // message has at least one newline
-		g_string_free(buffer, FALSE);
+		g_string_free(irc->ibuffer, false);
 		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
 		char **parts = g_strsplit(message, "\n", 0);
 
@@ -210,7 +256,7 @@ static void checkForBufferLine()
 					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
 
 					if(ircMessage != NULL) {
-						HOOK_TRIGGER(irc_line, ircMessage);
+						HOOK_TRIGGER(irc_line, irc, ircMessage);
 					}
 
 					$(void, irc_parser, freeIrcMessage)(ircMessage);
@@ -218,7 +264,7 @@ static void checkForBufferLine()
 			}
 		}
 
-		buffer = g_string_new(*(iter - 1)); // reinitialize buffer
+		irc->ibuffer = g_string_new(*(iter - 1)); // reinitialize buffer
 
 		g_strfreev(parts);
 		free(message);

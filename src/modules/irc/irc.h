@@ -18,12 +18,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifndef IRC_IRC_H
 #define IRC_IRC_H
 
-API char *getNick();
-API bool ircSend(char *message, ...) G_GNUC_PRINTF(1, 2);
+#include <glib.h>
+#include "modules/socket/socket.h"
+
+/**
+ * Struct to represent an IRC connection
+ */
+typedef struct
+{
+	/** the connection password to use */
+	char *password;
+	/** the user name to use */
+	char *user;
+	/** the real name to use */
+	char *real;
+	/** the nick to use */
+	char *nick;
+	/** input buffer for IRC messages */
+	GString *ibuffer;
+	/** socket of the IRC connection, also stores host and port of the connection */
+	Socket *socket;
+} IrcConnection;
+
+API IrcConnection *createIrcConnection(char *server, char *port, char *password, char *user, char *real, char *nick);
+API IrcConnection *createIrcConnectionByStore(Store *cfg);
+API void freeIrcConnection(IrcConnection *irc);
+API bool ircSend(IrcConnection *irc, char *message, ...)
+G_GNUC_PRINTF(2, 3);
 
 /**
  * The maximal length for a log message.

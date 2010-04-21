@@ -46,8 +46,7 @@ typedef struct
 API IrcConnection *createIrcConnection(char *server, char *port, char *password, char *user, char *real, char *nick);
 API IrcConnection *createIrcConnectionByStore(Store *cfg);
 API void freeIrcConnection(IrcConnection *irc);
-API bool ircSend(IrcConnection *irc, char *message, ...)
-G_GNUC_PRINTF(2, 3);
+API bool ircSend(IrcConnection *irc, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 /**
  * The maximal length for a log message.

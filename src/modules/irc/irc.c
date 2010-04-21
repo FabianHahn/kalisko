@@ -38,7 +38,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -158,7 +158,7 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 
 	port = param->content.string;
 
-	if((param = $(Store *, config, getStorePath)(params, "password")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, config, getStorePath)(params, "password")) != NULL || param->type == STORE_STRING) {
 		password = param->content.string;
 	} else {
 		password = NULL;

@@ -37,7 +37,7 @@ static Socket *server;
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 3, 1));
 
@@ -94,6 +94,11 @@ HOOK_LISTENER(sample_accept)
 {
 	Socket *srv = HOOK_ARG(Socket *);
 	Socket *s = HOOK_ARG(Socket *);
+
+	if(srv == NULL) {
+		return;
+	}
+
 	$(bool, socket, socketWriteRaw)(s, ANSWER, sizeof(ANSWER));
 	$(bool, socket, freeSocket)(s);
 }

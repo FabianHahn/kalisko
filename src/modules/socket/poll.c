@@ -146,7 +146,7 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 		Socket *clientSocket;
 
 		if((clientSocket = socketAccept(socket)) != NULL) {
-			HOOK_TRIGGER(socket_accept, clientSocket);
+			HOOK_TRIGGER(socket_accept, socket, clientSocket);
 		} else {
 			HOOK_TRIGGER(socket_error, socket);
 		}

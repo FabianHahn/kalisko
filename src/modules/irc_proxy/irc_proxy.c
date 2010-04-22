@@ -25,7 +25,10 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "memory_alloc.h"
 #include "modules/irc/irc.h"
+#include "modules/socket/socket.h"
+#include "modules/socket/poll.h"
 #include "api.h"
 #include "irc_proxy.h"
 
@@ -86,5 +89,20 @@ HOOK_LISTENER(client_disconnect)
  */
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 {
-	return NULL;
+	Socket *server = $(Socket *, socket, createServerSocket)(port);
+
+	if(!$(bool, socket, connectSocket)(server)) {
+		return NULL;
+	}
+
+	if(!$(bool, socket, enableSocketPolling)(server)) {
+		return NULL;
+	}
+
+	IrcProxy *proxy = ALLOCATE_OBJECT(IrcProxy);
+	proxy->irc = irc;
+	proxy->server = server;
+	proxy->password = strdup(password);
+
+	return proxy;
 }

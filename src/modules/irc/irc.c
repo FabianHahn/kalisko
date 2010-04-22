@@ -38,7 +38,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -56,6 +56,7 @@ MODULE_INIT
 	HOOK_ATTACH(socket_read, irc_read);
 	HOOK_ADD(irc_send);
 	HOOK_ADD(irc_line);
+	HOOK_ADD(irc_nick);
 	HOOK_ATTACH(irc_line, irc_line);
 
 	return true;
@@ -65,6 +66,7 @@ MODULE_FINALIZE
 {
 	g_hash_table_destroy(connections);
 
+	HOOK_DEL(irc_nick);
 	HOOK_DEL(irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	HOOK_DEL(irc_line);
@@ -91,6 +93,17 @@ HOOK_LISTENER(irc_line)
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
 		ircSend(irc, "PONG :%s", challenge);
+	} else if(g_strcmp0(message->command, "NICK") == 0) {
+		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+		if(mask != NULL) {
+			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Our own nickname was changed
+				free(irc->nick); // free old nick
+				irc->nick = strdup(mask->nick); // store new nick
+				HOOK_TRIGGER(irc_nick, irc); // notify listeners
+			}
+
+			free(mask);
+		}
 	}
 }
 

@@ -41,7 +41,7 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 6), MODULE_DEPENDENCY("socket", 0, 3, 0));
 
-static bool clientIrcSend(Socket *client, char *message, ...) G_GNUC_PRINTF(2, 3);
+static bool clientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 static GHashTable *proxies;
 static GHashTable *clients;
@@ -164,7 +164,7 @@ API void freeIrcProxy(IrcProxy *proxy)
  * @param message		frintf-style message to send to the socket
  * @result				true if successful, false on error
  */
-static bool clientIrcSend(Socket *client, char *message, ...)
+static bool clientIrcSend(IrcProxyClient *client, char *message, ...)
 {
 	va_list va;
 	char buffer[IRC_SEND_MAXLEN];
@@ -175,7 +175,7 @@ static bool clientIrcSend(Socket *client, char *message, ...)
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
 
-	bool ret = $(bool, socket, socketWriteRaw)(client, nlmessage->str, nlmessage->len);
+	bool ret = $(bool, socket, socketWriteRaw)(client->socket, nlmessage->str, nlmessage->len);
 
 	g_string_free(nlmessage, true);
 

@@ -56,6 +56,26 @@ MODULE_FINALIZE
 
 }
 
+HOOK_LISTENER(remote_line)
+{
+
+}
+
+HOOK_LISTENER(client_accept)
+{
+
+}
+
+HOOK_LISTENER(client_read)
+{
+
+}
+
+HOOK_LISTENER(client_disconnect)
+{
+
+}
+
 /**
  * Creates an IRC proxy relaying data for an IRC connection
  *
@@ -66,5 +86,5 @@ MODULE_FINALIZE
  */
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 {
-
+	return NULL;
 }

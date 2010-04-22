@@ -39,6 +39,20 @@ typedef struct {
 		GQueue *clients;
 } IrcProxy;
 
+/**
+ * Struct to represent the client of an IRC proxy
+ */
+typedef struct {
+		/** the client's IRC proxy */
+		IrcProxy *proxy;
+		/** the socket for the client connection */
+		Socket *socket;
+		/** true if the client passed the password challenge */
+		bool authenticated;
+		/** the line input buffer for the client */
+		GString *ibuffer;
+} IrcProxyClient;
+
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);
 API void freeIrcProxy(IrcProxy *proxy);
 

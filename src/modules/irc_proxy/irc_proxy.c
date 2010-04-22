@@ -20,6 +20,8 @@
 
 
 #include <glib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "dll.h"
 #include "hooks.h"
@@ -38,6 +40,8 @@ MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC s
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 6), MODULE_DEPENDENCY("socket", 0, 3, 0));
+
+static bool clientIrcSend(Socket *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 static GHashTable *proxies;
 static GHashTable *clients;
@@ -79,13 +83,20 @@ HOOK_LISTENER(remote_line)
 HOOK_LISTENER(client_accept)
 {
 	Socket *server = HOOK_ARG(Socket *);
-	Server *client = HOOK_ARG(Socket *);
+	Socket *client = HOOK_ARG(Socket *);
 
 	IrcProxy *proxy;
 	if((proxy = g_hash_table_lookup(proxies, server)) != NULL) { // One of our proxy servers accepted a new client
-		LOG_INFO("New relay client for IRC proxy server on port %d", proxy->server->port);
-		g_hash_table_insert(clients, client, proxy); // connect the client to its proxy
-		g_queue_push_tail(proxy->clients, client); // connect the proxy to its new client
+		LOG_INFO("New relay client for IRC proxy server on port %s", proxy->server->port);
+
+		IrcProxyClient *pc = ALLOCATE_OBJECT(IrcProxyClient);
+		pc->proxy = proxy;
+		pc->socket = client;
+		pc->authenticated = false;
+		pc->ibuffer = g_string_new("");
+
+		g_hash_table_insert(clients, client, pc); // connect the client socket to the proxy client object
+		g_queue_push_tail(proxy->clients, pc); // connect the proxy to its new client
 	}
 }
 
@@ -144,4 +155,29 @@ API void freeIrcProxy(IrcProxy *proxy)
 	g_queue_free(proxy->clients);
 	free(proxy->password);
 	free(proxy);
+}
+
+/**
+ * Sends a message to an IRC client socket
+ *
+ * @param client		the socket of the IRC client
+ * @param message		frintf-style message to send to the socket
+ * @result				true if successful, false on error
+ */
+static bool clientIrcSend(Socket *client, char *message, ...)
+{
+	va_list va;
+	char buffer[IRC_SEND_MAXLEN];
+
+	va_start(va, message);
+	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
+
+	GString *nlmessage = g_string_new(buffer);
+	g_string_append_c(nlmessage, '\n');
+
+	bool ret = $(bool, socket, socketWriteRaw)(client, nlmessage->str, nlmessage->len);
+
+	g_string_free(nlmessage, true);
+
+	return ret;
 }

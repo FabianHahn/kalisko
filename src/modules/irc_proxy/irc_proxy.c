@@ -97,6 +97,8 @@ HOOK_LISTENER(client_accept)
 
 		g_hash_table_insert(clients, client, pc); // connect the client socket to the proxy client object
 		g_queue_push_tail(proxy->clients, pc); // connect the proxy to its new client
+
+		clientIrcSend(pc, ":%s 001 %s :Welcome to the Kalisko IRC proxy server! Please use the PASS command to authenticate...", proxy->irc->socket->host, proxy->irc->nick);
 	}
 }
 

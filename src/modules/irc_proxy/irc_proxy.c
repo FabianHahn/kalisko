@@ -82,7 +82,7 @@ HOOK_LISTENER(client_disconnect)
 /**
  * Creates an IRC proxy relaying data for an IRC connection
  *
- * @param irc			the IRC connection to relay
+ * @param irc			the IRC connection to relay (should already be connected)
  * @param port			the server port to listen on for client connections
  * @param password		password to use for client connections
  * @result				the created IRC proxy, or NULL on failure
@@ -105,4 +105,17 @@ API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 	proxy->password = strdup(password);
 
 	return proxy;
+}
+
+/**
+ * Frees an IRC proxy. Note that this doesn't disconnect or free the used IRC connection
+ *
+ * @param proxy			the IRC proxy to free
+ * @result				true if successful
+ */
+API void freeIrcProxy(IrcProxy *proxy)
+{
+	$(bool, socket, freeSocket)(proxy->server);
+	free(proxy->password);
+	free(proxy);
 }

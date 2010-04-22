@@ -37,5 +37,6 @@ typedef struct {
 } IrcProxy;
 
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);
+API void freeIrcProxy(IrcProxy *proxy);
 
 #endif

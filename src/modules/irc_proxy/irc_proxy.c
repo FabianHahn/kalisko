@@ -39,6 +39,8 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 6), MODULE_DEPENDENCY("socket", 0, 3, 0));
 
+static GHashTable *proxies;
+
 HOOK_LISTENER(remote_line);
 HOOK_LISTENER(client_accept);
 HOOK_LISTENER(client_read);
@@ -46,6 +48,8 @@ HOOK_LISTENER(client_disconnect);
 
 MODULE_INIT
 {
+	proxies = g_hash_table_new(NULL, NULL);
+
 	HOOK_ATTACH(irc_line, remote_line);
 	HOOK_ATTACH(socket_accept, client_accept);
 	HOOK_ATTACH(socket_read, client_read);
@@ -56,7 +60,12 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	g_hash_table_destroy(proxies);
 
+	HOOK_DETACH(irc_line, remote_line);
+	HOOK_DETACH(socket_accept, client_accept);
+	HOOK_DETACH(socket_read, client_read);
+	HOOK_DETACH(socket_disconnect, client_disconnect);
 }
 
 HOOK_LISTENER(remote_line)

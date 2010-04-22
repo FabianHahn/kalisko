@@ -22,6 +22,7 @@
 #ifndef IRC_PROXY_IRC_PROXY_H
 #define IRC_PROXY_IRC_PROXY_H
 
+#include <glib.h>
 #include "modules/irc/irc.h"
 
 /**
@@ -34,6 +35,8 @@ typedef struct {
 		Socket *server;
 		/** the proxy password for connecting clients */
 		char *password;
+		/** list of client sockets to and from which we relay */
+		GQueue *clients;
 } IrcProxy;
 
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);

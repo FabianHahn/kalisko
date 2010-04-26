@@ -39,7 +39,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -178,7 +178,7 @@ HOOK_LISTENER(client_line)
 		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
 	} else {
 		// Relay message to IRC server
-		$(bool, socket, socketWriteRaw)(client->proxy->irc->socket, message->raw_message, strlen(message->raw_message));
+		$(bool, irc, ircSend)(client->proxy->irc, "%s", message->raw_message);
 	}
 }
 

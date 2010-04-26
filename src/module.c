@@ -659,7 +659,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
  *
  * @param name		the module's name
  * @param mod_p		the module
- * @param data		the module's parent by which it is no longer needed
+ * @param parent_p	the module's parent by which it is no longer needed
  */
 static void unneedModule(void *name, void *mod_p, void *parent_p)
 {

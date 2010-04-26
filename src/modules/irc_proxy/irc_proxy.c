@@ -31,6 +31,8 @@
 #include "modules/irc/irc.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
+#include "modules/string_util/string_util.h"
+#include "modules/irc_parser/irc_parser.h"
 #include "api.h"
 #include "irc_proxy.h"
 
@@ -39,9 +41,10 @@ MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
 MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 static bool clientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
+static void checkForBufferLine(IrcProxyClient *client);
 
 static GHashTable *proxies;
 static GHashTable *clients;
@@ -50,6 +53,7 @@ HOOK_LISTENER(remote_line);
 HOOK_LISTENER(client_accept);
 HOOK_LISTENER(client_read);
 HOOK_LISTENER(client_disconnect);
+HOOK_LISTENER(client_line);
 
 MODULE_INIT
 {
@@ -60,6 +64,8 @@ MODULE_INIT
 	HOOK_ATTACH(socket_accept, client_accept);
 	HOOK_ATTACH(socket_read, client_read);
 	HOOK_ATTACH(socket_disconnect, client_disconnect);
+	HOOK_ADD(irc_proxy_client_line);
+	HOOK_ATTACH(irc_proxy_client_line, client_line);
 
 	return true;
 }
@@ -69,6 +75,8 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxies);
 	g_hash_table_destroy(clients);
 
+	HOOK_DETACH(irc_proxy_client_line, client_line);
+	HOOK_DEL(irc_proxy_client_line);
 	HOOK_DETACH(irc_line, remote_line);
 	HOOK_DETACH(socket_accept, client_accept);
 	HOOK_DETACH(socket_read, client_read);
@@ -104,10 +112,22 @@ HOOK_LISTENER(client_accept)
 
 HOOK_LISTENER(client_read)
 {
+	Socket *socket = HOOK_ARG(Socket *);
+	char *message = HOOK_ARG(char *);
 
+	IrcProxyClient *client;
+	if((client = g_hash_table_lookup(clients, socket)) != NULL) {
+		g_string_append(client->ibuffer, message);
+		checkForBufferLine(client);
+	}
 }
 
 HOOK_LISTENER(client_disconnect)
+{
+
+}
+
+HOOK_LISTENER(client_line)
 {
 
 }
@@ -182,4 +202,40 @@ static bool clientIrcSend(IrcProxyClient *client, char *message, ...)
 	g_string_free(nlmessage, true);
 
 	return ret;
+}
+
+/**
+ * Checks for a new newline terminated line in the buffer and parses it
+ *
+ * @param client			the IRC proxz client to check for buffer lines
+ */
+static void checkForBufferLine(IrcProxyClient *client)
+{
+	char *message = client->ibuffer->str;
+
+	if(strstr(message, "\n") != NULL) { // message has at least one newline
+		g_string_free(client->ibuffer, false);
+		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
+		char **parts = g_strsplit(message, "\n", 0);
+
+		char **iter;
+		for(iter = parts; *iter != NULL; iter++) {
+			if(*(iter + 1) != NULL) { // Don't trigger the last part, it's not yet complete
+				if(strlen(*iter) > 0) {
+					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
+
+					if(ircMessage != NULL) {
+						HOOK_TRIGGER(irc_proxy_client_line, client, ircMessage);
+					}
+
+					$(void, irc_parser, freeIrcMessage)(ircMessage);
+				}
+			}
+		}
+
+		client->ibuffer = g_string_new(*(iter - 1)); // reinitialize buffer
+
+		g_strfreev(parts);
+		free(message);
+	}
 }

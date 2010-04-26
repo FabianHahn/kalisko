@@ -151,6 +151,9 @@ HOOK_LISTENER(client_line)
 		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
 		freeIrcProxyClient(client, "Bye");
 		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+	} else {
+		// Relay message to IRC server
+		$(bool, socket, socketWriteRaw)(client->proxy->irc->socket, message->raw_message, strlen(message->raw_message));
 	}
 }
 

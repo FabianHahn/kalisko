@@ -18,11 +18,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import re
 
-# Fetch current svn revision
-cmd = os.popen('hg summary')
-srcversion = cmd.read()
-matches = re.search('^.*: (\d+):', srcversion)
-srcversion = matches.group(1)
+if ARGUMENTS.get('force_zero_revision') == '1':
+	srcversion = '0'
+else:
+	# Fetch current hg revision
+	cmd = os.popen('hg summary')
+	srcversion = cmd.read()
+	matches = re.search('^.*: (\d+):', srcversion)
+	srcversion = matches.group(1)
 
 # Build lists from given arguments
 exclude = []

@@ -39,7 +39,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -98,7 +98,10 @@ HOOK_LISTENER(remote_line)
 	if((proxy = g_hash_table_lookup(proxyConnections, irc)) != NULL) { // One of our proxy servers got a new remote line
 		for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) { // iterate over all clients
 			IrcProxyClient *client = iter->data; // retrieve client
-			$(bool, socket, socketWriteRaw)(client->socket, message->raw_message, strlen(message->raw_message)); // relay message to client
+
+			if(client->authenticated) {
+				clientIrcSend(client, "%s", message->raw_message); // relay message to client
+			}
 		}
 	}
 }

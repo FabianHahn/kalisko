@@ -43,6 +43,7 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
+static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static bool clientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 static void checkForBufferLine(IrcProxyClient *client);
 
@@ -95,7 +96,7 @@ HOOK_LISTENER(client_accept)
 
 	IrcProxy *proxy;
 	if((proxy = g_hash_table_lookup(proxies, server)) != NULL) { // One of our proxy servers accepted a new client
-		LOG_INFO("New relay client for IRC proxy server on port %s", proxy->server->port);
+		LOG_INFO("New relay client %d for IRC proxy server on port %s", client->fd, proxy->server->port);
 
 		IrcProxyClient *pc = ALLOCATE_OBJECT(IrcProxyClient);
 		pc->proxy = proxy;
@@ -129,7 +130,28 @@ HOOK_LISTENER(client_disconnect)
 
 HOOK_LISTENER(client_line)
 {
+	IrcProxyClient *client = HOOK_ARG(IrcProxyClient *);
+	IrcMessage *message = HOOK_ARG(IrcMessage *);
 
+	if(!client->authenticated) { // not yet authenticated, wait for password
+		if(g_strcmp0(message->command, "PASS") == 0) {
+			if(message->params_count > 0 && g_strcmp0(message->params[0], client->proxy->password) == 0) { // correct password
+				LOG_INFO("IRC proxy client %d authenticated successfully", client->socket->fd);
+				client->authenticated = true;
+				clientIrcSend(client, ":%s 002 %s :You were successfully authenticated and are now connected to the IRC server", client->proxy->irc->socket->host, client->proxy->irc->nick);
+			}
+		}
+	} else if(g_strcmp0(message->command, "PING") == 0) { // reply to pings
+		if(message->trailing != NULL) {
+			clientIrcSend(client, "PONG :%s", message->trailing);
+		}
+	} else if(g_strcmp0(message->command, "USER") == 0) { // prevent user command from being passed through
+		return;
+	} else if(g_strcmp0(message->command, "QUIT") == 0) { // client disconnects
+		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
+		freeIrcProxyClient(client, "Bye");
+		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+	}
 }
 
 /**
@@ -174,9 +196,31 @@ API void freeIrcProxy(IrcProxy *proxy)
 	g_hash_table_remove(proxies, proxy->server);
 
 	$(bool, socket, freeSocket)(proxy->server);
+	g_queue_foreach(proxy->clients, &freeIrcProxyClient, "IRC proxy server going down");
 	g_queue_free(proxy->clients);
 	free(proxy->password);
 	free(proxy);
+}
+
+/**
+ * A GFunc to free an IRC proxy client. Note that this doesn't remove the IRC proxy client from its parent proxy's client list
+ *
+ * @param client_p		a pointer to the IRC proxy client to free
+ * @param quitmsg_p		a quit message to send to the disconnecting client
+ */
+static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
+{
+	IrcProxyClient *client = client_p;
+	char *quitmsg = quitmsg_p;
+
+	if(client->socket->connected && quitmsg != NULL) { // Send quit message
+		clientIrcSend(client, "QUIT :%s", quitmsg);
+	}
+
+	g_hash_table_remove(clients, client->socket); // remove ourselves from the irc proxy client sockets table
+
+	$(bool, socket, freeSocket)(client->socket); // free the socket
+	g_string_free(client->ibuffer, true); // free the input buffer
 }
 
 /**

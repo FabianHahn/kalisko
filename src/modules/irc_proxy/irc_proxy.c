@@ -48,6 +48,7 @@ static bool clientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRI
 static void checkForBufferLine(IrcProxyClient *client);
 
 static GHashTable *proxies;
+static GHashTable *proxyConnections;
 static GHashTable *clients;
 
 HOOK_LISTENER(remote_line);
@@ -59,6 +60,7 @@ HOOK_LISTENER(client_line);
 MODULE_INIT
 {
 	proxies = g_hash_table_new(NULL, NULL);
+	proxyConnections = g_hash_table_new(NULL, NULL);
 	clients = g_hash_table_new(NULL, NULL);
 
 	HOOK_ATTACH(irc_line, remote_line);
@@ -74,6 +76,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	g_hash_table_destroy(proxies);
+	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
 
 	HOOK_DETACH(irc_proxy_client_line, client_line);
@@ -86,7 +89,16 @@ MODULE_FINALIZE
 
 HOOK_LISTENER(remote_line)
 {
+	IrcConnection *irc = HOOK_ARG(IrcConnection *);
+	IrcMessage *message = HOOK_ARG(IrcMessage *);
 
+	IrcProxy *proxy;
+	if((proxy = g_hash_table_lookup(proxyConnections, irc)) != NULL) { // One of our proxy servers got a new remote line
+		for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) { // iterate over all clients
+			IrcProxyClient *client = iter->data; // retrieve client
+			$(bool, socket, socketWriteRaw)(client->socket, message->raw_message, strlen(message->raw_message)); // relay message to client
+		}
+	}
 }
 
 HOOK_LISTENER(client_accept)
@@ -184,6 +196,7 @@ API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 	proxy->clients = g_queue_new();
 
 	g_hash_table_insert(proxies, server, proxy);
+	g_hash_table_insert(proxyConnections, irc, proxy);
 
 	return proxy;
 }

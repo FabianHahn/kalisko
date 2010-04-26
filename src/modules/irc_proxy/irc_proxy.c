@@ -137,7 +137,14 @@ HOOK_LISTENER(client_read)
 
 HOOK_LISTENER(client_disconnect)
 {
+	Socket *socket = HOOK_ARG(Socket *);
 
+	IrcProxyClient *client;
+	if((client = g_hash_table_lookup(clients, socket)) != NULL) {
+		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
+		freeIrcProxyClient(client, "Bye");
+		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+	}
 }
 
 HOOK_LISTENER(client_line)

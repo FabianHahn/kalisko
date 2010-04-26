@@ -39,7 +39,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -69,6 +69,7 @@ MODULE_INIT
 	HOOK_ATTACH(socket_disconnect, client_disconnect);
 	HOOK_ADD(irc_proxy_client_line);
 	HOOK_ATTACH(irc_proxy_client_line, client_line);
+	HOOK_ADD(irc_proxy_client_authenticated);
 
 	return true;
 }
@@ -79,6 +80,7 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
 
+	HOOK_DEL(irc_proxy_client_authenticated);
 	HOOK_DETACH(irc_proxy_client_line, client_line);
 	HOOK_DEL(irc_proxy_client_line);
 	HOOK_DETACH(irc_line, remote_line);
@@ -158,6 +160,7 @@ HOOK_LISTENER(client_line)
 				LOG_INFO("IRC proxy client %d authenticated successfully", client->socket->fd);
 				client->authenticated = true;
 				clientIrcSend(client, ":%s 002 %s :You were successfully authenticated and are now connected to the IRC server", client->proxy->irc->socket->host, client->proxy->irc->nick);
+				HOOK_TRIGGER(irc_proxy_client_authenticated, client);
 			}
 		}
 	} else if(g_strcmp0(message->command, "PING") == 0) { // reply to pings

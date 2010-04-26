@@ -25,6 +25,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "modules/irc/irc.h"
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/config/config.h"
 #include "modules/store/store.h"
@@ -35,12 +36,26 @@
 MODULE_NAME("irc_boucer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A simple IRC bouncer using an IRC connection to a single IRC server on a listening port");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 1), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 1, 1), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+
+static IrcConnection *irc;
+static IrcProxy *proxy;
 
 MODULE_INIT
 {
+	Store *config = $(Store *, config, getConfigPathValue)("irc");
+
+	if(config == NULL) {
+		return false;
+	}
+
+	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
+		LOG_ERROR("Failed to establich remote IRC connection, aborting IRC bouncer");
+		return false;
+	}
+
 	Store *bouncer = $(Store *, config, getConfigPathValue)("irc/bouncer");
 
 	if(bouncer == NULL) {
@@ -64,6 +79,8 @@ MODULE_INIT
 	}
 
 	password = param->content.string;
+
+	proxy = $(IrcProxy *, irc_proxy, createIrcProxy)(irc, port, password);
 
 	return true;
 }

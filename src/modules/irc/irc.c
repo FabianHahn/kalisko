@@ -46,12 +46,14 @@ HOOK_LISTENER(irc_line);
 HOOK_LISTENER(irc_read);
 
 static GHashTable *connections;
+static GHashTable *throttled;
 
 static void checkForBufferLine(IrcConnection *irc);
 
 MODULE_INIT
 {
 	connections = g_hash_table_new(NULL, NULL);
+	throttled = g_hash_table_new(NULL, NULL);
 
 	HOOK_ATTACH(socket_read, irc_read);
 	HOOK_ADD(irc_send);
@@ -65,6 +67,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	g_hash_table_destroy(connections);
+	g_hash_table_destroy(throttled);
 
 	HOOK_DEL(irc_nick);
 	HOOK_DEL(irc_send);
@@ -129,6 +132,8 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 	irc->real = strdup(real);
 	irc->nick = strdup(nick);
 	irc->ibuffer = g_string_new("");
+	irc->throttle = false;
+	irc->obuffer = NULL;
 	irc->socket = $(Socket *, socket, createClientSocket)(server, port);
 
 	if(!$(bool, socket, connectSocket)(irc->socket) || !$(bool, socket, enableSocketPolling)(irc->socket)) {
@@ -207,6 +212,27 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	nick = param->content.string;
 
 	return createIrcConnection(server, port, password, user, real, nick);
+}
+
+/**
+ * Enables output throttling for an IRC connection
+ *
+ * @param irc		the IRC connection to enable output throttling for
+ */
+API void enableIrcConnectionThrottle(IrcConnection *irc)
+{
+
+}
+
+/**
+ * Disables output throttling for an IRC connection
+ *
+ * @param irc					the IRC connection to disable output throttling for
+ * @param flush_output_buffer	if true, the output buffer is flushed before freeing, i.e. all remaining buffered messages will be burst-sent to the server
+ */
+API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buffer)
+{
+
 }
 
 /**

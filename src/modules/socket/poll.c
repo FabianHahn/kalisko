@@ -47,6 +47,7 @@ API void initPoll(int interval)
 {
 	pollInterval = interval;
 
+	HOOK_ADD(socket_poll);
 	HOOK_ADD(socket_read);
 	HOOK_ADD(socket_error);
 	HOOK_ADD(socket_disconnect);
@@ -64,6 +65,7 @@ API void freePoll()
 {
 	TIMER_DEL(lastScheduledPollTime);
 
+	HOOK_DEL(socket_poll);
 	HOOK_DEL(socket_read);
 	HOOK_DEL(socket_error);
 	HOOK_DEL(socket_disconnect);
@@ -111,6 +113,7 @@ API void pollSockets()
 TIMER_CALLBACK(poll)
 {
 	pollSockets();
+	HOOK_TRIGGER(socket_poll);
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 

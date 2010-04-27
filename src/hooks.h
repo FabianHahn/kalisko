@@ -151,7 +151,7 @@ API void freeHookStats(GList *hook_stats);
  * @param ...			the data to pass to the listeners
  * @result				the number of listeners notified, -1 if hook not found
  */
-#define HOOK_TRIGGER(HOOK, ...) $$(int, triggerHook)(#HOOK, __VA_ARGS__)
+#define HOOK_TRIGGER(HOOK, ...) $$(int, triggerHook)(#HOOK, ##__VA_ARGS__)
 
 #endif
 

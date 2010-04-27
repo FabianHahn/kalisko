@@ -44,6 +44,8 @@ typedef struct
 	bool throttle;
 	/** output buffer for IRC messages */
 	GQueue *obuffer;
+	/** the time used for throttling */
+	double throttle_time;
 	/** socket of the IRC connection, also stores host and port of the connection */
 	Socket *socket;
 } IrcConnection;

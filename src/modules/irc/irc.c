@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -328,6 +328,11 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
 
 	HOOK_TRIGGER(irc_send, irc, buffer);
+
+	if(irc->throttle) { // delay message
+		g_queue_push_tail(irc->obuffer, g_string_new(buffer));
+		return true;
+	}
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');

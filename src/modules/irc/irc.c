@@ -46,14 +46,14 @@ HOOK_LISTENER(irc_line);
 HOOK_LISTENER(irc_read);
 
 static GHashTable *connections;
-static GHashTable *throttled;
+static GQueue *throttled;
 
 static void checkForBufferLine(IrcConnection *irc);
 
 MODULE_INIT
 {
 	connections = g_hash_table_new(NULL, NULL);
-	throttled = g_hash_table_new(NULL, NULL);
+	throttled = g_queue_new();
 
 	HOOK_ATTACH(socket_read, irc_read);
 	HOOK_ADD(irc_send);
@@ -67,7 +67,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	g_hash_table_destroy(connections);
-	g_hash_table_destroy(throttled);
+	g_queue_free(throttled);
 
 	HOOK_DEL(irc_nick);
 	HOOK_DEL(irc_send);
@@ -218,10 +218,21 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
  * Enables output throttling for an IRC connection
  *
  * @param irc		the IRC connection to enable output throttling for
+ * @result			true if successful
  */
-API void enableIrcConnectionThrottle(IrcConnection *irc)
+API bool enableIrcConnectionThrottle(IrcConnection *irc)
 {
+	if(irc->throttle) {
+		LOG_WARNING("Trying to enable throttling on already enabled IRC connection with socket %d", irc->socket->fd);
+		return false;
+	}
 
+	irc->throttle = true;
+	irc->obuffer = g_queue_new();
+
+	g_queue_push_tail(throttled, irc);
+
+	return true;
 }
 
 /**
@@ -232,7 +243,24 @@ API void enableIrcConnectionThrottle(IrcConnection *irc)
  */
 API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buffer)
 {
+	if(!irc->throttle) {
+		return;
+	}
 
+	irc->throttle = false; // disable throttling before flushing
+
+	for(GList *iter = irc->obuffer->head; iter != NULL; iter = iter->next) {
+		GString *line = iter->data;
+
+		if(flush_output_buffer) {
+			ircSend(irc, "%s", line->str);
+		}
+
+		g_string_free(line, true);
+	}
+
+	g_queue_free(irc->obuffer); // free output buffer
+	g_queue_remove(throttled, irc); // remove ourselves from output buffer list
 }
 
 /**

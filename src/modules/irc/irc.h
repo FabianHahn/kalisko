@@ -43,14 +43,14 @@ typedef struct
 	/** true if IRC output should be throttled */
 	bool throttle;
 	/** output buffer for IRC messages */
-	GString *obuffer;
+	GQueue *obuffer;
 	/** socket of the IRC connection, also stores host and port of the connection */
 	Socket *socket;
 } IrcConnection;
 
 API IrcConnection *createIrcConnection(char *server, char *port, char *password, char *user, char *real, char *nick);
 API IrcConnection *createIrcConnectionByStore(Store *cfg);
-API void enableIrcConnectionThrottle(IrcConnection *irc);
+API bool enableIrcConnectionThrottle(IrcConnection *irc);
 API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buffer);
 API void freeIrcConnection(IrcConnection *irc);
 API bool ircSend(IrcConnection *irc, char *message, ...) G_GNUC_PRINTF(2, 3);

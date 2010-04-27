@@ -30,5 +30,6 @@ API void setArgv(char **args);
 API int getArgc();
 API void setArgc(int count);
 API void breakpoint();
+API int getTime();
 
 #endif

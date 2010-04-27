@@ -270,6 +270,10 @@ API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buff
  */
 API void freeIrcConnection(IrcConnection *irc)
 {
+	if(irc->throttle) {
+		disableIrcConnectionThrottle(irc, false);
+	}
+
 	g_hash_table_remove(connections, irc->socket);
 
 	$(bool, socket, freeSocket)(irc->socket);

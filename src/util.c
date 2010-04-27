@@ -190,14 +190,26 @@ API void breakpoint()
 }
 
 /**
- * Returns the current time in microseconds
+ * Returns the current time in seconds with microsecond precision
  *
- * @result		the current time in microseconds
+ * @result		the current time in seconds with microsecond precision
+ */
+API double getMicroTime()
+{
+	GTimeVal time;
+	g_get_current_time(&time);
+
+	return time.tv_sec + (double) time.tv_usec / G_USEC_PER_SEC;
+}
+
+/**
+ * Returns the current time in seconds
+ *
+ * @result		the current time in seconds
  */
 API int getTime()
 {
 	GTimeVal time;
 	g_get_current_time(&time);
-
-	return time.tv_sec * G_USEC_PER_SEC + time.tv_usec;
+	return time.tv_sec;
 }

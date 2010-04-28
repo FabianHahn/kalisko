@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -115,6 +115,8 @@ API bool enableChannelTracking(IrcConnection *irc)
 	tracker = ALLOCATE_OBJECT(IrcChannelTracker);
 	tracker->irc = irc;
 	tracker->channels = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcChannel);
+
+	g_hash_table_insert(tracked, irc, tracker);
 
 	return true;
 }

@@ -25,6 +25,7 @@
 #include "log.h"
 #include "types.h"
 #include "module.h"
+#include "timer.h"
 #include "modules/xcall/xcall.h"
 #include "modules/store/store.h"
 #include "modules/store/parse.h"
@@ -36,10 +37,11 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 6);
+MODULE_VERSION(0, 3, 7);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
+static Store *xcall_exitGracefully(Store *xcall);
 static Store *xcall_getHookStats(Store *xcall);
 static Store *xcall_attachLog(Store *xcall);
 static Store *xcall_detachLog(Store *xcall);
@@ -73,6 +75,7 @@ MODULE_INIT
 	logExecuting = false;
 	logListeners = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeLogListenerEntry);
 
+	$(bool, xcall, addXCallFunction)("exitGracefully", &xcall_exitGracefully);
 	$(bool, xcall, addXCallFunction)("getHookStats", &xcall_getHookStats);
 	$(bool, xcall, addXCallFunction)("attachLog", &xcall_attachLog);
 	$(bool, xcall, addXCallFunction)("detachLog", &xcall_detachLog);
@@ -98,6 +101,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(bool, xcall, delXCallFunction)("exitGracefully");
 	$(bool, xcall, delXCallFunction)("getHookStats");
 	$(bool, xcall, delXCallFunction)("attachLog");
 	$(bool, xcall, delXCallFunction)("detachLog");
@@ -119,6 +123,18 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("logDebug");
 
 	g_hash_table_destroy(logListeners);
+}
+
+/**
+ * XCallFunction to exit the Kalisko instance gracefully
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_exitGracefully(Store *xcall)
+{
+	$$(void, exitGracefully)();
+	return $(Store *, store, createStore)();
 }
 
 /**

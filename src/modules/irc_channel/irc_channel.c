@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -82,13 +82,11 @@ HOOK_LISTENER(irc_line)
 
 				LOG_DEBUG("Joined channel %s on IRC conection %d", channel->name, irc->socket->fd);
 			}
-		} else if(g_strcmp0(message->command, "PART") == 0 && message->params_count >= 1) {
+		} else if(g_strcmp0(message->command, "PART") == 0 && message->trailing != NULL) {
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
-				if((channel = g_hash_table_lookup(tracker->channels, message->params[0])) != NULL) {
-					free(channel->name);
-					free(channel);
-
-					LOG_DEBUG("Left channel %s on IRC connection %d", message->params[0], irc->socket->fd);
+				if((channel = g_hash_table_lookup(tracker->channels, message->trailing)) != NULL) {
+					g_hash_table_remove(tracker->channels, message->trailing);
+					LOG_DEBUG("Left channel %s on IRC connection %d", message->trailing, irc->socket->fd);
 				}
 			}
 		}

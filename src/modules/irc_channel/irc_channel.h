@@ -22,6 +22,23 @@
 #ifndef IRC_CHANNEL_IRC_CHANNEL_H
 #define IRC_CHANNEL_IRC_CHANNEL_H
 
+#include <glib.h>
+#include "modules/irc/irc.h"
+
+typedef struct {
+	/** the IRC connection that is tracked */
+	IrcConnection *irc;
+	/** a table of channels being tracked for the connection */
+	GHashTable *channels;
+} IrcChannelTracker;
+
+typedef struct {
+	/** the responsible tracker for this channel */
+	IrcChannelTracker *tracker;
+	/** the name of the channel */
+	char *name;
+} IrcChannel;
+
 API bool enableChannelTracking(IrcConnection *irc);
 API void disableChannelTracking(IrcConnection *irc);
 

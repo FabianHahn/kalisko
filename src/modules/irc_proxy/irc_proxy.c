@@ -39,7 +39,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -76,6 +76,12 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	GList *proxylist = g_hash_table_get_values(proxies);
+	for(GList *iter = proxylist; iter != NULL; iter = iter->next) {
+		freeIrcProxy(iter->data);
+	}
+	g_list_free(proxylist);
+
 	g_hash_table_destroy(proxies);
 	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
@@ -225,6 +231,7 @@ API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 API void freeIrcProxy(IrcProxy *proxy)
 {
 	g_hash_table_remove(proxies, proxy->server);
+	g_hash_table_remove(proxyConnections, proxy->irc);
 
 	$(bool, socket, freeSocket)(proxy->server);
 	g_queue_foreach(proxy->clients, &freeIrcProxyClient, "IRC proxy server going down");

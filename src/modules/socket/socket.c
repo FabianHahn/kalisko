@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -222,15 +222,11 @@ API bool connectSocket(Socket *s)
 
 		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
 			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
-			freeSocket(s);
-
 			return false;
 		}
 
 		if(!setSocketNonBlocking(s->fd)) {
 			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-			freeSocket(s);
-
 			return false;
 		}
 

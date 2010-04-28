@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -93,6 +93,8 @@ HOOK_LISTENER(throttle_poll)
 
 		while(!g_queue_is_empty(irc->obuffer) && (irc->throttle_time - now) < 10.0) { // repeat while lines and throttle space left
 			GString *line = g_queue_pop_head(irc->obuffer); // pop the next output buffer line
+			HOOK_TRIGGER(irc_send, irc, line->str); // trigger send hook
+			g_string_append_c(line, '\n'); // append newline
 			$(bool, socket, socketWriteRaw)(irc->socket, line->str, line->len); // send it
 			irc->throttle_time += (2.0 + line->len) / 120.0; // penalty throttle time by line length
 			g_string_free(line, true); // free it
@@ -327,12 +329,12 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
 
-	HOOK_TRIGGER(irc_send, irc, buffer);
-
 	if(irc->throttle) { // delay message
 		g_queue_push_tail(irc->obuffer, g_string_new(buffer));
 		return true;
 	}
+
+	HOOK_TRIGGER(irc_send, irc, buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');

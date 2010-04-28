@@ -60,8 +60,8 @@ API bool delHook(char *hook_name);
 API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data);
 API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_data);
 API int triggerHook(char *hook_name, ...);
-API GList *getHookStats();
-API void freeHookStats(GList *hook_stats);
+API GQueue *getHookStats();
+API void freeHookStats(GQueue *hook_stats);
 
 // Wrapper macros for hooks
 /**

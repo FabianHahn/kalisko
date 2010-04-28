@@ -201,11 +201,11 @@ API int triggerHook(char *hook_name, ...)
  * @see freeHookStats
  * @return					a list of HookStatsEntry structs, must be freed with freeHookStats
  */
-API GList *getHookStats()
+API GQueue *getHookStats()
 {
-	GList *result = NULL;
+	GQueue *result = g_queue_new();
 
-	g_hash_table_foreach(hooks, &addHookStatsEntry, &result);
+	g_hash_table_foreach(hooks, &addHookStatsEntry, result);
 
 	return result;
 }
@@ -216,13 +216,13 @@ API GList *getHookStats()
  * @see getHookStats
  * @param hook_stats		a list of HookStatsEntry structs
  */
-API void freeHookStats(GList *hook_stats)
+API void freeHookStats(GQueue *hook_stats)
 {
-	for(GList *iter = hook_stats; iter != NULL; iter = iter->next) {
+	for(GList *iter = hook_stats->head; iter != NULL; iter = iter->next) {
 		free(iter->data);
 	}
 
-	g_list_free(hook_stats);
+	g_queue_free(hook_stats);
 }
 
 /**
@@ -237,13 +237,13 @@ static void addHookStatsEntry(void *key, void *value, void *data)
 {
 	char *name = key;
 	GList *listeners = value;
-	GList **list = data;
+	GQueue *list = data;
 
 	HookStatsEntry *entry = allocateMemory(sizeof(HookStatsEntry));
 	entry->hook_name = name;
 	entry->num_listeners = g_list_length(listeners);
 
-	*list = g_list_append(*list, entry);
+	g_queue_push_tail(list, entry);
 }
 
 /**

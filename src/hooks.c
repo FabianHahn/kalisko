@@ -21,13 +21,14 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "api.h"
 #include "hooks.h"
 #include "types.h"
 #include "memory_alloc.h"
 
 static void addHookStatsEntry(void *key, void *value, void *data);
-static gboolean freeHookListenerList(void *hook_name, void *list, void *user_data);
+static void freeHookListenerList(void *list_p);
 
 static GHashTable *hooks;
 
@@ -36,7 +37,7 @@ static GHashTable *hooks;
  */
 API void initHooks()
 {
-	hooks = g_hash_table_new(&g_str_hash, &g_str_equal);
+	hooks = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeHookListenerList);
 }
 
 /**
@@ -44,9 +45,6 @@ API void initHooks()
  */
 API void freeHooks()
 {
-	// Remove all keys and free them
-	g_hash_table_foreach_remove(hooks, &freeHookListenerList, NULL);
-
 	// Destroy hash table struct as well
 	g_hash_table_destroy(hooks);
 }
@@ -59,12 +57,12 @@ API void freeHooks()
  */
 API bool addHook(char *hook_name)
 {
-	if(g_hash_table_lookup_extended(hooks, hook_name, NULL, NULL)) { // A hook with that name already exists
+	if(g_hash_table_lookup(hooks, hook_name) != NULL) { // A hook with that name already exists
 		return false;
 	}
 
 	// Insert an empty list
-	g_hash_table_insert(hooks, (void *) hook_name, NULL);
+	g_hash_table_insert(hooks, strdup(hook_name), g_queue_new());
 
 	return true;
 }
@@ -77,19 +75,7 @@ API bool addHook(char *hook_name)
  */
 API bool delHook(char *hook_name)
 {
-	GList *hook;
-
-	if(!g_hash_table_lookup_extended(hooks, hook_name, NULL, (void **) &hook)) { // A hook with that name doesn't exist
-		return false;
-	}
-
-	// Free the hook's listener list
-	freeHookListenerList(NULL, hook, NULL);
-
-	// Remove the hook from the hooks table
-	g_hash_table_remove(hooks, hook_name);
-
-	return true;
+	return g_hash_table_remove(hooks, hook_name);
 }
 
 /**
@@ -102,10 +88,9 @@ API bool delHook(char *hook_name)
  */
 API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data)
 {
-	GList *hook;
-	char *hook_own_name;
+	GQueue *hook;
 
-	if(!g_hash_table_lookup_extended(hooks, hook_name, (void **) &hook_own_name, (void **) &hook)) { // A hook with that name doesn't exist
+	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) { // a hook with that name doesn't exist
 		return false;
 	}
 
@@ -114,11 +99,7 @@ API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data
 	entry->listener = listener;
 	entry->custom_data = custom_data;
 
-	// Prepend the new listener to the hook
-	hook = g_list_prepend(hook, entry);
-
-	// Update the hook entry in the hooks table
-	g_hash_table_replace(hooks, (void *) hook_own_name, hook);
+	g_queue_push_tail(hook, entry);
 
 	return true;
 }
@@ -133,25 +114,17 @@ API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data
  */
 API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_data)
 {
-	GList *hook;
-	char *hook_own_name;
+	GQueue *hook;
 
-	if(!g_hash_table_lookup_extended(hooks, hook_name, (void **) &hook_own_name, (void **) &hook)) { // A hook with that name doesn't exist
+	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) { // a hook with that name doesn't exist
 		return false;
 	}
 
-	HookListenerEntry *entry;
-
-	for(; hook != NULL; hook = hook->next) {
-		entry = hook->data;
+	for(GList *iter = hook->head; iter != NULL; iter = iter->next) {
+		HookListenerEntry *entry = iter->data;
 
 		if(entry->listener == listener && entry->custom_data == custom_data) { // Is this the right listener entry?
-			// Remove the listener entry from the list
-			hook = g_list_remove(hook, entry);
-
-			// Update the hook entry in the hooks table
-			g_hash_table_replace(hooks, (void *) hook_own_name, hook);
-
+			g_queue_remove(hook, entry);
 			free(entry);
 
 			return true;
@@ -170,22 +143,21 @@ API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_da
  */
 API int triggerHook(char *hook_name, ...)
 {
-	GList *hook;
+	GQueue *hook;
 
-	if(!g_hash_table_lookup_extended(hooks, hook_name, NULL, (void **) &hook)) { // A hook with that name doesn't exist
+	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) {
 		return -1;
 	}
 
 	va_list args;
 	HookListenerEntry *entry;
 	HookListener *listener;
-	int counter;
+	int counter = 0;
 
-	for(counter = 0; hook != NULL; hook = hook->next, counter++) {
+	for(GList *iter = hook->head; iter != NULL; iter = iter->next, counter++) {
 		// Get args and listener
 		va_start(args, hook_name);
-		entry = hook->data;
-
+		entry = iter->data;
 		listener = entry->listener;
 
 		// Notify listener
@@ -236,37 +208,29 @@ API void freeHookStats(GQueue *hook_stats)
 static void addHookStatsEntry(void *key, void *value, void *data)
 {
 	char *name = key;
-	GList *listeners = value;
+	GQueue *listeners = value;
 	GQueue *list = data;
 
 	HookStatsEntry *entry = allocateMemory(sizeof(HookStatsEntry));
 	entry->hook_name = name;
-	entry->num_listeners = g_list_length(listeners);
+	entry->num_listeners = g_queue_get_length(listeners);
 
 	g_queue_push_tail(list, entry);
 }
 
 /**
- * GHRFunc to free a hook listener list
+ * A GDestroyNotify function to free a hook listener list
  *
- * @param key_p		a pointer to the hook name
- * @param value_p	a pointer to the list to free
- * @param data		unused
- * @result			true if the entry should be removed from the table
+ * @param list_p			a pointer to the list to frees
  */
-static gboolean freeHookListenerList(void *key_p, void *value_p, void *data)
+static void freeHookListenerList(void *list_p)
 {
-	HookListenerEntry *entry;
-	GList *list = value_p;
+	GQueue *list = list_p;
 
-	for(; list != NULL; list = list->next) {
-		entry = list->data;
-
-		free(entry);
+	for(GList *iter = list->head; iter != NULL; iter = iter->next) {
+		free(iter->data);
 	}
 
-	g_list_free((GList *) value_p);
-
-	return TRUE;
+	g_queue_free(list);
 }
 

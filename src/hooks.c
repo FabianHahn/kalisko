@@ -199,7 +199,7 @@ API int triggerHook(char *hook_name, ...)
  * Retrieves statistics about hooks
  *
  * @see freeHookStats
- * @return					a list of HookStatsEntry structs
+ * @return					a list of HookStatsEntry structs, must be freed with freeHookStats
  */
 API GList *getHookStats()
 {

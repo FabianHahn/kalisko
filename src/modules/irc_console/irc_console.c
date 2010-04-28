@@ -28,15 +28,17 @@
 #include "modules/irc/irc.h"
 #include "modules/config/config.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #include "timer.h"
 #include "api.h"
 
 MODULE_NAME("irc_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
 // Columns
 typedef enum {
@@ -82,6 +84,12 @@ MODULE_INIT
 
 	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
 		return false;
+	}
+
+	Store *param = $(Store *, store, getStorePath)(config, "throttle");
+
+	if(param != NULL && param->type == STORE_INTEGER && param->content.integer > 0) { // throttle irc connection
+		$(bool, irc, enableIrcConnectionThrottle)(irc);
 	}
 
 	tabs = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConsoleTab);

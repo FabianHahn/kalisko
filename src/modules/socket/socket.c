@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 3, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -281,7 +281,7 @@ API bool connectSocket(Socket *s)
 
 						break; // Socket connected, break out of loop
 					} else {
-						LOG_ERROR("Connection for socket %d exceeded timedout of %d seconds, disconnecting", s->fd, connectionTimeout);
+						LOG_ERROR("Connection for socket %d exceeded timeout of %d seconds, disconnecting", s->fd, connectionTimeout);
 						freeaddrinfo(server);
 						disconnectSocket(s);
 						return false;

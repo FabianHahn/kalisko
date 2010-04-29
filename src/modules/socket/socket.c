@@ -56,8 +56,8 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 1);
-MODULE_BCVERSION(0, 3, 1);
+MODULE_VERSION(0, 4, 2);
+MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
 static int connectionTimeout = 10; // set default connection timeout to 10 seconds
@@ -309,7 +309,11 @@ API bool connectSocket(Socket *s)
  */
 API bool disconnectSocket(Socket *s)
 {
+	LOG_DEBUG("Disconnecting socket %d", s->fd);
+
 	if(s->connected) {
+		disableSocketPolling(s); // disable polling to prevent warnings about polling non-connected sockets later
+
 #ifdef WIN32
 		if(closesocket(s->fd) != 0) {
 #else
@@ -323,7 +327,7 @@ API bool disconnectSocket(Socket *s)
 
 		return true;
 	} else {
-		LOG_ERROR("Cannot disconnect already disconnected socket");
+		LOG_ERROR("Cannot disconnect already disconnected socket %d", s->fd);
 		return false;
 	}
 }
@@ -334,12 +338,10 @@ API bool disconnectSocket(Socket *s)
  * @param s			the socket to free
  * @result			true if successful, false on error
  */
-API bool freeSocket(Socket *s)
+API void freeSocket(Socket *s)
 {
 	if(s->connected) {
-		if(!disconnectSocket(s)) {
-			return false;
-		}
+		disconnectSocket(s);
 	}
 
 	if(s->host) {
@@ -351,8 +353,6 @@ API bool freeSocket(Socket *s)
 	}
 
 	free(s);
-
-	return true;
 }
 
 /**

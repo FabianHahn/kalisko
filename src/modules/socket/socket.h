@@ -36,7 +36,7 @@ API Socket *createClientSocket(char *host, char *port);
 API Socket *createServerSocket(char *port);
 API bool connectSocket(Socket *s);
 API bool disconnectSocket(Socket *s);
-API bool freeSocket(Socket *s);
+API void freeSocket(Socket *s);
 API bool socketWriteRaw(Socket *s, void *buffer, int size);
 API int socketReadRaw(Socket *s, void *buffer, int size);
 API Socket *socketAccept(Socket *server);

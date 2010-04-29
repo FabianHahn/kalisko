@@ -136,6 +136,7 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 	if(!socket->server) {
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected
+				disconnectSocket(socket);
 				HOOK_TRIGGER(socket_disconnect, socket);
 			} else { // error
 				HOOK_TRIGGER(socket_error, socket);

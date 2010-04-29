@@ -39,7 +39,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -283,6 +283,8 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 
 	$(bool, socket, freeSocket)(client->socket); // free the socket
 	g_string_free(client->ibuffer, true); // free the input buffer
+
+	free(client); // actually free the client
 }
 
 /**

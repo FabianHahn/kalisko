@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -314,8 +314,6 @@ API bool disconnectSocket(Socket *s)
 	LOG_DEBUG("Disconnecting socket %d", s->fd);
 
 	if(s->connected) {
-		disableSocketPolling(s); // disable polling to prevent warnings about polling non-connected sockets later
-
 #ifdef WIN32
 		if(closesocket(s->fd) != 0) {
 #else

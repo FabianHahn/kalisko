@@ -25,6 +25,7 @@
 #include "hooks.h"
 #include "timer.h"
 #include "log.h"
+#include "memory_alloc.h"
 
 #include "api.h"
 #include "socket.h"
@@ -53,7 +54,7 @@ API void initPoll(int interval)
 	HOOK_ADD(socket_disconnect);
 	HOOK_ADD(socket_accept);
 
-	poll_table = g_hash_table_new(&g_int_hash, &g_int_equal);
+	poll_table = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
 
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
@@ -85,7 +86,10 @@ API bool enableSocketPolling(Socket *socket)
 		return false;
 	}
 
-	g_hash_table_insert(poll_table, &socket->fd, socket);
+	int *fd = ALLOCATE_OBJECT(int);
+	*fd = socket->fd;
+
+	g_hash_table_insert(poll_table, fd, socket);
 	return true;
 }
 
@@ -128,15 +132,14 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 	int ret;
 	Socket *socket = socket_p;
 
-	if(!socket->connected) { // Remove socket from poll list if disconnected
-		LOG_WARNING("Polling not connected socket %d, removing from list", socket->fd);
+	if(!socket->connected) { // Socket is disconnected
+		HOOK_TRIGGER(socket_disconnect, socket);
 		return TRUE;
 	}
 
 	if(!socket->server) {
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected
-				disconnectSocket(socket);
 				HOOK_TRIGGER(socket_disconnect, socket);
 			} else { // error
 				HOOK_TRIGGER(socket_error, socket);

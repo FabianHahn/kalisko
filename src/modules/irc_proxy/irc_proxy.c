@@ -27,6 +27,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "util.h"
 #include "memory_alloc.h"
 #include "modules/irc/irc.h"
 #include "modules/socket/socket.h"
@@ -39,9 +40,9 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 9);
+MODULE_VERSION(0, 1, 10);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 3, 1), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static void checkForBufferLine(IrcProxyClient *client);
@@ -152,10 +153,10 @@ HOOK_LISTENER(client_disconnect)
 	Socket *socket = HOOK_ARG(Socket *);
 
 	IrcProxyClient *client;
-	if((client = g_hash_table_lookup(clients, socket)) != NULL) {
+	if((client = g_hash_table_lookup(clients, socket)) != NULL) { // one of our proxy clients disconnected
 		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
-		freeIrcProxyClient(client, "Bye");
 		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+		freeIrcProxyClient(client, "Bye");
 	}
 }
 
@@ -180,9 +181,8 @@ HOOK_LISTENER(client_line)
 	} else if(g_strcmp0(message->command, "USER") == 0) { // prevent user command from being passed through
 		return;
 	} else if(g_strcmp0(message->command, "QUIT") == 0) { // client disconnects
-		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
-		freeIrcProxyClient(client, "Bye");
-		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+		LOG_DEBUG("IRC proxy client %d sent QUIT message, disconnecting...", client->socket->fd);
+		$(bool, socket, disconnectSocket)(client->socket);
 	} else {
 		// Relay message to IRC server
 		$(bool, irc, ircSend)(client->proxy->irc, "%s", message->raw_message);

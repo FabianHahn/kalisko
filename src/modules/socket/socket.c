@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -302,7 +302,9 @@ API bool connectSocket(Socket *s)
 }
 
 /**
- * Disconnects a socket
+ * Disconnects a socket. Call this function to get rid of a socket inside a socket_read hook, then free it inside a socket_disconnect listener.
+ * See the documentation of freeSocket for further details on this issue.
+ * @see freeSocket
  *
  * @param s			the socket to disconnect
  * @result			true if successful, false on error
@@ -333,7 +335,10 @@ API bool disconnectSocket(Socket *s)
 }
 
 /**
- * Frees a socket
+ * Frees a socket. Note that this function MUST NOT be called from a (descendent of a) socket_read hook since further listeners expect the socket
+ * to still be existing. If you want to get rid of a socket after a read event, listen to the socket_disconnect hook and disconnect it with disconnectSocket().
+ * Then, free it inside the socket_disconnect hook using this function. If you don't want to adhere to this rule, you might as well shoot yourself in the foot.
+ * @see disconnectSocket
  *
  * @param s			the socket to free
  * @result			true if successful, false on error

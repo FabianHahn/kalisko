@@ -41,5 +41,7 @@ typedef struct {
 
 API bool enableChannelTracking(IrcConnection *irc);
 API void disableChannelTracking(IrcConnection *irc);
+API IrcChannel *getTrackedChannel(IrcConnection *irc, char *name);
+API GList *getTrackedChannels(IrcConnection *irc);
 
 #endif

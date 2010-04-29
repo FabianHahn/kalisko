@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -135,6 +135,43 @@ API void disableChannelTracking(IrcConnection *irc)
 
 	g_hash_table_destroy(tracker->channels);
 	free(tracker);
+}
+
+/**
+ * Retrieves a tracked IRC channel from a tracked IRC connection
+ *
+ * @param irc		the IRC connection that tracks the channels
+ * @param name		the name of the channel to retrieve
+ * @result			the IRC channel or NULL if that channel is not tracked
+ */
+API IrcChannel *getTrackedChannel(IrcConnection *irc, char *name)
+{
+	IrcChannelTracker *tracker;
+
+	if((tracker = g_hash_table_lookup(tracked, irc)) == NULL) {
+		LOG_WARNING("Trying to retrieve channel %s for untracked IRC connection %d, aborting", name, irc->socket->fd);
+		return NULL;
+	}
+
+	return g_hash_table_lookup(tracker->channels, name);
+}
+
+/**
+ * Retrieves all tracked IRC channels from a tracked IRC connection
+ *
+ * @param irc		the IRC connection that tracks the channels
+ * @result			a list of tracked IRC channels, must be freed with g_list_free but not be modified
+ */
+API GList *getTrackedChannels(IrcConnection *irc)
+{
+	IrcChannelTracker *tracker;
+
+	if((tracker = g_hash_table_lookup(tracked, irc)) == NULL) {
+		LOG_WARNING("Trying to retrieve tracked channels for untracked IRC connection %d, aborting", irc->socket->fd);
+		return NULL; // NULL is the empty list, that's fine!
+	}
+
+	return g_hash_table_get_values(tracker->channels);
 }
 
 /**

@@ -35,6 +35,7 @@
 #include <errno.h> // errno, EINTR
 #include <assert.h> // assert
 #include <string.h> // strerror, strdup
+#include <sys/select.h> // select, timeval
 
 #include "dll.h"
 #include "log.h"
@@ -52,13 +53,14 @@
 static bool setSocketNonBlocking(int fd);
 static GString *ip2str(unsigned int ip);
 
-
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 3, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+
+static int connectionTimeout = 10; // set default connection timeout to 10 seconds
 
 MODULE_INIT
 {
@@ -77,7 +79,14 @@ MODULE_INIT
 	if(configPollInterval != NULL && configPollInterval->type == STORE_INTEGER) {
 		pollInterval = configPollInterval->content.integer;
 	} else {
-		LOG_WARNING("Could not determine config value socket/pollInterval, using default");
+		LOG_INFO("Could not determine config value socket/pollInterval, using default");
+	}
+
+	Store *configConnectionTimeout = $(Store *, config, getConfigPathValue)("socket/connectionTimeout");
+	if(configConnectionTimeout != NULL && configConnectionTimeout->type == STORE_INTEGER) {
+		connectionTimeout = configConnectionTimeout->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value socket/connectionTimeout, using default");
 	}
 
 	initPoll(pollInterval);
@@ -220,14 +229,70 @@ API bool connectSocket(Socket *s)
 
 		s->connected = true;
 
-		if(connect(s->fd, server->ai_addr, server->ai_addrlen) != 0) {
-			LOG_SYSTEM_ERROR("Failed to connect socket %d", s->fd);
-			return false;
-		}
-
 		if(!setSocketNonBlocking(s->fd)) {
 			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
 			return false;
+		}
+
+		if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
+#ifdef WIN32
+			if(WSAGetLastError() == WSAEINPROGRESS) {
+#else
+			if(errno == EINPROGRESS) {
+#endif
+				LOG_DEBUG("Socket %d delayed connection, waiting...", s->fd);
+				do {
+					// Initialize timeout
+					struct timeval tv;
+					tv.tv_sec = connectionTimeout;
+					tv.tv_usec = 0;
+
+					// Initialize write fd set
+					fd_set fdset;
+					FD_ZERO(&fdset);
+					FD_SET(s->fd, &fdset);
+
+					// Select socket for write flag (connected)
+					int ret;
+#ifdef WIN32
+					if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && WSAGetLastError() != WSAEINTR) {
+#else
+					if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && errno != EINTR) {
+#endif
+						LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected)", s->fd);
+						freeaddrinfo(server);
+						disconnectSocket(s);
+						return false;
+					} else if(ret > 0) {
+						// Socket selected for write, check if we're indeed connected
+						int valopt;
+						socklen_t lon = sizeof(int);
+						if(getsockopt(s->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
+							LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", s->fd);
+							freeaddrinfo(server);
+							disconnectSocket(s);
+							return false;
+						} else if(valopt != 0) { // There was a connection error
+							LOG_SYSTEM_ERROR("Delayed connection on socket %d failed", s->fd);
+							freeaddrinfo(server);
+							disconnectSocket(s);
+							return false;
+						}
+
+						break; // Socket connected, break out of loop
+					} else {
+						LOG_ERROR("Connection for socket %d exceeded timedout of %d seconds, disconnecting", s->fd, connectionTimeout);
+						freeaddrinfo(server);
+						disconnectSocket(s);
+						return false;
+					}
+				} while(true);
+			} else {
+				LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+				freeaddrinfo(server);
+				disconnectSocket(s);
+				return false;
+			}
 		}
 
 		freeaddrinfo(server);

@@ -341,7 +341,6 @@ API bool disconnectSocket(Socket *s)
  * @see disconnectSocket
  *
  * @param s			the socket to free
- * @result			true if successful, false on error
  */
 API void freeSocket(Socket *s)
 {

@@ -55,5 +55,6 @@ typedef struct {
 
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);
 API void freeIrcProxy(IrcProxy *proxy);
+API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 #endif

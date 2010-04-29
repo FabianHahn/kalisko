@@ -281,7 +281,7 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 
 	g_hash_table_remove(clients, client->socket); // remove ourselves from the irc proxy client sockets table
 
-	$(bool, socket, freeSocket)(client->socket); // free the socket
+	$(void, socket, freeSocket)(client->socket); // free the socket
 	g_string_free(client->ibuffer, true); // free the input buffer
 
 	free(client); // actually free the client

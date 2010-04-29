@@ -87,7 +87,7 @@ HOOK_LISTENER(sample_disconnect)
 {
 	Socket *s = HOOK_ARG(Socket *);
 
-	$(bool, socket, freeSocket)(s);
+	$(void, socket, freeSocket)(s);
 }
 
 HOOK_LISTENER(sample_accept)

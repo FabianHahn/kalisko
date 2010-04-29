@@ -303,7 +303,7 @@ API void freeIrcConnection(IrcConnection *irc)
 
 	g_hash_table_remove(connections, irc->socket);
 
-	$(bool, socket, freeSocket)(irc->socket);
+	$(void, socket, freeSocket)(irc->socket);
 	free(irc->password);
 	free(irc->user);
 	free(irc->real);

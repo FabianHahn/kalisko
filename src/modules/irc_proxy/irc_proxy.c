@@ -38,7 +38,7 @@
 #include "irc_proxy.h"
 
 MODULE_NAME("irc_proxy");
-MODULE_AUTHOR("smf68");
+MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
 MODULE_VERSION(0, 1, 13);
 MODULE_BCVERSION(0, 1, 0);

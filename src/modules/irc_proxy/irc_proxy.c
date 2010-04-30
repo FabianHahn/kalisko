@@ -40,7 +40,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("smf68");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 12);
+MODULE_VERSION(0, 1, 13);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -185,6 +185,14 @@ HOOK_LISTENER(client_line)
 		LOG_DEBUG("IRC proxy client %d sent QUIT message, disconnecting...", client->socket->fd);
 		$(bool, socket, disconnectSocket)(client->socket);
 	} else {
+		if((g_strcmp0(message->command, "PRIVMSG") == 0 || g_strcmp0(message->command, "NOTICE") == 0) && message->params_count > 0) { // potential filtered command
+			for(GList *iter = client->proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
+				if(g_strcmp0(iter->data, message->params[0]) == 0) { // target matches, so don't relay!
+					return;
+				}
+			}
+		}
+
 		// Relay message to IRC server
 		$(bool, irc, ircSend)(client->proxy->irc, "%s", message->raw_message);
 	}
@@ -215,6 +223,7 @@ API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
 	proxy->server = server;
 	proxy->password = strdup(password);
 	proxy->clients = g_queue_new();
+	proxy->relay_exceptions = g_queue_new();
 
 	g_hash_table_insert(proxies, server, proxy);
 	g_hash_table_insert(proxyConnections, irc, proxy);
@@ -233,11 +242,51 @@ API void freeIrcProxy(IrcProxy *proxy)
 	g_hash_table_remove(proxies, proxy->server);
 	g_hash_table_remove(proxyConnections, proxy->irc);
 
+	// Free relay exceptions
+	for(GList *iter = proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
+		free(iter->data); // free the exception target
+	}
+
+	g_queue_free(proxy->relay_exceptions); // free the exceptions list
+
 	$(bool, socket, freeSocket)(proxy->server);
 	g_queue_foreach(proxy->clients, &freeIrcProxyClient, "IRC proxy server going down");
 	g_queue_free(proxy->clients);
 	free(proxy->password);
 	free(proxy);
+}
+
+/**
+ * Adds a relay exception to an IRC proxy. NOTICE and PRIVMSG messages to this target will not be relayed to the remote IRC connection.
+ * Use this to implement virtual bots for custom modules in your bouncer
+ *
+ * @param proxy			the IRC proxy to add the exception for
+ * @param exception		the target to which no messages should be relayed
+ */
+API void addIrcProxyRelayException(IrcProxy *proxy, char *exception)
+{
+	g_queue_push_tail(proxy->relay_exceptions, strdup(exception));
+}
+
+/**
+ * Removes a relay exception to an IRC proxy.
+ * @see addIrcProxyRelayException
+ *
+ * @param proxy			the IRC proxy to remove the exception for
+ * @param exception		the target to which messages should be relayed again
+ * @result				true if successful
+ */
+API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception)
+{
+	for(GList *iter = proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
+		if(g_strcmp0(iter->data, exception) == 0) { // this is it
+			free(iter->data); // free the string
+			g_queue_remove(proxy->relay_exceptions, iter->data); // remove it from the exceptions list
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**

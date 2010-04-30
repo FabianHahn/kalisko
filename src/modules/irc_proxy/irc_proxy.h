@@ -37,6 +37,8 @@ typedef struct {
 		char *password;
 		/** list of client sockets to and from which we relay */
 		GQueue *clients;
+		/** list of PRIVMSG or NOTICE targets that should not be relayed to the remote IRC connection */
+		GQueue *relay_exceptions;
 } IrcProxy;
 
 /**
@@ -55,6 +57,8 @@ typedef struct {
 
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);
 API void freeIrcProxy(IrcProxy *proxy);
+API void addIrcProxyRelayException(IrcProxy *proxy, char *exception);
+API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 #endif

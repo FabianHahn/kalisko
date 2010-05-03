@@ -42,10 +42,43 @@ static GHashTable *plugins;
 
 MODULE_INIT
 {
+	proxies = g_hash_table_new(NULL, NULL);
+	plugins = g_hash_table_new(NULL, NULL);
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	// Since all plugins depend on this module, we don't need to free the contents
+	g_hash_table_destroy(plugins);
+	g_hash_table_destroy(proxies);
+}
 
+/**
+ * Adds an IRC proxy plugin to the plugins pool
+ *
+ * @param plugin		the plugin to add
+ * @result				true if successful
+ */
+API bool addIrcProxyPlugin(IrcProxyPlugin *plugin)
+{
+	if(g_hash_table_lookup(plugins, plugin->name) != NULL) {
+		LOG_ERROR("Trying to enable already enabled IRC proxy plugin %s, aborting", plugin->name);
+		return false;
+	}
+
+	g_hash_table_insert(plugins, plugin->name, plugin);
+
+	return true;
+}
+
+/**
+ * Removes an IRC proxy plugin from the plugins pool
+ *
+ * @param plugin		the plugin to remove
+ */
+API void delIrcProxyPlugin(IrcProxyPlugin *plugin)
+{
+	g_hash_table_remove(plugins, plugin->name);
 }

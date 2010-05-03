@@ -39,4 +39,7 @@ typedef struct {
 	GQueue *proxies;
 } IrcProxyPlugin;
 
+API bool addIrcProxyPlugin(IrcProxyPlugin *plugin);
+API void delIrcProxyPlugin(IrcProxyPlugin *plugin);
+
 #endif

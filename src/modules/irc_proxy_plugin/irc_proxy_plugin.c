@@ -153,7 +153,82 @@ API void disableIrcProxyPlugins(IrcProxy *proxy)
 }
 
 /**
- * A GHRFunc to unload an IRC proxy plugin from an IRC proxy
+ * Enable an IRC proxy plugin for a specific proxy
+ *
+ * @param proxy			the proxy to enable the plugin for
+ * @param name			the name of the plugin to enable
+ * @result				true if successful
+ */
+API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
+{
+	IrcProxyPluginHandler *handler;
+
+	// Lookup the handler for this proxy
+	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) {
+		LOG_ERROR("Trying to enable IRC proxy plugin %s for IRC proxy on port %s without plugins enabled, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	IrcProxyPlugin *plugin;
+
+	// Lookup the plugin for the given plugin name
+	if((plugin = g_hash_table_lookup(plugins, name)) == NULL) {
+		LOG_ERROR("Trying to enable non existing proxy plugin %s for IRC proxy on port %s, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	// TODO: actually load the plugin
+
+	g_hash_table_insert(handler->plugins, plugin->name, plugin);
+	g_queue_push_head(plugin->handlers, handler);
+
+	LOG_INFO("Enabled IRC proxy plugin %s for IRC proxy on port %s", name, proxy->server->port);
+
+	return true;
+}
+
+/**
+ * Disables an IRC proxy plugin for a specific proxy
+ *
+ * @param proxy			the proxy to enable the plugin for
+ * @param name			the name of the plugin to enable
+ * @result				true if successful
+ */
+API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
+{
+	IrcProxyPluginHandler *handler;
+
+	// Lookup the handler for this proxy
+	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) {
+		LOG_ERROR("Trying to disable IRC proxy plugin %s for IRC proxy on port %s without plugins enabled, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	IrcProxyPlugin *plugin;
+
+	// Lookup the plugin for the given plugin name
+	if((plugin = g_hash_table_lookup(plugins, name)) == NULL) {
+		LOG_ERROR("Trying to disable non existing proxy plugin %s for IRC proxy on port %s, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	if(g_hash_table_lookup(handler->plugins, name) != plugin) {
+		LOG_ERROR("Trying to disable non enabled IRC proxy plugin %s for IRC proxy on port %s, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	if(!unloadIrcProxyPlugin(NULL, plugin, handler)) {
+		LOG_ERROR("Failed to disable IRC proxy plugin %s for IRC proxy on port %s", name, proxy->server->port);
+		return false;
+	}
+
+	LOG_INFO("Disabled IRC proxy plugin %s for IRC proxy on port %s", name, proxy->server->port);
+
+	return true;
+}
+
+/**
+ * A GHRFunc to unload an IRC proxy plugin from an IRC proxy. Note that this doesn't remove the plugin from the parent handler's plugins table
  *
  * @param key_p			unused
  * @param plugin_p		a pointer to the IRC proxy plugin to unload
@@ -164,6 +239,8 @@ static bool unloadIrcProxyPlugin(void *key_p, void *plugin_p, void *handler_p)
 {
 	IrcProxyPlugin *plugin = plugin_p;
 	IrcProxyPluginHandler *handler = handler_p;
+
+	// TODO: actually unload the plugin
 
 	g_queue_remove(plugin->handlers, handler);
 

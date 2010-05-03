@@ -43,5 +43,7 @@ API bool addIrcProxyPlugin(IrcProxyPlugin *plugin);
 API void delIrcProxyPlugin(IrcProxyPlugin *plugin);
 API bool enableIrcProxyPlugins(IrcProxy *proxy);
 API void disableIrcProxyPlugins(IrcProxy *proxy);
+API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name);
+API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name);
 
 #endif

@@ -25,7 +25,8 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
-
+#include "memory_alloc.h"
+#include "modules/irc_proxy/irc_proxy.h"
 #include "api.h"
 #include "irc_proxy_plugin.h"
 
@@ -37,13 +38,20 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
-static GHashTable *proxies;
+static bool unloadIrcProxyPlugin(void *key_p, void *plugin_p, void *handler_p);
+/**
+ * Hash table to associate IrcProxy objects to IrcProxyHandler objects
+ */
+static GHashTable *handlers;
+/**
+ * Hash table to associate plugin names (char *) to IrcProxyPlugin objects
+ */
 static GHashTable *plugins;
 
 MODULE_INIT
 {
-	proxies = g_hash_table_new(NULL, NULL);
-	plugins = g_hash_table_new(NULL, NULL);
+	handlers = g_hash_table_new(NULL, NULL);
+	plugins = g_hash_table_new(&g_str_hash, &g_str_equal);
 
 	return true;
 }
@@ -52,7 +60,7 @@ MODULE_FINALIZE
 {
 	// Since all plugins depend on this module, we don't need to free the contents
 	g_hash_table_destroy(plugins);
-	g_hash_table_destroy(proxies);
+	g_hash_table_destroy(handlers);
 }
 
 /**
@@ -80,5 +88,84 @@ API bool addIrcProxyPlugin(IrcProxyPlugin *plugin)
  */
 API void delIrcProxyPlugin(IrcProxyPlugin *plugin)
 {
+	GQueue *list = g_queue_new();
+
+	// Build a list of all IRC proxy plugin handlers from which we must be unloaded
+	for(GList *iter = plugin->handlers->head; iter != NULL; iter = iter->next) {
+		g_queue_push_head(list, iter->data);
+	}
+
+	// Loop through the list and remove the plugin from each handler
+	for(GList *iter = list->head; iter != NULL; iter = iter->next) {
+		IrcProxyPluginHandler *handler;
+		unloadIrcProxyPlugin(NULL, plugin, handler); // unload the plugin for this handler
+		g_hash_table_remove(handler->plugins, plugin->name); // remove the plugin from the handler's plugin table
+	}
+
+	g_queue_free(list); // remove our temp queue
+
+	// Also clear the list of plugins after unloading
+	g_queue_clear(plugin->handlers);
+
 	g_hash_table_remove(plugins, plugin->name);
+}
+
+/**
+ * Enables plugin support for an IRC proxy
+ *
+ * @param proxy			the IRC proxy to enable plugins for
+ * @result				true if successful
+ */
+API bool enableIrcProxyPlugins(IrcProxy *proxy)
+{
+	IrcProxyPluginHandler *handler;
+
+	if((handler = g_hash_table_lookup(handlers, proxy)) != NULL) {
+		LOG_ERROR("Trying to enable IRC proxy plugins for already enabled IRC proxy on port %s", proxy->server->port);
+		return false;
+	}
+
+	handler = ALLOCATE_OBJECT(IrcProxyPluginHandler);
+	handler->proxy = proxy;
+	handler->plugins = g_hash_table_new(&g_str_hash, &g_str_equal);
+
+	g_hash_table_insert(handlers, proxy, handler);
+
+	return true;
+}
+
+/**
+ * Disable plugin support for an IRC proxy
+ *
+ * @param proxy			the IRC proxy to disable plugins for
+ */
+API void disableIrcProxyPlugins(IrcProxy *proxy)
+{
+	IrcProxyPluginHandler *handler;
+
+	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) { // already disabled, do nothing
+		return;
+	}
+
+	g_hash_table_foreach_remove(handler->plugins, &unloadIrcProxyPlugin, handler); // unload all plugins for this proxy
+	g_hash_table_destroy(handler->plugins); // destroy their table
+	free(handler); // also free the plugins handler
+}
+
+/**
+ * A GHRFunc to unload an IRC proxy plugin from an IRC proxy
+ *
+ * @param key_p			unused
+ * @param plugin_p		a pointer to the IRC proxy plugin to unload
+ * @param handler_p		a pointer to the handler to free the plugin for
+ * @result				always true (the plugin should be removed from the underlying hash table)
+ */
+static bool unloadIrcProxyPlugin(void *key_p, void *plugin_p, void *handler_p)
+{
+	IrcProxyPlugin *plugin = plugin_p;
+	IrcProxyPluginHandler *handler = handler_p;
+
+	g_queue_remove(plugin->handlers, handler);
+
+	return true;
 }

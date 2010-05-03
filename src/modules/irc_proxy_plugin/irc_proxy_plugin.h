@@ -28,18 +28,20 @@
 typedef struct {
 	/** the IRC proxy to handle plugins for */
 	IrcProxy *proxy;
-	/** a table of IrcProxyPlugins loaded for this IRC proxy */
+	/** a table that associated plugin names (char *) with IrcProxyPlugin objects loaded for this IRC proxy */
 	GHashTable *plugins;
 } IrcProxyPluginHandler;
 
 typedef struct {
 	/** the name of the plugin */
 	char *name;
-	/** a list of proxies that have this plugin activated */
-	GQueue *proxies;
+	/** a list of IrcProxyPluginHandler objects that have this plugin activated */
+	GQueue *handlers;
 } IrcProxyPlugin;
 
 API bool addIrcProxyPlugin(IrcProxyPlugin *plugin);
 API void delIrcProxyPlugin(IrcProxyPlugin *plugin);
+API bool enableIrcProxyPlugins(IrcProxy *proxy);
+API void disableIrcProxyPlugins(IrcProxy *proxy);
 
 #endif

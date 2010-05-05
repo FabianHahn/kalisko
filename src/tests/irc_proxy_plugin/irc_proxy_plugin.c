@@ -31,13 +31,14 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 0), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);
 TEST_CASE(plugin_del);
+TEST_CASE(plugin_reuse);
 
 static IrcProxyPlugin plugin;
 
@@ -48,6 +49,7 @@ TEST_SUITE_BEGIN(irc_proxy_plugin)
 	TEST_CASE_ADD(plugin_add);
 	TEST_CASE_ADD(plugin_use);
 	TEST_CASE_ADD(plugin_del);
+	TEST_CASE_ADD(plugin_reuse);
 TEST_SUITE_END
 
 TEST_CASE(plugin_add)
@@ -96,6 +98,23 @@ TEST_CASE(plugin_del)
 	TEST_ASSERT(g_queue_get_length(plugin.handlers) == 0);
 
 	g_queue_free(plugin.handlers);
+
+	TEST_PASS;
+}
+
+TEST_CASE(plugin_reuse)
+{
+	IrcProxy *proxy = createProxyStub();
+
+	// enable our stub proxy
+	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugins)(proxy));
+
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enabling should fail since plugin is no longer loaded
+
+	// disable our stub proxy
+	$(void, irc_proxy_plugin, disableIrcProxyPlugins)(proxy);
+
+	freeProxyStub(proxy);
 
 	TEST_PASS;
 }

@@ -365,7 +365,7 @@ static void *getLibraryFunction(Module *mod, char *funcname)
 #else
 	if((func = dlsym(mod->handle, funcname)) == NULL) {
 #endif
-		logMessage(LOG_TYPE_ERROR, "Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
+		logMessage(LOG_TYPE_WARNING, "Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
 		return NULL;
 	}
 

@@ -24,6 +24,8 @@
 #include "module.h"
 #include "types.h"
 
+API void incTestCount();
+API void resetTestCount();
 API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...);
 
 /**
@@ -50,7 +52,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  *
  * @param CASE		the test case's name
  */
-#define TEST_CASE_ADD(CASE) TEST_CASE_NAME(CASE)(testsuite, #CASE)
+#define TEST_CASE_ADD(CASE) $$(void, resetTestCount)(); TEST_CASE_NAME(CASE)(testsuite, #CASE)
 
 /**
  * Defines a test case
@@ -65,7 +67,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  *
  * @param EXPR		an expression to check
  */
-#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Assertion failed: " #EXPR); }
+#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Assertion failed: " #EXPR); } else { $$(void, incTestCount)(); }
 
 /**
  * Passes a test case
@@ -77,7 +79,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  *
  * @param ERROR		printf-like error message
  */
-#define TEST_FAIL(ERROR, ...) $$(void, reportTestResult)(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
+#define TEST_FAIL(ERROR, ...) $$(void, incTestCount)(); $$(void, reportTestResult)(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
 #endif
 
 #endif

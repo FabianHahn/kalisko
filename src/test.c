@@ -31,6 +31,7 @@
 #include "test.h"
 #include "memory_alloc.h"
 
+static int test = 0;
 static int passed = 0;
 static int count = 0;
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
 
 			if(!requestModule(modname)) {
-				reportTestResult(modname, "load", 0, "Failed to load module");
+				reportTestResult(modname, "load", false, "Failed to load module");
 			}
 
 			free(modname);
@@ -98,6 +99,22 @@ int main(int argc, char **argv)
 }
 
 /**
+ * Increment the test count
+ */
+API void incTestCount()
+{
+	test++;
+}
+
+/**
+ * Resets the test count
+ */
+API void resetTestCount()
+{
+	test = 0;
+}
+
+/**
  * Reports a test result of a test case
  *
  * @param testsuite		the name of the test suite
@@ -109,7 +126,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 {
 	if(pass) {
 		passed++;
-		printf("[%s] %s: Pass\n", testsuite, testcase);
+		printf("[%s] %s: Passed\n", testsuite, testcase);
 	} else {
 		va_list va;
 		char buffer[BUF];
@@ -117,7 +134,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 		va_start(va, error);
 		vsnprintf(buffer, BUF, error, va);
 
-		printf("[%s] %s: Fail (%s)\n", testsuite, testcase, buffer);
+		printf("[%s] %s: Failed test #%d (%s)\n", testsuite, testcase, test, buffer);
 	}
 
 	count++;

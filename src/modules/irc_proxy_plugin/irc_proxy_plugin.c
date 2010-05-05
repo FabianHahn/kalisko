@@ -34,7 +34,7 @@
 MODULE_NAME("irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy plugin module manages manages plugins that can be activated and deactivated for individual IRC proxies");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
@@ -166,6 +166,11 @@ API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 	// Lookup the handler for this proxy
 	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) {
 		LOG_ERROR("Trying to enable IRC proxy plugin %s for IRC proxy on port %s without plugins enabled, aborting", name, proxy->server->port);
+		return false;
+	}
+
+	if(g_hash_table_lookup(handler->plugins, name) != NULL) { // Plugin already loaded
+		LOG_ERROR("Trying to enable already enabled IRC proxy plugin %s for IRC proxy on port %s, aborting", name, proxy->server->port);
 		return false;
 	}
 

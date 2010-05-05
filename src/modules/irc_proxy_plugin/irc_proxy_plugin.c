@@ -34,7 +34,7 @@
 MODULE_NAME("irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy plugin module manages manages plugins that can be activated and deactivated for individual IRC proxies");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
@@ -97,7 +97,7 @@ API void delIrcProxyPlugin(IrcProxyPlugin *plugin)
 
 	// Loop through the list and remove the plugin from each handler
 	for(GList *iter = list->head; iter != NULL; iter = iter->next) {
-		IrcProxyPluginHandler *handler;
+		IrcProxyPluginHandler *handler = iter->data;
 		unloadIrcProxyPlugin(NULL, plugin, handler); // unload the plugin for this handler
 		g_hash_table_remove(handler->plugins, plugin->name); // remove the plugin from the handler's plugin table
 	}

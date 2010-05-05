@@ -35,23 +35,67 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 0), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
-TEST_CASE(plugin);
+TEST_CASE(plugin_add);
+TEST_CASE(plugin_use);
+TEST_CASE(plugin_del);
+
+static IrcProxyPlugin plugin;
+
 static IrcProxy *createProxyStub();
 static void freeProxyStub(IrcProxy *proxy);
 
 TEST_SUITE_BEGIN(irc_proxy_plugin)
-	TEST_CASE_ADD(plugin);
+	TEST_CASE_ADD(plugin_add);
+	TEST_CASE_ADD(plugin_use);
+	TEST_CASE_ADD(plugin_del);
 TEST_SUITE_END
 
-TEST_CASE(plugin)
+TEST_CASE(plugin_add)
+{
+	plugin.handlers = g_queue_new();
+	plugin.name = "testplugin";
+
+	TEST_ASSERT($(bool, irc_proxy_plugin, addIrcProxyPlugin)(&plugin));
+
+	TEST_PASS;
+}
+
+TEST_CASE(plugin_use)
 {
 	IrcProxy *proxy = createProxyStub();
 
+	// Test if plugin enable and disable fails on non-enabled proxy
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin"));
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin"));
+
+	// enable our stub proxy
 	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugins)(proxy));
 
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable should fail if not loaded
+	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable test plugin
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable again should fail
+	TEST_ASSERT($(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable test plugin
+
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "not existing plugin")); // not existing plugin cannot be enabled
+
+	// disable our stub proxy
 	$(void, irc_proxy_plugin, disableIrcProxyPlugins)(proxy);
 
+	// Test (again) if plugin enable and disable fails on non-enabled proxy
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin"));
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin"));
+
 	freeProxyStub(proxy);
+
+	TEST_PASS;
+}
+
+TEST_CASE(plugin_del)
+{
+	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
+	TEST_ASSERT(g_queue_get_length(plugin.handlers) == 0);
+
+	g_queue_free(plugin.handlers);
 
 	TEST_PASS;
 }

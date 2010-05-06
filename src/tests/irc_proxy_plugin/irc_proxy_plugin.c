@@ -31,9 +31,9 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 4), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);
@@ -41,9 +41,12 @@ TEST_CASE(plugin_del);
 TEST_CASE(plugin_reuse);
 
 static IrcProxyPlugin plugin;
+static int initState = 0;
 
 static IrcProxy *createProxyStub();
 static void freeProxyStub(IrcProxy *proxy);
+static bool initPlugin(IrcProxy *proxy);
+static void finiPlugin(IrcProxy *proxy);
 
 TEST_SUITE_BEGIN(irc_proxy_plugin)
 	TEST_CASE_ADD(plugin_add);
@@ -56,6 +59,8 @@ TEST_CASE(plugin_add)
 {
 	plugin.handlers = g_queue_new();
 	plugin.name = "testplugin";
+	plugin.initialize = &initPlugin;
+	plugin.finalize = &finiPlugin;
 
 	TEST_ASSERT($(bool, irc_proxy_plugin, addIrcProxyPlugin)(&plugin));
 
@@ -76,10 +81,13 @@ TEST_CASE(plugin_use)
 
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable should fail if not loaded
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // plugin is not loaded yet
+	TEST_ASSERT(initState == 0); // init state should still be zero
 	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable test plugin
+	TEST_ASSERT(initState == 1); // init state should now be one since initializer was called
 	TEST_ASSERT($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // now plugin is loaded
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable again should fail
 	TEST_ASSERT($(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable test plugin
+	TEST_ASSERT(initState == 3); // init state should now be three since finalizer was called
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // plugin is not loaded anymore
 
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "not existing plugin")); // not existing plugin cannot be enabled
@@ -136,4 +144,19 @@ static void freeProxyStub(IrcProxy *proxy)
 {
 	free(proxy->server);
 	free(proxy);
+}
+
+static bool initPlugin(IrcProxy *proxy)
+{
+	if(proxy != NULL) {
+		initState++;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static void finiPlugin(IrcProxy *proxy)
+{
+	initState += 2;
 }

@@ -692,27 +692,27 @@ static void unneedModule(void *name, void *mod_p, void *parent_p)
 		}
 	}
 
-	// Tell our dependencies they are no longer needed
-	g_hash_table_foreach_remove(mod->dependencies, &unneedModuleWrapper, mod);
-
 	// Unload dynamic library
 	unloadDynamicLibrary(mod);
 
+	// Remove ourselves from the modules table
 	if(!g_hash_table_remove(modules, mod->name)) {
 		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from modules table", mod->name);
 		exit(EXIT_FAILURE);
 	}
 
+	logMessage(LOG_TYPE_INFO, "Module %s unloaded", mod->name);
+
+	// Tell our dependencies they are no longer needed
+	g_hash_table_foreach_remove(mod->dependencies, &unneedModuleWrapper, mod);
+
+	// Now the module's data structures
 	g_hash_table_destroy(mod->dependencies);
 	g_hash_table_destroy(mod->rdeps);
-
 	free(mod->author);
 	free(mod->description);
 	free(mod->version);
 	free(mod->bcversion);
-
-	logMessage(LOG_TYPE_INFO, "Module %s unloaded", mod->name);
-
 	free(mod->name);
 	free(mod);
 }

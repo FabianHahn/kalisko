@@ -23,7 +23,18 @@
 #define IRC_PROXY_PLUGIN_IRC_PROXY_PLUGIN
 
 #include <glib.h>
+#include "types.h"
 #include "modules/irc_proxy/irc_proxy.h"
+
+/**
+ * Function pointer type to initialize an IRC proxy plugin
+ */
+typedef bool (IrcProxyPluginInitializer)(IrcProxy *proxy);
+
+/**
+ * Function pointer type to finalize an IRC proxy plugin
+ */
+typedef void (IrcProxyPluginFinalizer)(IrcProxy *proxy);
 
 typedef struct {
 	/** the IRC proxy to handle plugins for */
@@ -37,6 +48,10 @@ typedef struct {
 	char *name;
 	/** a list of IrcProxyPluginHandler objects that have this plugin activated */
 	GQueue *handlers;
+	/** the initializer function for this IRC proxy plugin */
+	IrcProxyPluginInitializer *initialize;
+	/** the finalizer function for this IRC proxy plugin */
+	IrcProxyPluginFinalizer *finalize;
 } IrcProxyPlugin;
 
 API bool addIrcProxyPlugin(IrcProxyPlugin *plugin);

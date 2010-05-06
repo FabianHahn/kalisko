@@ -31,9 +31,9 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 0), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 4), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);
@@ -69,14 +69,18 @@ TEST_CASE(plugin_use)
 	// Test if plugin enable and disable fails on non-enabled proxy
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin"));
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin"));
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // plugin shouldn't be enabled if plugins aren't available at all
 
 	// enable our stub proxy
 	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugins)(proxy));
 
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable should fail if not loaded
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // plugin is not loaded yet
 	TEST_ASSERT($(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable test plugin
+	TEST_ASSERT($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // now plugin is loaded
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "testplugin")); // enable again should fail
 	TEST_ASSERT($(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin")); // disable test plugin
+	TEST_ASSERT(!$(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "testplugin")); // plugin is not loaded anymore
 
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, enableIrcProxyPlugin)(proxy, "not existing plugin")); // not existing plugin cannot be enabled
 

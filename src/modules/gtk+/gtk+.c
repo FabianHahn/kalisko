@@ -33,7 +33,7 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
@@ -63,6 +63,11 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	stopGtkLoop();
+
+	// Continue until there are no more pending events to make sure all remaining windows are properly closed. Otherwise, they just become orphans that cannot be closed anymore
+	while(gtk_events_pending()) {
+		gtk_main_iteration();
+	}
 }
 
 TIMER_CALLBACK(GTK_MAIN_LOOP)

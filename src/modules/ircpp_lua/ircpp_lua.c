@@ -25,17 +25,19 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "modules/lang_lua/lang_lua.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/string_util/string_util.h"
 #include "api.h"
 
 MODULE_NAME("ircpp_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows proxy clients to evaluate Lua code by sending private messages to a virtual *lua bot");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("lang_lua", 0, 4, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("lang_lua", 0, 4, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2));
 
 HOOK_LISTENER(client_line);
 static bool initPlugin(IrcProxy *proxy);
@@ -83,7 +85,15 @@ HOOK_LISTENER(client_line)
 				char *ret = $(char *, lang_lua, popLuaString)();
 
 				if(ret != NULL) {
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*lua!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, ret);
+					$(void, string_util, stripDuplicateNewlines)(ret);
+
+					char **lines = g_strsplit(ret, "\n", 0);
+
+					for(int i = 0; lines[i] != NULL; i++) {
+						$(bool, irc_proxy, proxyClientIrcSend)(client, ":*lua!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, lines[i]);
+					}
+
+					g_strfreev(lines);
 					free(ret);
 				}
 			}
@@ -91,6 +101,12 @@ HOOK_LISTENER(client_line)
 	}
 }
 
+/**
+ * Initializes the plugin
+ *
+ * @param proxy		the IRC proxy to initialize the plugin for
+ * @result			true if successful
+ */
 static bool initPlugin(IrcProxy *proxy)
 {
 	$(void, irc_proxy, addIrcProxyRelayException)(proxy, "*lua");
@@ -98,6 +114,11 @@ static bool initPlugin(IrcProxy *proxy)
 	return true;
 }
 
+/**
+ * Finalizes the plugin
+ *
+ * @param proxy		the IRC proxy to finalize the plugin for
+ */
 static void finiPlugin(IrcProxy *proxy)
 {
 	$(void, irc_proxy, delIrcProxyRelayException)(proxy, "*lua");

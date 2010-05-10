@@ -33,7 +33,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 3), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
@@ -174,16 +174,16 @@ static void finiPlugin(IrcProxy *proxy)
 	// Fetch the timeout for this proxy from the timeouts table
 	GTimeVal *timeout = g_hash_table_lookup(challenges, proxy);
 
-	// Remove the timeout
-	TIMER_DEL(timeout);
-
 	// Free the timeout from the timeouts table
 	g_hash_table_remove(challenges, proxy);
 
-	if((timeout = g_hash_table_lookup(challengeTimeouts, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
-		TIMER_DEL(timeout); // clear the challenge timeout timer as well
+	// Remove the timeout
+	TIMER_DEL(timeout);
 
-		// Remove it too
+	if((timeout = g_hash_table_lookup(challengeTimeouts, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
+		// Remove the challenge timeout from the challenge table
 		g_hash_table_remove(challengeTimeouts, proxy);
+
+		TIMER_DEL(timeout); // clear the challenge timeout timer as well
 	}
 }

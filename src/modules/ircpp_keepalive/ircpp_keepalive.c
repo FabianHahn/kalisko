@@ -33,7 +33,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 3), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
@@ -124,7 +124,11 @@ TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE)
 	GTimeVal *timeout;
 
 	// Schedule an expiration time for the challenge
-	timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_TIMEOUT, IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT, proxy);
+	if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_TIMEOUT, IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT, proxy)) == NULL) {
+		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy on port %s", proxy->server->port);
+		return;
+	}
+
 	// Add challenge to hash table
 	g_hash_table_insert(challengeTimeouts, proxy, timeout);
 
@@ -133,7 +137,11 @@ TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE)
 	LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 
 	// Schedule a new challenge
-	timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy);
+	if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy)) == NULL) {
+		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy on port %s", proxy->server->port);
+		return;
+	}
+
 	// Replace the old challenge with the new one
 	g_hash_table_replace(challenges, proxy, timeout);
 }
@@ -158,7 +166,13 @@ TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT)
  */
 static bool initPlugin(IrcProxy *proxy)
 {
-	GTimeVal *timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy);
+	GTimeVal *timeout;
+
+	if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy)) == NULL) {
+		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy on port %s", proxy->server->port);
+		return false;
+	}
+
 	g_hash_table_insert(challenges, proxy, timeout);
 
 	return true;

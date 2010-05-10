@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -107,28 +107,22 @@ API Store *invokeXCall(Store *xcall)
 	$(bool, store, setStorePath)(metaret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 
 	do { // dummy do-while to prevent mass if-then-else branching
-		Store *meta;
-
-		if((meta = $(Store *, store, getStorePath)(xcall, "xcall")) == 0 || meta->type != STORE_ARRAY) {
-			GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-			LOG_ERROR("Failed to read XCall meta array: %s", xcallstr->str);
-			g_string_free(xcallstr, true);
-			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall meta array"));
-			break;
-		}
-
 		Store *params = $(Store *, store, cloneStore)(xcall);
 		$(bool, store, deleteStorePath)(params, "xcall"); // remove meta data from params in order to reuse the rest
 		$(bool, store, setStorePath)(metaret, "xcall/params", params);
 
 		Store *func;
 
-		if((func = $(Store *, store, getStorePath)(meta, "function")) == NULL || func->type != STORE_STRING) {
-			GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-			LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
-			g_string_free(xcallstr, true);
-			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
-			break;
+		// First try to read function name directly
+		if((func = $(Store *, store, getStorePath)(xcall, "xcall")) == NULL || func->type != STORE_STRING) {
+			// Now try to read function name inside xcall meta array
+			if((func = $(Store *, store, getStorePath)(xcall, "xcall/function")) == NULL || func->type != STORE_STRING) {
+				GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
+				LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
+				g_string_free(xcallstr, true);
+				$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
+				break;
+			}
 		}
 
 		char *funcname = func->content.string;

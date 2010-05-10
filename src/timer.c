@@ -25,8 +25,8 @@
 #include "memory_alloc.h"
 #include "types.h"
 
-static void processReadyCallbacks(void *entry_p, void *data);
 static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p);
+static bool assemblePendingCallbacks(void *time_p, void *entry_p, void *queue_p);
 static bool findFirstTime(void *key, void *value, void *data);
 
 typedef struct
@@ -147,10 +147,17 @@ API int getCurrentSleepTime()
  */
 API void notifyTimerCallbacks()
 {
-	GQueue *queue = g_queue_new();
-	g_tree_foreach(timers, &assembleReadyCallbacks, queue);
-	g_queue_foreach(queue, &processReadyCallbacks, NULL);
-	g_queue_free(queue);
+	GQueue *processing = g_queue_new();
+	g_tree_foreach(timers, &assembleReadyCallbacks, processing);
+
+	// Traverse the processing list and notify all callbacks in it
+	for(GList *iter = processing->head; iter != NULL; iter = iter->next) {
+		TimerEntry *entry = iter->data;
+		entry->callback(*entry->time, entry->custom_data); // notify the callback
+		g_tree_remove(timers, entry->time); // remove the entry from the tree
+	}
+
+	g_queue_free(processing);
 }
 
 /**
@@ -167,6 +174,19 @@ API bool hasMoreTimerCallbacks()
  */
 API void exitGracefully()
 {
+	// Free all timers that can't be processing right now
+	GQueue *pending = g_queue_new();
+	g_tree_foreach(timers, &assemblePendingCallbacks, pending);
+
+	// Traverse the pending list and notify all callbacks in it
+	for(GList *iter = pending->head; iter != NULL; iter = iter->next) {
+		TimerEntry *entry = iter->data;
+		g_tree_remove(timers, entry->time); // remove the entry from the tree
+	}
+
+	g_queue_free(pending);
+
+	// Block the timers so no more of them are scheduled
 	blockTimers = true;
 }
 
@@ -177,20 +197,6 @@ API void exitGracefully()
 API bool isExiting()
 {
 	return blockTimers;
-}
-
-/**
- * A GTraverseFunc to assemble all callbacks ready for execution
- * @param entry_p	a pointer to the entry that's currently traversed
- * @param data		unused
- */
-static void processReadyCallbacks(void *entry_p, void *data)
-{
-	TimerEntry *entry = entry_p;
-	entry->callback(*entry->time, entry->custom_data); // notify the callback
-
-	// Cleanup
-	g_tree_remove(timers, entry->time); // remove the entry from the tree
 }
 
 /**
@@ -209,10 +215,33 @@ static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
 	GTimeVal time;
 	g_get_current_time(&time);
 
-	if(compareTimes(&time, nodeTime, NULL) > 0) { // if node time is greater or equal
+	if(compareTimes(&time, nodeTime, NULL) >= 0) { // if node time is greater or equal
 		g_queue_push_tail(queue, entry);
 	} else {
 		return true; // abort
+	}
+
+	return false;
+}
+
+/**
+ * A GTraverseFunc to assemble all pending callbacks not yet ready for execution
+ * @param time_p		a pointer to the time of the callback
+ * @param entry_p		a pointer to the timer entry
+ * @param data			a pointer to the queue to assemble the pending callbacks in
+ * @result				true if traversal should abort
+ */
+static bool assemblePendingCallbacks(void *time_p, void *entry_p, void *queue_p)
+{
+	GTimeVal *nodeTime = time_p;
+	TimerEntry *entry = entry_p;
+	GQueue *queue = queue_p;
+
+	GTimeVal time;
+	g_get_current_time(&time);
+
+	if(compareTimes(&time, nodeTime, NULL) < 0) { // if node time is smaller
+		g_queue_push_tail(queue, entry);
 	}
 
 	return false;

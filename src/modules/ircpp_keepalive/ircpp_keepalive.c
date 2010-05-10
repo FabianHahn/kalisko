@@ -20,7 +20,6 @@
 
 
 #include <glib.h>
-
 #include "dll.h"
 #include "hooks.h"
 #include "log.h"
@@ -34,7 +33,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 3), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
@@ -143,6 +142,12 @@ TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT)
 {
 	IrcProxy *proxy = custom_data;
 
+	LOG_ERROR("Keepalive challenge timed out for IRC connection %d", proxy->irc->socket->fd);
+
+	// TODO: reconnect etc
+
+	// Remove the challenge from the challenge table
+	g_hash_table_remove(challengeTimeouts, &time);
 }
 
 /**

@@ -86,7 +86,7 @@ API bool isExiting();
  * @param CALLBACK		the callback to schedule
  * @param CDATA			custom data to be passed to the callback
  */
-#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
+#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK, CDATA) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see delTimer

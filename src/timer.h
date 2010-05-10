@@ -27,13 +27,13 @@
 /**
  * Function pointer for timer callbacks
  */
-typedef void (TimerCallback)(GTimeVal time);
+typedef void (TimerCallback)(GTimeVal time, void *custom_data);
 
 API void initTimers();
 API void freeTimers();
-API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback);
+API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data);
 API bool delTimer(GTimeVal *time);
-API GTimeVal *addTimeout(int timeout, TimerCallback *callback);
+API GTimeVal *addTimeout(int timeout, TimerCallback *callback, void *custom_data);
 API GTimeVal getNextTimerTime();
 API int getCurrentSleepTime();
 API void notifyTimerCallbacks();
@@ -54,7 +54,7 @@ API bool isExiting();
  *
  * @param CALLBACK	name of the callback. Must be unique in the scope of the sourcefile.
  */
-#define TIMER_CALLBACK(CALLBACK) static void TIMER_CALLBACK_NAME(CALLBACK)(GTimeVal time)
+#define TIMER_CALLBACK(CALLBACK) static void TIMER_CALLBACK_NAME(CALLBACK)(GTimeVal time, void *custom_data)
 
 #ifdef DLL_API_IMPORT
 
@@ -63,14 +63,30 @@ API bool isExiting();
  * @param TIME			the time when the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD(TIME, CALLBACK) $$(GTimeVal *, addTimer)((TIME), &TIMER_CALLBACK_NAME(CALLBACK))
+#define TIMER_ADD(TIME, CALLBACK) $$(GTimeVal *, addTimer)((TIME), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+
+/**
+ * @see addTimer
+ * @param TIME			the time when the callback should be executed
+ * @param CALLBACK		the callback to schedule
+ * @param CDATA			custom data to be passed to the callback
+ */
+#define TIMER_ADD_EX(TIME, CALLBACK, CDATA) $$(GTimeVal *, addTimer)((TIME), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see addTimeout
  * @param TIME			the timeout in microseconds after which the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK))
+#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+
+/**
+ * @see addTimeout
+ * @param TIME			the timeout in microseconds after which the callback should be executed
+ * @param CALLBACK		the callback to schedule
+ * @param CDATA			custom data to be passed to the callback
+ */
+#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see delTimer

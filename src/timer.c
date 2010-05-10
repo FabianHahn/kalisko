@@ -25,17 +25,22 @@
 #include "memory_alloc.h"
 #include "types.h"
 
-static void processReadyCallbacks(void *item, void *data);
-static gboolean assembleReadyCallbacks(void *key, void *value, void *data);
-static gboolean findFirstTime(void *key, void *value, void *data);
+static void processReadyCallbacks(void *entry_p, void *data);
+static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p);
+static bool findFirstTime(void *key, void *value, void *data);
 
 typedef struct
 {
 	GTimeVal *time;
 	TimerCallback *callback;
+	void *custom_data;
 } TimerEntry;
 
+/**
+ * Tree structure that organizes timer callbacks as a priority queue
+ */
 static GTree *timers;
+
 bool blockTimers;
 
 /**
@@ -43,7 +48,7 @@ bool blockTimers;
  */
 API void initTimers()
 {
-	timers = g_tree_new_full(&compareTimes, NULL, &free, NULL);
+	timers = g_tree_new_full(&compareTimes, NULL, &free, &free);
 	blockTimers = false;
 }
 
@@ -58,11 +63,12 @@ API void freeTimers()
 
 /**
  * Adds a timer callback
- * @param time		the time when the callback should be executed
- * @param callback	the callback that should be called at the specified time
- * @result 			a pointer to the actual time scheduled
+ * @param time				the time when the callback should be executed
+ * @param callback			the callback that should be called at the specified time
+ * @param custom_data		custom data to be passed to the timer callback on execution
+ * @result 					a pointer to the actual time scheduled
  */
-API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback)
+API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data)
 {
 	if(blockTimers) {
 		return NULL;
@@ -75,7 +81,11 @@ API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback)
 		timeContainer->tv_usec++;
 	}
 
-	g_tree_insert(timers, timeContainer, callback);
+	TimerEntry *entry = allocateMemory(sizeof(TimerEntry));
+	entry->time = timeContainer;
+	entry->callback = callback;
+	entry->custom_data = custom_data;
+	g_tree_insert(timers, timeContainer, entry);
 
 	return timeContainer;
 }
@@ -92,15 +102,16 @@ API bool delTimer(GTimeVal *time)
 
 /**
  * Adds a timer callback after a specific timeout
- * @param timeout	the timeout from now after which the timer should be executed in microseconds
- * @param callback	the callback that should be called after the time elapsed
+ * @param timeout			the timeout from now after which the timer should be executed in microseconds
+ * @param callback			the callback that should be called after the time elapsed
+ * @param custom_data		custom data to be passed to the timer callback on execution
  */
-API GTimeVal *addTimeout(int timeout, TimerCallback *callback)
+API GTimeVal *addTimeout(int timeout, TimerCallback *callback, void *custom_data)
 {
 	GTimeVal time;
 	g_get_current_time(&time);
 	g_time_val_add(&time, timeout);
-	return addTimer(time, callback);
+	return addTimer(time, callback, custom_data);
 }
 
 /**
@@ -170,55 +181,51 @@ API bool isExiting()
 
 /**
  * A GTraverseFunc to assemble all callbacks ready for execution
- * @param item	the item that's currently traversed
- * @param data	unused
+ * @param entry_p	a pointer to the entry that's currently traversed
+ * @param data		unused
  */
-static void processReadyCallbacks(void *item, void *data)
+static void processReadyCallbacks(void *entry_p, void *data)
 {
-	TimerEntry *entry = (TimerEntry *) item;
-	entry->callback(*entry->time); // notify the callback
+	TimerEntry *entry = entry_p;
+	entry->callback(*entry->time, entry->custom_data); // notify the callback
 
 	// Cleanup
 	g_tree_remove(timers, entry->time); // remove the entry from the tree
-	free(entry);
 }
 
 /**
  * A GTraverseFunc to assemble all callbacks ready for execution
- * @param key	the key of the node
- * @param value	the value of the node
- * @param data	the queue to assemble the ready callbacks
- * @result		true if traversal should abort
+ * @param time_p		a pointer to the time of the callback
+ * @param entry_p		a pointer to the timer entry
+ * @param data			a pointer to the queue to assemble the ready callbacks in
+ * @result				true if traversal should abort
  */
-static gboolean assembleReadyCallbacks(void *key, void *value, void *data)
+static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
 {
-	GTimeVal *nodeTime = (GTimeVal *) key;
-	TimerCallback *callback = (TimerCallback *) value;
-	GQueue *queue = (GQueue *) data;
+	GTimeVal *nodeTime = time_p;
+	TimerEntry *entry = entry_p;
+	GQueue *queue = queue_p;
 
 	GTimeVal time;
 	g_get_current_time(&time);
 
 	if(compareTimes(&time, nodeTime, NULL) > 0) { // if node time is greater or equal
-		TimerEntry *entry = allocateMemory(sizeof(TimerEntry));
-		entry->time = nodeTime;
-		entry->callback = callback;
 		g_queue_push_tail(queue, entry);
 	} else {
-		return TRUE; // abort
+		return true; // abort
 	}
 
-	return FALSE;
+	return false;
 }
 
 /**
  * A GTraverseFunc to read the smallest tree entry and return immediately
- * @param key	the key of the node
- * @param value	the value of the node
- * @param data	unused
- * @result		true if traversal should abort
+ * @param key		the key of the node
+ * @param value		the value of the node, unused
+ * @param data		a container into which the smallest tree entry key should be written
+ * @result			true if traversal should abort
  */
-static gboolean findFirstTime(void *key, void *value, void *data)
+static bool findFirstTime(void *key, void *value, void *data)
 {
 	GTimeVal *timeContainer = (GTimeVal *) data;
 	GTimeVal *time = (GTimeVal *) key;

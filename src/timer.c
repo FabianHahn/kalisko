@@ -34,6 +34,8 @@ typedef struct
 	GTimeVal *time;
 	TimerCallback *callback;
 	void *custom_data;
+	/** false if the entry can be safely removed */
+	bool processing;
 } TimerEntry;
 
 /**
@@ -85,6 +87,7 @@ API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data
 	entry->time = timeContainer;
 	entry->callback = callback;
 	entry->custom_data = custom_data;
+	entry->processing = false;
 	g_tree_insert(timers, timeContainer, entry);
 
 	return timeContainer;
@@ -97,6 +100,12 @@ API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data
  */
 API bool delTimer(GTimeVal *time)
 {
+	TimerEntry *entry = g_tree_lookup(timers, time);
+
+	if(entry == NULL || entry->processing) { // don't continue if the entry doesn't exist or is already processing
+		return false;
+	}
+
 	return g_tree_remove(timers, time);
 }
 
@@ -215,7 +224,8 @@ static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
 	GTimeVal time;
 	g_get_current_time(&time);
 
-	if(compareTimes(&time, nodeTime, NULL) >= 0) { // if node time is greater or equal
+	if(compareTimes(&time, nodeTime, NULL) >= 0 && !entry->processing) { // if node time is greater or equal and not processing yet
+		entry->processing = true; // set the entry to processing so it can't be removed anymore
 		g_queue_push_tail(queue, entry);
 	} else {
 		return true; // abort
@@ -226,21 +236,17 @@ static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
 
 /**
  * A GTraverseFunc to assemble all pending callbacks not yet ready for execution
- * @param time_p		a pointer to the time of the callback
+ * @param time_p		a pointer to the time of the callback, though unused
  * @param entry_p		a pointer to the timer entry
  * @param data			a pointer to the queue to assemble the pending callbacks in
  * @result				true if traversal should abort
  */
 static bool assemblePendingCallbacks(void *time_p, void *entry_p, void *queue_p)
 {
-	GTimeVal *nodeTime = time_p;
 	TimerEntry *entry = entry_p;
 	GQueue *queue = queue_p;
 
-	GTimeVal time;
-	g_get_current_time(&time);
-
-	if(compareTimes(&time, nodeTime, NULL) < 0) { // if node time is smaller
+	if(!entry->processing) {
 		g_queue_push_tail(queue, entry);
 	}
 

@@ -23,6 +23,7 @@
 #define IRC_PROXY_IRC_PROXY_H
 
 #include <glib.h>
+#include "modules/socket/socket.h"
 #include "modules/irc/irc.h"
 
 /**
@@ -57,6 +58,7 @@ typedef struct {
 
 API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password);
 API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc);
+API IrcProxy *getIrcProxyBySocket(Socket *socket);
 API void freeIrcProxy(IrcProxy *proxy);
 API void addIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception);

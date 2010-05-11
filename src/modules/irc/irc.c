@@ -39,11 +39,12 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 HOOK_LISTENER(throttle_poll);
+HOOK_LISTENER(irc_disconnect);
 HOOK_LISTENER(irc_line);
 HOOK_LISTENER(irc_read);
 
@@ -59,9 +60,11 @@ MODULE_INIT
 
 	HOOK_ATTACH(socket_poll, throttle_poll);
 	HOOK_ATTACH(socket_read, irc_read);
+	HOOK_ATTACH(socket_disconnect, irc_disconnect);
 	HOOK_ADD(irc_send);
 	HOOK_ADD(irc_line);
 	HOOK_ADD(irc_nick);
+	HOOK_ADD(irc_disconnect);
 	HOOK_ATTACH(irc_line, irc_line);
 
 	return true;
@@ -72,10 +75,12 @@ MODULE_FINALIZE
 	g_hash_table_destroy(connections);
 	g_queue_free(throttled);
 
+	HOOK_DEL(irc_disconnect);
 	HOOK_DEL(irc_nick);
 	HOOK_DEL(irc_send);
 	HOOK_DETACH(irc_line, irc_line);
 	HOOK_DEL(irc_line);
+	HOOK_DETACH(socket_disconnect, irc_disconnect);
 	HOOK_DETACH(socket_read, irc_read);
 	HOOK_DETACH(socket_poll, throttle_poll);
 }
@@ -99,6 +104,16 @@ HOOK_LISTENER(throttle_poll)
 			irc->throttle_time += (2.0 + line->len) / 120.0; // penalty throttle time by line length
 			g_string_free(line, true); // free it
 		}
+	}
+}
+
+HOOK_LISTENER(irc_disconnect)
+{
+	Socket *socket = HOOK_ARG(Socket *);
+
+	IrcConnection *irc;
+	if((irc = g_hash_table_lookup(connections, socket)) != NULL) { // This socket belongs to an IRC connection
+		HOOK_TRIGGER(irc_disconnect, irc);
 	}
 }
 

@@ -33,7 +33,7 @@
 MODULE_NAME("test_xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_irc_parser module");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 2, 0));
 
@@ -82,7 +82,7 @@ TEST_CASE(xcall_irc_parse_user_mask)
 
 TEST_CASE(xcall_irc_parse_error)
 {
-	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \"nothing\"; xcall = { function = \"parseIrcMessage\" }");
+	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":nothing\"; xcall = { function = \"parseIrcMessage\" }");
 
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);

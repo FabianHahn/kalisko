@@ -34,7 +34,7 @@
 MODULE_NAME("irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Parses and creates IRC messages");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
@@ -78,11 +78,11 @@ API IrcMessage *parseIrcMessage(char *message)
 	// extracting the command
 	g_strchug(prefixEnd);
 	char *commandEnd = strchr(prefixEnd, ' ');
-	if(commandEnd == NULL) {
-		LOG_ERROR("Malformed IRC message: '%s'", ircMessage->raw_message);
-		freeIrcMessage(ircMessage);
-		return NULL;
+	if(commandEnd == NULL) { // just a command
+		ircMessage->command = g_strdup(prefixEnd);
+		return ircMessage;
 	}
+
 	ircMessage->command = g_strndup(prefixEnd, commandEnd - prefixEnd);
 
 	// extracting the params

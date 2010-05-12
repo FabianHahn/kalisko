@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -389,7 +389,10 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 		} else if(errno == EINTR) { // interrupted
 			continue;
 		} else { // error
-			LOG_SYSTEM_ERROR("Failed to write to socket %d", s->fd);
+			GString *msg = g_string_new("");
+			g_string_append_len(msg, buffer, size);
+			LOG_SYSTEM_ERROR("Failed to write to socket %d (%s)", s->fd, msg->str);
+			g_string_free(msg, true);
 			return false;
 		}
 	}

@@ -29,12 +29,12 @@
 /**
  * Function pointer type to initialize an IRC proxy plugin
  */
-typedef bool (IrcProxyPluginInitializer)(IrcProxy *proxy);
+typedef bool (IrcProxyPluginInitializer)(IrcProxy *proxy, char *plugin);
 
 /**
  * Function pointer type to finalize an IRC proxy plugin
  */
-typedef void (IrcProxyPluginFinalizer)(IrcProxy *proxy);
+typedef void (IrcProxyPluginFinalizer)(IrcProxy *proxy, char *plugin);
 
 typedef struct {
 	/** the IRC proxy to handle plugins for */

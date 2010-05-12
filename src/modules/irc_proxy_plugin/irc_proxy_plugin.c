@@ -34,8 +34,8 @@
 MODULE_NAME("irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy plugin module manages manages plugins that can be activated and deactivated for individual IRC proxies");
-MODULE_VERSION(0, 1, 6);
-MODULE_BCVERSION(0, 1, 5);
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
 static bool unloadIrcProxyPlugin(void *key_p, void *plugin_p, void *handler_p);
@@ -185,7 +185,7 @@ API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 	}
 
 	// Actually initialize the plugin
-	if(!plugin->initialize(proxy)) {
+	if(!plugin->initialize(proxy, name)) {
 		LOG_ERROR("Failed to initialize IRC proxy plugin %s for IRC proxy on port %s", name, proxy->server->port);
 		return false;
 	}
@@ -286,7 +286,7 @@ static bool unloadIrcProxyPlugin(void *key_p, void *plugin_p, void *handler_p)
 	IrcProxyPluginHandler *handler = handler_p;
 
 	// Actually unload the plugin
-	plugin->finalize(handler->proxy);
+	plugin->finalize(handler->proxy, plugin->name);
 
 	g_queue_remove(plugin->handlers, handler);
 

@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 5);
+MODULE_VERSION(0, 4, 6);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -438,6 +438,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		}
 
 		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
+		disconnectSocket(s);
 		return -1;
 	}
 

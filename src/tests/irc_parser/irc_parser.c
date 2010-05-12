@@ -30,7 +30,7 @@
 MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_parser module");
-MODULE_VERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -40,6 +40,7 @@ TEST_CASE(userMask);
 TEST_CASE(ping);
 TEST_CASE(noticeAuth);
 TEST_CASE(serverNotice);
+TEST_CASE(justQuitMessage);
 
 TEST_SUITE_BEGIN(irc_parser)
 	TEST_CASE_ADD(utf8Trailing);
@@ -48,6 +49,7 @@ TEST_SUITE_BEGIN(irc_parser)
 	TEST_CASE_ADD(ping);
 	TEST_CASE_ADD(noticeAuth);
 	TEST_CASE_ADD(serverNotice);
+	TEST_CASE_ADD(justQuitMessage);
 TEST_SUITE_END
 
 TEST_CASE(utf8Trailing)
@@ -168,6 +170,30 @@ TEST_CASE(serverNotice)
 	TEST_ASSERT(parsedMessage->params_count == 1);
 	TEST_ASSERT(strcmp(parsedMessage->command, "NOTICE") == 0);
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)") == 0);
+
+	$(void, irc_parser, freeIrcMessage)(parsedMessage);
+	free(message);
+
+	TEST_PASS;
+}
+
+/**
+ * Testcase for bug report #1406:
+ * The irc_parser module currently fails to parse messages that have nothing but a command statement in them.
+ * Practical examples include the commands "AWAY" and "QUIT" which may be sent without trailing content by clients.
+ */
+TEST_CASE(justQuitMessage)
+{
+	char *message = g_strdup("AWAY");
+
+	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
+	TEST_ASSERT(parsedMessage);
+
+	TEST_ASSERT(parsedMessage->prefix == NULL);
+	TEST_ASSERT(parsedMessage->params == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 0);
+	TEST_ASSERT(strcmp(parsedMessage->command, "AWAY") == 0);
+	TEST_ASSERT(parsedMessage->trailing == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 	free(message);

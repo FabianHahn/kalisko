@@ -56,6 +56,7 @@ API bool enableIrcConnectionThrottle(IrcConnection *irc);
 API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buffer);
 API void freeIrcConnection(IrcConnection *irc);
 API bool ircSend(IrcConnection *irc, char *message, ...) G_GNUC_PRINTF(2, 3);
+API void authenticateIrcConnection(IrcConnection *irc);
 
 /**
  * The maximal length for a log message.

@@ -26,19 +26,22 @@
 #include "types.h"
 #include "timer.h"
 #include "modules/irc/irc.h"
+#include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/socket/socket.h"
+#include "modules/socket/poll.h"
 #include "api.h"
 
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 3), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 1, 15), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
 #ifndef IRCPP_KEEPALIVE_INTERVAL
-#define IRCPP_KEEPALIVE_INTERVAL (600 * G_USEC_PER_SEC)
+#define IRCPP_KEEPALIVE_INTERVAL (10 * G_USEC_PER_SEC)
 #endif
 
 #ifndef IRCPP_KEEPALIVE_TIMEOUT
@@ -48,6 +51,8 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 3), MODULE_DEPENDENCY("irc_proxy",
 TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE);
 TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT);
 HOOK_LISTENER(remote_line);
+HOOK_LISTENER(remote_disconnect);
+static void reconnectRemoteConnection(IrcProxy *proxy);
 static bool initPlugin(IrcProxy *proxy);
 static void finiPlugin(IrcProxy *proxy);
 static IrcProxyPlugin plugin;
@@ -77,6 +82,7 @@ MODULE_INIT
 	}
 
 	HOOK_ATTACH(irc_line, remote_line);
+	HOOK_ATTACH(irc_disconnect, remote_disconnect);
 
 	return true;
 }
@@ -84,6 +90,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	HOOK_DETACH(irc_line, remote_line);
+	HOOK_DETACH(socket_disconnect, remote_disconnect);
 
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
 
@@ -117,24 +124,42 @@ HOOK_LISTENER(remote_line)
 	}
 }
 
+HOOK_LISTENER(remote_disconnect)
+{
+	IrcConnection *irc = HOOK_ARG(IrcConnection *);
+
+	IrcProxy *proxy;
+	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
+		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
+			LOG_INFO("Remote IRC connection for IRC proxy on port %s disconnected", proxy->server->port);
+			reconnectRemoteConnection(proxy);
+		}
+	}
+}
+
 
 TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE)
 {
 	IrcProxy *proxy = custom_data;
 	GTimeVal *timeout;
 
-	// Schedule an expiration time for the challenge
-	if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_TIMEOUT, IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT, proxy)) == NULL) {
-		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy on port %s", proxy->server->port);
-		return;
+	if(proxy->irc->socket->connected) { // Only schedule a challenge if the socket is connected
+		// Schedule an expiration time for the challenge
+		if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_TIMEOUT, IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT, proxy)) == NULL) {
+			LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy on port %s", proxy->server->port);
+			return;
+		}
+
+		// Add challenge to hash table
+		g_hash_table_insert(challengeTimeouts, proxy, timeout);
+
+		// Send challenge to remote IRC server
+		$(bool, irc, ircSend)(proxy->irc, "PING :%ld%ld", timeout->tv_sec, timeout->tv_usec);
+		LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
+	} else {
+		// Socket is no longer connected, try to reconnect it
+		reconnectRemoteConnection(proxy);
 	}
-
-	// Add challenge to hash table
-	g_hash_table_insert(challengeTimeouts, proxy, timeout);
-
-	// Send challenge to remote IRC server
-	$(bool, irc, ircSend)(proxy->irc, "PING :%ld%ld", timeout->tv_sec, timeout->tv_usec);
-	LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 
 	// Schedule a new challenge
 	if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy)) == NULL) {
@@ -150,12 +175,47 @@ TIMER_CALLBACK(IRCPP_KEEPALIVE_CHALLENGE_TIMEOUT)
 {
 	IrcProxy *proxy = custom_data;
 
-	LOG_ERROR("Keepalive challenge timed out for IRC connection %d", proxy->irc->socket->fd);
+	LOG_ERROR("Keepalive challenge timed out for remote IRC connection %d of IRC proxy on port %s", proxy->irc->socket->fd, proxy->server->port);
 
-	// TODO: reconnect etc
+	// Disconnect socket so the disconnect hook will reconnect it
+	$(bool, socket, disconnectSocket)(proxy->irc->socket);
 
 	// Remove the challenge from the challenge table
 	g_hash_table_remove(challengeTimeouts, &time);
+}
+
+/**
+ * Reconnects a remote IRC connection for an IRC proxy
+ *
+ * @param proxy		the IRC proxy of which the remote IRC connection should be reloaded
+ */
+static void reconnectRemoteConnection(IrcProxy *proxy)
+{
+	LOG_DEBUG("Trying to reconnect remote IRC connection for IRC proxy on port %s", proxy->server->port);
+	// Now try to reconnect
+	if($(bool, socket, connectSocket)(proxy->irc->socket) && $(bool, socket, enableSocketPolling)(proxy->irc->socket)) { // reconnect successful
+		LOG_INFO("Remote IRC connection for IRC proxy on port %s reconnected successfully", proxy->server->port);
+
+		// Reauthenticate the connection
+		$(void, irc, authenticateIrcConnection)(proxy->irc);
+
+		// Reschedule the keepalive timer for this connection
+		GTimeVal *timeout;
+		if((timeout = g_hash_table_lookup(challenges, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
+			if(TIMER_DEL(timeout)) { // clear the challenge timeout timer as well
+				// Remove the challenge from the challenge table
+				g_hash_table_remove(challenges, proxy);
+
+				// Schedule a new challenge timre
+				if((timeout = TIMER_ADD_TIMEOUT_EX(IRCPP_KEEPALIVE_INTERVAL, IRCPP_KEEPALIVE_CHALLENGE, proxy)) == NULL) {
+					LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy on port %s", proxy->server->port);
+					return;
+				}
+
+				g_hash_table_insert(challenges, proxy, timeout);
+			}
+		}
+	}
 }
 
 /**

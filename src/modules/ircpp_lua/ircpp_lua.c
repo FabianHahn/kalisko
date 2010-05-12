@@ -35,13 +35,13 @@
 MODULE_NAME("ircpp_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows proxy clients to evaluate Lua code by sending private messages to a virtual *lua bot");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("lang_lua", 0, 4, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 4, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2));
 
 HOOK_LISTENER(client_line);
-static bool initPlugin(IrcProxy *proxy);
-static void finiPlugin(IrcProxy *proxy);
+static bool initPlugin(IrcProxy *proxy, char *name);
+static void finiPlugin(IrcProxy *proxy, char *name);
 static IrcProxyPlugin plugin;
 
 MODULE_INIT
@@ -105,9 +105,10 @@ HOOK_LISTENER(client_line)
  * Initializes the plugin
  *
  * @param proxy		the IRC proxy to initialize the plugin for
+ * @param name		the name of the IRC proxy plugin to finalize
  * @result			true if successful
  */
-static bool initPlugin(IrcProxy *proxy)
+static bool initPlugin(IrcProxy *proxy, char *name)
 {
 	$(void, irc_proxy, addIrcProxyRelayException)(proxy, "*lua");
 
@@ -118,8 +119,9 @@ static bool initPlugin(IrcProxy *proxy)
  * Finalizes the plugin
  *
  * @param proxy		the IRC proxy to finalize the plugin for
+ * @param name		the name of the IRC proxy plugin to finalize
  */
-static void finiPlugin(IrcProxy *proxy)
+static void finiPlugin(IrcProxy *proxy, char *name)
 {
 	$(void, irc_proxy, delIrcProxyRelayException)(proxy, "*lua");
 }

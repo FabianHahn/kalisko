@@ -34,7 +34,7 @@
 MODULE_NAME("irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy plugin module manages manages plugins that can be activated and deactivated for individual IRC proxies");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 5);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
@@ -260,6 +260,16 @@ API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
 	LOG_INFO("Disabled IRC proxy plugin %s for IRC proxy on port %s", name, proxy->server->port);
 
 	return true;
+}
+
+/**
+ * Returns a list of available IRC proxy plugins
+ *
+ * @result			a list of all available plugins as strings. Must not be modified but freed with g_list_free after use
+ */
+API GList *getAvailableIrcProxyPlugins()
+{
+	return g_hash_table_get_keys(plugins);
 }
 
 /**

@@ -61,5 +61,6 @@ API void disableIrcProxyPlugins(IrcProxy *proxy);
 API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name);
 API bool isIrcProxyPluginEnabled(IrcProxy *proxy, char *name);
 API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name);
+API GList *getAvailableIrcProxyPlugins();
 
 #endif

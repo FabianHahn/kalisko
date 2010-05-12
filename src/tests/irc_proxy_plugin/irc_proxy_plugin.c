@@ -31,9 +31,9 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
+MODULE_VERSION(0, 1, 4);
+MODULE_BCVERSION(0, 1, 4);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);
@@ -45,8 +45,8 @@ static int initState = 0;
 
 static IrcProxy *createProxyStub();
 static void freeProxyStub(IrcProxy *proxy);
-static bool initPlugin(IrcProxy *proxy);
-static void finiPlugin(IrcProxy *proxy);
+static bool initPlugin(IrcProxy *proxy, char *name);
+static void finiPlugin(IrcProxy *proxy, char *name);
 
 TEST_SUITE_BEGIN(irc_proxy_plugin)
 	TEST_CASE_ADD(plugin_add);
@@ -146,7 +146,7 @@ static void freeProxyStub(IrcProxy *proxy)
 	free(proxy);
 }
 
-static bool initPlugin(IrcProxy *proxy)
+static bool initPlugin(IrcProxy *proxy, char *name)
 {
 	if(proxy != NULL) {
 		initState++;
@@ -156,7 +156,7 @@ static bool initPlugin(IrcProxy *proxy)
 	}
 }
 
-static void finiPlugin(IrcProxy *proxy)
+static void finiPlugin(IrcProxy *proxy, char *name)
 {
 	initState += 2;
 }

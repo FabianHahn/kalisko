@@ -38,9 +38,9 @@
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A simple IRC bouncer using an IRC connection to a single IRC server on a listening port");
-MODULE_VERSION(0, 1, 7);
+MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 1, 5), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 1, 6), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 1, 6), MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
 HOOK_LISTENER(bouncer_reattach);
 static IrcConnection *irc;

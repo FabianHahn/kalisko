@@ -26,6 +26,8 @@
 #include "modules/store/path.h"
 #include "modules/store/write.h"
 #include "modules/store/parse.h"
+#include "modules/store/merge.h"
+#include "modules/getopts/getopts.h"
 #include "log.h"
 #include "types.h"
 #include "module.h"
@@ -37,207 +39,193 @@
 #define USER_CONFIG_FILE_NAME "user.cfg"
 #define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
-#define USER_CONFIG_DIR_PERMISSION 0700
 
-static char *userConfigFilePath;
-static char *userOverrideConfigFilePath;
-static char *globalConfigFilePath;
+static char *writableConfigFilePath;
+static char *profilePath;
 
-static Store *userConfig = NULL;
-static Store *userOverrideConfig = NULL;
-static Store *globalConfig = NULL;
+static Store *config;
+static Store *writableConfig;
 
-static Store *getUserConfig();
-static Store *getUserOverrideConfig();
+static void loadDefaultConfigs();
 static void finalize();
 
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The config module provides access to config files represented by a store that override each other");
-MODULE_VERSION(0, 2, 3);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
 MODULE_INIT
 {
-	char *userDir = getUserKaliskoConfigPath();
-	userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
-	userOverrideConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	free(userDir);
+	config = NULL;
+	profilePath = NULL;
 
-	char *globalDir = getGlobalKaliskoConfigPath();
-	globalConfigFilePath = g_build_path("/", globalDir, GLOBAL_CONFIG_FILE_NAME, NULL);
-	free(globalDir);
+	loadDefaultConfigs();
 
-	if(!HOOK_ADD(stdConfigChanged)) {
+	if(config == NULL) {
+		LOG_ERROR("No configuration files found to work with.");
 		finalize();
 		return false;
-	} else {
-		return true;
 	}
+
+	// Check for --profile
+	if((profilePath = $(char *, getopts, getOpt)("profile")) == NULL || *profilePath == '\0') {
+		// Not found, check for -p
+		if((profilePath = $(char *, getopts, getOpt)("p")) == NULL || *profilePath == '\0') {
+			LOG_ERROR("Could not find profile command line option, use '-p [profile]' or '--profile=[profile]'");
+			profilePath = NULL;
+		}
+	}
+
+	if(profilePath) {
+		LOG_DEBUG("Using profile '%s'", profilePath);
+		config = $(Store *, store, getStorePath)(config, profilePath);
+	}
+
+	return true;
 }
 
 MODULE_FINALIZE
 {
-	if(userOverrideConfig) {
-		saveConfig(CONFIG_USER_OVERRIDE);
-	}
-
 	finalize();
 }
 
 /**
- * Returns the configuration for the given configuration file.
+ * Returns the configuration Store.
  *
- * @param file	The configuration file to open
- * @return		The Config reference for the given file
- * @see	ConfigFiles
+ * This Store is the merge result of the three configuration files
+ * (if they all exist).
+ *
+ * Although this Store can be changed or extended, it's not possible to
+ * save it persistent. Because of that we recommend to <b>use it read-only</b>.
+ *
+ * If a profile is given, the root of the Store is the profile path.
+ * <b>Example:</b>
+ * One of the configuration files has a value at the Store path
+ * <i>/config/user/name</i> and a value at <i>/kalisko/user/name<i>. Now, if
+ * no profile is given, both paths exist in the Store returned by this function.
+ * If a profile is given, say <i>config</i>, you can only access the
+ * first value (<i>/config/user/name<i>) by using the path <i>/user/name</i>.
+ * The root of the path is set to <i>/config<i> because of the given profile.
+ *
+ * @return The Store of three merged configuration files
  */
-API Store *getConfig(ConfigFiles file)
+API Store *getConfig()
 {
-	switch(file) {
-		case CONFIG_USER:
-			if(!userConfig) {
-				userConfig = getUserConfig();
-			}
-			return userConfig;
-		break;
-		case CONFIG_USER_OVERRIDE:
-			if(!userOverrideConfig) {
-				userOverrideConfig = getUserOverrideConfig();
-			}
-			return userOverrideConfig;
-		break;
-		case CONFIG_GLOBAL:
-			if(!globalConfig) {
-				// As this module should also work for a non root account
-				// we don't create the global config file if it doesn't exist.
-				globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
-			}
-			return globalConfig;
-		break;
-		default:
-			LOG_ERROR("Unknown configuration file requested.");
-			return NULL;
-		break;
-	}
-}
-
-
-/**
- * Saves the given configuration file.
- *
- * Attention: Only the "override" configuration files are writeable.
- *
- * @param file	The configuration file to save
- */
-API void saveConfig(ConfigFiles file)
-{
-	switch(file) {
-		case CONFIG_USER_OVERRIDE:
-			$(void, store, writeStoreFile)(userOverrideConfigFilePath, getConfig(file));
-		break;
-		default:
-			LOG_WARNING("Given configuration file can not be saved.");
-			return;
-		break;
-	}
+	return config;
 }
 
 /**
- * Searches for the given path trough the configuration files
- * consider the weighting of the different configurations. The first found value
- * will be returned otherwise NULL.
+ * Returns the writable Store. This correspond to the user specific writable
+ * configuration file. This Store can be saved (@see saveWritableConfig).
  *
- * Do not free the returned value. This is handled by the config module.
+ * The returned Store doesn't depend on the profile. If you have to change a
+ * specific value for the current profile use @see getProfilePath and add it
+ * to your path as a prefix. This is done because there are use cases where
+ * modules have to change values for other profiles.
  *
- * @param	path			The path to search
- * @return	The first found value for given path or NULL
+ * <b>Attention:</b>
+ * If you changed the Store returned by this function, don't forget to call
+ * @see saveWritableConfig. Even if the function is called on finalizing this
+ * module.
+ *
+ * <b>Note:</b>
+ * There is no writable global Store. This is not possible as Kalisko is not
+ * essentially run under root rights.
+ *
+ * @return The user specific writable Store.
  */
-API Store *getConfigPathValue(char *path)
+API Store *getWritableConfig()
 {
-	Store *value = NULL;
-
-	Store *overrideConfig = getConfig(CONFIG_USER_OVERRIDE);
-	if(overrideConfig) {
-		value = $(Store *, store, getStorePath)(overrideConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	Store *userConfig = getConfig(CONFIG_USER);
-	if(userConfig) {
-		value = $(Store *, store, getStorePath)(userConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	Store *globalConfig = getConfig(CONFIG_GLOBAL);
-	if(globalConfig) {
-		value = $(Store *, store, getStorePath)(globalConfig, path);
-		if(value) {
-			return value;
-		}
-	}
-
-	return NULL;
+	return writableConfig;
 }
 
-static Store *getUserConfig()
+/**
+ * Saves the writable store to the corresponding file.
+ */
+API void saveWritableConfig()
 {
-	if(!g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = getUserKaliskoConfigPath();
-		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
-
-		Store *userConfig = $(Store *, store, createStore)();
-		$(void, store, writeStoreFile)(userConfigFilePath, userConfig);
-
-		LOG_INFO("Created new configuration file: %s", userConfigFilePath);
-
-		free(dirPath);
-		return userConfig;
-	} else {
-		return $(Store *, store, parseStoreFile)(userConfigFilePath);
-	}
+	$(void, store, writeStoreFile)(writableConfigFilePath, writableConfig);
 }
 
-static Store *getUserOverrideConfig()
+/**
+ * Returns the profile path. This can be used to change values for the current
+ * profile. See @see getWritableConfig.
+ *
+ * <b>Attention:</b>
+ * The returned value doesn't have to be free'd. It's also not wise to change the
+ * Value even if it's possible.
+ *
+ * @return The profile path of the current profile.
+ */
+API char *getProfilePath()
 {
-	if(!g_file_test(userOverrideConfigFilePath, G_FILE_TEST_EXISTS)) {
-		char *dirPath = getUserKaliskoConfigPath();
-		g_mkdir_with_parents(dirPath, USER_CONFIG_DIR_PERMISSION);
-		
-		Store *globalConfig = $(Store *, store, createStore)();
-		$(void, store, writeStoreFile)(userOverrideConfigFilePath, globalConfig);
-		
-		LOG_INFO("Created new configuration file: %s", userOverrideConfigFilePath);
+	return profilePath;
+}
 
-		free(dirPath);
-		return globalConfig;
-	} else {
-		return $(Store *, store, parseStoreFile)(userOverrideConfigFilePath);
+static void loadDefaultConfigs()
+{
+	// prepare paths
+	char *userDir = getUserKaliskoConfigPath();
+	char *userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
+	writableConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+
+	if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
+		config = $(Store *, store, parseStoreFile)(globalConfigFilePath);
 	}
+
+	if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
+		Store *userConfig = $(Store *, store, parseStoreFile)(userConfigFilePath);
+
+		if(config == NULL) {
+			config = userConfig;
+		} else {
+			if(!$(bool, store, mergeStore)(config, userConfig)) {
+				LOG_WARNING("Could not merge global config store with user config store.");
+			}
+
+			$(void, store, freeStore)(userConfig);
+		}
+	}
+
+	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
+		Store *writableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
+
+		if(config == NULL) {
+			config = writableConfig;
+		} else {
+			if(!$(bool, store, mergeStore)(config, writableConfig)) {
+				LOG_WARNING("Could not merge writable store into existing config store.");
+			}
+
+			$(void, store, freeStore)(writableConfig);
+		}
+	}
+
+	// free locally used paths
+	free(globalConfigFilePath);
+	free(userConfigFilePath);
+	free(userDir);
 }
 
 static void finalize()
 {
-	free(userConfigFilePath);
-	free(userOverrideConfigFilePath);
-	free(globalConfigFilePath);
-
-	if(userConfig) {
-		$(void, store, freeStore)(userConfig);
+	if(writableConfig) {
+		saveWritableConfig();
+		$(void, store, freeStore)(writableConfig);
 	}
 
-	if(userOverrideConfig) {
-		$(void, store, freeStore)(userOverrideConfig);
+	if(writableConfigFilePath) {
+		free(writableConfigFilePath);
 	}
 
-	if(globalConfig) {
-		$(void, store, freeStore)(globalConfig);
+	if(config) {
+		$(void, store, freeStore)(config);
 	}
 
-	HOOK_DEL(stdConfigChanged);
+	if(profilePath) {
+		free(profilePath);
+	}
 }

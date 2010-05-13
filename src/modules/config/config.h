@@ -23,30 +23,9 @@
 
 #include "modules/store/store.h"
 
-/**
- * Enumeration of the different configuration files.
- */
-typedef enum
-{
-	/**
-	 * The readonly per user configuration file.
-	 */
-	CONFIG_USER,
-
-	/**
-	 * The writeable per user configuration file. This file override the
-	 * configuration of CONFIG_USER.
-	 */
-	CONFIG_USER_OVERRIDE,
-
-	/**
-	 * The readonly global (application) file.
-	 */
-	CONFIG_GLOBAL
-} ConfigFiles;
-
-API Store *getConfig(ConfigFiles file);
-API void saveConfig(ConfigFiles file);
-API Store *getConfigPathValue(char *path);
+API Store *getConfig();
+API Store *getWritableConfig();
+API void saveWritableConfig();
+API char *getProfilePath();
 
 #endif

@@ -30,6 +30,7 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
+#include "modules/store/path.h"
 
 #include "api.h"
 #include "modules/log_viewer/log_viewer.h"
@@ -37,9 +38,9 @@
 MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 #define PERFORM_CONFIG_PATH "kalisko/loadModules"
 
@@ -51,7 +52,7 @@ static int cmpStringItems(const void *a, const void *b);
 
 MODULE_INIT
 {
-	Store *perform = $(Store *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
+	Store *perform = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), PERFORM_CONFIG_PATH);
 
 	if(perform != NULL && perform->type == STORE_LIST &&
 		g_queue_find_custom(perform->content.list, "log_viewer", (GCompareFunc)cmpStringItems) != NULL) {

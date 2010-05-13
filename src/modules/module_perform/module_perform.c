@@ -25,6 +25,7 @@
 #include "types.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
+#include "modules/store/path.h"
 
 #include "api.h"
 
@@ -33,15 +34,15 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 MODULE_INIT
 {
 	LOG_INFO("Requesting perform modules");
 
-	Store *modules = $(Store *, config, getConfigPathValue)(PERFORM_CONFIG_PATH);
+	Store *modules = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), PERFORM_CONFIG_PATH);
 	if(modules != NULL) {
 		if(modules->type != STORE_LIST) {
 			LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);

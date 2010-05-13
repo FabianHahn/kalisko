@@ -39,6 +39,7 @@
 #define USER_CONFIG_FILE_NAME "user.cfg"
 #define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
+#define MERGE_CONFIG_PATH "merge"
 
 static char *writableConfigFilePath;
 static char *profilePath;
@@ -48,11 +49,13 @@ static Store *writableConfig;
 
 static void loadDefaultConfigs();
 static void finalize();
+static void checkFilesMerge(Store *store);
+static void mergeStoreIntoConfig(Store *storeToMerge);
 
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -78,10 +81,23 @@ MODULE_INIT
 		}
 	}
 
+	checkFilesMerge(config); // once check without the profile ...
+
 	if(profilePath) {
 		LOG_DEBUG("Using profile '%s'", profilePath);
 		config = $(Store *, store, getStorePath)(config, profilePath);
+
+		if(config == NULL) {
+			LOG_ERROR("Given profile path cannot be found: '%s'", profilePath);
+			finalize();
+
+			return false;
+		}
+	} else {
+		profilePath = "";
 	}
+
+	checkFilesMerge(config); // ... and once in the profile itself
 
 	return true;
 }
@@ -216,6 +232,60 @@ static void loadDefaultConfigs()
 	free(globalConfigFilePath);
 	free(userConfigFilePath);
 	free(userDir);
+}
+
+static void checkFilesMerge(Store *store)
+{
+	Store *mergeStore = $(Store *, store, getStorePath)(store, MERGE_CONFIG_PATH);
+
+	if(mergeStore != NULL) {
+		if(mergeStore->type == STORE_STRING) {
+			Store *storeToMerge = $(Store *, store, parseStoreFile)(mergeStore->content.string);
+
+			mergeStoreIntoConfig(storeToMerge);
+
+			if(storeToMerge == NULL) {
+				LOG_WARNING("Could not parse store file '%s' for configuration", mergeStore->content.string);
+			} else {
+				$(void, store, freeStore)(storeToMerge);
+			}
+		}
+		else if(mergeStore->type == STORE_LIST) {
+			GQueue *list = mergeStore->content.list;
+
+			for(GList *iter = list->head; iter != NULL; iter = iter->next) {
+				Store *filePath = (Store *)iter->data;
+
+				if(filePath->type == STORE_STRING) {
+					Store *storeToMerge = $(Store *, store, parseStoreFile)(filePath->content.string);
+
+					if(storeToMerge == NULL) {
+						LOG_WARNING("Could not parse store file '%s' for configuration", filePath->content.string);
+						continue;
+					}
+
+					mergeStoreIntoConfig(storeToMerge);
+
+					$(void, store, freeStore)(storeToMerge);
+				} else {
+					LOG_WARNING("Store merge list values must be strings representing file paths.");
+				}
+			}
+		} else {
+			LOG_WARNING("\"merge\" must be a string or a list of strings representing file path(s)");
+		}
+	}
+}
+
+static void mergeStoreIntoConfig(Store *storeToMerge)
+{
+	if(storeToMerge != NULL) {
+		checkFilesMerge(storeToMerge);
+
+		if(!$(Store *, void, mergeStore)(config, storeToMerge)) {
+			LOG_WARNING("Could not merge Store additional into config store");
+		}
+	}
 }
 
 static void finalize()

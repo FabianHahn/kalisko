@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -78,21 +78,35 @@ HOOK_LISTENER(irc_line)
 	IrcChannelTracker *tracker;
 	IrcChannel *channel;
 	if((tracker = g_hash_table_lookup(tracked, irc)) != NULL) {
-		if(g_strcmp0(message->command, "JOIN") == 0 && message->params_count >= 1) {
+		if(g_strcmp0(message->command, "JOIN") == 0 && (message->params_count >= 1 || message->trailing != NULL)) {
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
+				char *cname = NULL;
+				if(message->params_count >= 1) {
+					cname = message->params[0];
+				} else {
+					cname = message->trailing;
+				}
+
 				// Construct new channel
 				channel = ALLOCATE_OBJECT(IrcChannel);
-				channel->name = strdup(message->params[0]);
+				channel->name = strdup(cname);
 				channel->tracker = tracker;
 				g_hash_table_insert(tracker->channels, channel->name, channel); // add it to channels table
 
 				LOG_DEBUG("Joined channel %s on IRC conection %d", channel->name, irc->socket->fd);
 			}
-		} else if(g_strcmp0(message->command, "PART") == 0 && message->trailing != NULL) {
+		} else if(g_strcmp0(message->command, "PART") == 0 && (message->params_count >= 1 || message->trailing != NULL)) {
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
-				if((channel = g_hash_table_lookup(tracker->channels, message->trailing)) != NULL) {
-					g_hash_table_remove(tracker->channels, message->trailing);
-					LOG_DEBUG("Left channel %s on IRC connection %d", message->trailing, irc->socket->fd);
+				char *cname = NULL;
+				if(message->params_count >= 1) {
+					cname = message->params[0];
+				} else {
+					cname = message->trailing;
+				}
+
+				if((channel = g_hash_table_lookup(tracker->channels, cname)) != NULL) {
+					g_hash_table_remove(tracker->channels, cname);
+					LOG_DEBUG("Left channel %s on IRC connection %d", cname, irc->socket->fd);
 				}
 			}
 		}

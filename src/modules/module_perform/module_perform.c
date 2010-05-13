@@ -28,7 +28,7 @@
 
 #include "api.h"
 
-#define PERFORM_CONFIG_PATH "kalisko/loadModules"
+#define PERFORM_CONFIG_PATH "loadModules"
 
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");

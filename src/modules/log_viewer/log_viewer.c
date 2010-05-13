@@ -41,7 +41,7 @@ MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
-#define PERFORM_CONFIG_PATH "kalisko/loadModules"
+#define PERFORM_CONFIG_PATH "loadModules"
 
 HOOK_LISTENER(newLogMessage);
 

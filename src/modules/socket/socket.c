@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 7);
+MODULE_VERSION(0, 4, 8);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 
@@ -373,7 +373,10 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		LOG_ERROR("Cannot write to disconnected socket");
+		GString *msg = g_string_new("");
+		g_string_append_len(msg, buffer, size);
+		LOG_ERROR("Cannot write to disconnected socket: %s", msg->str);
+		g_string_free(msg, true);
 		return false;
 	}
 

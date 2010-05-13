@@ -55,7 +55,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -64,7 +64,27 @@ MODULE_INIT
 	config = NULL;
 	profilePath = NULL;
 
-	loadDefaultConfigs();
+	char *configFilePath = NULL;
+	// Check for --config
+	if((configFilePath = $(char *, getopts, getOpt)("config")) == NULL || *configFilePath == '\0') {
+		// Not found, check for -c
+		if((configFilePath = $(char *, getopts, getOpt)("c")) == NULL || *configFilePath == '\0') {
+			LOG_INFO("Could not find config file command line option, use '-c [file path]' or '--config=[file path]'");
+			configFilePath = NULL;
+		}
+	}
+
+	if(configFilePath == NULL) {
+		loadDefaultConfigs();
+	} else {
+		Store *cmdConfig = $(Store *, store, parseStoreFile)(configFilePath);
+		if(cmdConfig == NULL) {
+			LOG_ERROR("Given file path could not be read and used as configuration file: %s", configFilePath);
+			return false;
+		}
+
+		config = cmdConfig;
+	}
 
 	if(config == NULL) {
 		LOG_ERROR("No configuration files found to work with.");
@@ -72,16 +92,16 @@ MODULE_INIT
 		return false;
 	}
 
+	checkFilesMerge(config); // once check without the profile ...
+
 	// Check for --profile
 	if((profilePath = $(char *, getopts, getOpt)("profile")) == NULL || *profilePath == '\0') {
 		// Not found, check for -p
 		if((profilePath = $(char *, getopts, getOpt)("p")) == NULL || *profilePath == '\0') {
-			LOG_ERROR("Could not find profile command line option, use '-p [profile]' or '--profile=[profile]'");
+			LOG_INFO("Could not find profile command line option, use '-p [profile]' or '--profile=[profile]'");
 			profilePath = NULL;
 		}
 	}
-
-	checkFilesMerge(config); // once check without the profile ...
 
 	if(profilePath) {
 		LOG_DEBUG("Using profile '%s'", profilePath);
@@ -93,8 +113,6 @@ MODULE_INIT
 
 			return false;
 		}
-	} else {
-		profilePath = "";
 	}
 
 	checkFilesMerge(config); // ... and once in the profile itself
@@ -242,11 +260,10 @@ static void checkFilesMerge(Store *store)
 		if(mergeStore->type == STORE_STRING) {
 			Store *storeToMerge = $(Store *, store, parseStoreFile)(mergeStore->content.string);
 
-			mergeStoreIntoConfig(storeToMerge);
-
 			if(storeToMerge == NULL) {
 				LOG_WARNING("Could not parse store file '%s' for configuration", mergeStore->content.string);
 			} else {
+				mergeStoreIntoConfig(storeToMerge);
 				$(void, store, freeStore)(storeToMerge);
 			}
 		}
@@ -279,10 +296,23 @@ static void checkFilesMerge(Store *store)
 
 static void mergeStoreIntoConfig(Store *storeToMerge)
 {
-	if(storeToMerge != NULL) {
-		checkFilesMerge(storeToMerge);
+	Store *store = storeToMerge;
 
-		if(!$(Store *, void, mergeStore)(config, storeToMerge)) {
+	if(store != NULL) {
+		checkFilesMerge(store); // without a profile ...
+
+		if(profilePath != NULL) {
+			store = $(Store *, store, getStorePath)(store, profilePath);
+
+			checkFilesMerge(store); // ... with a profile
+		}
+
+		if(store == NULL) {
+			LOG_WARNING("Additional configuration file has no values for given profile. Not merging the configuration.");
+			return;
+		}
+
+		if(!$(Store *, void, mergeStore)(config, store)) {
 			LOG_WARNING("Could not merge Store additional into config store");
 		}
 	}

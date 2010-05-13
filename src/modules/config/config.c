@@ -52,7 +52,7 @@ static void finalize();
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -233,7 +233,4 @@ static void finalize()
 		$(void, store, freeStore)(config);
 	}
 
-	if(profilePath) {
-		free(profilePath);
-	}
 }

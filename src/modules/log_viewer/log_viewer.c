@@ -37,7 +37,7 @@
 MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 

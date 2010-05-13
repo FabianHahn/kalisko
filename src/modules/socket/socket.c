@@ -19,7 +19,7 @@
  */
 
 #ifdef WIN32
-#include <winsock2.h> // recv, send, getaddrinfo, socket, connect
+#include <winsock2.h> // recv, send, getaddrinfo, socket, connect, select, timevalr
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0502
 #include <ws2tcpip.h> // getaddrinfo, addrinfo, freeaddrinfo
@@ -27,6 +27,7 @@
 #include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
 #include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
 #include <fcntl.h>
+#include <sys/select.h> // select, timeval
 #endif
 #include <glib.h> // GList
 #include <stdlib.h> // malloc, free
@@ -35,7 +36,6 @@
 #include <errno.h> // errno, EINTR
 #include <assert.h> // assert
 #include <string.h> // strerror, strdup
-#include <sys/select.h> // select, timeval
 
 #include "dll.h"
 #include "log.h"
@@ -56,7 +56,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 6);
+MODULE_VERSION(0, 4, 7);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
 

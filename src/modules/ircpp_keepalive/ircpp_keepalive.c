@@ -26,6 +26,7 @@
 #include "types.h"
 #include "timer.h"
 #include "modules/config/config.h"
+#include "modules/store/path.h"
 #include "modules/irc/irc.h"
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
@@ -37,9 +38,9 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 3), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 1, 15), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 1, 15), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
@@ -74,14 +75,14 @@ static unsigned int keepaliveTimeout = 5 * G_USEC_PER_SEC;
 MODULE_INIT
 {
 	// Check if config values are set
-	Store *configKeepaliveInterval = $(Store *, config, getConfigPathValue)("irc/keepalive/interval");
+	Store *configKeepaliveInterval = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "irc/keepalive/interval");
 	if(configKeepaliveInterval != NULL && configKeepaliveInterval->type == STORE_INTEGER) {
 		keepaliveInterval = configKeepaliveInterval->content.integer;
 	} else {
 		LOG_INFO("Could not determine config value irc/keepalive/interval, using default value of %d", keepaliveInterval);
 	}
 
-	Store *configKeepaliveTimeout = $(Store *, config, getConfigPathValue)("irc/keepalive/timeout");
+	Store *configKeepaliveTimeout = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "irc/keepalive/timeout");
 	if(configKeepaliveTimeout != NULL && configKeepaliveTimeout->type == STORE_INTEGER) {
 		keepaliveTimeout = configKeepaliveTimeout->content.integer;
 	} else {

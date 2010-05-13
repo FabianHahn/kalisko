@@ -57,7 +57,9 @@ MODULE_INIT
 	$(bool, socket, enableSocketPolling)(http);
 
 	server = $(Socket *, socket, createServerSocket)("1337");
-	$(bool, socket, connectSocket)(server);
+	if(!$(bool, socket, connectSocket)(server)) {
+		return false;
+	}
 	$(bool, socket, enableSocketPolling)(server);
 
 	return true;

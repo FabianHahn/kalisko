@@ -44,6 +44,7 @@
 #include "module.h"
 #include "hooks.h"
 #include "modules/config/config.h"
+#include "modules/store/path.h"
 
 #include "api.h"
 #include "socket.h"
@@ -58,7 +59,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
 MODULE_VERSION(0, 4, 8);
 MODULE_BCVERSION(0, 4, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 static int connectionTimeout = 10; // set default connection timeout to 10 seconds
 
@@ -75,14 +76,14 @@ MODULE_INIT
 
 	int pollInterval = 100000;
 
-	Store *configPollInterval = $(Store *, config, getConfigPathValue)("socket/pollInterval");
+	Store *configPollInterval = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "socket/pollInterval");
 	if(configPollInterval != NULL && configPollInterval->type == STORE_INTEGER) {
 		pollInterval = configPollInterval->content.integer;
 	} else {
 		LOG_INFO("Could not determine config value socket/pollInterval, using default");
 	}
 
-	Store *configConnectionTimeout = $(Store *, config, getConfigPathValue)("socket/connectionTimeout");
+	Store *configConnectionTimeout = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "socket/connectionTimeout");
 	if(configConnectionTimeout != NULL && configConnectionTimeout->type == STORE_INTEGER) {
 		connectionTimeout = configConnectionTimeout->content.integer;
 	} else {

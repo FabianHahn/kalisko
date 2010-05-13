@@ -30,6 +30,7 @@
 #include "dll.h"
 #include "hooks.h"
 #include "modules/config/config.h"
+#include "modules/store/path.h"
 
 #include "log.h"
 #include "api.h"
@@ -37,9 +38,9 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 HOOK_LISTENER(log);
 HOOK_LISTENER(configChanged);
@@ -202,7 +203,7 @@ static void updateConfig() {
 		char *newColor = defaultValue;
 	#endif
 
-	Store *colorConfig = $(Store *, config, getConfigPathValue)(configPath);
+	Store *colorConfig = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), configPath);
 	if(colorConfig) {
 		#ifdef WIN32
 			if(colorConfig->type == STORE_INTEGER) {

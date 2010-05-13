@@ -117,6 +117,14 @@ API Store *getConfig()
 }
 
 /**
+ * @return The given path from the configuration Store.
+ */
+API Store *getConfigPath(char *path)
+{
+	return $(Store *, store, getStorePath)(config, path);
+}
+
+/**
  * Returns the writable Store. This correspond to the user specific writable
  * configuration file. This Store can be saved (@see saveWritableConfig).
  *

@@ -27,9 +27,8 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/irc/irc.h"
 #include "modules/config/config.h"
-#include "modules/irc_parser/irc_parser.h"
-#include "modules/store/store.h"
 #include "modules/store/path.h"
+#include "modules/irc_parser/irc_parser.h"
 #include "timer.h"
 #include "api.h"
 
@@ -38,7 +37,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
 MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 // Columns
 typedef enum {
@@ -76,7 +75,7 @@ static GtkWidget *notebook;
 
 MODULE_INIT
 {
-	Store *config = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "irc");
+	Store *config = $(Store *, config, getConfigPath)("irc");
 
 	if(config == NULL) {
 		return false;

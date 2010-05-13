@@ -29,7 +29,6 @@
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_channel/irc_channel.h"
 #include "modules/config/config.h"
-#include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "api.h"
@@ -40,7 +39,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A simple IRC bouncer using an IRC connection to a single IRC server on a listening port");
 MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 1, 6), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 1, 6), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 HOOK_LISTENER(bouncer_reattach);
 static IrcConnection *irc;
@@ -48,7 +47,7 @@ static IrcProxy *proxy;
 
 MODULE_INIT
 {
-	Store *config = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "irc");
+	Store *config = $(Store *, config, getConfigPath)("irc");
 
 	if(config == NULL) {
 		return false;
@@ -67,7 +66,7 @@ MODULE_INIT
 
 	LOG_INFO("Successfully established remote IRC connection for IRC bouncer");
 
-	Store *bouncer = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "irc/bouncer");
+	Store *bouncer = $(Store *, config, getConfigPath)("irc/bouncer");
 
 	if(bouncer == NULL) {
 		return false;

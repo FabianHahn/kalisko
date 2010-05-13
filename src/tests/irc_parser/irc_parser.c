@@ -30,7 +30,7 @@
 MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_parser module");
-MODULE_VERSION(0, 0, 3);
+MODULE_VERSION(0, 0, 4);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -54,7 +54,7 @@ TEST_SUITE_END
 
 TEST_CASE(utf8Trailing)
 {
-	char *message = g_strdup("Someone :Зарегистрируйтесь Unicode แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช 1234567890 ╔══╦══╗  ┌──┬──┐  ╭──┬──╮  ╭──┬──╮\r\n");
+	char *message = "Someone :Зарегистрируйтесь Unicode แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช 1234567890 ╔══╦══╗  ┌──┬──┐  ╭──┬──╮  ╭──┬──╮\r\n";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 
@@ -68,14 +68,13 @@ TEST_CASE(utf8Trailing)
 	TEST_ASSERT(parsedMessage->prefix == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }
 
 TEST_CASE(whitespaces)
 {
-	char *message = g_strdup(":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n");
+	char *message = ":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 
@@ -93,14 +92,13 @@ TEST_CASE(whitespaces)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "    Do         something!") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }
 
 TEST_CASE(userMask)
 {
-	char *message = g_strdup(":Gregor!kalisko@kalisko.org KICK #php.de Someone :blub");
+	char *message = ":Gregor!kalisko@kalisko.org KICK #php.de Someone :blub";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 
@@ -114,14 +112,13 @@ TEST_CASE(userMask)
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 	$(void, irc_parser, freeIrcUserMask)(userMask);
-	free(message);
 
 	TEST_PASS;
 }
 
 TEST_CASE(ping)
 {
-	char *message = g_strdup("PING :irc.gamesurge.net");
+	char *message = "PING :irc.gamesurge.net";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 	TEST_ASSERT(parsedMessage);
@@ -132,14 +129,13 @@ TEST_CASE(ping)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "irc.gamesurge.net") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }
 
 TEST_CASE(noticeAuth)
 {
-	char *message = g_strdup("NOTICE AUTH :*** Looking up your hostname");
+	char *message = "NOTICE AUTH :*** Looking up your hostname";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 	TEST_ASSERT(parsedMessage);
@@ -152,14 +148,13 @@ TEST_CASE(noticeAuth)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Looking up your hostname") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }
 
 TEST_CASE(serverNotice)
 {
-	char *message = g_strdup(":Staff.CA.US.GameSurge.net NOTICE * :*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)");
+	char *message = ":Staff.CA.US.GameSurge.net NOTICE * :*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 	TEST_ASSERT(parsedMessage);
@@ -172,7 +167,6 @@ TEST_CASE(serverNotice)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }
@@ -184,7 +178,7 @@ TEST_CASE(serverNotice)
  */
 TEST_CASE(onlyCommand)
 {
-	char *message = g_strdup("AWAY");
+	char *message = "AWAY";
 
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(message);
 	TEST_ASSERT(parsedMessage);
@@ -196,7 +190,6 @@ TEST_CASE(onlyCommand)
 	TEST_ASSERT(parsedMessage->trailing == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-	free(message);
 
 	TEST_PASS;
 }

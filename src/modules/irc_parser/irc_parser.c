@@ -58,33 +58,35 @@ API IrcMessage *parseIrcMessage(char *message)
 	IrcMessage *ircMessage = ALLOCATE_OBJECT(IrcMessage);
 	memset(ircMessage, 0, sizeof(IrcMessage));
 
-	char *msg = g_strdup(message);
 	ircMessage->raw_message = g_strdup(message);
 
-	char *prefixEnd = msg;
+	char *prefixEnd = message;
 
-	if(msg[0] == ':') {
+	if(message[0] == ':') {
 		// message has a prefix
-		prefixEnd = strchr(msg, ' ');
+		prefixEnd = strchr(message, ' ');
 		if(prefixEnd == NULL) {
-			LOG_ERROR("Malformed IRC message: '%s'", msg);
+			LOG_ERROR("Malformed IRC message: '%s'", message);
 			freeIrcMessage(ircMessage);
 			return NULL;
 		}
 
-		msg++; // Get rid of trailing colon
-		ircMessage->prefix = g_strndup(msg, prefixEnd - msg);
+		message++; // Get rid of trailing colon
+		ircMessage->prefix = g_strndup(message, prefixEnd - message);
 	}
 
 	// extracting the command
-	g_strchug(prefixEnd);
-	char *commandEnd = strchr(prefixEnd, ' ');
+	char *commandPart = g_strdup(prefixEnd);
+	g_strchug(commandPart);
+	char *commandEnd = strchr(commandPart, ' ');
 	if(commandEnd == NULL) { // just a command
-		ircMessage->command = g_strdup(prefixEnd);
+		ircMessage->command = g_strdup(commandPart);
+
+		free(commandPart);
 		return ircMessage;
 	}
 
-	ircMessage->command = g_strndup(prefixEnd, commandEnd - prefixEnd);
+	ircMessage->command = g_strndup(commandPart, commandEnd - commandPart);
 
 	// extracting the params
 	char *paramsEnd = strchr(commandEnd, ':');
@@ -115,9 +117,14 @@ API IrcMessage *parseIrcMessage(char *message)
 
 	// extracting trailing
 	if(paramsEnd) {
-		g_strchomp(paramsEnd);
-		ircMessage->trailing = g_strdup(paramsEnd + 1); // Once again, remove trailing colon
+		char *trailingPart = g_strdup(paramsEnd);
+		g_strchomp(trailingPart);
+		ircMessage->trailing = g_strdup(trailingPart + 1); // Once again, remove trailing colon
+
+		free(trailingPart);
 	}
+
+	free(commandPart);
 
 	return ircMessage;
 }

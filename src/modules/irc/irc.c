@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -89,8 +89,15 @@ HOOK_LISTENER(throttle_poll)
 {
 	double now = $$(double, getMicroTime)();
 
+	GQueue *dead = g_queue_new();
+
 	for(GList *iter = throttled->head; iter != NULL; iter = iter->next) { // loop over all throttled connections
 		IrcConnection *irc = iter->data;
+
+		if(!irc->socket->connected) { // Check if IRC connection is still alive
+			g_queue_push_head(dead, irc); // If not, add to dead list and continue
+			continue;
+		}
 
 		if(now > irc->throttle_time) {
 			irc->throttle_time = now;
@@ -105,6 +112,14 @@ HOOK_LISTENER(throttle_poll)
 			g_string_free(line, true); // free it
 		}
 	}
+
+	// Now cleanup all dead sockets
+	for(GList *iter = dead->head; iter != NULL; iter = iter->next) { // loop over all dead sockets
+		IrcConnection *irc = iter->data;
+		disableIrcConnectionThrottle(irc, false);
+	}
+
+	g_queue_free(dead);
 }
 
 HOOK_LISTENER(irc_disconnect)
@@ -289,7 +304,7 @@ API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buff
 	for(GList *iter = irc->obuffer->head; iter != NULL; iter = iter->next) {
 		GString *line = iter->data;
 
-		if(flush_output_buffer) {
+		if(flush_output_buffer && irc->socket->connected) { // if flushing and still connected
 			ircSend(irc, "%s", line->str);
 		}
 

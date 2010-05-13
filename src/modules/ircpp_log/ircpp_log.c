@@ -33,7 +33,7 @@
 MODULE_NAME("ircpp_log");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows log messages to be relayed to IRC proxy clients");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
@@ -162,7 +162,9 @@ HOOK_LISTENER(log)
 		for(GList *citer = proxy->clients->head; citer != NULL; citer = citer->next) {
 			IrcProxyClient *client = citer->data;
 
-			$(bool, irc_proxy, proxyClientIrcSend)(client, ":*log!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, msg->str);
+			if(client->socket->connected) { // Only relay if socket is connected, don't log if it isn't to avoid recursion
+				$(bool, irc_proxy, proxyClientIrcSend)(client, ":*log!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, msg->str);
+			}
 		}
 	}
 

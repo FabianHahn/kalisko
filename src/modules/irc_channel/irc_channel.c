@@ -33,14 +33,18 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 HOOK_LISTENER(irc_line);
+HOOK_LISTENER(irc_disconnect);
 static void freeIrcChannel(void *channel_p);
 static bool freeIrcChannelTracker(void *key_p, void *tracker_p, void *data);
 
+/**
+ * A hash table to associate IrcConnection objects with IrcChannelTracker objects
+ */
 static GHashTable *tracked;
 
 MODULE_INIT
@@ -48,12 +52,14 @@ MODULE_INIT
 	tracked = g_hash_table_new(NULL, NULL);
 
 	HOOK_ATTACH(irc_line, irc_line);
+	HOOK_ATTACH(irc_disconnect, irc_disconnect);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	HOOK_DETACH(irc_disconnect, irc_disconnect);
 	HOOK_DETACH(irc_line, irc_line);
 	g_hash_table_foreach_remove(tracked, &freeIrcChannelTracker, NULL);
 	g_hash_table_destroy(tracked);
@@ -94,6 +100,17 @@ HOOK_LISTENER(irc_line)
 		free(mask);
 	}
 }
+
+HOOK_LISTENER(irc_disconnect)
+{
+	IrcConnection *irc = HOOK_ARG(IrcConnection *);
+
+	IrcChannelTracker *tracker;
+	if((tracker = g_hash_table_lookup(tracked, irc)) != NULL) { // we are tracking channels for this connection
+		g_hash_table_remove_all(tracker->channels); // clear channel list if we disconnected
+	}
+}
+
 
 /**
  * Enables channel tracking for an IRC connection

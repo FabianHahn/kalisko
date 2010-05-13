@@ -34,7 +34,7 @@
 MODULE_NAME("irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Parses and creates IRC messages");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
@@ -58,21 +58,22 @@ API IrcMessage *parseIrcMessage(char *message)
 	IrcMessage *ircMessage = ALLOCATE_OBJECT(IrcMessage);
 	memset(ircMessage, 0, sizeof(IrcMessage));
 
+	char *msg = g_strdup(message);
 	ircMessage->raw_message = g_strdup(message);
 
-	char *prefixEnd = message;
+	char *prefixEnd = msg;
 
-	if(message[0] == ':') {
+	if(msg[0] == ':') {
 		// message has a prefix
-		prefixEnd = strchr(message, ' ');
+		prefixEnd = strchr(msg, ' ');
 		if(prefixEnd == NULL) {
-			LOG_ERROR("Malformed IRC message: '%s'", message);
+			LOG_ERROR("Malformed IRC message: '%s'", msg);
 			freeIrcMessage(ircMessage);
 			return NULL;
 		}
 
-		message++; // Get rid of trailing colon
-		ircMessage->prefix = g_strndup(message, prefixEnd - message);
+		msg++; // Get rid of trailing colon
+		ircMessage->prefix = g_strndup(msg, prefixEnd - msg);
 	}
 
 	// extracting the command

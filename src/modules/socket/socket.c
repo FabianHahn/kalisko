@@ -374,7 +374,10 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		LOG_ERROR("Cannot write to disconnected socket");
+		GString *msg = g_string_new("");
+		g_string_append_len(msg, buffer, size);
+		LOG_ERROR("Cannot write to disconnected socket: %s", msg->str);
+		g_string_free(msg, true);
 		return false;
 	}
 

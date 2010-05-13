@@ -40,7 +40,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 15);
+MODULE_VERSION(0, 1, 16);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -320,11 +320,17 @@ API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception)
  */
 API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...)
 {
+
 	va_list va;
 	char buffer[IRC_SEND_MAXLEN];
 
 	va_start(va, message);
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
+
+	if(!client->socket->connected) {
+		LOG_ERROR("Trying to send to disconnected IRC proxy client, aborting: %s", buffer);
+		return false;
+	}
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');

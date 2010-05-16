@@ -107,7 +107,7 @@ MODULE_FINALIZE
  * Create a client socket
  *
  * @param host		the host to connect to
- * @param buffer	the port to connect to
+ * @param port		the port to connect to
  * @result			the created socket
  */
 API Socket *createClientSocket(char *host, char *port)

@@ -77,7 +77,7 @@ typedef struct {
 } StoreNode;
 
 API Store *createStore();
-API void freeStore(void *value);
+API void freeStore(void *store);
 API void *getStoreValueContent(Store *value);
 API GString *escapeStoreString(char *string);
 API Store *createStoreStringValue(char *string);

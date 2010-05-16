@@ -61,9 +61,9 @@ API Store *createStore()
  *
  * @param store		the store node value to free
  */
-API void freeStore(void *value_p)
+API void freeStore(void *store)
 {
-	Store *value = value_p;
+	Store *value = store;
 
 	switch(value->type) {
 		case STORE_STRING:
@@ -151,7 +151,7 @@ API Store *createStoreStringValue(char *string)
 /**
  * Creates an integer value to be used in a store
  *
- * @param string		the content integer
+ * @param integer		the content integer
  * @result				the created node value, must be freed with freeStore or by the store system
  */
 API Store *createStoreIntegerValue(int integer)
@@ -166,7 +166,7 @@ API Store *createStoreIntegerValue(int integer)
 /**
  * Creates a float number value to be used in a store
  *
- * @param string		the content float number
+ * @param float_number	the content float number
  * @result				the created node value, must be freed with freeStore or by the store system
  */
 API Store *createStoreFloatNumberValue(double float_number)
@@ -181,7 +181,7 @@ API Store *createStoreFloatNumberValue(double float_number)
 /**
  * Creates a list value to be used in a store
  *
- * @param string		the content list or NULL for an empty list
+ * @param list			the content list or NULL for an empty list
  * @result				the created node value, must be freed with freeStore or by the store system
  */
 API Store *createStoreListValue(GQueue *list)
@@ -201,7 +201,7 @@ API Store *createStoreListValue(GQueue *list)
 /**
  * Creates an array value to be used in a store
  *
- * @param string		the content array or NULL if an empty one should be created
+ * @param array			the content array or NULL if an empty one should be created
  * @result				the created node value, must be freed with freeStore or by the store system
  */
 API Store *createStoreArrayValue(GHashTable *array)

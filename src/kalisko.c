@@ -21,10 +21,10 @@
 /**
  * @mainpage Kalisko API Documentation
  *
- * Please check also our <a href="http://dev.kalisko.org" target="_top"><b>Trac</b></a> for more documentation,
+ * Go to <a href="http://dev.kalisko.org" target="_top"><b>Trac</b></a> for more documentation,
  * suggestions, bugs and much more.
  *
- * Also check out our <a href="http://api.kalisko.org/depgraphs/" target="_top"><b>Module Dependency Graphs</b></a>
+ * And do not forget to check out our <a href="http://api.kalisko.org/depgraphs/" target="_top"><b>Module Dependency Graphs</b></a>
  */
 
 #ifndef MIN_SLEEP_TIME

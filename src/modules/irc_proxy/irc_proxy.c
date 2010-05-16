@@ -245,7 +245,7 @@ API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc)
 /**
  * Retrieves an IRC proxy by its remote IRC connection socket
  *
- * @param scket		the socket to lookup
+ * @param socket		the socket to lookup
  * @result			the IRC proxy or NULL if no proxy is enabled for this socket
  */
 API IrcProxy *getIrcProxyBySocket(Socket *socket)

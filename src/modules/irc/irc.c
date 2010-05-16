@@ -172,6 +172,7 @@ HOOK_LISTENER(irc_line)
  * @param server		IRC server to connect to
  * @param port			IRC server's port to connect to
  * @param user			user name to use
+ * @param password		password to use
  * @param real			real name to use
  * @param nick			nick to use
  * @result				the created IRC connection or NULL on failure

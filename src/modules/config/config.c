@@ -137,11 +137,11 @@ MODULE_FINALIZE
  * If a profile is given, the root of the Store is the profile path.
  * <b>Example:</b>
  * One of the configuration files has a value at the Store path
- * <i>/config/user/name</i> and a value at <i>/kalisko/user/name<i>. Now, if
+ * <i>/config/user/name</i> and a value at <i>/kalisko/user/name</i>. Now, if
  * no profile is given, both paths exist in the Store returned by this function.
  * If a profile is given, say <i>config</i>, you can only access the
- * first value (<i>/config/user/name<i>) by using the path <i>/user/name</i>.
- * The root of the path is set to <i>/config<i> because of the given profile.
+ * first value (<i>/config/user/name</i>) by using the path <i>/user/name</i>.
+ * The root of the path is set to <i>/config</i> because of the given profile.
  *
  * @return The Store of three merged configuration files
  */

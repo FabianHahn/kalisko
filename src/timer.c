@@ -212,7 +212,7 @@ API bool isExiting()
  * A GTraverseFunc to assemble all callbacks ready for execution
  * @param time_p		a pointer to the time of the callback
  * @param entry_p		a pointer to the timer entry
- * @param data			a pointer to the queue to assemble the ready callbacks in
+ * @param queue_p			a pointer to the queue to assemble the ready callbacks in
  * @result				true if traversal should abort
  */
 static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
@@ -238,7 +238,7 @@ static bool assembleReadyCallbacks(void *time_p, void *entry_p, void *queue_p)
  * A GTraverseFunc to assemble all pending callbacks not yet ready for execution
  * @param time_p		a pointer to the time of the callback, though unused
  * @param entry_p		a pointer to the timer entry
- * @param data			a pointer to the queue to assemble the pending callbacks in
+ * @param queue_p			a pointer to the queue to assemble the pending callbacks in
  * @result				true if traversal should abort
  */
 static bool assemblePendingCallbacks(void *time_p, void *entry_p, void *queue_p)

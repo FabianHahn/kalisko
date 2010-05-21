@@ -30,8 +30,8 @@
 MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_parser module");
-MODULE_VERSION(0, 0, 4);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
 TEST_CASE(utf8Trailing);
@@ -41,6 +41,7 @@ TEST_CASE(ping);
 TEST_CASE(noticeAuth);
 TEST_CASE(serverNotice);
 TEST_CASE(onlyCommand);
+TEST_CASE(passDelimiter);
 
 TEST_SUITE_BEGIN(irc_parser)
 	TEST_CASE_ADD(utf8Trailing);
@@ -50,6 +51,7 @@ TEST_SUITE_BEGIN(irc_parser)
 	TEST_CASE_ADD(noticeAuth);
 	TEST_CASE_ADD(serverNotice);
 	TEST_CASE_ADD(onlyCommand);
+	TEST_CASE_ADD(passDelimiter);
 TEST_SUITE_END
 
 TEST_CASE(utf8Trailing)
@@ -187,6 +189,25 @@ TEST_CASE(onlyCommand)
 	TEST_ASSERT(parsedMessage->params == NULL);
 	TEST_ASSERT(parsedMessage->params_count == 0);
 	TEST_ASSERT(strcmp(parsedMessage->command, "AWAY") == 0);
+	TEST_ASSERT(parsedMessage->trailing == NULL);
+
+	$(void, irc_parser, freeIrcMessage)(parsedMessage);
+
+	TEST_PASS;
+}
+
+/**
+ * Test case for bug ticket #1416: Parser doesn't handle colons in params correctly
+ */
+TEST_CASE(passDelimiter)
+{
+	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)("PASS user:password");
+	TEST_ASSERT(parsedMessage != NULL);
+
+	TEST_ASSERT(parsedMessage->prefix == NULL);
+	TEST_ASSERT(parsedMessage->params_count == 1);
+	TEST_ASSERT(g_strcmp0(parsedMessage->params[0], "user:password") == 0);
+	TEST_ASSERT(strcmp(parsedMessage->command, "PASS") == 0);
 	TEST_ASSERT(parsedMessage->trailing == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);

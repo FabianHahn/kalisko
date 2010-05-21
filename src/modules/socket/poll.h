@@ -30,6 +30,7 @@ API bool enableSocketPolling(Socket *socket);
 API bool disableSocketPolling(Socket *socket);
 API void pollSockets();
 API bool isSocketsPolling();
+API Socket *getPolledSocketByFd(int fd);
 
 #define SOCKET_POLL_BUFSIZE 4096
 

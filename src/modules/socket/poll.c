@@ -139,6 +139,17 @@ API bool isSocketsPolling()
 }
 
 /**
+ * Retrieves a socket for which polling is enabled by its file descriptor
+ *
+ * @param fd	the fd to lookup
+ * @result		the socket or NULL if no socket with this fd is being polled
+ */
+API Socket *getPolledSocketByFd(int fd)
+{
+	return g_hash_table_lookup(poll_table, &fd);
+}
+
+/**
  * Callback to poll all sockets signed up for polling
  */
 TIMER_CALLBACK(poll)

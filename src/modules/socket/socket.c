@@ -57,7 +57,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 

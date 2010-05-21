@@ -37,11 +37,12 @@
 #include "api.h"
 
 static Store *xcall_proxyClientIrcSend(Store *xcall);
+static Store *xcall_getIrcProxyClients(Store *xcall);
 
 MODULE_NAME("xcall_irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for irc_proxy");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1));
 
@@ -51,21 +52,26 @@ MODULE_INIT
 		return false;
 	}
 
+	if(!$(bool, xcall, addXCallFunction)("getIrcProxyClients", &xcall_getIrcProxyClients)) {
+		return false;
+	}
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
 	$(bool, xcall, delXCallFunction)("proxyClientIrcSend");
+	$(bool, xcall, delXCallFunction)("getIrcProxyClients");
 }
 
 /**
- * XCallFunction to send a message to an IRC proxy client
+ * XCallFunction to retrieve all IRC proxy clients for an IRC proxy
  * XCall parameters:
  *  * int client		the socket fd of the client proxy client
  *  * string message	the message to send to the IRC proxy client
  * XCall result:
- * 	* int success		nonzero if successful
+ * 	* list success		nonzero if successful
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -104,3 +110,44 @@ static Store *xcall_proxyClientIrcSend(Store *xcall)
 
 	return ret;
 }
+
+/**
+ * XCallFunction to send a message to an IRC proxy client
+ * XCall parameters:
+ *  * string proxy		the proxy to retrieve clients for
+ * XCall result:
+ * 	* list clients		an integer list of clients for this IRC proxy
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getIrcProxyClients(Store *xcall)
+{
+	Store *ret = $(Store *, store, createStore)();
+	Store *name;
+	IrcProxy *proxy;
+
+	if((name = $(Store *, store, getStorePath)(xcall, "proxy")) == NULL || name->type != STORE_STRING) {
+		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'proxy'"));
+		return ret;
+	}
+
+	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByName)(name->content.string)) == NULL) {
+		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		return ret;
+	}
+
+	GQueue *clients = g_queue_new();
+
+	// Loop over all IRC proxy clients for this IRC proxy
+	for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) {
+		IrcProxyClient *client = iter->data;
+		g_queue_push_tail(clients, $(Store *, store, createStoreIntegerValue)(client->socket->fd));
+	}
+
+	$(bool, store, setStorePath)(ret, "clients", $(Store *, store, createStoreListValue)(clients));
+
+	return ret;
+}
+

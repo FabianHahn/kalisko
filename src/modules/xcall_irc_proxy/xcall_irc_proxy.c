@@ -39,11 +39,12 @@
 static Store *xcall_proxyClientIrcSend(Store *xcall);
 static Store *xcall_getIrcProxyClients(Store *xcall);
 static Store *xcall_getIrcProxies(Store *xcall);
+static Store *xcall_getIrcConnectionByProxy(Store *xcall);
 
 MODULE_NAME("xcall_irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for irc_proxy");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 4), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1));
 
@@ -61,6 +62,10 @@ MODULE_INIT
 		return false;
 	}
 
+	if(!$(bool, xcall, addXCallFunction)("getIrcConnectionByProxy", &xcall_getIrcConnectionByProxy)) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -69,6 +74,7 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("proxyClientIrcSend");
 	$(bool, xcall, delXCallFunction)("getIrcProxyClients");
 	$(bool, xcall, delXCallFunction)("getIrcProxies");
+	$(bool, xcall, delXCallFunction)("getIrcConnectionByProxy");
 }
 
 /**
@@ -134,13 +140,11 @@ static Store *xcall_getIrcProxyClients(Store *xcall)
 	IrcProxy *proxy;
 
 	if((name = $(Store *, store, getStorePath)(xcall, "proxy")) == NULL || name->type != STORE_STRING) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'proxy'"));
 		return ret;
 	}
 
 	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByName)(name->content.string)) == NULL) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
 		return ret;
 	}
 
@@ -186,3 +190,33 @@ static Store *xcall_getIrcProxies(Store *xcall)
 	return ret;
 }
 
+
+/**
+ * XCallFunction to retrieve an IRC connection by its proxy
+ * XCall parameters:
+ *  * string proxy		the proxy to retrieve the IRC connection for
+ * XCall result:
+ * 	* int connection	the connection fd of the IRC connection for the proxy given
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getIrcConnectionByProxy(Store *xcall)
+{
+	Store *ret = $(Store *, store, createStore)();
+	Store *name;
+	IrcProxy *proxy;
+
+	if((name = $(Store *, store, getStorePath)(xcall, "proxy")) == NULL || name->type != STORE_STRING) {
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'proxy'"));
+		return ret;
+	}
+
+	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByName)(name->content.string)) == NULL) {
+		return ret;
+	}
+
+	$(bool, store, setStorePath)(ret, "connection", $(Store *, store, createStoreIntegerValue)(proxy->irc->socket->fd));
+
+	return ret;
+}

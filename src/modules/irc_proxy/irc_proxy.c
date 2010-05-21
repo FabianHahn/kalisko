@@ -34,22 +34,39 @@
 #include "modules/socket/poll.h"
 #include "modules/string_util/string_util.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/config/config.h"
 #include "api.h"
 #include "irc_proxy.h"
 
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 1, 16);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
 static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static void checkForBufferLine(IrcProxyClient *client);
 
+/**
+ * A hash table associating unique integer IDs with their corresponding IrcProxy objects
+ */
 static GHashTable *proxies;
+
+/**
+ * A hash table that associates remote IrcConnection objects with their corresponding IrcProxy objects
+ */
 static GHashTable *proxyConnections;
+
+/**
+ * Hash table that associates client Socket objects with their corresponding IrcProxyClient object
+ */
 static GHashTable *clients;
+
+/**
+ * IRC proxy server socket on which the module listens for new IRC proxy client connections
+ */
+static Socket *server;
 
 HOOK_LISTENER(remote_line);
 HOOK_LISTENER(client_accept);
@@ -59,9 +76,31 @@ HOOK_LISTENER(client_line);
 
 MODULE_INIT
 {
-	proxies = g_hash_table_new(NULL, NULL);
+	proxies = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
 	proxyConnections = g_hash_table_new(NULL, NULL);
 	clients = g_hash_table_new(NULL, NULL);
+
+	Store *config;
+	char *port = "6677";
+
+	if((config = $(Store *, config, getConfigPath)("irc/proxy/port")) != NULL && config->type != STORE_STRING) {
+		port = config->content.string;
+	} else {
+		LOG_INFO("Could not determine config value irc/proxy/port, using default of '%s'", port);
+	}
+
+	// Create and connect our listening server socket
+	server = $(Socket *, socket, createServerSocket)(port);
+
+	if(!$(bool, socket, connectSocket)(server)) {
+		LOG_ERROR("Failed to connect IRC proxy server socket on port %s, aborting", port);
+		return false;
+	}
+
+	if(!$(bool, socket, enableSocketPolling)(server)) {
+		LOG_ERROR("Failed to enable polling for IRC proxy server socket on port %s, aborting", port);
+		return false;
+	}
 
 	HOOK_ATTACH(irc_line, remote_line);
 	HOOK_ATTACH(socket_accept, client_accept);
@@ -85,6 +124,9 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxies);
 	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
+
+	// Free the server socket
+	$(void, socket, freeSocket)(server);
 
 	HOOK_DEL(irc_proxy_client_authenticated);
 	HOOK_DETACH(irc_proxy_client_line, client_line);
@@ -114,25 +156,23 @@ HOOK_LISTENER(remote_line)
 
 HOOK_LISTENER(client_accept)
 {
-	Socket *server = HOOK_ARG(Socket *);
+	Socket *listener = HOOK_ARG(Socket *);
 	Socket *client = HOOK_ARG(Socket *);
 
-	IrcProxy *proxy;
-	if((proxy = g_hash_table_lookup(proxies, server)) != NULL) { // One of our proxy servers accepted a new client
+	if(listener == server) { // new IRC proxy client
 		$(bool, socket, enableSocketPolling)(client); // also poll the new socket
 
-		LOG_INFO("New relay client %d for IRC proxy server on port %s", client->fd, proxy->server->port);
+		LOG_INFO("New relay client %d on IRC proxy server", client->fd);
 
 		IrcProxyClient *pc = ALLOCATE_OBJECT(IrcProxyClient);
-		pc->proxy = proxy;
+		pc->proxy = NULL;
 		pc->socket = client;
 		pc->authenticated = false;
 		pc->ibuffer = g_string_new("");
 
 		g_hash_table_insert(clients, client, pc); // connect the client socket to the proxy client object
-		g_queue_push_tail(proxy->clients, pc); // connect the proxy to its new client
 
-		proxyClientIrcSend(pc, ":%s NOTICE AUTH :*** Welcome to the Kalisko IRC proxy server! Please use the PASS command to authenticate...", proxy->irc->socket->host);
+		proxyClientIrcSend(pc, ":kalisko.proxy NOTICE AUTH :*** Welcome to the Kalisko IRC proxy server! Please use the 'PASS [id]:[password]' command to authenticate...");
 	}
 }
 
@@ -155,7 +195,11 @@ HOOK_LISTENER(client_disconnect)
 	IrcProxyClient *client;
 	if((client = g_hash_table_lookup(clients, socket)) != NULL) { // one of our proxy clients disconnected
 		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
-		g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+
+		if(client->proxy != NULL) { // check if the client is already associated to a proxy
+			g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
+		}
+
 		freeIrcProxyClient(client, "Bye");
 	}
 }
@@ -166,14 +210,34 @@ HOOK_LISTENER(client_line)
 	IrcMessage *message = HOOK_ARG(IrcMessage *);
 
 	if(!client->authenticated) { // not yet authenticated, wait for password
-		if(g_strcmp0(message->command, "PASS") == 0) {
-			if(message->params_count > 0 && g_strcmp0(message->params[0], client->proxy->password) == 0) { // correct password
-				LOG_INFO("IRC proxy client %d authenticated successfully", client->socket->fd);
-				client->authenticated = true;
-				proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", client->proxy->irc->socket->host, client->proxy->irc->nick);
-				proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, client->proxy->irc->nick, g_queue_get_length(client->proxy->clients));
-				HOOK_TRIGGER(irc_proxy_client_authenticated, client);
+		if(g_strcmp0(message->command, "PASS") == 0 && message->params_count > 0) {
+			char **parts = g_strsplit(message->trailing, ":", 0);
+			int count = 0;
+			while(parts[count] != NULL) { // count parts
+				count++;
 			}
+
+			if(count >= 2) { // there are at least two parts
+				int id = atoi(parts[0]); // extract proxy ID
+				IrcProxy *proxy;
+
+				if((proxy = g_hash_table_lookup(proxies, &id)) != NULL) { // it's a valid ID
+					if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
+						LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy %d", client->socket->fd, id);
+						client->authenticated = true;
+
+						// associate client and proxy
+						client->proxy = proxy;
+						g_queue_push_head(proxy->clients, client);
+
+						proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", proxy->irc->socket->host, proxy->irc->nick);
+						proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
+						HOOK_TRIGGER(irc_proxy_client_authenticated, client);
+					}
+				}
+			}
+
+			g_strfreev(parts);
 		}
 	} else if(g_strcmp0(message->command, "PING") == 0) { // reply to pings
 		if(message->trailing != NULL) {
@@ -201,31 +265,35 @@ HOOK_LISTENER(client_line)
 /**
  * Creates an IRC proxy relaying data for an IRC connection
  *
+ * @param id			the global unique id to use for this IRC proxy
  * @param irc			the IRC connection to relay (should already be connected)
- * @param port			the server port to listen on for client connections
  * @param password		password to use for client connections
  * @result				the created IRC proxy, or NULL on failure
  */
-API IrcProxy *createIrcProxy(IrcConnection *irc, char *port, char *password)
+API IrcProxy *createIrcProxy(int id, IrcConnection *irc, char *password)
 {
-	Socket *server = $(Socket *, socket, createServerSocket)(port);
-
-	if(!$(bool, socket, connectSocket)(server)) {
+	if(g_hash_table_lookup(proxies, &id) != NULL) { // IRC proxy with that ID already exists
+		LOG_ERROR("Trying to create IRC proxy with already taken ID %d, aborting", id);
 		return NULL;
 	}
 
-	if(!$(bool, socket, enableSocketPolling)(server)) {
+	if(g_hash_table_lookup(proxyConnections, irc) != NULL) { // there is already a proxy for this connection
+		LOG_ERROR("Trying to create IRC proxy for already proxied IRC connection with socket %d, aborting", irc->socket->fd);
 		return NULL;
 	}
 
 	IrcProxy *proxy = ALLOCATE_OBJECT(IrcProxy);
+	proxy->id = id;
 	proxy->irc = irc;
-	proxy->server = server;
 	proxy->password = strdup(password);
 	proxy->clients = g_queue_new();
 	proxy->relay_exceptions = g_queue_new();
 
-	g_hash_table_insert(proxies, server, proxy);
+	// Create an integer container for the ID as hash table key
+	int *idContainer = ALLOCATE_OBJECT(int);
+	*idContainer = id;
+
+	g_hash_table_insert(proxies, idContainer, proxy);
 	g_hash_table_insert(proxyConnections, irc, proxy);
 
 	return proxy;
@@ -243,14 +311,14 @@ API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc)
 }
 
 /**
- * Retrieves an IRC proxy by its remote IRC connection socket
+ * Retrieves an IRC proxy by its global unique ID
  *
- * @param socket		the socket to lookup
- * @result			the IRC proxy or NULL if no proxy is enabled for this socket
+ * @param id		the ID to look up
+ * @result			the IRC proxy or NULL if not found
  */
-API IrcProxy *getIrcProxyBySocket(Socket *socket)
+API IrcProxy *getIrcProxyById(int id)
 {
-	return g_hash_table_lookup(proxies, socket);
+	return g_hash_table_lookup(proxies, &id);
 }
 
 /**
@@ -261,7 +329,7 @@ API IrcProxy *getIrcProxyBySocket(Socket *socket)
  */
 API void freeIrcProxy(IrcProxy *proxy)
 {
-	g_hash_table_remove(proxies, proxy->server);
+	g_hash_table_remove(proxies, &proxy->id);
 	g_hash_table_remove(proxyConnections, proxy->irc);
 
 	// Free relay exceptions
@@ -271,7 +339,6 @@ API void freeIrcProxy(IrcProxy *proxy)
 
 	g_queue_free(proxy->relay_exceptions); // free the exceptions list
 
-	$(bool, socket, freeSocket)(proxy->server);
 	g_queue_foreach(proxy->clients, &freeIrcProxyClient, "IRC proxy server going down");
 	g_queue_free(proxy->clients);
 	free(proxy->password);

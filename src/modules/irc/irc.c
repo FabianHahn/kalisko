@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -385,6 +385,17 @@ API void authenticateIrcConnection(IrcConnection *irc)
 	if(irc->password != NULL) {
 		ircSend(irc, "PASS %s", irc->password);
 	}
+}
+
+/**
+ * Retrieves an IRC connection by its socket
+ *
+ * @param socket		the socket to look up
+ * @result				the IRC connection, or NULL if none was found for this socket
+ */
+API IrcConnection *getIrcConnectionBySocket(Socket *socket)
+{
+	return g_hash_table_lookup(connections, socket);
 }
 
 /**

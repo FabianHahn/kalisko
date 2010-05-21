@@ -31,9 +31,9 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 4);
-MODULE_BCVERSION(0, 1, 4);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 1, 13));
+MODULE_VERSION(0, 1, 5);
+MODULE_BCVERSION(0, 1, 5);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 2, 0));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);
@@ -134,15 +134,12 @@ TEST_CASE(plugin_reuse)
 static IrcProxy *createProxyStub()
 {
 	IrcProxy *proxy = ALLOCATE_OBJECT(IrcProxy);
-	proxy->server = ALLOCATE_OBJECT(Socket);
-	proxy->server->port = "testport";
 
 	return proxy;
 }
 
 static void freeProxyStub(IrcProxy *proxy)
 {
-	free(proxy->server);
 	free(proxy);
 }
 

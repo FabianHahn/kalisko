@@ -364,7 +364,6 @@ static Store *xcall_evaluateLua(Store *xcall)
  * XCall result:
  * 	* int success			nonzero if successful
  *  * string lua_error		error message from lua if unsuccessful
- *  * string lua_ret		return value from lua if successful and available
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -388,12 +387,6 @@ static Store *xcall_evaluateLuaScript(Store *xcall)
 			char *ret = $(char *, lang_lua, popLuaString)();
 			$(bool, store, setStorePath)(retstore, "lua_error", $(Store *, store, createStoreStringValue)(ret));
 			free(ret);
-		} else {
-			char *ret = $(char *, lang_lua, popLuaString)();
-			if(ret != NULL) {
-				$(bool, store, setStorePath)(retstore, "lua_ret", $(Store *, store, createStoreStringValue)(ret));
-				free(ret);
-			}
 		}
 	}
 

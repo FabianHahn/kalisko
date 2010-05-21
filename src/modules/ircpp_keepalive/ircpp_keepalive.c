@@ -37,9 +37,9 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
@@ -150,7 +150,7 @@ HOOK_LISTENER(remote_disconnect)
 	IrcProxy *proxy;
 	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
 		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
-			LOG_INFO("Remote IRC connection for IRC proxy %d disconnected", proxy->id);
+			LOG_INFO("Remote IRC connection for IRC proxy '%s' disconnected", proxy->name);
 			reconnectRemoteConnection(proxy);
 		}
 	}
@@ -164,7 +164,7 @@ TIMER_CALLBACK(challenge)
 	if(proxy->irc->socket->connected) { // Only schedule a challenge if the socket is connected
 		// Schedule an expiration time for the challenge
 		if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveTimeout, challenge_timeout, proxy)) == NULL) {
-			LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy %d", proxy->id);
+			LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
 			return;
 		}
 
@@ -181,7 +181,7 @@ TIMER_CALLBACK(challenge)
 
 	// Schedule a new challenge
 	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
-		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy %d", proxy->id);
+		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
 		return;
 	}
 
@@ -193,7 +193,7 @@ TIMER_CALLBACK(challenge_timeout)
 {
 	IrcProxy *proxy = custom_data;
 
-	LOG_ERROR("Keepalive challenge timed out for remote IRC connection %d of IRC proxy %d", proxy->irc->socket->fd, proxy->id);
+	LOG_ERROR("Keepalive challenge timed out for remote IRC connection %d of IRC proxy '%s'", proxy->irc->socket->fd, proxy->name);
 
 	// Disconnect socket so the disconnect hook will reconnect it
 	$(bool, socket, disconnectSocket)(proxy->irc->socket);
@@ -209,10 +209,10 @@ TIMER_CALLBACK(challenge_timeout)
  */
 static void reconnectRemoteConnection(IrcProxy *proxy)
 {
-	LOG_DEBUG("Trying to reconnect remote IRC connection for IRC proxy %d", proxy->id);
+	LOG_DEBUG("Trying to reconnect remote IRC connection for IRC proxy '%s'", proxy->name);
 	// Now try to reconnect
 	if($(bool, socket, connectSocket)(proxy->irc->socket) && $(bool, socket, enableSocketPolling)(proxy->irc->socket)) { // reconnect successful
-		LOG_INFO("Remote IRC connection for IRC proxy %d reconnected successfully", proxy->id);
+		LOG_INFO("Remote IRC connection for IRC proxy '%s' reconnected successfully", proxy->name);
 
 		// Reauthenticate the connection
 		$(void, irc, authenticateIrcConnection)(proxy->irc);
@@ -226,7 +226,7 @@ static void reconnectRemoteConnection(IrcProxy *proxy)
 
 				// Schedule a new challenge timre
 				if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
-					LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy %d", proxy->id);
+					LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
 					return;
 				}
 
@@ -248,7 +248,7 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 	GTimeVal *timeout;
 
 	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
-		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy %d", proxy->id);
+		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
 		return false;
 	}
 

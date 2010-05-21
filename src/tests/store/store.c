@@ -40,6 +40,7 @@ TEST_CASE(path_modify);
 TEST_CASE(path_create);
 TEST_CASE(path_split);
 TEST_CASE(merge);
+TEST_CASE(parse_path);
 
 static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = 42\nfloat  = 3.14159265";
 static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -58,8 +59,8 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 3, 2);
-MODULE_BCVERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 3);
+MODULE_BCVERSION(0, 3, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_SUITE_BEGIN(store)
@@ -69,6 +70,7 @@ TEST_SUITE_BEGIN(store)
 	TEST_CASE_ADD(path_create);
 	TEST_CASE_ADD(path_split);
 	TEST_CASE_ADD(merge);
+	TEST_CASE_ADD(parse_path);
 TEST_SUITE_END
 
 TEST_CASE(lexer)
@@ -226,6 +228,21 @@ TEST_CASE(merge)
 	g_string_free(solutionstr, true);
 	$(void, store, freeStore)(store);
 	$(void, store, freeStore)(solution);
+
+	TEST_PASS;
+}
+
+/**
+ * Test case for ticket #1418: Store ignores trailing slashes in implicit string values
+ */
+TEST_CASE(parse_path)
+{
+	Store *s;
+	TEST_ASSERT((s = $(Store *, store, parseStoreString)("path = /home/user/file.cfg")) != NULL);
+	Store *path;
+	TEST_ASSERT((path = $(Store *, store, getStorePath)(s, "path")) != NULL);
+	TEST_ASSERT(path->type == STORE_STRING);
+	TEST_ASSERT(g_strcmp0(path->content.string, "/home/user/file.cfg") == 0);
 
 	TEST_PASS;
 }

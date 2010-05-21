@@ -33,9 +33,9 @@
 MODULE_NAME("ircpp_log");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows log messages to be relayed to IRC proxy clients");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
 HOOK_LISTENER(log);
 static bool initPlugin(IrcProxy *proxy, char *name);

@@ -41,15 +41,15 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 2, 5);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
 static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static void checkForBufferLine(IrcProxyClient *client);
 
 /**
- * A hash table associating unique integer IDs with their corresponding IrcProxy objects
+ * A hash table associating proxy names with their corresponding IrcProxy objects
  */
 static GHashTable *proxies;
 
@@ -76,7 +76,7 @@ HOOK_LISTENER(client_line);
 
 MODULE_INIT
 {
-	proxies = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
+	proxies = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	proxyConnections = g_hash_table_new(NULL, NULL);
 	clients = g_hash_table_new(NULL, NULL);
 
@@ -269,15 +269,15 @@ HOOK_LISTENER(client_line)
 /**
  * Creates an IRC proxy relaying data for an IRC connection
  *
- * @param id			the global unique id to use for this IRC proxy
+ * @param name			the global unique name to use for this IRC proxy
  * @param irc			the IRC connection to relay (should already be connected)
  * @param password		password to use for client connections
  * @result				the created IRC proxy, or NULL on failure
  */
-API IrcProxy *createIrcProxy(int id, IrcConnection *irc, char *password)
+API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 {
-	if(g_hash_table_lookup(proxies, &id) != NULL) { // IRC proxy with that ID already exists
-		LOG_ERROR("Trying to create IRC proxy with already taken ID %d, aborting", id);
+	if(g_hash_table_lookup(proxies, name) != NULL) { // IRC proxy with that ID already exists
+		LOG_ERROR("Trying to create IRC proxy with already taken name '%s', aborting", name);
 		return NULL;
 	}
 
@@ -287,17 +287,13 @@ API IrcProxy *createIrcProxy(int id, IrcConnection *irc, char *password)
 	}
 
 	IrcProxy *proxy = ALLOCATE_OBJECT(IrcProxy);
-	proxy->id = id;
+	proxy->name = strdup(name);
 	proxy->irc = irc;
 	proxy->password = strdup(password);
 	proxy->clients = g_queue_new();
 	proxy->relay_exceptions = g_queue_new();
 
-	// Create an integer container for the ID as hash table key
-	int *idContainer = ALLOCATE_OBJECT(int);
-	*idContainer = id;
-
-	g_hash_table_insert(proxies, idContainer, proxy);
+	g_hash_table_insert(proxies, strdup(name), proxy); // clone name again to make it independent of the IrcProxy object
 	g_hash_table_insert(proxyConnections, irc, proxy);
 
 	return proxy;
@@ -315,14 +311,14 @@ API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc)
 }
 
 /**
- * Retrieves an IRC proxy by its global unique ID
+ * Retrieves an IRC proxy by its global unique name
  *
- * @param id		the ID to look up
+ * @param name		the name to look up
  * @result			the IRC proxy or NULL if not found
  */
-API IrcProxy *getIrcProxyById(int id)
+API IrcProxy *getIrcProxyByName(char *name)
 {
-	return g_hash_table_lookup(proxies, &id);
+	return g_hash_table_lookup(proxies, name);
 }
 
 /**
@@ -333,7 +329,7 @@ API IrcProxy *getIrcProxyById(int id)
  */
 API void freeIrcProxy(IrcProxy *proxy)
 {
-	g_hash_table_remove(proxies, &proxy->id);
+	g_hash_table_remove(proxies, proxy->name);
 	g_hash_table_remove(proxyConnections, proxy->irc);
 
 	// Free relay exceptions
@@ -345,6 +341,7 @@ API void freeIrcProxy(IrcProxy *proxy)
 
 	g_queue_foreach(proxy->clients, &freeIrcProxyClient, "IRC proxy server going down");
 	g_queue_free(proxy->clients);
+	free(proxy->name);
 	free(proxy->password);
 	free(proxy);
 }

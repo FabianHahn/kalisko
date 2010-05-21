@@ -30,8 +30,8 @@
  * Struct to represent an IRC proxy
  */
 typedef struct {
-		/** the global unique proxy ID of this proxy */
-		int id;
+		/** the global unique proxy name of this proxy */
+		char *name;
 		/** the IRC connection that should be relayed to clients */
 		IrcConnection *irc;
 		/** the proxy password for connecting clients */
@@ -56,9 +56,9 @@ typedef struct {
 		GString *ibuffer;
 } IrcProxyClient;
 
-API IrcProxy *createIrcProxy(int id, IrcConnection *irc, char *password);
+API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password);
 API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc);
-API IrcProxy *getIrcProxyById(int id);
+API IrcProxy *getIrcProxyByName(char *name);
 API void freeIrcProxy(IrcProxy *proxy);
 API void addIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception);

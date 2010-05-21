@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
 
 			if(!requestModule(modname)) {
+				test = 0;
 				reportTestResult(modname, "load", false, "Failed to load module");
 			}
 

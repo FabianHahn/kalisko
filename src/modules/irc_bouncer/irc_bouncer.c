@@ -37,7 +37,7 @@
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a multi-user multi-connection IRC bouncer service that can be configured via the standard config");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 2, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -103,16 +103,18 @@ HOOK_LISTENER(bouncer_reattach)
 	IrcProxyClient *client = HOOK_ARG(IrcProxyClient *);
 	IrcConnection *irc = client->proxy->irc;
 
-	GList *channels = $(GList *, irc_channel, getTrackedChannels)(irc);
+	if(g_queue_find(proxies, client->proxy) != NULL) { // this proxy is actually a bouncer proxy
+		GList *channels = $(GList *, irc_channel, getTrackedChannels)(irc);
 
-	for(GList *iter = channels; iter != NULL; iter = iter->next) {
-		IrcChannel *channel = iter->data;
-		$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s!%s@%s JOIN %s", irc->nick, irc->user, irc->socket->host, channel->name);
-		$(bool, irc, ircSend)(irc, "NAMES %s", channel->name);
-		$(bool, irc, ircSend)(irc, "TOPIC %s", channel->name);
+		for(GList *iter = channels; iter != NULL; iter = iter->next) {
+			IrcChannel *channel = iter->data;
+			$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s!%s@%s JOIN %s", irc->nick, irc->user, irc->socket->host, channel->name);
+			$(bool, irc, ircSend)(irc, "NAMES %s", channel->name);
+			$(bool, irc, ircSend)(irc, "TOPIC %s", channel->name);
+		}
+
+		g_list_free(channels);
 	}
-
-	g_list_free(channels);
 }
 
 /**

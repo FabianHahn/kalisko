@@ -184,8 +184,13 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 			if(c == '/') {
 				commenting++;
 				continue;
-			} else {
+			} else if(commenting == 1) { // #1418: We thought we were beginning to read a comment, but it's actually the beginning of an undelimited string
+				assemble[i++] = '/'; // insert a compensating slash
 				commenting = 0;
+				reading_string = true;
+				string_is_delimited = false;
+				parser->unread(parser, c); // push back to stream
+				continue;
 			}
 
 			if(IS_DELIMITER(c)) { // whitespace

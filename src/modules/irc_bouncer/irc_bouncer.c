@@ -37,7 +37,7 @@
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a multi-user multi-connection IRC bouncer service that can be configured via the standard config");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 2, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -67,7 +67,9 @@ MODULE_INIT
 
 		IrcProxy *proxy;
 		if((proxy = createIrcProxyByStore(i, bnc)) == NULL) { // creating bouncer failed
-			LOG_WARNING("Failed to create IRC proxy for bouncer configuration %d, skipping", i);
+			LOG_WARNING("Failed to create IRC proxy for IRC bouncer configuration %d, skipping", i);
+		} else {
+			LOG_INFO("Successfully created an IRC proxy for IRC bouncer configuration %d", i);
 		}
 
 		g_queue_push_tail(proxies, proxy); // push the proxy to the end of the queue

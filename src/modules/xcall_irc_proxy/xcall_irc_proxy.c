@@ -38,13 +38,14 @@
 
 static Store *xcall_proxyClientIrcSend(Store *xcall);
 static Store *xcall_getIrcProxyClients(Store *xcall);
+static Store *xcall_getIrcProxies(Store *xcall);
 
 MODULE_NAME("xcall_irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for irc_proxy");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 4), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1));
 
 MODULE_INIT
 {
@@ -56,6 +57,10 @@ MODULE_INIT
 		return false;
 	}
 
+	if(!$(bool, xcall, addXCallFunction)("getIrcProxies", &xcall_getIrcProxies)) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -63,6 +68,7 @@ MODULE_FINALIZE
 {
 	$(bool, xcall, delXCallFunction)("proxyClientIrcSend");
 	$(bool, xcall, delXCallFunction)("getIrcProxyClients");
+	$(bool, xcall, delXCallFunction)("getIrcProxies");
 }
 
 /**
@@ -147,6 +153,35 @@ static Store *xcall_getIrcProxyClients(Store *xcall)
 	}
 
 	$(bool, store, setStorePath)(ret, "clients", $(Store *, store, createStoreListValue)(clients));
+
+	return ret;
+}
+
+/**
+ * XCallFunction retrieve all IRC proxies
+ * XCall result:
+ * 	* list proxies		a string list of all available IRC proxies
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_getIrcProxies(Store *xcall)
+{
+	Store *ret = $(Store *, store, createStore)();
+
+
+	GList *proxyList = $(GList *, irc_proxy, getIrcProxies)();
+	GQueue *proxies = g_queue_new();
+
+	// Loop over all IRC proxies
+	for(GList *iter = proxyList; iter != NULL; iter = iter->next) {
+		IrcProxy *proxy = iter->data;
+		g_queue_push_tail(proxies, $(Store *, store, createStoreStringValue)(proxy->name));
+	}
+
+	$(bool, store, setStorePath)(ret, "proxies", $(Store *, store, createStoreListValue)(proxies));
+
+	g_list_free(proxyList);
 
 	return ret;
 }

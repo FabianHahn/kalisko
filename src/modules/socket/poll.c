@@ -31,12 +31,16 @@
 #include "socket.h"
 #include "poll.h"
 
-static gboolean pollSocket(void *fd_p, void *socket_p, void *data);
+static bool pollSocket(Socket *socket, int *fd_p);
 
 static GHashTable *poll_table;
 static char poll_buffer[SOCKET_POLL_BUFSIZE];
 static int pollInterval;
 static GTimeVal *lastScheduledPollTime;
+/**
+ * True if we're currently polling
+ */
+static bool polling;
 
 TIMER_CALLBACK(poll);
 
@@ -57,6 +61,8 @@ API void initPoll(int interval)
 	poll_table = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
 
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
+
+	polling = false;
 }
 
 /**
@@ -100,15 +106,36 @@ API bool enableSocketPolling(Socket *socket)
  */
 API bool disableSocketPolling(Socket *socket)
 {
-	return g_hash_table_remove(poll_table, &socket->fd) == TRUE;
+	return g_hash_table_remove(poll_table, &socket->fd) == true;
 }
 
 /**
- * Poll all sockets signed up for polling
+ * Poll all sockets signed up for polling if not currently polling already
  */
 API void pollSockets()
 {
-	g_hash_table_foreach_remove(poll_table, &pollSocket, NULL);
+	if(!polling) {
+		polling = true; // set polling flag to lock our poll table
+		GList *sockets = g_hash_table_get_values(poll_table); // get a static list of sockets so we may modify the hash table while polling
+		for(GList *iter = sockets; iter != NULL; iter = iter->next) {
+			Socket *poll = iter->data;
+			int fd; // storage for the file descriptor that won't be available anymore in case the socket gets freed before we remove it
+			if(pollSocket(poll, &fd)) { // poll the socket
+				// The socket should no longer be polled
+				g_hash_table_remove(poll_table, &fd); // remove it from the polling table
+			}
+		}
+		g_list_free(sockets); // remove our temporary iteration list
+		polling = false; // release pseudo lock on poll table
+	}
+}
+
+/**
+ * Checks whether sockets are currently being polled
+ */
+API bool isSocketsPolling()
+{
+	return polling;
 }
 
 /**
@@ -122,22 +149,23 @@ TIMER_CALLBACK(poll)
 }
 
 /**
- * A GHRFunc used to poll a socket
- * @param fd_p		a pointer to the socket's file descriptor
- * @param socket_p	the socket
- * @param data		unused
+ * Polls a socket and notifies the caller of whether it should be removed from the polling table afterwards
+ *
+ * @param socket	the socket to poll
+ * @param fd_p		a pointer to an integer field to which the file descriptor of the socket should be written in case the socket should be removed from the polling table and could already be freed at that time
+ * @result			true if the socket should be removed from the polling table after polling
  */
-static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
+static bool pollSocket(Socket *socket, int *fd_p)
 {
-	int ret;
-	Socket *socket = socket_p;
+	*fd_p = socket->fd; // backup file descriptor
 
 	if(!socket->connected) { // Socket is disconnected
 		HOOK_TRIGGER(socket_disconnect, socket);
-		return TRUE;
+		return true;
 	}
 
 	if(!socket->server) {
+		int ret;
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected
 				HOOK_TRIGGER(socket_disconnect, socket);
@@ -145,7 +173,7 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 				HOOK_TRIGGER(socket_error, socket);
 			}
 
-			return TRUE;
+			return true;
 		} else if(ret > 0) { // we actually read something
 			HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
 		}
@@ -159,5 +187,5 @@ static gboolean pollSocket(void *fd_p, void *socket_p, void *data)
 		}
 	}
 
-	return FALSE;
+	return false;
 }

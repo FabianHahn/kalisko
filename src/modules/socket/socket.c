@@ -57,7 +57,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 4, 8);
+MODULE_VERSION(0, 5, 0);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -343,9 +343,13 @@ API bool disconnectSocket(Socket *s)
  */
 API void freeSocket(Socket *s)
 {
+	// disconnect the socket first if it's still connected
 	if(s->connected) {
 		disconnectSocket(s);
 	}
+
+	// Disable socket polling for this socket. In usual cases, this is not necessary and is done automatically by the polling engine, but do this just to be sure no orphaned sockets remain in the polling table
+	disableSocketPolling(s);
 
 	if(s->host) {
 		free(s->host);

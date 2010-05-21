@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -223,7 +223,7 @@ HOOK_LISTENER(client_line)
 
 				if((proxy = g_hash_table_lookup(proxies, name)) != NULL) { // it's a valid ID
 					if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
-						LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy %d", client->socket->fd, id);
+						LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy '%s'", client->socket->fd, name);
 						client->authenticated = true;
 
 						// associate client and proxy
@@ -234,10 +234,10 @@ HOOK_LISTENER(client_line)
 						proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
 						HOOK_TRIGGER(irc_proxy_client_authenticated, client);
 					} else {
-						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%d%c", (char) 2, id, (char) 2);
+						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
 					}
 				} else {
-					proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Invalid IRC proxy ID %c%d%c", (char) 2, id, (char) 2);
+					proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Invalid IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
 				}
 			}
 

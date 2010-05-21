@@ -34,7 +34,7 @@
 MODULE_NAME("irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Parses and creates IRC messages");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
@@ -89,13 +89,13 @@ API IrcMessage *parseIrcMessage(char *message)
 	ircMessage->command = g_strndup(commandPart, commandEnd - commandPart);
 
 	// extracting the params
-	char *paramsEnd = strchr(commandEnd, ':');
+	char *paramsEnd = strstr(commandEnd, " :");
 
 	char *paramsText = NULL;
 	if(paramsEnd == NULL) {
 		paramsText = g_strdup(commandEnd);
 	} else {
-		int paramsTextLength = paramsEnd - commandEnd - 1; // Remove trailing colon
+		int paramsTextLength = paramsEnd - commandEnd;
 
 		if(paramsTextLength > 0) { // It is possible that the IRC message does not have a parameter (like PING)
 			paramsText = g_strndup(commandEnd, paramsTextLength);
@@ -119,7 +119,7 @@ API IrcMessage *parseIrcMessage(char *message)
 	if(paramsEnd) {
 		char *trailingPart = g_strdup(paramsEnd);
 		g_strchomp(trailingPart);
-		ircMessage->trailing = g_strdup(trailingPart + 1); // Once again, remove trailing colon
+		ircMessage->trailing = g_strdup(trailingPart + 2); // Remove whitespace & trailing colon
 
 		free(trailingPart);
 	}

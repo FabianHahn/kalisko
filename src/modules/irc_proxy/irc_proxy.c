@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -211,7 +211,7 @@ HOOK_LISTENER(client_line)
 
 	if(!client->authenticated) { // not yet authenticated, wait for password
 		if(g_strcmp0(message->command, "PASS") == 0 && message->params_count > 0) {
-			char **parts = g_strsplit(message->params[0], ":", 0);
+			char **parts = g_strsplit(message->params[0], "#", 0);
 			int count = 0;
 			while(parts[count] != NULL) { // count parts
 				count++;

@@ -59,6 +59,7 @@ typedef struct {
 API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password);
 API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc);
 API IrcProxy *getIrcProxyByName(char *name);
+API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket);
 API void freeIrcProxy(IrcProxy *proxy);
 API void addIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception);

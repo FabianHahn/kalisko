@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -218,10 +218,10 @@ HOOK_LISTENER(client_line)
 			}
 
 			if(count >= 2) { // there are at least two parts
-				int id = atoi(parts[0]); // extract proxy ID
+				char *name = parts[0];
 				IrcProxy *proxy;
 
-				if((proxy = g_hash_table_lookup(proxies, &id)) != NULL) { // it's a valid ID
+				if((proxy = g_hash_table_lookup(proxies, name)) != NULL) { // it's a valid ID
 					if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
 						LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy %d", client->socket->fd, id);
 						client->authenticated = true;

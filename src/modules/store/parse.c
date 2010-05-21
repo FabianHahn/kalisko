@@ -75,7 +75,7 @@ API Store *parseStoreString(const char *string)
 	parser.store = NULL;
 
 	if(yyparse(&parser) != 0) {
-		LOG_ERROR("Parsing store string failed");
+		LOG_ERROR("Parsing store string failed: %s", string);
 		return NULL;
 	}
 

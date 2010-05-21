@@ -33,9 +33,9 @@
 MODULE_NAME("ircpp_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows proxy clients to load or unload other IRC proxy plugins");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 1, 13), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
 
 HOOK_LISTENER(client_line);
 static bool initPlugin(IrcProxy *proxy, char *name);

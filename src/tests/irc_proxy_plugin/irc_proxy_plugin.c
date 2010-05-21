@@ -31,9 +31,9 @@
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the irc_proxy_plugin module");
-MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 5);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 2, 0));
+MODULE_VERSION(0, 1, 6);
+MODULE_BCVERSION(0, 1, 6);
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 3));
 
 TEST_CASE(plugin_add);
 TEST_CASE(plugin_use);

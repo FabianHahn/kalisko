@@ -57,6 +57,7 @@ typedef struct {
 } IrcProxyClient;
 
 API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password);
+API GList *getIrcProxies();
 API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc);
 API IrcProxy *getIrcProxyByName(char *name);
 API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket);

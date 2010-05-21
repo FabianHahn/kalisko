@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -297,6 +297,16 @@ API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 	g_hash_table_insert(proxyConnections, irc, proxy);
 
 	return proxy;
+}
+
+/**
+ * Returns a list of all IRC proxies created
+ *
+ * @result		a list of all created IRC proxies, must not be modified but freed with g_list_free after use
+ */
+API GList *getIrcProxies()
+{
+	return g_hash_table_get_values(proxies);
 }
 
 /**

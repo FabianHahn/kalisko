@@ -37,7 +37,7 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 7);
+MODULE_VERSION(0, 3, 8);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -278,8 +278,8 @@ HOOK_LISTENER(xcall_log)
 	Store *error = $(Store *, store, getStorePath)(ret, "xcall/error");
 
 	if(error != NULL && error->type == STORE_STRING) { // XCall error
-		detachLogListener(listener); // detach the listener
 		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string);
+		detachLogListener(listener); // detach the listener
 	}
 
 	$(void, store, freeStore)(ret);

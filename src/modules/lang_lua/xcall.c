@@ -317,9 +317,11 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 /**
  * XCallFunction to evaluate Lua code
  * XCall parameters:
- *  * string eval	the lua code to evaluate
+ *  * string eval			the lua code to evaluate
  * XCall result:
- * 	* int success	nonzero if successful
+ * 	* int success			nonzero if successful
+ *  * string lua_error		error message from lua if unsuccessful
+ *  * string lua_ret		return value from lua if successful and available
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -338,6 +340,18 @@ static Store *xcall_evaluateLua(Store *xcall)
 		char *code = eval->content.string;
 		bool evaluated = evaluateLua(code);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
+
+		if(!evaluated) {
+			char *ret = $(char *, lang_lua, popLuaString)();
+			$(bool, store, setStorePath)(retstore, "lua_error", $(Store *, store, createStoreStringValue)(ret));
+			free(ret);
+		} else {
+			char *ret = $(char *, lang_lua, popLuaString)();
+			if(ret != NULL) {
+				$(bool, store, setStorePath)(retstore, "lua_ret", $(Store *, store, createStoreStringValue)(ret));
+				free(ret);
+			}
+		}
 	}
 
 	return retstore;
@@ -346,9 +360,11 @@ static Store *xcall_evaluateLua(Store *xcall)
 /**
  * XCallFunction to evaluate a Lua script
  * XCall parameters:
- *  * string file	the lua code to evaluate
+ *  * string file			the lua code to evaluate
  * XCall result:
- * 	* int success	nonzero if successful
+ * 	* int success			nonzero if successful
+ *  * string lua_error		error message from lua if unsuccessful
+ *  * string lua_ret		return value from lua if successful and available
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -367,6 +383,18 @@ static Store *xcall_evaluateLuaScript(Store *xcall)
 		char *filename = file->content.string;
 		bool evaluated = evaluateLuaScript(filename);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(evaluated));
+
+		if(!evaluated) {
+			char *ret = $(char *, lang_lua, popLuaString)();
+			$(bool, store, setStorePath)(retstore, "lua_error", $(Store *, store, createStoreStringValue)(ret));
+			free(ret);
+		} else {
+			char *ret = $(char *, lang_lua, popLuaString)();
+			if(ret != NULL) {
+				$(bool, store, setStorePath)(retstore, "lua_ret", $(Store *, store, createStoreStringValue)(ret));
+				free(ret);
+			}
+		}
 	}
 
 	return retstore;

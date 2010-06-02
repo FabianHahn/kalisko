@@ -21,24 +21,6 @@
 #ifndef STORE_WRITE_H
 #define STORE_WRITE_H
 
-/**
- * A store writer to write down a store from memory
- * Note: The first param has only type void * and not StoreDumpContext to get around C's single pass compilation restrictions*
- */
-typedef void (StoreWriter)(void *context_p, char *format, ...);
-
-/**
- * A helper struct that's used to dump stores
- */
-typedef struct {
-	/** the resource to dump to */
-	void *resource;
-	/** the store writer to use for dumping */
-	StoreWriter *writer;
-	/** the current indentation level */
-	int level;
-} StoreDumpContext;
-
 API void writeStoreFile(char *filename, Store *store);
 API GString *writeStoreGString(Store *store) G_GNUC_WARN_UNUSED_RESULT;
 

@@ -31,6 +31,26 @@
 #include "write.h"
 
 /**
+ * A store writer to write down a store from memory
+ * Note: The first param has only type void * and not StoreDumpContext to get around C's single pass compilation restrictions*
+ */
+typedef void (StoreWriter)(void *context_p, char *format, ...);
+
+/**
+ * A helper struct that's used to dump stores
+ */
+typedef struct {
+	/** the resource to dump to */
+	void *resource;
+	/** the store writer to use for dumping */
+	StoreWriter *writer;
+	/** the current indentation level */
+	int level;
+	/** true if the next leading newline should be skipped */
+	bool skip_newline;
+} StoreDumpContext;
+
+/**
  * Convenience macro to write to store dumps
  *
  * @param FORMAT		printf-like format string
@@ -154,15 +174,19 @@ static void dumpStore(Store *value, StoreDumpContext *context)
 				DUMP("{\n");
 			}
 
+			context->skip_newline = true;
 			context->level++;
 			g_hash_table_foreach(value->content.array, &dumpStoreNode, context);
 			context->level--;
-
-			for(int i = 0; i < context->level; i++) {
-				DUMP("\t");
-			}
+			context->skip_newline = false;
 
 			if(context->level >= 0) {
+				DUMP("\n");
+
+				for(int i = 0; i < context->level; i++) {
+					DUMP("\t");
+				}
+
 				DUMP("}");
 			}
 		break;
@@ -182,6 +206,12 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data)
 	Store *value = value_p;
 	StoreDumpContext *context = data;
 
+	if(context->skip_newline) {
+		context->skip_newline = false;
+	} else {
+		DUMP("\n");
+	}
+
 	for(int i = 0; i < context->level; i++) {
 		DUMP("\t");
 	}
@@ -193,6 +223,4 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data)
 	g_string_free(escaped, TRUE);
 
 	dumpStore(value, context);
-
-	DUMP("\n");
 }

@@ -33,12 +33,13 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 3, 0);
-MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 5, 1), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 3, 1);
+MODULE_BCVERSION(0, 3, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 5, 5), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 6, 3));
 
 TEST_CASE(lua2store);
 TEST_CASE(store2lua);
+TEST_CASE(store2lua_rootlist);
 TEST_CASE(store2lua_fail);
 TEST_CASE(xcall_invoke);
 TEST_CASE(xcall_define);
@@ -47,6 +48,7 @@ TEST_CASE(xcall_define_error);
 TEST_SUITE_BEGIN(lang_lua)
 	TEST_CASE_ADD(lua2store);
 	TEST_CASE_ADD(store2lua);
+	TEST_CASE_ADD(store2lua_rootlist);
 	TEST_CASE_ADD(store2lua_fail);
 	TEST_CASE_ADD(xcall_invoke);
 	TEST_CASE_ADD(xcall_define);
@@ -121,6 +123,25 @@ TEST_CASE(store2lua)
 	TEST_ASSERT((ret = $(Store *, store, getStorePath)(parsed, "nolist/answer")) != NULL);
 	TEST_ASSERT(ret->type == STORE_INTEGER);
 	TEST_ASSERT(ret->content.integer == 42);
+
+	$(void, store, freeStore)(parsed);
+
+	TEST_PASS;
+}
+
+TEST_CASE(store2lua_rootlist)
+{
+	TEST_ASSERT($(bool, lang_lua, evaluateLua)("return {{}}"));
+
+	Store *parsed;
+
+	TEST_ASSERT((parsed = $(Store *, lang_lua, popLuaStore)()) != NULL);
+	TEST_ASSERT(parsed->type == STORE_ARRAY);
+
+	Store *ret;
+	TEST_ASSERT((ret = $(Store *, store, getStorePath)(parsed, "1")) != NULL);
+	TEST_ASSERT(ret->type == STORE_LIST);
+	TEST_ASSERT(g_queue_get_length(ret->content.list) == 0);
 
 	$(void, store, freeStore)(parsed);
 

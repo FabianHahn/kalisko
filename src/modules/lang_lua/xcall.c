@@ -285,7 +285,7 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 	assert(refp != NULL);
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, *refp); // push lua xcall function to stack
-	parseLuaStore(state, xcall); // parse the store into lua format and push it onto stack
+	parseStoreToLua(state, xcall); // parse the store into lua format and push it onto stack
 
 	if(lua_pcall(state, 1, 1, 0) != 0) {
 		GString *err = g_string_new("");

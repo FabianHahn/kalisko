@@ -80,7 +80,7 @@ API Store *createStore();
 API void freeStore(void *store);
 API void *getStoreValueContent(Store *value);
 API GString *escapeStoreString(char *string);
-API Store *createStoreStringValue(char *string);
+API Store *createStoreStringValue(const char *string);
 API Store *createStoreIntegerValue(int integer);
 API Store *createStoreFloatNumberValue(double float_number);
 API Store *createStoreListValue(GQueue *list);

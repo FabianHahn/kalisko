@@ -32,7 +32,7 @@
 MODULE_NAME("store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The store module provides a recursive key-value data type that can be easily converted back and forth from a string and to its abstract memory representation");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 5, 3);
 MODULE_NODEPS;
 
@@ -139,7 +139,7 @@ API GString *escapeStoreString(char *string)
  * @param string		the content string
  * @result				the created node value, must be freed with freeStore or by the store system
  */
-API Store *createStoreStringValue(char *string)
+API Store *createStoreStringValue(const char *string)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
 	value->type = STORE_STRING;

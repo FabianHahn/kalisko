@@ -295,7 +295,7 @@ static int lua_delXCallFunction(lua_State *state)
 static Store *xcall_luaXCallFunction(Store *xcall)
 {
 	Store *function = $(Store *, store, getStorePath)(xcall, "xcall/function"); // retrieve function name
-	Store *retstore = $(Store *, store, createStore)();
+	Store *retstore;
 
 	assert(function != NULL && function->type == STORE_STRING);
 
@@ -312,6 +312,7 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 	parseStoreToLua(state, xcall); // parse the store into lua format and push it onto stack
 
 	if(lua_pcall(state, 1, 1, 0) != 0) {
+		retstore = $(Store *, store, createStore)();
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': %s", funcname, lua_tostring(state, -1));
 		LOG_ERROR("%s", err->str);
@@ -321,19 +322,32 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 		return retstore;
 	}
 
-	if(!lua_isstring(state, -1)) {
+	if(lua_isstring(state, -1)) { // return value is a store string
+		const char *ret = lua_tostring(state, -1); // Fetch return value from stack
+		retstore = $(Store *, store, parseStoreString)(ret);
+		lua_pop(state, 1);
+	} else if(lua_istable(state, -1)) { // return value is a store table
+		retstore = parseLuaToStore(state);
+		lua_pop(state, 1);
+
+		if(retstore == NULL) {
+			retstore = $(Store *, store, createStore)();
+			GString *err = g_string_new("");
+			g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is a table that could not be parsed into a store", funcname);
+			LOG_ERROR("%s", err->str);
+			$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+			$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
+			g_string_free(err, true);
+		}
+	} else {
+		retstore = $(Store *, store, createStore)();
 		GString *err = g_string_new("");
-		g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is no string", funcname);
+		g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is no valid store", funcname);
 		LOG_ERROR("%s", err->str);
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
-		return retstore;
 	}
-
-	const char *ret = lua_tostring(state, -1); // Fetch return value from stack
-	retstore = $(Store *, store, parseStoreString)(ret);
-	lua_pop(state, 1);
 
 	return retstore;
 }

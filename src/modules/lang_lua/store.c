@@ -33,6 +33,7 @@
 #include "lang_lua.h"
 #include "store.h"
 
+static int lua_dumpStore(lua_State *state);
 static int lua_parseStore(lua_State *state);
 static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p);
 
@@ -44,6 +45,8 @@ static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p);
  */
 API void luaInitStateStore(lua_State *state)
 {
+	lua_pushcfunction(state, &lua_dumpStore);
+	lua_setglobal(state, "dumpStore");
 	lua_pushcfunction(state, &lua_parseStore);
 	lua_setglobal(state, "parseStore");
 }
@@ -193,6 +196,35 @@ API Store *parseLuaToStore(lua_State *state)
 	} else { // We constructed an array
 		return $(Store *, store, createStoreArrayValue)(hashtable);
 	}
+}
+
+/**
+ * Lua C function to dump a Lua store table into a Lua string
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
+static int lua_dumpStore(lua_State *state)
+{
+	if(!lua_istable(state, 1)) { // The passed parameter is no table
+		lua_pushnil(state);
+		return 1;
+	}
+
+	lua_pushvalue(state, 1); // Push the table parameter on top of the stack
+	Store *store = parseLuaToStore(state); // parse the store
+	lua_pop(state, 1); // pop copied value from stack
+
+	if(store == NULL) { // parse failed
+		lua_pushnil(state);
+		return 1;
+	}
+
+	GString *str = $(Store *, store, writeStoreGString)(store); // write store to string
+	lua_pushstring(state, str->str); // push return value to stack
+	g_string_free(str, true); // free the temp string
+
+	return 1;
 }
 
 /**

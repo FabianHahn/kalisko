@@ -54,7 +54,7 @@ API void luaInitStateStore(lua_State *state)
  * @param state		the state in which the store should be parsed into a table
  * @param store		the store to parse
  */
-API void parseLuaStore(lua_State *state, Store *store)
+API void parseStoreToLua(lua_State *state, Store *store)
 {
 	switch(store->type) {
 		case STORE_ARRAY:
@@ -66,7 +66,7 @@ API void parseLuaStore(lua_State *state, Store *store)
 			int i = 1;
 			for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next) {
 				lua_pushinteger(state, i++); // create key for Lua table entry
-				parseLuaStore(state, iter->data); // create value for Lua table entry
+				parseStoreToLua(state, iter->data); // create value for Lua table entry
 				lua_settable(state, -3); // add table entry
 			}
 		break;
@@ -79,6 +79,119 @@ API void parseLuaStore(lua_State *state, Store *store)
 		case STORE_FLOAT_NUMBER:
 			lua_pushnumber(state, store->content.float_number);
 		break;
+	}
+}
+
+/**
+ * Parses a Lua table on top of the Lua stack into a store
+ *
+ * @param state		the state in which the Lua table should be parsed into a store
+ * @result			the parsed store which is either a list or an array, or NULL on failure
+ */
+API Store *parseLuaToStore(lua_State *state)
+{
+	if(!lua_istable(state, -1)) {
+		LOG_ERROR("Tried to parse Lua value to store which is not a table, aborting");
+		return NULL;
+	}
+
+	GQueue *queue = g_queue_new();
+	GHashTable *hashtable = NULL;
+
+	// Initialize iterator
+	lua_pushnil(state);
+	int i = 1;
+
+	while(lua_next(state, -2) != 0) { // Push next key-value pair to stack
+		if(hashtable == NULL) { // we assume we're still constructing a list
+			int index = lua_tointeger(state, -2); // retrieve the integer key
+			int fltindex = lua_tonumber(state, -2); // retrieve the float key
+
+			if(lua_isnumber(state, -2) && index == fltindex && index == i++) { // this is a followup index in a list
+				if(lua_isnumber(state, -1)) { // the value is a number
+					int intval = lua_tointeger(state, -1);
+					float fltval = lua_tonumber(state, -1);
+
+					if(intval == fltval) { // assume integer
+						g_queue_push_tail(queue, $(Store *, store, createStoreIntegerValue)(intval));
+					} else { // float number
+						g_queue_push_tail(queue, $(Store *, store, createStoreFloatNumberValue)(fltval));
+					}
+				} else if(lua_isstring(state, -1)) { // the value is a string
+					const char *str = lua_tostring(state, -1);
+					g_queue_push_tail(queue, $(Store *, store, createStoreStringValue)(str));
+				} else { // the value is either a list or an array
+					Store *value = parseLuaToStore(state);
+
+					if(value == NULL) { // value conversion failed, free all we've done so far
+						for(GList *iter = queue->head; iter != NULL; iter = iter->next) {
+							$(void, store, freeStore)(iter->data);
+						}
+						g_queue_free(queue);
+						return NULL;
+					}
+
+					g_queue_push_tail(queue, value);
+				}
+			} else { // this is not a list, it's an array!
+				hashtable = $(Store *, store, createStoreNodes)(); // create hash table
+				i = 1;
+				for(GList *iter = queue->head; iter != NULL; iter = iter->next, i++) {
+					// Transform integer index into string
+					GString *intstr = g_string_new("");
+					g_string_append_printf(intstr, "%d", i);
+
+					// Add value to store array's hash table
+					g_hash_table_insert(hashtable, strdup(intstr->str), iter->data);
+
+					g_string_free(intstr, true);
+				}
+
+				g_queue_free(queue);
+			}
+		}
+
+		if(hashtable != NULL) { // it's not a list, it's an array
+			if(!lua_isstring(state, -2)) { // check if key can be converted to string
+				LOG_ERROR("Lua table key is not a string, aborting conversion to store");
+				g_hash_table_destroy(hashtable);
+				return NULL;
+			} else {
+				const char *key = lua_tostring(state, -2);
+
+				if(lua_isnumber(state, -1)) { // the value is a number
+					int intval = lua_tointeger(state, -1);
+					float fltval = lua_tonumber(state, -1);
+
+					if(intval == fltval) { // assume integer
+						g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreIntegerValue)(intval));
+					} else { // float number
+						g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreFloatNumberValue)(fltval));
+					}
+				} else if(lua_isstring(state, -1)) { // the value is a string
+					const char *str = lua_tostring(state, -1);
+					g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreStringValue)(str));
+				} else { // the value is either a list or an array
+					Store *value = parseLuaToStore(state);
+
+					if(value == NULL) { // value conversion failed, free all we've done so far
+						g_hash_table_destroy(hashtable);
+						return NULL;
+					}
+
+					g_hash_table_insert(hashtable, strdup(key), value);
+				}
+			}
+		}
+
+		// Prepare for next iteration
+		lua_pop(state, 1); // pop value from stack, keep key
+	}
+
+	if(hashtable == NULL) { // We constructed a list
+		return $(Store *, store, createStoreListValue)(queue);
+	} else { // We constructed an array
+		return $(Store *, store, createStoreArrayValue)(hashtable);
 	}
 }
 
@@ -97,7 +210,7 @@ static int lua_parseStore(lua_State *state)
 	if(store == NULL) {
 		lua_newtable(state);
 	} else {
-		parseLuaStore(state, store);
+		parseStoreToLua(state, store);
 	}
 
 	return 1;
@@ -116,6 +229,6 @@ static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p)
 	Store *value = value_p;
 	lua_State *state = state_p;
 	lua_pushstring(state, key); // create key for Lua table entry
-	parseLuaStore(state, value); // create value for Lua table entry
+	parseStoreToLua(state, value); // create value for Lua table entry
 	lua_settable(state, -3); // add table entry
 }

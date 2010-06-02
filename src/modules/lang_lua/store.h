@@ -28,6 +28,7 @@
 #include "modules/store/store.h"
 
 API void luaInitStateStore(lua_State *state);
-API void parseLuaStore(lua_State *state, Store *store);
+API void parseStoreToLua(lua_State *state, Store *store);
+API Store *parseLuaToStore(lua_State *state);
 
 #endif

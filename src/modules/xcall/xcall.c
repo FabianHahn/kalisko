@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -114,15 +114,20 @@ API Store *invokeXCall(Store *xcall)
 		Store *func;
 
 		// First try to read function name directly
-		if((func = $(Store *, store, getStorePath)(xcall, "xcall")) == NULL || func->type != STORE_STRING) {
-			// Now try to read function name inside xcall meta array
-			if((func = $(Store *, store, getStorePath)(xcall, "xcall/function")) == NULL || func->type != STORE_STRING) {
-				GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-				LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
-				g_string_free(xcallstr, true);
-				$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
-				break;
-			}
+		if((func = $(Store *, store, getStorePath)(xcall, "xcall")) != NULL && func->type == STORE_STRING) { // it is set directly
+			Store *metafunction = $(Store *, store, createStoreStringValue)(func->content.string);
+			$(bool, store, deleteStorePath)(xcall, "xcall"); // remove old xcall value
+			$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStore)()); // create meta array
+			$(bool, store, setStorePath)(xcall, "xcall/function", metafunction); // copy metafunction into meta array
+		}
+
+		// Now try to read function name inside xcall meta array
+		if((func = $(Store *, store, getStorePath)(xcall, "xcall/function")) == NULL || func->type != STORE_STRING) {
+			GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
+			LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
+			g_string_free(xcallstr, true);
+			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
+			break;
 		}
 
 		char *funcname = func->content.string;

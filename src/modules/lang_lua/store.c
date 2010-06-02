@@ -33,6 +33,7 @@
 #include "lang_lua.h"
 #include "store.h"
 
+static Store *parseLuaToStoreRec(lua_State *state, bool allow_list);
 static int lua_dumpStore(lua_State *state);
 static int lua_parseStore(lua_State *state);
 static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p);
@@ -93,13 +94,33 @@ API void parseStoreToLua(lua_State *state, Store *store)
  */
 API Store *parseLuaToStore(lua_State *state)
 {
+	return parseLuaToStoreRec(state, false);
+}
+
+/**
+ * Recursive helper function to parse a Lua table on top of the Lua stack into a store
+ *
+ * @param state		the state in which the Lua table should be parsed into a store
+ * @param bool		true if the table is allowed to be parsed as a list
+ * @result			the parsed store or NULL on failure
+ */
+static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
+{
 	if(!lua_istable(state, -1)) {
 		LOG_ERROR("Tried to parse Lua value to store which is not a table, aborting");
 		return NULL;
 	}
 
-	GQueue *queue = g_queue_new();
-	GHashTable *hashtable = NULL;
+	GQueue *queue;
+	GHashTable *hashtable;
+
+	if(allow_list) { // we are allowed to read lists
+		queue = g_queue_new();
+		hashtable = NULL;
+	} else { // only read arrays
+		queue = NULL;
+		hashtable = $(Store *, store, createStoreNodes)();
+	}
 
 	// Initialize iterator
 	lua_pushnil(state);
@@ -124,7 +145,7 @@ API Store *parseLuaToStore(lua_State *state)
 					const char *str = lua_tostring(state, -1);
 					g_queue_push_tail(queue, $(Store *, store, createStoreStringValue)(str));
 				} else { // the value is either a list or an array
-					Store *value = parseLuaToStore(state);
+					Store *value = parseLuaToStoreRec(state, true);
 
 					if(value == NULL) { // value conversion failed, free all we've done so far
 						for(GList *iter = queue->head; iter != NULL; iter = iter->next) {
@@ -175,7 +196,7 @@ API Store *parseLuaToStore(lua_State *state)
 					const char *str = lua_tostring(state, -1);
 					g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreStringValue)(str));
 				} else { // the value is either a list or an array
-					Store *value = parseLuaToStore(state);
+					Store *value = parseLuaToStoreRec(state, true);
 
 					if(value == NULL) { // value conversion failed, free all we've done so far
 						g_hash_table_destroy(hashtable);

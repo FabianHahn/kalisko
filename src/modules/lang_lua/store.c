@@ -142,8 +142,10 @@ static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 						g_queue_push_tail(queue, $(Store *, store, createStoreFloatNumberValue)(fltval));
 					}
 				} else if(lua_isstring(state, -1)) { // the value is a string
+					lua_pushvalue(state, -1); // Push value to stack to prevent actual Lua type to change
 					const char *str = lua_tostring(state, -1);
 					g_queue_push_tail(queue, $(Store *, store, createStoreStringValue)(str));
+					lua_pop(state, 1); // pop copied value from stack
 				} else { // the value is either a list or an array
 					Store *value = parseLuaToStoreRec(state, true);
 
@@ -181,29 +183,32 @@ static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 				g_hash_table_destroy(hashtable);
 				return NULL;
 			} else {
-				const char *key = lua_tostring(state, -2);
+				lua_pushvalue(state, -2); // Push key to stack to prevent actual Lua type to change
+				char *key = strdup(lua_tostring(state, -1)); // copy key string
+				lua_pop(state, 1); // pop copied key from stack
 
 				if(lua_isnumber(state, -1)) { // the value is a number
 					int intval = lua_tointeger(state, -1);
 					float fltval = lua_tonumber(state, -1);
 
 					if(intval == fltval) { // assume integer
-						g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreIntegerValue)(intval));
+						g_hash_table_insert(hashtable, key, $(Store *, store, createStoreIntegerValue)(intval));
 					} else { // float number
-						g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreFloatNumberValue)(fltval));
+						g_hash_table_insert(hashtable, key, $(Store *, store, createStoreFloatNumberValue)(fltval));
 					}
 				} else if(lua_isstring(state, -1)) { // the value is a string
 					const char *str = lua_tostring(state, -1);
-					g_hash_table_insert(hashtable, strdup(key), $(Store *, store, createStoreStringValue)(str));
+					g_hash_table_insert(hashtable, key, $(Store *, store, createStoreStringValue)(str));
 				} else { // the value is either a list or an array
 					Store *value = parseLuaToStoreRec(state, true);
 
 					if(value == NULL) { // value conversion failed, free all we've done so far
 						g_hash_table_destroy(hashtable);
+						free(key);
 						return NULL;
 					}
 
-					g_hash_table_insert(hashtable, strdup(key), value);
+					g_hash_table_insert(hashtable, key, value);
 				}
 			}
 		}

@@ -45,7 +45,13 @@ static Store *xcall_luaXCallFunction(Store *xcall);
 static Store *xcall_evaluateLua(Store *xcall);
 static Store *xcall_evaluateLuaScript(Store *xcall);
 
+/**
+ * Hash table that associates lua_State objects with their corresponding GHashTable functionRefs objects, which themselves associate string function names with their corresponding int reference
+ */
 static GHashTable *stateFunctions;
+/**
+ * Hash table that associates string function names with their corresponding lua_State object
+ */
 static GHashTable *functionState;
 
 /**
@@ -168,9 +174,27 @@ static bool unregisterLuaXCallFunction(void *key_p, void *value_p, void *data_p)
  */
 static int lua_invokeXCall(lua_State *state)
 {
-	const char *xcall = luaL_checkstring(state, 1);
+	Store *ret;
 
-	Store *ret = $(Store *, xcall, invokeXCallByString)(xcall);
+	if(lua_isstring(state, 1)) { // XCall invocation by string
+		const char *xcall = lua_tostring(state, 1);
+		ret = $(Store *, xcall, invokeXCallByString)(xcall);
+	} else if(lua_istable(state, 1)) { // XCall invocation by store
+		lua_pushvalue(state, 1);
+		Store *xcall = parseLuaToStore(state);
+		lua_pop(state, 1);
+
+		if(xcall == NULL) { // Failed to parse store
+			lua_pushnil(state);
+			return 1;
+		}
+
+		ret = $(Store *, xcall, invokeXCall)(xcall);
+	} else { // invalied XCall invocation
+		lua_pushnil(state);
+		return 1;
+	}
+
 	GString *retstr = $(GString *, store, writeStoreGString)(ret);
 	lua_pushstring(state, retstr->str);
 	g_string_free(retstr, true);

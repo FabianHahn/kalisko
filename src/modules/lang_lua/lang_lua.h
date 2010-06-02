@@ -22,9 +22,11 @@
 #define LANG_LUA_LANG_LUA_H
 
 #include <glib.h>
+#include "modules/store/store.h"
 
 API bool evaluateLua(char *command);
 API bool evaluateLuaScript(char *filename);
 API char *popLuaString();
+API Store *popLuaStore();
 
 #endif

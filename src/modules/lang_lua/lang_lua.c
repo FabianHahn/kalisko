@@ -26,6 +26,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "modules/xcall/xcall.h"
+#include "modules/store/store.h"
 #include "api.h"
 #include "lang_lua.h"
 #include "xcall.h"
@@ -34,7 +35,7 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -100,4 +101,23 @@ API char *popLuaString()
 	char *string = strdup(lua_tostring(state, -1));
 	lua_pop(state, 1);
 	return string;
+}
+
+/**
+ * Pops the last returned store from Lua's stack
+ *
+ * @result		the last store on the stack, must be freed by the caller, returns NULL if top stack element is no store
+ */
+API Store *popLuaStore()
+{
+	if(!lua_istable(state, -1)) {
+		return NULL;
+	}
+
+	Store *ret = parseLuaToStore(state);
+
+	// Remove the table from the lua state
+	lua_pop(state, 1);
+
+	return ret;
 }

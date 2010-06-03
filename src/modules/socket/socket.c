@@ -53,18 +53,13 @@
 #define IP_STR_LEN 16
 static bool setSocketNonBlocking(int fd);
 static GString *ip2str(unsigned int ip);
-static bool createSocketPair(int *fds);
 
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 3);
+MODULE_VERSION(0, 6, 4);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
-
-#if defined WIN32 || defined PROVIDE_SOCKET_PAIR
-static void *threadConnectSocket(void *socket_p);
-#endif
 
 static int connectionTimeout = 10; // set default connection timeout to 10 seconds
 
@@ -325,13 +320,91 @@ API bool connectSocket(Socket *s)
 		break;
 		case SOCKET_SHELL:
 #ifdef WIN32
-			LOG_ERROR("Shell socket connection not implemented yet");
-			return false;
+			fds[0] = -1;
+
+			   SECURITY_ATTRIBUTES saAttr;
+
+			// Set the bInheritHandle flag so pipe handles are inherited.
+
+			   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+			   saAttr.bInheritHandle = TRUE;
+			   saAttr.lpSecurityDescriptor = NULL;
+
+			// Create a pipe for the child process's STDOUT.
+
+			   HANDLE handles[4];
+
+			   if ( ! CreatePipe(&handles[0], &handles[1], &saAttr, 0) )
+			      LOG_ERROR(TEXT("StdoutRd CreatePipe"));
+
+			// Ensure the read handle to the pipe for STDOUT is not inherited.
+
+			   if ( ! SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0) )
+				   LOG_ERROR(TEXT("Stdout SetHandleInformation"));
+
+			// Create a pipe for the child process's STDIN.
+
+			   if (! CreatePipe(&handles[2], &handles[3], &saAttr, 0))
+				   LOG_ERROR(TEXT("Stdin CreatePipe"));
+
+			// Ensure the write handle to the pipe for STDIN is not inherited.
+
+			   if ( ! SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0) )
+				   LOG_ERROR(TEXT("Stdin SetHandleInformation"));
+
+			// Create the child process.
+
+			   TCHAR szCmdline[]=TEXT("ls -al");
+			   PROCESS_INFORMATION piProcInfo;
+			   STARTUPINFO siStartInfo;
+			   BOOL bSuccess = FALSE;
+
+			// Set up members of the PROCESS_INFORMATION structure.
+
+			   ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
+
+			// Set up members of the STARTUPINFO structure.
+			// This structure specifies the STDIN and STDOUT handles for redirection.
+
+			   ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+			   siStartInfo.cb = sizeof(STARTUPINFO);
+			   siStartInfo.hStdError = handles[1];
+			   siStartInfo.hStdOutput = handles[1];
+			   siStartInfo.hStdInput = handles[2];
+			   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+			// Create the child process.
+
+			   bSuccess = CreateProcess(NULL,
+			      szCmdline,     // command line
+			      NULL,          // process security attributes
+			      NULL,          // primary thread security attributes
+			      TRUE,          // handles are inherited
+			      0,             // creation flags
+			      NULL,          // use parent's environment
+			      NULL,          // use parent's current directory
+			      &siStartInfo,  // STARTUPINFO pointer
+			      &piProcInfo);  // receives PROCESS_INFORMATION
+
+			   // If an error occurs, exit the application.
+			   if ( ! bSuccess ) {
+				   LOG_ERROR(TEXT("CreateProcess")); } else
+			   {
+			      // Close handles to the child process and its primary thread.
+				  // Some applications might keep these handles to monitor the status
+				  // of the child process, for example.
+
+			      CloseHandle(piProcInfo.hProcess);
+			      CloseHandle(piProcInfo.hThread);
+			   }
+
+			   s->connected = true;
+			   s->fd = -1;
+
 #else
 			// Create socket pair
-			if(!createSocketPair(fds)) {
-				LOG_ERROR("Failed to create socket pair for shell socket, aborting");
-				freeSocket(s);
+			if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+				LOG_SYSTEM_ERROR("socketpair() failed for shell socket");
 				return false;
 			}
 
@@ -519,7 +592,13 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 			return 0; // The socket is non-blocking and we've got nothing back
 		}
 
+#ifdef WIN32
+		char *error = g_win32_error_message(GetLastError());
+		LOG_ERROR("Failed to read from socket %d: %s", s->fd, error);
+		free(error);
+#else
 		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
+#endif
 		disconnectSocket(s);
 		return -1;
 	}
@@ -621,77 +700,3 @@ static GString *ip2str(unsigned int ip)
 	g_string_append_printf(ipstr, "%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
 	return ipstr;
 }
-
-/**
- * Creates a socket connected socket pair to be used for shell sockets
- *
- * @param fds		an int[2] array to which the fds of the socket pair will be written
- * @result			true if successful
- */
-static bool createSocketPair(int *fds)
-{
-#if defined WIN32 || defined PROVIDE_SOCKET_PAIR
-	// Create a local server socket on a random port
-	Socket *server = createServerSocket("0");
-	server->type = SOCKET_SERVER_BLOCK; // enforce a blocking server socket
-	if(!connectSocket(server)) {
-		freeSocket(server);
-		return false;
-	}
-
-	// Retrieve the random port of our server socket
-	struct sockaddr_in address;
-	socklen_t addressSize = sizeof(address);
-
-	if(getsockname(server->fd, (struct sockaddr *) &address, &addressSize) != 0) {
-		LOG_SYSTEM_ERROR("getsockname() failed on server socket %d", server->fd);
-		freeSocket(server);
-		return false;
-	}
-
-	GString *port = g_string_new("");
-	g_string_append_printf(port, "%d", htons(address.sin_port));
-
-	// Create a client socket connecting to our local server socket
-	Socket *client = createClientSocket("localhost", port->str);
-	g_string_free(port, true);
-
-	// Create connecting thread
-	GThread *thread = g_thread_create(threadConnectSocket, client, true, NULL);
-	Socket *accepted = socketAccept(server); // accept socket from connecting thread
-	g_thread_join(thread); // wait for connecting thread
-
-	freeSocket(server); // free the server socket
-
-	// Now return our socket pair
-	fds[0] = client->fd;
-	fds[1] = accepted->fd;
-
-	// Clean up
-	free(client->host);
-	free(client->port);
-	free(client);
-	free(accepted->host);
-	free(accepted->port);
-	free(accepted);
-
-	return true;
-#else
-	if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
-		LOG_SYSTEM_ERROR("socketpair() failed");
-		return false;
-	}
-
-	return true;
-#endif
-}
-
-#if defined WIN32 || defined PROVIDE_SOCKET_PAIR
-static void *threadConnectSocket(void *socket_p)
-{
-	Socket *client = socket_p;
-	connectSocket(client);
-
-	return NULL;
-}
-#endif

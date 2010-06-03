@@ -38,6 +38,7 @@ typedef enum {
 } SocketType;
 
 typedef struct {
+	/** the file descriptor of the socket */
 	int fd;
 	char *host;
 	char *port;

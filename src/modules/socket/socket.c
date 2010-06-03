@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 6);
+MODULE_VERSION(0, 6, 7);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -570,6 +570,17 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	}
 
 	while(left > 0) {
+#ifdef WIN32
+		if(s->in != NULL) {
+			if((ret = fwrite(buffer, sizeof(char), left, s->in)) > 0) {
+				left -= ret;
+				buffer += ret;
+			} else {
+				LOG_SYSTEM_ERROR("Failed to write to pipe socket %d", s->fd);
+				return false;
+			}
+		} else
+#endif
 		if((ret = send(s->fd, buffer, left, 0)) > 0) { // wrote ret characters
 			left -= ret;
 			buffer += ret;
@@ -617,7 +628,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 			if(feof(s->in)) {
 				LOG_INFO("EOF on pipe socket %d", s->fd);
 			} else {
-				LOG_SYSTEM_ERROR("Failed to read from pipe");
+				LOG_SYSTEM_ERROR("Failed to read from pipe socket %d", s->fd);
 			}
 
 			disconnectSocket(s);

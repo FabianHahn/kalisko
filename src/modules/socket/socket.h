@@ -22,6 +22,10 @@
 #ifndef SOCKET_SOCKET_H
 #define SOCKET_SOCKET_H
 
+#ifdef WIN32
+#include <stdio.h>
+#endif
+
 #include "types.h"
 
 typedef enum {
@@ -45,6 +49,10 @@ typedef struct {
 	SocketType type;
 	bool connected;
 	void *custom;
+#ifdef WIN32
+	FILE *out;
+	FILE *in;
+#endif
 } Socket;
 
 API Socket *createClientSocket(char *host, char *port);

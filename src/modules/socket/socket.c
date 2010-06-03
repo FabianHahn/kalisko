@@ -19,6 +19,8 @@
  */
 
 #ifdef WIN32
+#include <stdio.h> // _fdopen
+#include <fcntl.h> // _open_osfhandle
 #include <winsock2.h> // recv, send, getaddrinfo, socket, connect, select, timevalr
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0502
@@ -57,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 4);
+MODULE_VERSION(0, 6, 5);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -119,6 +121,10 @@ API Socket *createClientSocket(char *host, char *port)
 	s->port = strdup(port);
 	s->type = SOCKET_CLIENT;
 	s->connected = false;
+#ifdef WIN32
+	s->in = NULL;
+	s->out = NULL;
+#endif
 
 	return s;
 }
@@ -138,6 +144,10 @@ API Socket *createServerSocket(char *port)
 	s->port = strdup(port);
 	s->type = SOCKET_SERVER;
 	s->connected = false;
+#ifdef WIN32
+	s->in = NULL;
+	s->out = NULL;
+#endif
 
 	return s;
 }
@@ -322,84 +332,92 @@ API bool connectSocket(Socket *s)
 #ifdef WIN32
 			fds[0] = -1;
 
-			   SECURITY_ATTRIBUTES saAttr;
+			SECURITY_ATTRIBUTES saAttr;
 
 			// Set the bInheritHandle flag so pipe handles are inherited.
 
-			   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-			   saAttr.bInheritHandle = TRUE;
-			   saAttr.lpSecurityDescriptor = NULL;
+			saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+			saAttr.bInheritHandle = TRUE;
+			saAttr.lpSecurityDescriptor = NULL;
 
 			// Create a pipe for the child process's STDOUT.
 
-			   HANDLE handles[4];
+			HANDLE handles[4];
 
-			   if ( ! CreatePipe(&handles[0], &handles[1], &saAttr, 0) )
-			      LOG_ERROR(TEXT("StdoutRd CreatePipe"));
+			if(!CreatePipe(&handles[0], &handles[1], &saAttr, 0)) LOG_ERROR(TEXT("StdoutRd CreatePipe"));
 
 			// Ensure the read handle to the pipe for STDOUT is not inherited.
 
-			   if ( ! SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0) )
-				   LOG_ERROR(TEXT("Stdout SetHandleInformation"));
+			if(!SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0)) LOG_ERROR(TEXT("Stdout SetHandleInformation"));
 
 			// Create a pipe for the child process's STDIN.
 
-			   if (! CreatePipe(&handles[2], &handles[3], &saAttr, 0))
-				   LOG_ERROR(TEXT("Stdin CreatePipe"));
+			if(!CreatePipe(&handles[2], &handles[3], &saAttr, 0)) LOG_ERROR(TEXT("Stdin CreatePipe"));
 
 			// Ensure the write handle to the pipe for STDIN is not inherited.
 
-			   if ( ! SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0) )
-				   LOG_ERROR(TEXT("Stdin SetHandleInformation"));
+			if(!SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0)) LOG_ERROR(TEXT("Stdin SetHandleInformation"));
 
 			// Create the child process.
 
-			   TCHAR szCmdline[]=TEXT("ls -al");
-			   PROCESS_INFORMATION piProcInfo;
-			   STARTUPINFO siStartInfo;
-			   BOOL bSuccess = FALSE;
+			TCHAR szCmdline[] = TEXT("ls -al");
+			PROCESS_INFORMATION piProcInfo;
+			STARTUPINFO siStartInfo;
+			BOOL bSuccess = FALSE;
 
 			// Set up members of the PROCESS_INFORMATION structure.
 
-			   ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
+			ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
 
 			// Set up members of the STARTUPINFO structure.
 			// This structure specifies the STDIN and STDOUT handles for redirection.
 
-			   ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
-			   siStartInfo.cb = sizeof(STARTUPINFO);
-			   siStartInfo.hStdError = handles[1];
-			   siStartInfo.hStdOutput = handles[1];
-			   siStartInfo.hStdInput = handles[2];
-			   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+			ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+			siStartInfo.cb = sizeof(STARTUPINFO);
+			siStartInfo.hStdError = handles[1];
+			siStartInfo.hStdOutput = handles[1];
+			siStartInfo.hStdInput = handles[2];
+			siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
 			// Create the child process.
 
-			   bSuccess = CreateProcess(NULL,
-			      szCmdline,     // command line
-			      NULL,          // process security attributes
-			      NULL,          // primary thread security attributes
-			      TRUE,          // handles are inherited
-			      0,             // creation flags
-			      NULL,          // use parent's environment
-			      NULL,          // use parent's current directory
-			      &siStartInfo,  // STARTUPINFO pointer
-			      &piProcInfo);  // receives PROCESS_INFORMATION
+			bSuccess = CreateProcess(NULL, szCmdline, // command line
+			NULL, // process security attributes
+			NULL, // primary thread security attributes
+			TRUE, // handles are inherited
+			0, // creation flags
+			NULL, // use parent's environment
+			NULL, // use parent's current directory
+			&siStartInfo, // STARTUPINFO pointer
+			&piProcInfo); // receives PROCESS_INFORMATION
 
-			   // If an error occurs, exit the application.
-			   if ( ! bSuccess ) {
-				   LOG_ERROR(TEXT("CreateProcess")); } else
-			   {
-			      // Close handles to the child process and its primary thread.
-				  // Some applications might keep these handles to monitor the status
-				  // of the child process, for example.
+			// If an error occurs, exit the application.
+			if(!bSuccess) {
+				LOG_ERROR(TEXT("CreateProcess"));
+			} else {
+				// Close handles to the child process and its primary thread.
+				// Some applications might keep these handles to monitor the status
+				// of the child process, for example.
 
-			      CloseHandle(piProcInfo.hProcess);
-			      CloseHandle(piProcInfo.hThread);
-			   }
+				CloseHandle(piProcInfo.hProcess);
+				CloseHandle(piProcInfo.hThread);
+			}
 
-			   s->connected = true;
-			   s->fd = -1;
+			s->connected = true;
+
+			CloseHandle(handles[1]);
+
+			int writefd = _open_osfhandle((long) handles[3], _O_APPEND);
+			int readfd = _open_osfhandle((long) handles[0], _O_RDONLY);
+
+			s->fd = writefd;
+			if((s->out = _fdopen(writefd, "a")) == NULL) {
+				LOG_SYSTEM_ERROR("_fdopen failed on write");
+			}
+
+			if((s->in = _fdopen(readfd, "r")) == NULL) {
+				LOG_SYSTEM_ERROR("_fdopen failed on read");
+			}
 
 #else
 			// Create socket pair
@@ -459,7 +477,10 @@ API bool disconnectSocket(Socket *s)
 
 	if(s->connected) {
 #ifdef WIN32
-		if(closesocket(s->fd) != 0) {
+		if(s->in != NULL) {
+			fclose(s->in);
+			fclose(s->out);
+		} else if(closesocket(s->fd) != 0) {
 #else
 		if(close(s->fd) != 0) {
 #endif
@@ -578,6 +599,21 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		LOG_ERROR("Cannot write to server socket");
 		return -1;
 	}
+
+#ifdef WIN32
+	if(s->in != NULL) {
+		if((ret = fread(buffer, sizeof(char), size - 1, s->in)) == 0) {
+			if(feof(s->in)) {
+				LOG_INFO("EOF on pipe socket %d", s->fd);
+			} else {
+				LOG_SYSTEM_ERROR("Failed to read from pipe");
+			}
+
+			disconnectSocket(s);
+			return -1;
+		}
+	} else
+#endif
 
 	if((ret = recv(s->fd, buffer, size - 1, 0)) == 0) { // connection reset by peer
 		LOG_INFO("Connection on socket %d reset by peer", s->fd);

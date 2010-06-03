@@ -335,98 +335,101 @@ API bool connectSocket(Socket *s)
 		break;
 		case SOCKET_SHELL:
 #ifdef WIN32
-			command = g_strjoinv(" ", s->custom);
+			command = NULL;
 
-			SECURITY_ATTRIBUTES saAttr;
-
-			// Set the bInheritHandle flag so pipe handles are inherited.
-
-			saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-			saAttr.bInheritHandle = TRUE;
-			saAttr.lpSecurityDescriptor = NULL;
-
-			// Create a pipe for the child process's STDOUT.
+			// Force pipe handles to be inherited
+			SECURITY_ATTRIBUTES attr;
+			attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+			attr.bInheritHandle = TRUE;
+			attr.lpSecurityDescriptor = NULL;
 
 			HANDLE handles[4];
 
-			if(!CreatePipe(&handles[0], &handles[1], &saAttr, 0)) LOG_ERROR(TEXT("StdoutRd CreatePipe"));
+			// stdout pipe
+			if(!CreatePipe(&handles[0], &handles[1], &attr, 0)) {
+				char *error = g_win32_error_message(GetLastError());
+				LOG_ERROR("CreatePipe() failed: %s", error);
+				free(error);
+				return false;
+			}
 
-			// Ensure the read handle to the pipe for STDOUT is not inherited.
+			if(!SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0)) {
+				char *error = g_win32_error_message(GetLastError());
+				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				free(error);
+				return false;
+			}
 
-			if(!SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0)) LOG_ERROR(TEXT("Stdout SetHandleInformation"));
+			// stdin pipe
+			if(!CreatePipe(&handles[2], &handles[3], &attr, 0)) {
+				char *error = g_win32_error_message(GetLastError());
+				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				free(error);
+				return false;
+			}
 
-			// Create a pipe for the child process's STDIN.
-
-			if(!CreatePipe(&handles[2], &handles[3], &saAttr, 0)) LOG_ERROR(TEXT("Stdin CreatePipe"));
-
-			// Ensure the write handle to the pipe for STDIN is not inherited.
-
-			if(!SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0)) LOG_ERROR(TEXT("Stdin SetHandleInformation"));
-
-			// Create the child process.
-
-			PROCESS_INFORMATION piProcInfo;
-			STARTUPINFO siStartInfo;
-			BOOL bSuccess = FALSE;
-
-			// Set up members of the PROCESS_INFORMATION structure.
-
-			ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
-
-			// Set up members of the STARTUPINFO structure.
-			// This structure specifies the STDIN and STDOUT handles for redirection.
-
-			ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
-			siStartInfo.cb = sizeof(STARTUPINFO);
-			siStartInfo.hStdError = handles[1];
-			siStartInfo.hStdOutput = handles[1];
-			siStartInfo.hStdInput = handles[2];
-			siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+			if(!SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0)) {
+				char *error = g_win32_error_message(GetLastError());
+				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				free(error);
+				return false;
+			}
 
 			// Create the child process.
+			PROCESS_INFORMATION procInfo;
+			STARTUPINFO startInfo;
+			ZeroMemory(&procInfo, sizeof(PROCESS_INFORMATION));
+			ZeroMemory(&startInfo, sizeof(STARTUPINFO));
+			startInfo.cb = sizeof(STARTUPINFO);
+			startInfo.hStdError = handles[1];
+			startInfo.hStdOutput = handles[1];
+			startInfo.hStdInput = handles[2];
+			startInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-			bSuccess = CreateProcess(NULL, command, // command line
-			NULL, // process security attributes
-			NULL, // primary thread security attributes
-			TRUE, // handles are inherited
-			0, // creation flags
-			NULL, // use parent's environment
-			NULL, // use parent's current directory
-			&siStartInfo, // STARTUPINFO pointer
-			&piProcInfo); // receives PROCESS_INFORMATION
+			command = g_strjoinv(" ", s->custom);
+
+			if(!CreateProcess(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL, &startInfo, &procInfo)) {
+				char *error = g_win32_error_message(GetLastError());
+				LOG_ERROR("CreateProcess() failed: %s", error);
+				free(error);
+				free(command);
+				return false;
+			} else {
+				CloseHandle(procInfo.hProcess);
+				CloseHandle(procInfo.hThread);
+			}
 
 			free(command);
 
-			// If an error occurs, exit the application.
-			if(!bSuccess) {
-				LOG_ERROR(TEXT("CreateProcess"));
-			} else {
-				// Close handles to the child process and its primary thread.
-				// Some applications might keep these handles to monitor the status
-				// of the child process, for example.
+			CloseHandle(handles[1]);
+			CloseHandle(handles[2]);
 
-				CloseHandle(piProcInfo.hProcess);
-				CloseHandle(piProcInfo.hThread);
+			int writefd;
+
+			if((writefd = _open_osfhandle((long) handles[3], _O_APPEND)) == -1) {
+				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
+				return false;
 			}
 
-			s->connected = true;
+			int readfd;
 
-			CloseHandle(handles[1]);
+			if((readfd = _open_osfhandle((long) handles[0], _O_RDONLY | _O_BINARY)) == -1) {
+				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
+				return false;
+			}
 
-			int writefd = _open_osfhandle((long) handles[3], _O_APPEND);
-			int readfd = _open_osfhandle((long) handles[0], _O_RDONLY | _O_BINARY);
-
-			_setmode( readfd, _O_BINARY);
-
-			s->fd = writefd;
 			if((s->out = _fdopen(writefd, "a")) == NULL) {
-				LOG_SYSTEM_ERROR("_fdopen failed on write");
+				LOG_SYSTEM_ERROR("_fdopen() failed");
+				return false;
 			}
 
 			if((s->in = _fdopen(readfd, "rb")) == NULL) {
-				LOG_SYSTEM_ERROR("_fdopen failed on read");
+				LOG_SYSTEM_ERROR("_fdopen() failed");
+				return false;
 			}
 
+			s->fd = writefd;
+			s->connected = true;
 #else
 			// Create socket pair
 			if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {

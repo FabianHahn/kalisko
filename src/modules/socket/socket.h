@@ -41,11 +41,12 @@ typedef struct {
 	char *port;
 	SocketType type;
 	bool connected;
+	void *custom;
 } Socket;
 
 API Socket *createClientSocket(char *host, char *port);
 API Socket *createServerSocket(char *port);
-API Socket *createShellSocket(char *command);
+API Socket *createShellSocket(char **args);
 API bool connectSocket(Socket *s);
 API bool disconnectSocket(Socket *s);
 API void freeSocket(Socket *s);

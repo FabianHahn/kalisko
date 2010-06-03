@@ -53,11 +53,12 @@
 #define IP_STR_LEN 16
 static bool setSocketNonBlocking(int fd);
 static GString *ip2str(unsigned int ip);
+static bool createSocketPair(int *fds);
 
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 5, 2);
+MODULE_VERSION(0, 6, 0);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -145,16 +146,17 @@ API Socket *createServerSocket(char *port)
 /**
  * Create a shell socket
  *
- * @param command		the shell command to execute
+ * @param args			the shell command arguments, terminated by NULL
  * @result				the created socket
  */
-API Socket *createShellSocket(char *command)
+API Socket *createShellSocket(char **args)
 {
 	Socket *s = ALLOCATE_OBJECT(Socket);
 
 	s->fd = -1;
-	s->host = strdup(command);
+	s->host = NULL;
 	s->port = NULL;
+	s->custom = g_strdupv(args);
 	s->type = SOCKET_SHELL;
 	s->connected = false;
 
@@ -177,6 +179,7 @@ API bool connectSocket(Socket *s)
 	struct addrinfo hints;
 	struct addrinfo *server;
 	int ret;
+	int fds[2];
 
 	switch(s->type) {
 		case SOCKET_SERVER:
@@ -201,28 +204,24 @@ API bool connectSocket(Socket *s)
 			if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *) &param, sizeof(int)) == -1) {
 				LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
 				freeSocket(s);
-
 				return false;
 			}
 
 			if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
 				LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
 				freeSocket(s);
-
 				return false;
 			}
 
 			if(listen(s->fd, 5) == -1) {
 				LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
 				freeSocket(s);
-
 				return false;
 			}
 
 			if(!setSocketNonBlocking(s->fd)) {
 				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
 				freeSocket(s);
-
 				return false;
 			}
 
@@ -318,8 +317,48 @@ API bool connectSocket(Socket *s)
 			return false;
 		break;
 		case SOCKET_SHELL:
+#ifdef WIN32
 			LOG_ERROR("Shell socket connection not implemented yet");
 			return false;
+#else
+			// Create socket pair
+			if(!createSocketPair(fds)) {
+				LOG_ERROR("Failed to create socket pair for shell socket, aborting");
+				freeSocket(s);
+				return false;
+			}
+
+			// Assign one side of the socket pair to our socket
+			s->fd = fds[0];
+
+			if(!setSocketNonBlocking(s->fd)) {
+				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+				freeSocket(s);
+				return false;
+			}
+
+			pid_t pid;
+
+			// Fork and assign the other side of the socket pair to the executed application
+			if((pid = fork()) < 0) { // fork failed
+				LOG_SYSTEM_ERROR("fork() failed for shell socket, aborting");
+				freeSocket(s);
+				return false;
+			} else if(pid == 0) { // Child
+				if(dup2(fds[1], 0) == 0 && dup2(fds[1], 1) == 1 && dup2(fds[1], 2) == 2)
+				{
+					// FIXME: necessary to close all other sockets here?
+					execvp(((char * const *) s->custom)[0], (char * const *) s->custom);
+				}
+
+				exit(EXIT_FAILURE);
+			}
+
+			// Close the other side of the socket pair for the parent
+			close(fds[1]);
+
+			s->connected = true;
+#endif
 		break;
 	}
 
@@ -381,6 +420,10 @@ API void freeSocket(Socket *s)
 
 	if(s->port) {
 		free(s->port);
+	}
+
+	if(s->type == SOCKET_SHELL) {
+		g_strfreev(s->custom);
 	}
 
 	free(s);
@@ -559,9 +602,54 @@ static bool setSocketNonBlocking(int fd)
 	return true;
 }
 
+/**
+ * Converts an unsigned IP address into its string representation
+ *
+ * @param ip		the ip to convert
+ * @result			the string representation of the IP
+ */
 static GString *ip2str(unsigned int ip)
 {
 	GString *ipstr = g_string_new("");
 	g_string_append_printf(ipstr, "%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
 	return ipstr;
+}
+
+/**
+ * Creates a socket connected socket pair to be used for shell sockets
+ *
+ * @param fds		an int[2] array to which the fds of the socket pair will be written
+ * @result			true if successful
+ */
+static bool createSocketPair(int *fds)
+{
+#ifdef WIN32
+	Socket *server = createServerSocket("0");
+	connectSocket(server);
+
+	struct sockaddr_in address;
+	socklen_t addressSize = sizeof(remoteAddress);
+
+	if(getsockname(server->fd, &address, &addressSize) != 0) {
+		LOG_SYSTEM_ERROR("getsockname() failed on server socket %d", server->fd);
+		freeSocket(server);
+		return false;
+	}
+
+	GString *port = g_string_new("");
+	g_string_append_printf(port, "%d", address.sin_port);
+
+	Socket *client = createClientSocket("localhost", port->str);
+	g_string_free(port, true);
+
+	// TODO: g_thread_create ???
+	return false;
+#else
+	if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
+		LOG_SYSTEM_ERROR("socketpair() failed");
+		return false;
+	}
+
+	return true;
+#endif
 }

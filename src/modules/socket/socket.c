@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 7);
+MODULE_VERSION(0, 6, 8);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -243,6 +243,8 @@ API bool connectSocket(Socket *s)
 			}
 
 			freeaddrinfo(server);
+
+			LOG_DEBUG("Connected server socket %d", s->fd);
 		break;
 		case SOCKET_CLIENT:
 			memset(&hints, 0, sizeof(struct addrinfo));
@@ -268,7 +270,7 @@ API bool connectSocket(Socket *s)
 
 			if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
 #ifdef WIN32
-				if(WSAGetLastError() == WSAEINPROGRESS) {
+				if(WSAGetLastError() == WSAEINPROGRESS || WSAGetLastError() == WSAEWOULDBLOCK) {
 #else
 				if(errno == EINPROGRESS) {
 #endif
@@ -320,7 +322,13 @@ API bool connectSocket(Socket *s)
 						}
 					} while(true);
 				} else {
+#ifdef WIN32
+					char *error = g_win32_error_message(WSAGetLastError());
+					LOG_ERROR("Connection for socket %d failed: %s", s->fd, error);
+					free(error);
+#else
 					LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+#endif
 					freeaddrinfo(server);
 					disconnectSocket(s);
 					return false;
@@ -328,6 +336,8 @@ API bool connectSocket(Socket *s)
 			}
 
 			freeaddrinfo(server);
+
+			LOG_DEBUG("Connected client socket %d", s->fd);
 		break;
 		case SOCKET_SERVER_CLIENT:
 			LOG_ERROR("Cannot connect to server client socket, aborting");
@@ -468,6 +478,8 @@ API bool connectSocket(Socket *s)
 
 			s->connected = true;
 #endif
+
+			LOG_DEBUG("Connected shell socket %d", s->fd);
 		break;
 	}
 
@@ -674,7 +686,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
  */
 API Socket *socketAccept(Socket *server)
 {
-	struct sockaddr_in remoteAddress;
+	struct sockaddr_storage remoteAddress;
 	socklen_t remoteAddressSize = sizeof(remoteAddress);
 
 	int fd;
@@ -697,9 +709,11 @@ API Socket *socketAccept(Socket *server)
 		return NULL;
 	}
 
-	GString *ip = ip2str(remoteAddress.sin_addr.s_addr);
+	struct sockaddr_in *address = (struct sockaddr_in *) &remoteAddress;
+
+	GString *ip = ip2str(address->sin_addr.s_addr);
 	GString *port = g_string_new("");
-	g_string_append_printf(port, "%d", htons(remoteAddress.sin_port));
+	g_string_append_printf(port, "%d", ntohs(address->sin_port));
 
 	Socket *client = ALLOCATE_OBJECT(Socket);
 	client->fd = fd;
@@ -708,7 +722,7 @@ API Socket *socketAccept(Socket *server)
 	client->port = port->str;
 	client->type = SOCKET_SERVER_CLIENT;
 
-	LOG_INFO("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
+	LOG_DEBUG("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
 
 	g_string_free(ip, false);
 	g_string_free(port, false);

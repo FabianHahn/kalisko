@@ -58,7 +58,7 @@ static bool createSocketPair(int *fds);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 1);
+MODULE_VERSION(0, 6, 2);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -185,6 +185,7 @@ API bool connectSocket(Socket *s)
 
 	switch(s->type) {
 		case SOCKET_SERVER:
+		case SOCKET_SERVER_BLOCK:
 			memset(&hints, 0, sizeof(hints));
 			hints.ai_family = AF_UNSPEC;
 			hints.ai_socktype = SOCK_STREAM;
@@ -221,10 +222,12 @@ API bool connectSocket(Socket *s)
 				return false;
 			}
 
-			if(!setSocketNonBlocking(s->fd)) {
-				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-				freeSocket(s);
-				return false;
+			if(s->type != SOCKET_SERVER_BLOCK) {
+				if(!setSocketNonBlocking(s->fd)) {
+					LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+					freeSocket(s);
+					return false;
+				}
 			}
 
 			freeaddrinfo(server);
@@ -557,7 +560,7 @@ API Socket *socketAccept(Socket *server)
 
 	GString *ip = ip2str(remoteAddress.sin_addr.s_addr);
 	GString *port = g_string_new("");
-	g_string_append_printf(port, "%d", remoteAddress.sin_port);
+	g_string_append_printf(port, "%d", htons(remoteAddress.sin_port));
 
 	Socket *client = ALLOCATE_OBJECT(Socket);
 	client->fd = fd;
@@ -625,10 +628,16 @@ static GString *ip2str(unsigned int ip)
  */
 static bool createSocketPair(int *fds)
 {
-#ifdef WIN32
+#if defined WIN32 || defined PROVIDE_SOCKET_PAIR
+	// Create a local server socket on a random port
 	Socket *server = createServerSocket("0");
-	connectSocket(server);
+	server->type = SOCKET_SERVER_BLOCK; // enforce a blocking server socket
+	if(!connectSocket(server)) {
+		freeSocket(server);
+		return false;
+	}
 
+	// Retrieve the random port of our server socket
 	struct sockaddr_in address;
 	socklen_t addressSize = sizeof(address);
 
@@ -639,8 +648,9 @@ static bool createSocketPair(int *fds)
 	}
 
 	GString *port = g_string_new("");
-	g_string_append_printf(port, "%d", address.sin_port);
+	g_string_append_printf(port, "%d", htons(address.sin_port));
 
+	// Create a client socket connecting to our local server socket
 	Socket *client = createClientSocket("localhost", port->str);
 	g_string_free(port, true);
 
@@ -651,9 +661,11 @@ static bool createSocketPair(int *fds)
 
 	freeSocket(server); // free the server socket
 
+	// Now return our socket pair
 	fds[0] = client->fd;
 	fds[1] = accepted->fd;
 
+	// Clean up
 	free(client->host);
 	free(client->port);
 	free(client);

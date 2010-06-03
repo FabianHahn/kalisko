@@ -29,6 +29,8 @@ typedef enum {
 	SOCKET_CLIENT,
 	/** the socket is a server socket */
 	SOCKET_SERVER,
+	/** the socket is a blocking server socket - do not use this unless you really know what you're doing! */
+	SOCKET_SERVER_BLOCK,
 	/** the socket is a client to one of our server sockets */
 	SOCKET_SERVER_CLIENT,
 	/** the socket is a shell socket */

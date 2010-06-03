@@ -57,7 +57,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -117,7 +117,7 @@ API Socket *createClientSocket(char *host, char *port)
 	s->fd = -1;
 	s->host = strdup(host);
 	s->port = strdup(port);
-	s->server = false;
+	s->type = SOCKET_CLIENT;
 	s->connected = false;
 
 	return s;
@@ -136,7 +136,26 @@ API Socket *createServerSocket(char *port)
 	s->fd = -1;
 	s->host = NULL;
 	s->port = strdup(port);
-	s->server = true;
+	s->type = SOCKET_SERVER;
+	s->connected = false;
+
+	return s;
+}
+
+/**
+ * Create a shell socket
+ *
+ * @param command		the shell command to execute
+ * @result				the created socket
+ */
+API Socket *createShellSocket(char *command)
+{
+	Socket *s = ALLOCATE_OBJECT(Socket);
+
+	s->fd = -1;
+	s->host = strdup(command);
+	s->port = NULL;
+	s->type = SOCKET_SHELL;
 	s->connected = false;
 
 	return s;
@@ -155,148 +174,153 @@ API bool connectSocket(Socket *s)
 		return false;
 	}
 
-	if(s->server) {
-		struct addrinfo hints;
-		struct addrinfo *server;
+	struct addrinfo hints;
+	struct addrinfo *server;
+	int ret;
 
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_flags = AI_PASSIVE; // fill in the IP automaticly
+	switch(s->type) {
+		case SOCKET_SERVER:
+			memset(&hints, 0, sizeof(hints));
+			hints.ai_family = AF_UNSPEC;
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_flags = AI_PASSIVE; // fill in the IP automaticly
 
-		int ret;
-		if((ret = getaddrinfo(NULL, s->port, &hints, &server)) == -1) {
-			LOG_ERROR("Failed to create address info for server socket");
-			return false;
-		}
+			if((ret = getaddrinfo(NULL, s->port, &hints, &server)) == -1) {
+				LOG_ERROR("Failed to create address info for server socket");
+				return false;
+			}
 
-		if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-			LOG_SYSTEM_ERROR("Failed to create server socket");
-			return false;
-		}
+			if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
+				LOG_SYSTEM_ERROR("Failed to create server socket");
+				return false;
+			}
 
-		s->connected = true;
+			s->connected = true;
 
-		int param = 1;
-		if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *) &param, sizeof(int)) == -1) {
-			LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
-			freeSocket(s);
+			int param = 1;
+			if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *) &param, sizeof(int)) == -1) {
+				LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
+				freeSocket(s);
 
-			return false;
-		}
+				return false;
+			}
 
-		if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
-			LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
-			freeSocket(s);
+			if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
+				LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
+				freeSocket(s);
 
-			return false;
-		}
+				return false;
+			}
 
-		if(listen(s->fd, 5) == -1) {
-			LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
-			freeSocket(s);
+			if(listen(s->fd, 5) == -1) {
+				LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
+				freeSocket(s);
 
-			return false;
-		}
+				return false;
+			}
 
-		if(!setSocketNonBlocking(s->fd)) {
-			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-			freeSocket(s);
+			if(!setSocketNonBlocking(s->fd)) {
+				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+				freeSocket(s);
 
-			return false;
-		}
+				return false;
+			}
 
-		freeaddrinfo(server);
+			freeaddrinfo(server);
+		break;
+		case SOCKET_CLIENT:
+			memset(&hints, 0, sizeof(struct addrinfo));
+			hints.ai_family = AF_UNSPEC; // don't care if we use IPv4 or IPv6 to reach our destination
+			hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
 
-	} else {
-		struct addrinfo hints;
-		struct addrinfo *server;
+			if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
+				LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
+				return false;
+			}
 
-		memset(&hints, 0, sizeof(struct addrinfo));
-		hints.ai_family = AF_UNSPEC; // don't care if we use IPv4 or IPv6 to reach our destination
-		hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
+			if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
+				LOG_SYSTEM_ERROR("Failed to create socket");
+				return false;
+			}
 
-		int ret;
+			s->connected = true;
 
-		if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
-			LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
-			return false;
-		}
+			if(!setSocketNonBlocking(s->fd)) {
+				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+				return false;
+			}
 
-		if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-			LOG_SYSTEM_ERROR("Failed to create socket");
-			return false;
-		}
-
-		s->connected = true;
-
-		if(!setSocketNonBlocking(s->fd)) {
-			LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-			return false;
-		}
-
-		if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
+			if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
 #ifdef WIN32
-			if(WSAGetLastError() == WSAEINPROGRESS) {
+				if(WSAGetLastError() == WSAEINPROGRESS) {
 #else
-			if(errno == EINPROGRESS) {
+				if(errno == EINPROGRESS) {
 #endif
-				LOG_DEBUG("Socket %d delayed connection, waiting...", s->fd);
-				do {
-					// Initialize timeout
-					struct timeval tv;
-					tv.tv_sec = connectionTimeout;
-					tv.tv_usec = 0;
+					LOG_DEBUG("Socket %d delayed connection, waiting...", s->fd);
+					do {
+						// Initialize timeout
+						struct timeval tv;
+						tv.tv_sec = connectionTimeout;
+						tv.tv_usec = 0;
 
-					// Initialize write fd set
-					fd_set fdset;
-					FD_ZERO(&fdset);
-					FD_SET(s->fd, &fdset);
+						// Initialize write fd set
+						fd_set fdset;
+						FD_ZERO(&fdset);
+						FD_SET(s->fd, &fdset);
 
-					// Select socket for write flag (connected)
-					int ret;
+						// Select socket for write flag (connected)
+						int ret;
 #ifdef WIN32
-					if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && WSAGetLastError() != WSAEINTR) {
+						if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && WSAGetLastError() != WSAEINTR) {
 #else
-					if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && errno != EINTR) {
+						if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && errno != EINTR) {
 #endif
-						LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected)", s->fd);
-						freeaddrinfo(server);
-						disconnectSocket(s);
-						return false;
-					} else if(ret > 0) {
-						// Socket selected for write, check if we're indeed connected
-						int valopt;
-						socklen_t lon = sizeof(int);
-						if(getsockopt(s->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
-							LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", s->fd);
+							LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected)", s->fd);
 							freeaddrinfo(server);
 							disconnectSocket(s);
 							return false;
-						} else if(valopt != 0) { // There was a connection error
-							LOG_SYSTEM_ERROR("Delayed connection on socket %d failed", s->fd);
+						} else if(ret > 0) {
+							// Socket selected for write, check if we're indeed connected
+							int valopt;
+							socklen_t lon = sizeof(int);
+							if(getsockopt(s->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
+								LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", s->fd);
+								freeaddrinfo(server);
+								disconnectSocket(s);
+								return false;
+							} else if(valopt != 0) { // There was a connection error
+								LOG_SYSTEM_ERROR("Delayed connection on socket %d failed", s->fd);
+								freeaddrinfo(server);
+								disconnectSocket(s);
+								return false;
+							}
+
+							break; // Socket connected, break out of loop
+						} else {
+							LOG_ERROR("Connection for socket %d exceeded timeout of %d seconds, disconnecting", s->fd, connectionTimeout);
 							freeaddrinfo(server);
 							disconnectSocket(s);
 							return false;
 						}
-
-						break; // Socket connected, break out of loop
-					} else {
-						LOG_ERROR("Connection for socket %d exceeded timeout of %d seconds, disconnecting", s->fd, connectionTimeout);
-						freeaddrinfo(server);
-						disconnectSocket(s);
-						return false;
-					}
-				} while(true);
-			} else {
-				LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
-				freeaddrinfo(server);
-				disconnectSocket(s);
-				return false;
+					} while(true);
+				} else {
+					LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+					freeaddrinfo(server);
+					disconnectSocket(s);
+					return false;
+				}
 			}
-		}
 
-		freeaddrinfo(server);
+			freeaddrinfo(server);
+		break;
+		case SOCKET_SERVER_CLIENT:
+			LOG_ERROR("Cannot connect to server client socket, aborting");
+			return false;
+		break;
+		case SOCKET_SHELL:
+			LOG_ERROR("Shell socket connection not implemented yet");
+			return false;
+		break;
 	}
 
 	return true;
@@ -385,7 +409,7 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 		return false;
 	}
 
-	if(s->server) {
+	if(s->type == SOCKET_SERVER) {
 		LOG_ERROR("Cannot write to server socket");
 		return false;
 	}
@@ -427,7 +451,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		return -1;
 	}
 
-	if(s->server) {
+	if(s->type == SOCKET_SERVER) {
 		LOG_ERROR("Cannot write to server socket");
 		return -1;
 	}
@@ -495,7 +519,7 @@ API Socket *socketAccept(Socket *server)
 	client->connected = true;
 	client->host = ip->str;
 	client->port = port->str;
-	client->server = false;
+	client->type = SOCKET_SERVER_CLIENT;
 
 	LOG_INFO("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
 

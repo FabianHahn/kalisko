@@ -24,16 +24,28 @@
 
 #include "types.h"
 
+typedef enum {
+	/** the socket is a client socket */
+	SOCKET_CLIENT,
+	/** the socket is a server socket */
+	SOCKET_SERVER,
+	/** the socket is a client to one of our server sockets */
+	SOCKET_SERVER_CLIENT,
+	/** the socket is a shell socket */
+	SOCKET_SHELL
+} SocketType;
+
 typedef struct {
 	int fd;
 	char *host;
 	char *port;
-	bool server;
+	SocketType type;
 	bool connected;
 } Socket;
 
 API Socket *createClientSocket(char *host, char *port);
 API Socket *createServerSocket(char *port);
+API Socket *createShellSocket(char *command);
 API bool connectSocket(Socket *s);
 API bool disconnectSocket(Socket *s);
 API void freeSocket(Socket *s);

@@ -175,7 +175,7 @@ static bool pollSocket(Socket *socket, int *fd_p)
 		return true;
 	}
 
-	if(!socket->server) {
+	if(socket->type != SOCKET_SERVER) {
 		int ret;
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected

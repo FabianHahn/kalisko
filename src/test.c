@@ -39,6 +39,8 @@ static int count = 0;
 
 int main(int argc, char **argv)
 {
+	g_thread_init(NULL);
+
 	initMemory();
 	initHooks();
 	initTimers();

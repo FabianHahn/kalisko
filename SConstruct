@@ -54,8 +54,8 @@ else:
 	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 # Add glib support
-coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0')
-modtpl.ParseConfig('pkg-config --cflags --libs glib-2.0')
+coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
+modtpl.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
 
 buildtests = True
 

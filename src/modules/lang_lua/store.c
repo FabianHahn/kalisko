@@ -119,7 +119,7 @@ static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 		hashtable = NULL;
 	} else { // only read arrays
 		queue = NULL;
-		hashtable = $(Store *, store, createStoreNodes)();
+		hashtable = $(GHashTable *, store, createStoreNodes)();
 	}
 
 	// Initialize iterator
@@ -160,7 +160,7 @@ static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 					g_queue_push_tail(queue, value);
 				}
 			} else { // this is not a list, it's an array!
-				hashtable = $(Store *, store, createStoreNodes)(); // create hash table
+				hashtable = $(GHashTable *, store, createStoreNodes)(); // create hash table
 				i = 1;
 				for(GList *iter = queue->head; iter != NULL; iter = iter->next, i++) {
 					// Transform integer index into string
@@ -246,7 +246,7 @@ static int lua_dumpStore(lua_State *state)
 		return 1;
 	}
 
-	GString *str = $(Store *, store, writeStoreGString)(store); // write store to string
+	GString *str = $(GString *, store, writeStoreGString)(store); // write store to string
 	lua_pushstring(state, str->str); // push return value to stack
 	g_string_free(str, true); // free the temp string
 

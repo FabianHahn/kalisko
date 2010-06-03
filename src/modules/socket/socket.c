@@ -58,9 +58,11 @@ static bool createSocketPair(int *fds);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 0);
+MODULE_VERSION(0, 6, 1);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
+
+static void *threadConnectSocket(void *socket_p);
 
 static int connectionTimeout = 10; // set default connection timeout to 10 seconds
 
@@ -628,9 +630,9 @@ static bool createSocketPair(int *fds)
 	connectSocket(server);
 
 	struct sockaddr_in address;
-	socklen_t addressSize = sizeof(remoteAddress);
+	socklen_t addressSize = sizeof(address);
 
-	if(getsockname(server->fd, &address, &addressSize) != 0) {
+	if(getsockname(server->fd, (struct sockaddr *) &address, &addressSize) != 0) {
 		LOG_SYSTEM_ERROR("getsockname() failed on server socket %d", server->fd);
 		freeSocket(server);
 		return false;
@@ -642,8 +644,24 @@ static bool createSocketPair(int *fds)
 	Socket *client = createClientSocket("localhost", port->str);
 	g_string_free(port, true);
 
-	// TODO: g_thread_create ???
-	return false;
+	// Create connecting thread
+	GThread *thread = g_thread_create(threadConnectSocket, client, true, NULL);
+	Socket *accepted = socketAccept(server); // accept socket from connecting thread
+	g_thread_join(thread); // wait for connecting thread
+
+	freeSocket(server); // free the server socket
+
+	fds[0] = client->fd;
+	fds[1] = accepted->fd;
+
+	free(client->host);
+	free(client->port);
+	free(client);
+	free(accepted->host);
+	free(accepted->port);
+	free(accepted);
+
+	return true;
 #else
 	if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
 		LOG_SYSTEM_ERROR("socketpair() failed");
@@ -652,4 +670,12 @@ static bool createSocketPair(int *fds)
 
 	return true;
 #endif
+}
+
+static void *threadConnectSocket(void *socket_p)
+{
+	Socket *client = socket_p;
+	connectSocket(client);
+
+	return NULL;
 }

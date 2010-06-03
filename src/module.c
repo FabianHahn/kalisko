@@ -390,7 +390,9 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 
 #ifdef WIN32
 	if((mod->handle = LoadLibrary(mod->dlname)) == NULL) {
-		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s", mod->dlname, mod->name);
+		char *error = g_win32_error_message(GetLastError());
+		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, error);
+		free(error);
 		return false;
 	}
 

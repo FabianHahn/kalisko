@@ -30,6 +30,7 @@
 static void addHookStatsEntry(void *key, void *value, void *data);
 static void freeHookListenerList(void *list_p);
 
+static GThread *mainthread;
 static GHashTable *hooks;
 
 /**
@@ -37,6 +38,7 @@ static GHashTable *hooks;
  */
 API void initHooks()
 {
+	mainthread = g_thread_self();
 	hooks = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeHookListenerList);
 }
 
@@ -57,6 +59,10 @@ API void freeHooks()
  */
 API bool addHook(char *hook_name)
 {
+	if(g_thread_self() != mainthread) {
+		return false;
+	}
+
 	if(g_hash_table_lookup(hooks, hook_name) != NULL) { // A hook with that name already exists
 		return false;
 	}
@@ -75,6 +81,10 @@ API bool addHook(char *hook_name)
  */
 API bool delHook(char *hook_name)
 {
+	if(g_thread_self() != mainthread) {
+		return false;
+	}
+
 	return g_hash_table_remove(hooks, hook_name);
 }
 
@@ -88,6 +98,10 @@ API bool delHook(char *hook_name)
  */
 API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data)
 {
+	if(g_thread_self() != mainthread) {
+		return false;
+	}
+
 	GQueue *hook;
 
 	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) { // a hook with that name doesn't exist
@@ -114,6 +128,10 @@ API bool attachToHook(char *hook_name, HookListener *listener, void *custom_data
  */
 API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_data)
 {
+	if(g_thread_self() != mainthread) {
+		return false;
+	}
+
 	GQueue *hook;
 
 	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) { // a hook with that name doesn't exist
@@ -143,6 +161,10 @@ API bool detachFromHook(char *hook_name, HookListener *listener, void *custom_da
  */
 API int triggerHook(char *hook_name, ...)
 {
+	if(g_thread_self() != mainthread) {
+		return 0;
+	}
+
 	GQueue *hook;
 
 	if((hook = g_hash_table_lookup(hooks, hook_name)) == NULL) {
@@ -175,6 +197,10 @@ API int triggerHook(char *hook_name, ...)
  */
 API GQueue *getHookStats()
 {
+	if(g_thread_self() != mainthread) {
+		return NULL;
+	}
+
 	GQueue *result = g_queue_new();
 
 	g_hash_table_foreach(hooks, &addHookStatsEntry, result);

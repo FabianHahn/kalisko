@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 5);
+MODULE_VERSION(0, 6, 6);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -188,7 +188,12 @@ API bool connectSocket(Socket *s)
 	struct addrinfo hints;
 	struct addrinfo *server;
 	int ret;
+
+#ifdef WIN32
+	char *command;
+#else
 	int fds[2];
+#endif
 
 	switch(s->type) {
 		case SOCKET_SERVER:
@@ -330,7 +335,7 @@ API bool connectSocket(Socket *s)
 		break;
 		case SOCKET_SHELL:
 #ifdef WIN32
-			fds[0] = -1;
+			command = g_strjoinv(" ", s->custom);
 
 			SECURITY_ATTRIBUTES saAttr;
 
@@ -360,7 +365,6 @@ API bool connectSocket(Socket *s)
 
 			// Create the child process.
 
-			TCHAR szCmdline[] = TEXT("ls -al");
 			PROCESS_INFORMATION piProcInfo;
 			STARTUPINFO siStartInfo;
 			BOOL bSuccess = FALSE;
@@ -381,7 +385,7 @@ API bool connectSocket(Socket *s)
 
 			// Create the child process.
 
-			bSuccess = CreateProcess(NULL, szCmdline, // command line
+			bSuccess = CreateProcess(NULL, command, // command line
 			NULL, // process security attributes
 			NULL, // primary thread security attributes
 			TRUE, // handles are inherited
@@ -390,6 +394,8 @@ API bool connectSocket(Socket *s)
 			NULL, // use parent's current directory
 			&siStartInfo, // STARTUPINFO pointer
 			&piProcInfo); // receives PROCESS_INFORMATION
+
+			free(command);
 
 			// If an error occurs, exit the application.
 			if(!bSuccess) {
@@ -408,14 +414,16 @@ API bool connectSocket(Socket *s)
 			CloseHandle(handles[1]);
 
 			int writefd = _open_osfhandle((long) handles[3], _O_APPEND);
-			int readfd = _open_osfhandle((long) handles[0], _O_RDONLY);
+			int readfd = _open_osfhandle((long) handles[0], _O_RDONLY | _O_BINARY);
+
+			_setmode( readfd, _O_BINARY);
 
 			s->fd = writefd;
 			if((s->out = _fdopen(writefd, "a")) == NULL) {
 				LOG_SYSTEM_ERROR("_fdopen failed on write");
 			}
 
-			if((s->in = _fdopen(readfd, "r")) == NULL) {
+			if((s->in = _fdopen(readfd, "rb")) == NULL) {
 				LOG_SYSTEM_ERROR("_fdopen failed on read");
 			}
 

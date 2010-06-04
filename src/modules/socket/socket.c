@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 9);
+MODULE_VERSION(0, 6, 10);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -692,7 +692,6 @@ API Socket *socketAccept(Socket *server)
 	int fd;
 
 	if((fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize)) == -1) {
-		LOG_INFO("nothing");
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
 #else

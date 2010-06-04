@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 8);
+MODULE_VERSION(0, 6, 9);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -199,7 +199,7 @@ API bool connectSocket(Socket *s)
 		case SOCKET_SERVER:
 		case SOCKET_SERVER_BLOCK:
 			memset(&hints, 0, sizeof(hints));
-			hints.ai_family = AF_UNSPEC;
+			hints.ai_family = AF_INET; // use IPv4
 			hints.ai_socktype = SOCK_STREAM;
 			hints.ai_flags = AI_PASSIVE; // fill in the IP automaticly
 
@@ -629,7 +629,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		return -1;
 	}
 
-	if(s->type == SOCKET_SERVER) {
+	if(s->type == SOCKET_SERVER || s->type == SOCKET_SERVER_BLOCK) {
 		LOG_ERROR("Cannot write to server socket");
 		return -1;
 	}
@@ -692,6 +692,7 @@ API Socket *socketAccept(Socket *server)
 	int fd;
 
 	if((fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize)) == -1) {
+		LOG_INFO("nothing");
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
 #else

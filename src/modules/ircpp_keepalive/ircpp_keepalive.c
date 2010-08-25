@@ -224,7 +224,7 @@ static void reconnectRemoteConnection(IrcProxy *proxy)
 				// Remove the challenge from the challenge table
 				g_hash_table_remove(challenges, proxy);
 
-				// Schedule a new challenge timre
+				// Schedule a new challenge timer
 				if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
 					LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
 					return;

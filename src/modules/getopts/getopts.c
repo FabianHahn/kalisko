@@ -68,6 +68,7 @@ void parseArgv()
 			if(argv[i][2] == '-') {
 				continue;
 			}
+			// point opt to the beginning of the actual option's name
 			char *opt = &argv[i][2];
 			// find equal sign
 			char *equal = g_strstr_len(opt, -1, "=");

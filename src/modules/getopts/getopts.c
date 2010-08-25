@@ -74,25 +74,25 @@ void parseArgv()
 			// Store option
 			if(equal == NULL) {
 				g_hash_table_insert(opts, g_strdup(opt), g_strdup(""));
-			}
-			else {
+			} else {
 				g_hash_table_insert(opts, g_strndup(opt, equal - opt), g_strdup(equal + 1));
 			}
-		}
-		// Short option(s)
-		else if(*argv[i] == '-') {
+		} else if(*argv[i] == '-') {
+			// Short option(s)
+
 			// There can't be any more dashes due to the previous condition, so simply skip the first
 			// Anything thereafter is the name of the short option
 			char *key = g_strdup(&argv[i][1]);
 			char *elem = "";
+
 			// If the following argument is NOT an option, take it as this option's param
-			if(argv[i+1] != NULL && argv[i+1][0] != '-') {
-				elem = argv[i+1];
+			if(argv[i + 1] != NULL && argv[i + 1][0] != '-') {
+				elem = argv[i + 1];
 				i++;
 			}
+
 			g_hash_table_insert(opts, key, g_strdup(elem));
-		}
-		else {
+		} else {
 			// This means a token has been supplied that neither is an option nor belongs to one
 		}
 	}

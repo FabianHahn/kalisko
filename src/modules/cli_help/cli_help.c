@@ -190,7 +190,7 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 		maxShortOptLength = shortOptLength;
 	}
 
-	int longOptLength = shortOpt ?  g_utf8_strlen(longOpt, -1) : 0;
+	int longOptLength = longOpt ?  g_utf8_strlen(longOpt, -1) : 0;
 	if(maxLongOptLength < longOptLength) {
 		maxLongOptLength = longOptLength;
 	}

@@ -185,12 +185,12 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 	clOptions = g_slist_prepend(clOptions, option);
 
 	// Check length of shortOpt and longOpt to create a nice output later
-	int shortOptLength = g_utf8_strlen(shortOpt, -1);
+	int shortOptLength = shortOpt ? g_utf8_strlen(shortOpt, -1) : 0;
 	if(maxShortOptLength < shortOptLength) {
 		maxShortOptLength = shortOptLength;
 	}
 
-	int longOptLength = g_utf8_strlen(longOpt, -1);
+	int longOptLength = shortOpt ?  g_utf8_strlen(longOpt, -1) : 0;
 	if(maxLongOptLength < longOptLength) {
 		maxLongOptLength = longOptLength;
 	}

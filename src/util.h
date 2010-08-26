@@ -32,5 +32,6 @@ API void setArgc(int count);
 API void breakpoint();
 API double getMicroTime();
 API int getTime();
+API char *getExecutableName();
 
 #endif

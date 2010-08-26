@@ -213,3 +213,34 @@ API int getTime()
 	g_get_current_time(&time);
 	return time.tv_sec;
 }
+
+/**
+ * Returns the executable name.
+ *
+ * @result		the name of the executable. Must be freed after use.
+ */
+API char *getExecutableName()
+{
+	char *name = g_get_prgname();
+	if(name) {
+		return strdup(name);
+	} else {
+		char **argv = getArgv();
+		char *firstArg = argv[0];
+
+		if(!firstArg) {
+			return strdup("[unknown]");
+		}
+
+#ifdef WIN32
+		char *nameStart = strrchr(firstArg, '\\');
+#else
+		char *nameStart = strrchr(firstArg, '/');
+#endif
+		if(!nameStart) {
+			return strdup("[unknown]");
+		}
+
+		return strdup(++nameStart);
+	}
+}

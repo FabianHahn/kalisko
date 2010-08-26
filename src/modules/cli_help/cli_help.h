@@ -23,5 +23,6 @@
 #define HELP_OPT_HELP_OPT_H
 
 API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *briefHelp, char *longHelp);
+API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp, char *longHelp);
 
 #endif

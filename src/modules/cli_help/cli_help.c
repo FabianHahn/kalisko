@@ -26,6 +26,7 @@
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
+#include "util.h"
 #include "memory_alloc.h"
 #include "modules/getopts/getopts.h"
 
@@ -36,7 +37,7 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -97,7 +98,9 @@ HOOK_LISTENER(modules_loaded)
 		return;
 	}
 
-	printf("\n%s%s%s\n\n", "Usage: ", g_get_prgname(), " [options] [arguments]");
+	char *execName = $$(char *, getExecutableName)();
+	printf("\n%s%s%s\n\n", "Usage: ", execName, " [options] [arguments]");
+	free(execName);
 
 	clOptions = g_slist_reverse(clOptions);
 	GSList *current = clOptions;

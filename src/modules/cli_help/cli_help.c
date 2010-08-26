@@ -37,7 +37,7 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -57,8 +57,7 @@ typedef struct {
 } CLArgument;
 
 HOOK_LISTENER(modules_loaded);
-inline static char *xstrdup(const char *str);
-inline static void xfree(void *obj);
+
 static void printOptionsHelp();
 static void printArgumentHelp();
 
@@ -84,17 +83,6 @@ MODULE_INIT
 	hasOptions = false;
 	hasArguments = false;
 
-	addCLOptionHelp("modul", "short", "long", "short help", "long help");
-	addCLOptionHelp("modul", NULL, "long", "short help", "long help");
-	addCLOptionHelp("modul", "short", NULL, "short help", "long help");
-	addCLOptionHelp("modul", "notsofuckingshortnah", NULL, "short help", "long help");
-	addCLOptionHelp("modul", NULL, "long", "short help", "long help");
-	addCLOptionHelp("modul", "notsofuckingshortnah", "long", "short help", "long help");
-	addCLArgumentHelp("module", "execute", "runs something", NULL);
-	addCLArgumentHelp("module", "run", "does something", NULL);
-	addCLArgumentHelp("module", "not_a_real_arg_but_verry_long", "too long!", NULL);
-
-
 	if(!HOOK_ATTACH(module_perform_finished, modules_loaded)) {
 		return false;
 	}
@@ -108,11 +96,20 @@ MODULE_FINALIZE
 
 	for(GSList *current = clOptions; current != NULL; current = g_slist_next(current)) {
 		CLOption *option = (CLOption *) current->data;
-		xfree(option->briefHelp);
-		xfree(option->longHelp);
-		xfree(option->longOpt);
-		xfree(option->module);
-		xfree(option->shortOpt);
+		free(option->briefHelp);
+		free(option->module);
+
+		if(option->longHelp) {
+			free(option->longHelp);
+		}
+
+		if(option->longOpt) {
+			free(option->longOpt);
+		}
+
+		if(option->shortOpt) {
+			free(option->shortOpt);
+		}
 
 		free(option);
 	}
@@ -124,7 +121,10 @@ MODULE_FINALIZE
 		free(argument->name);
 		free(argument->module);
 		free(argument->briefHelp);
-		argument->longHelp ? free(argument->longHelp) : NULL;
+
+		if(argument->longHelp) {
+			free(argument->longHelp);
+		}
 
 		free(argument);
 	}
@@ -190,11 +190,11 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 
 	// Create entry
 	CLOption *option = ALLOCATE_OBJECT(CLOption);
-	option->module = xstrdup(moduleName);
-	option->shortOpt = xstrdup(shortOpt);
-	option->longOpt = xstrdup(longOpt);
-	option->briefHelp = xstrdup(briefHelp);
-	option->longHelp = xstrdup(longHelp);
+	option->module = strdup(moduleName);
+	option->shortOpt = shortOpt ? strdup(shortOpt) : NULL;
+	option->longOpt = longOpt ? strdup(longOpt) : NULL;
+	option->briefHelp = strdup(briefHelp);
+	option->longHelp = longHelp ? strdup(longHelp) : NULL;
 
 	clOptions = g_slist_prepend(clOptions, option);
 
@@ -275,7 +275,7 @@ static void printArgumentHelp()
 		int whitespaces = maxArgumentLength + 4 - g_utf8_strlen(argument->name, -1);
 		char *whitespace = g_strnfill(whitespaces, ' ');
 
-		printf("%s%s%s (%s)\n", argument->name, whitespace, argument->briefHelp, argument->module);
+		printf("%s%s%s (Module: %s)\n", argument->name, whitespace, argument->briefHelp, argument->module);
 
 		free(whitespace);
 	}
@@ -317,14 +317,4 @@ static void printOptionsHelp()
 
 		free(whitepace);
 	}
-}
-
-inline static char *xstrdup(const char *str)
-{
-	return str ? strdup(str) : NULL;
-}
-
-inline static void xfree(void *obj)
-{
-	obj ? free(obj) : NULL;
 }

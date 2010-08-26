@@ -23,6 +23,7 @@
 #include "log.h"
 #include "module.h"
 #include "types.h"
+#include "hooks.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
 
@@ -39,6 +40,8 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
 
 MODULE_INIT
 {
+	HOOK_ADD(module_perform_finished);
+
 	LOG_INFO("Requesting perform modules");
 
 	Store *modules = $(Store *, config, getConfigPath)(PERFORM_CONFIG_PATH);
@@ -68,9 +71,12 @@ MODULE_INIT
 		LOG_DEBUG("Module perform does not have any modules to load.");
 	}
 
+	HOOK_TRIGGER(module_perform_finished);
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	HOOK_DEL(module_perform_finished);
 }

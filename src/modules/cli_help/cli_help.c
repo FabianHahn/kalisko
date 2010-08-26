@@ -20,12 +20,14 @@
 
 
 #include <glib.h>
+#include <stdio.h>
 
 #include "dll.h"
 #include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "memory_alloc.h"
+#include "modules/getopts/getopts.h"
 
 #include "api.h"
 #include "cli_help.h"
@@ -34,7 +36,7 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
 

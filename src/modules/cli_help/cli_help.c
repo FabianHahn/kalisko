@@ -153,6 +153,8 @@ HOOK_LISTENER(modules_loaded)
 	} else if (hasArguments && !hasOptions) {
 		printf("[arguments]\n\n");
 		printArgumentHelp();
+	} else {
+		printf("\n\nNo help for usage, options or arguments were given.\n");
 	}
 }
 

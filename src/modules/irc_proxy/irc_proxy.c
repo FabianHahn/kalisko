@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -393,6 +393,25 @@ API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception)
 		if(g_strcmp0(iter->data, exception) == 0) { // this is it
 			free(iter->data); // free the string
 			g_queue_remove(proxy->relay_exceptions, iter->data); // remove it from the exceptions list
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Checks if a proxy has a certain relay exception
+ * @see addIrcProxyRelayException
+ *
+ * @param proxy			the IRC proxy to check for an exception
+ * @param exception		the target that should be checked
+ * @result				true if the parameter is a relay exception
+ */
+API bool hasIrcProxyRelayException(IrcProxy *proxy, char *exception)
+{
+	for(GList *iter = proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
+		if(g_strcmp0(iter->data, exception) == 0) { // this is it
 			return true;
 		}
 	}

@@ -64,6 +64,7 @@ API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket);
 API void freeIrcProxy(IrcProxy *proxy);
 API void addIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception);
+API bool hasIrcProxyRelayException(IrcProxy *proxy, char *exception);
 API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 #endif

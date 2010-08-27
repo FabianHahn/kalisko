@@ -23,8 +23,10 @@
 #include "log.h"
 #include "module.h"
 #include "types.h"
+#include "hooks.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
+#include "modules/getopts/getopts.h"
 
 #include "api.h"
 
@@ -33,44 +35,93 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
 MODULE_INIT
 {
-	LOG_INFO("Requesting perform modules");
+	HOOK_ADD(module_perform_finished);
 
-	Store *modules = $(Store *, config, getConfigPath)(PERFORM_CONFIG_PATH);
-	if(modules != NULL) {
-		if(modules->type != STORE_LIST) {
-			LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
-			return false;
+	// Check for CLI options
+	char *moduleList = NULL;
+	if((moduleList = $(char *, getopts, getOpt)("load-modules")) == NULL || *moduleList == '\0') {
+		if((moduleList = $(char *, getopts, getOpt)("l")) == NULL || *moduleList == '\0') {
+			moduleList = NULL;
 		}
+	}
 
-		GQueue *list = modules->content.list;
+	char *appendModuleList = NULL;
+	if((appendModuleList = $(char *, getopts, getOpt)("append-modules")) == NULL || *appendModuleList == '\0') {
+		appendModuleList = NULL;
+	}
 
-		for(GList *iter = list->head; iter != NULL; iter = iter->next) {
-			Store *moduleName = (Store *) iter->data;
+	if(!moduleList) {
+		LOG_INFO("Requesting perform modules from configuration");
 
-			if(moduleName->type != STORE_STRING) {
-				LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
-				continue;
+		Store *modules = $(Store *, config, getConfigPath)(PERFORM_CONFIG_PATH);
+		if(modules != NULL) {
+			if(modules->type != STORE_LIST) {
+				LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
+				return false;
 			}
 
-			if(!$$(bool, requestModule)(moduleName->content.string)) {
-				LOG_ERROR("Module perform failed to request module %s", moduleName->content.string);
-			} else {
-				LOG_DEBUG("Module perform successfully requested %s", moduleName->content.string);
+			GQueue *list = modules->content.list;
+
+			for(GList *iter = list->head; iter != NULL; iter = iter->next) {
+				Store *moduleName = (Store *) iter->data;
+
+				if(moduleName->type != STORE_STRING) {
+					LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
+					continue;
+				}
+
+				if(!$$(bool, requestModule)(moduleName->content.string)) {
+					LOG_ERROR("Module perform failed to request module %s", moduleName->content.string);
+				} else {
+					LOG_DEBUG("Module perform successfully requested %s", moduleName->content.string);
+				}
 			}
+		} else {
+			LOG_DEBUG("Module perform does not have any modules to load.");
 		}
 	} else {
-		LOG_DEBUG("Module perform does not have any modules to load.");
+		LOG_INFO("Requesting modules given by CLI option");
+
+		char **modules = g_strsplit(moduleList, ",", -1);
+
+		for(int i = 0; modules[i] != NULL; i++) {
+			char *module = modules[i];
+
+			if(!$$(bool, requestModule)(module)) {
+				LOG_ERROR("Module perform failed to request module %s", module);
+			} else {
+				LOG_DEBUG("Module perform successfully requested %s", module);
+			}
+		}
 	}
+
+	if(appendModuleList) {
+		LOG_INFO("Requesting modules given by CLI option to append");
+		char **modules = g_strsplit(appendModuleList, ",", -1);
+
+		for(int i = 0; modules[i] != NULL; i++) {
+			char *module = modules[i];
+
+			if(!$$(bool, requestModule)(module)) {
+				LOG_ERROR("Module perform failed to request module %s", module);
+			} else {
+				LOG_DEBUG("Module perform successfully requested %s", module);
+			}
+		}
+	}
+
+	HOOK_TRIGGER(module_perform_finished);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	HOOK_DEL(module_perform_finished);
 }

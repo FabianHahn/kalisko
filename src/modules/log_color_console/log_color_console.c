@@ -29,6 +29,7 @@
 
 #include "dll.h"
 #include "hooks.h"
+#include "module.h"
 #include "modules/config/config.h"
 
 #include "log.h"
@@ -37,12 +38,13 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
 
 HOOK_LISTENER(log);
-HOOK_LISTENER(configChanged);
+
+bool logDefaultWasLoaded = false;
 
 static void updateConfig();
 
@@ -91,15 +93,15 @@ static void updateConfig();
 
 MODULE_INIT
 {
+	if($$(bool, revokeModule)("log_default")) {
+		logDefaultWasLoaded = true;
+	}
+
 	if(!HOOK_ATTACH(log, log)) {
 		return false;
 	}
 
 	updateConfig(); // we initialize the colors after attaching the log hook so we can see possible problems on the console.
-
-	if(!HOOK_ATTACH(stdConfigChanged, configChanged)) {
-		return false;
-	}
 
 	return true;
 }
@@ -107,6 +109,10 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	HOOK_DETACH(log, log);
+
+	if(logDefaultWasLoaded) {
+		$$(bool, requestModule)("log_default");
+	}
 }
 
 /**
@@ -158,10 +164,6 @@ HOOK_LISTENER(log)
 	free(now);
 	free(dateTime);
 	fflush(stderr);
-}
-
-HOOK_LISTENER(configChanged) {
-	updateConfig();
 }
 
 /**

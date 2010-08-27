@@ -18,20 +18,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UTIL_H
-#define UTIL_H
 
-API char *getExecutablePath();
-API char *getDirectoryPath(char *filePath);
-API int compareIntegers(const void *a, const void *b, void *data);
-API int compareTimes(const void *a, const void *b, void *data);
-API char **getArgv();
-API void setArgv(char **args);
-API int getArgc();
-API void setArgc(int count);
-API void breakpoint();
-API double getMicroTime();
-API int getTime();
-API char *getExecutableName();
+#ifndef HELP_OPT_HELP_OPT_H
+#define HELP_OPT_HELP_OPT_H
+
+API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *briefHelp);
+API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp);
 
 #endif

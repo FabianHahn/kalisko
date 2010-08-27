@@ -41,6 +41,8 @@ static bool unregisterLuaXCallFunction(void *key_p, void *value_p, void *data_p)
 static int lua_invokeXCall(lua_State *state);
 static int lua_addXCallFunction(lua_State *state);
 static int lua_delXCallFunction(lua_State *state);
+static int lua___index(lua_State *state);
+static int lua_callXCallFunction(lua_State *state);
 static Store *xcall_luaXCallFunction(Store *xcall);
 static Store *xcall_evaluateLua(Store *xcall);
 static Store *xcall_evaluateLuaScript(Store *xcall);
@@ -105,6 +107,12 @@ API bool luaInitStateXCall(lua_State *state)
 	lua_setglobal(state, "addXCallFunction");
 	lua_pushcfunction(state, &lua_delXCallFunction);
 	lua_setglobal(state, "delXCallFunction");
+
+	lua_newtable(state);
+	lua_pushstring(state, "__index");
+	lua_pushcfunction(state, &lua___index);
+	lua_settable(state, -3);
+	lua_setmetatable(state, LUA_GLOBALSINDEX);
 
 	return true;
 }
@@ -283,6 +291,73 @@ static int lua_delXCallFunction(lua_State *state)
 	LOG_INFO("Removed Lua XCall function '%s'", name);
 
 	lua_pushboolean(state, true);
+	return 1;
+}
+
+/**
+ * Lua C indexer function to be used in the global metatable
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
+static int lua___index(lua_State *state)
+{
+	const char *name = lua_tostring(state, 2);
+
+	if($(bool, xcall, existsXCallFunction)(name)) {
+		lua_pushvalue(state, 2); // push xcall name
+		lua_pushcclosure(state, &lua_callXCallFunction, 1); // create closure
+		LOG_DEBUG("Dispatching undeclared Lua variable access to XCall function %s", name);
+	} else {
+		lua_pushnil(state);
+	}
+
+	return 1;
+}
+
+/**
+ * Lua C function to call an xcall function defined inside a Lua closure
+ *
+ * @param state		the lua interpreter state during execution of the C function
+ * @result			the number of parameters on the lua stack
+ */
+static int lua_callXCallFunction(lua_State *state)
+{
+	Store *xcall;
+
+	if(lua_isstring(state, 1)) { // XCall invocation by string
+		const char *xcallstr = lua_tostring(state, 1);
+		xcall = $(Store *, store, parseStoreString)(xcallstr);
+
+		if(xcall == NULL) { // Failed to parse store
+			lua_pushnil(state);
+			return 1;
+		}
+
+		const char *function = lua_tostring(state, lua_upvalueindex(1));
+		$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreStringValue)(function));
+	} else if(lua_istable(state, 1)) { // XCall invocation by store
+		lua_pushvalue(state, 1);
+		xcall = parseLuaToStore(state);
+		lua_pop(state, 1);
+
+		if(xcall == NULL) { // Failed to parse store
+			lua_pushnil(state);
+			return 1;
+		}
+
+		const char *function = lua_tostring(state, lua_upvalueindex(1));
+		$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreStringValue)(function));
+	} else { // Empty params invocation
+		const char *function = lua_tostring(state, lua_upvalueindex(1));
+		xcall = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreStringValue)(function));
+	}
+
+	Store *ret = $(Store *, xcall, invokeXCall)(xcall);
+	parseStoreToLua(state, ret);
+	$(void, store, freeStore)(ret);
+
 	return 1;
 }
 

@@ -38,7 +38,8 @@
 
 #define USER_CONFIG_FILE_NAME "user.cfg"
 #define USER_OVERRIDE_CONFIG_FILE_NAME "override.cfg"
-#define GLOBAL_CONFIG_FILE_NAME "kalisko.cfg"
+#define PROFILES_CONFIG_FILE_NAME "profiles.cfg"
+#define GLOBAL_CONFIG_FILE_NAME "global.cfg"
 #define MERGE_CONFIG_PATH "merge"
 
 static char *writableConfigFilePath;
@@ -116,6 +117,23 @@ MODULE_INIT
 	}
 
 	checkFilesMerge(config); // ... and once in the profile itself
+
+	// Load global configuration after processing the profile path
+	char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	LOG_DEBUG("Expecting global config at '%s'", globalConfigFilePath);
+
+	if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
+		Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
+
+		if(!$(bool, store, mergeStore)(globalConfig, config)) {
+			LOG_WARNING("Could not merge global config store into selected profile store.");
+		}
+
+		$(void, store, freeStore)(config);
+		config = globalConfig;
+	}
+
+	free(globalConfigFilePath);
 
 	return true;
 }
@@ -212,10 +230,14 @@ static void loadDefaultConfigs()
 	char *userDir = getUserKaliskoConfigPath();
 	char *userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
 	writableConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+	char *profilesConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), PROFILES_CONFIG_FILE_NAME, NULL);
 
-	if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
-		config = $(Store *, store, parseStoreFile)(globalConfigFilePath);
+	LOG_DEBUG("Expecting user config at '%s'", userConfigFilePath);
+	LOG_DEBUG("Expecting writable config at '%s'", writableConfigFilePath);
+	LOG_DEBUG("Expecting profiles config at '%s'", profilesConfigFilePath);
+
+	if(g_file_test(profilesConfigFilePath, G_FILE_TEST_EXISTS)) {
+		config = $(Store *, store, parseStoreFile)(profilesConfigFilePath);
 	}
 
 	if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
@@ -225,7 +247,7 @@ static void loadDefaultConfigs()
 			config = userConfig;
 		} else {
 			if(!$(bool, store, mergeStore)(config, userConfig)) {
-				LOG_WARNING("Could not merge global config store with user config store.");
+				LOG_WARNING("Could not merge profiles config store with user config store.");
 			}
 
 			$(void, store, freeStore)(userConfig);
@@ -247,7 +269,7 @@ static void loadDefaultConfigs()
 	}
 
 	// free locally used paths
-	free(globalConfigFilePath);
+	free(profilesConfigFilePath);
 	free(userConfigFilePath);
 	free(userDir);
 }

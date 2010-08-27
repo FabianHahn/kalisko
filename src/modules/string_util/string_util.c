@@ -31,7 +31,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -100,5 +100,21 @@ API void stripDuplicateNewlines(char *str)
 		// Now let's move forward to the next whitespace
 		textlength = strcspn(str, NEWLINE_CHARS);
 		str += textlength, len -= textlength;
+	}
+}
+
+/**
+ * Converts a string into a valid filename by replacing all non-alphanumeric non-# characters by underscores
+ *
+ * @param str		the string to convert to a filename
+ */
+API void convertToFilename(char *str)
+{
+	unsigned int len = strlen(str);
+
+	for(unsigned int i = 0; i < len; i++) {
+		if(!isalnum(str[i]) && str[i] != '#') {
+			str[i] = '_';
+		}
 	}
 }

@@ -46,7 +46,7 @@ MODULE_INIT
 	// Check for CLI options
 	char *moduleList = NULL;
 	if((moduleList = $(char *, getopts, getOpt)("load-modules")) == NULL || *moduleList == '\0') {
-		if((moduleList = $(char *, getopts, getOpt)("l")) == NULL || *moduleList == '\0') {
+		if((moduleList = $(char *, getopts, getOpt)("m")) == NULL || *moduleList == '\0') {
 			moduleList = NULL;
 		}
 	}

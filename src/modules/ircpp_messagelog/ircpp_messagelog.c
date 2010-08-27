@@ -35,7 +35,7 @@
 MODULE_NAME("ircpp_messagelog");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows IRC messages to be logged to the hard drive");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 5), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("string_util", 0, 1, 3));
 
@@ -129,7 +129,7 @@ HOOK_LISTENER(remote_line)
 				g_string_append_printf(path, "/%s", proxy->name);
 
 				if(!g_file_test(path->str, G_FILE_TEST_IS_DIR)) {
-					if(g_mkdir_with_parents(path->str, 750) == -1) {
+					if(g_mkdir_with_parents(path->str, 0750) == -1) {
 						LOG_SYSTEM_ERROR("Failed to create IRC proxy message log folder %s", path->str);
 						g_string_free(path, true);
 						return;

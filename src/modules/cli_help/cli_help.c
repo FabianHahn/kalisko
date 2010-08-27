@@ -46,14 +46,12 @@ typedef struct {
 	char *shortOpt;
 	char *longOpt;
 	char *briefHelp;
-	char *longHelp;
 } CLOption;
 
 typedef struct {
 	char *module;
 	char *name;
 	char *briefHelp;
-	char *longHelp;
 } CLArgument;
 
 HOOK_LISTENER(modules_loaded);
@@ -99,10 +97,6 @@ MODULE_FINALIZE
 		free(option->briefHelp);
 		free(option->module);
 
-		if(option->longHelp) {
-			free(option->longHelp);
-		}
-
 		if(option->longOpt) {
 			free(option->longOpt);
 		}
@@ -121,10 +115,6 @@ MODULE_FINALIZE
 		free(argument->name);
 		free(argument->module);
 		free(argument->briefHelp);
-
-		if(argument->longHelp) {
-			free(argument->longHelp);
-		}
 
 		free(argument);
 	}
@@ -169,10 +159,9 @@ HOOK_LISTENER(modules_loaded)
  * @param shortOpt		The short option without a prepended dash (so without the '-'). Optional.
  * @param longOpt		The long option without a prepended double dash (so without the '--'). Optional.
  * @param briefHelp		The short help. Required.
- * @param longHelp		The long help explaining how to use this specific option. Optional.
  * @return True if the help was added, false on error.
  */
-API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *briefHelp, char *longHelp)
+API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *briefHelp)
 {
 	// Check params
 	if(!moduleName) {
@@ -196,7 +185,6 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 	option->shortOpt = shortOpt ? strdup(shortOpt) : NULL;
 	option->longOpt = longOpt ? strdup(longOpt) : NULL;
 	option->briefHelp = strdup(briefHelp);
-	option->longHelp = longHelp ? strdup(longHelp) : NULL;
 
 	clOptions = g_slist_prepend(clOptions, option);
 
@@ -225,10 +213,9 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
  * @param moduleName	The name of the module owning the argument. Required.
  * @param name			The name of the argument. Required.
  * @param briefHelp		The short help. Required.
- * @param longHelp		The long help explaining what will happen by using this argument. Optional.
  * @return True if the help was added, false on error.
  */
-API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp, char *longHelp)
+API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp)
 {
 	// Check params
 	if(!moduleName) {
@@ -251,7 +238,6 @@ API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp, char *
 	argument->module = moduleName;
 	argument->name = name;
 	argument->briefHelp = briefHelp;
-	argument->longHelp = longHelp ? longHelp : NULL;
 
 	clArguments = g_slist_prepend(clArguments, argument);
 

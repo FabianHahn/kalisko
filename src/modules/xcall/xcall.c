@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 7);
+MODULE_VERSION(0, 2, 8);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -203,6 +203,7 @@ API Store *invokeXCallByString(const char *xcallstr)
 		g_string_free(err, true);
 	} else {
 		ret = invokeXCall(xcall);
+		$(void, store, freeStore)(xcall);
 	}
 
 	return ret;

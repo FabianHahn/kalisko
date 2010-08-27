@@ -35,7 +35,7 @@
 MODULE_NAME("xcall");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The xcall module provides a powerful interface for cross function calls between different languages");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -92,6 +92,21 @@ API bool delXCallFunction(const char *name)
 	g_hash_table_remove(functions, name);
 
 	return true;
+}
+
+/**
+ * Checks whether an XCall function exists
+ *
+ * @param name		the name of the xcall function
+ * @result			true if it exists
+ */
+API bool existsXCallFunction(const char *name)
+{
+	if(g_hash_table_lookup(functions, name) != NULL) { // A xcall with that name already exists
+		return true;
+	}
+
+	return false;
 }
 
 /**

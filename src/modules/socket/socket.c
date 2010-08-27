@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 10);
+MODULE_VERSION(0, 6, 11);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -244,7 +244,7 @@ API bool connectSocket(Socket *s)
 
 			freeaddrinfo(server);
 
-			LOG_DEBUG("Connected server socket %d", s->fd);
+			LOG_DEBUG("Connected server socket %d on port %s", s->fd, s->port);
 		break;
 		case SOCKET_CLIENT:
 			memset(&hints, 0, sizeof(struct addrinfo));
@@ -337,7 +337,7 @@ API bool connectSocket(Socket *s)
 
 			freeaddrinfo(server);
 
-			LOG_DEBUG("Connected client socket %d", s->fd);
+			LOG_DEBUG("Connected client socket %d to %s:%s", s->fd, s->host, s->port);
 		break;
 		case SOCKET_SERVER_CLIENT:
 			LOG_ERROR("Cannot connect to server client socket, aborting");

@@ -198,6 +198,7 @@ static int lua_invokeXCall(lua_State *state)
 		}
 
 		ret = $(Store *, xcall, invokeXCall)(xcall);
+		$(void, store, freeStore)(ret);
 	} else { // invalied XCall invocation
 		lua_pushnil(state);
 		return 1;
@@ -355,6 +356,7 @@ static int lua_callXCallFunction(lua_State *state)
 	}
 
 	Store *ret = $(Store *, xcall, invokeXCall)(xcall);
+	$(void, store, freeStore)(xcall);
 	parseStoreToLua(state, ret);
 	$(void, store, freeStore)(ret);
 

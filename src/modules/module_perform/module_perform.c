@@ -27,6 +27,7 @@
 #include "modules/config/config.h"
 #include "modules/config/util.h"
 #include "modules/getopts/getopts.h"
+#include "modules/store/store.h"
 
 #include "api.h"
 
@@ -35,9 +36,9 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
 MODULE_INIT
 {
@@ -46,7 +47,7 @@ MODULE_INIT
 	// Check for CLI options
 	char *moduleList = NULL;
 	if((moduleList = $(char *, getopts, getOpt)("load-modules")) == NULL || *moduleList == '\0') {
-		if((moduleList = $(char *, getopts, getOpt)("l")) == NULL || *moduleList == '\0') {
+		if((moduleList = $(char *, getopts, getOpt)("m")) == NULL || *moduleList == '\0') {
 			moduleList = NULL;
 		}
 	}

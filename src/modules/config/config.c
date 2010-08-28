@@ -56,7 +56,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -81,6 +81,7 @@ MODULE_INIT
 		Store *cmdConfig = $(Store *, store, parseStoreFile)(configFilePath);
 		if(cmdConfig == NULL) {
 			LOG_ERROR("Given file path could not be read and used as configuration file: %s", configFilePath);
+			finalize();
 			return false;
 		}
 

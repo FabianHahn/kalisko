@@ -32,7 +32,7 @@ exclude = []
 cppdefines = []
 for key, value in ARGLIST:
 	if key == 'exclude':
-		exclude = exclude + [value]
+		exclude = exclude + value.split(',')
 	elif key == 'define':
 		keyvalue = value.split(':', 1)
 		if len(keyvalue) == 2:

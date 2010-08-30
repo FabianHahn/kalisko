@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 11);
+MODULE_VERSION(0, 6, 12);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -686,12 +686,12 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
  */
 API Socket *socketAccept(Socket *server)
 {
-	struct sockaddr_storage remoteAddress;
-	socklen_t remoteAddressSize = sizeof(remoteAddress);
+	struct sockaddr_in address;
+	socklen_t addressSize = sizeof(struct sockaddr_in);
 
 	int fd;
 
-	if((fd = accept(server->fd, (struct sockaddr *) &remoteAddress, &remoteAddressSize)) == -1) {
+	if((fd = accept(server->fd, (struct sockaddr *) &address, &addressSize)) == -1) {
 #ifdef WIN32
 		if(WSAGetLastError() == WSAEWOULDBLOCK) {
 #else
@@ -709,11 +709,9 @@ API Socket *socketAccept(Socket *server)
 		return NULL;
 	}
 
-	struct sockaddr_in *address = (struct sockaddr_in *) &remoteAddress;
-
-	GString *ip = ip2str(address->sin_addr.s_addr);
+	GString *ip = ip2str(address.sin_addr.s_addr);
 	GString *port = g_string_new("");
-	g_string_append_printf(port, "%d", ntohs(address->sin_port));
+	g_string_append_printf(port, "%d", ntohs(address.sin_port));
 
 	Socket *client = ALLOCATE_OBJECT(Socket);
 	client->fd = fd;

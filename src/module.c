@@ -48,7 +48,7 @@
 
 static GHashTable *modules;
 static Module *core;
-static char *modpath;
+static char *modpath = NULL;
 
 static bool needModule(char *name, Version *needver, Module *parent);
 static void unneedModule(void *name_p, void *mod_p, void *parent_p);
@@ -64,21 +64,7 @@ API void initModules()
 {
 	modules = g_hash_table_new(&g_str_hash, &g_str_equal);
 
-	char *execpath = getExecutablePath();
-
-	GString *temp = g_string_new(execpath);
-	g_string_append(temp, MODULE_RELPATH);
-
-	modpath = temp->str;
-
-	g_string_free(temp, FALSE);
-	free(execpath);
-
-#ifdef WIN32
-	if(!SetDllDirectory(modpath)) {
-		logMessage(LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
-	}
-#endif
+	resetModuleSearchPath();
 
 	// Construct our own symbolic core module
 	core = allocateMemory(sizeof(Module));
@@ -115,6 +101,56 @@ API void freeModules()
 	freeVersion(core->version);
 	freeVersion(core->bcversion);
 	free(core);
+}
+
+/**
+ * Returns the current module search path
+ *
+ * @result			the current module search path, must not be changed
+ */
+API char *getModuleSearchPath()
+{
+	return modpath;
+}
+
+/**
+ * Sets the module search path to a different directory
+ *
+ * @param path		the new module search path to use or NULL to disable the search path
+ */
+API void setModuleSearchPath(char *path)
+{
+	if(modpath != NULL) {
+		free(modpath);
+	}
+
+	if(path != NULL) {
+		modpath = strdup(path);
+	} else {
+		modpath = NULL;
+	}
+
+#ifdef WIN32
+	if(!SetDllDirectory(modpath)) {
+		logMessage(LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
+	}
+#endif
+}
+
+/**
+ * Resets the module search path to its default value
+ */
+API void resetModuleSearchPath()
+{
+	char *execpath = getExecutablePath();
+
+	GString *temp = g_string_new(execpath);
+	g_string_append(temp, MODULE_RELPATH);
+
+	setModuleSearchPath(temp->str);
+
+	g_string_free(temp, true);
+	free(execpath);
 }
 
 /**

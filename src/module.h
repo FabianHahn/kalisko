@@ -55,6 +55,9 @@ typedef char *(ModuleDescriptor)();
 
 API void initModules();
 API void freeModules();
+API char *getModuleSearchPath();
+API void setModuleSearchPath(char *path);
+API void resetModuleSearchPath();
 API char *getModuleAuthor(const char *name);
 API char *getModuleDescription(const char *name);
 API Version *getModuleVersion(const char *name);

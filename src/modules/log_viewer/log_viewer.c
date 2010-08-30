@@ -37,7 +37,7 @@
 MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
 
@@ -195,7 +195,7 @@ HOOK_LISTENER(newLogMessage)
 	g_get_current_time(now);
 	char *dateTime = g_time_val_to_iso8601(now);
 
-	GdkPixbuf *icon;
+	GdkPixbuf *icon = NULL;
 	switch(type) {
 		case LOG_TYPE_ERROR:
 			icon = gtk_widget_render_icon(GTK_WIDGET(window->window), GTK_STOCK_DIALOG_ERROR, GTK_ICON_SIZE_MENU, NULL);

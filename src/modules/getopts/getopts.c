@@ -58,8 +58,7 @@ void parseArgv()
 	int argc = $$(int, getArgc)();
 
 	for(int i = 0; i < argc; i++) {
-		// Long option
-		if(g_str_has_prefix(argv[i], "--")) {
+		if(g_str_has_prefix(argv[i], "--")) { // Long option
 			// End of option string when this is just "--"
 			if(strlen(argv[i]) == 2) {
 				break;
@@ -74,16 +73,15 @@ void parseArgv()
 			char *equal = g_strstr_len(opt, -1, "=");
 			// Store option
 			if(equal == NULL) {
-				g_hash_table_insert(opts, g_strdup(opt), g_strdup(""));
+				g_hash_table_insert(opts, strdup(opt), strdup(""));
 			} else {
-				g_hash_table_insert(opts, g_strndup(opt, equal - opt), g_strdup(equal + 1));
+				g_hash_table_insert(opts, strndup(opt, equal - opt), strdup(equal + 1));
 			}
-		} else if(*argv[i] == '-') {
-			// Short option(s)
+		} else if(*argv[i] == '-') { // Short option(s)
 
 			// There can't be any more dashes due to the previous condition, so simply skip the first
 			// Anything thereafter is the name of the short option
-			char *key = g_strdup(&argv[i][1]);
+			char *key = strdup(&argv[i][1]);
 			char *elem = "";
 
 			// If the following argument is NOT an option, take it as this option's param
@@ -92,7 +90,7 @@ void parseArgv()
 				i++;
 			}
 
-			g_hash_table_insert(opts, key, g_strdup(elem));
+			g_hash_table_insert(opts, key, strdup(elem));
 		} else {
 			// This means a token has been supplied that neither is an option nor belongs to one
 		}
@@ -117,3 +115,4 @@ API char *getOpt(char *opt)
 	// Return item from hashtable
 	return (char*)g_hash_table_lookup(opts, opt);
 }
+

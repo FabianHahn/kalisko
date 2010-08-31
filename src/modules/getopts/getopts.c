@@ -27,6 +27,7 @@
 #include "types.h"
 #include "timer.h"
 #include "util.h"
+#include "string.h"
 
 #include "api.h"
 

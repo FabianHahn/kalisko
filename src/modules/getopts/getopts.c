@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <glib.h>
+#include <string.h>
 
 #include "dll.h"
 #include "hooks.h"
@@ -27,7 +28,6 @@
 #include "types.h"
 #include "timer.h"
 #include "util.h"
-#include "string.h"
 
 #include "api.h"
 
@@ -76,7 +76,7 @@ void parseArgv()
 			if(equal == NULL) {
 				g_hash_table_insert(opts, strdup(opt), strdup(""));
 			} else {
-				g_hash_table_insert(opts, strndup(opt, equal - opt), strdup(equal + 1));
+				g_hash_table_insert(opts, g_strndup(opt, equal - opt), strdup(equal + 1));
 			}
 		} else if(*argv[i] == '-') { // Short option(s)
 

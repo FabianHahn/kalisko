@@ -43,6 +43,9 @@ typedef enum
 	LOG_TYPE_ERROR
 } LogType;
 
+/**
+ * Log handler function pointer type
+ */
 typedef void (LogHandler)(LogType type, char *message);
 
 API void initLog();

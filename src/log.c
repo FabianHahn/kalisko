@@ -19,6 +19,7 @@
  */
 
 
+#include <stdlib.h>
 #include <stdio.h> // vsnprintf
 #include <stdarg.h> // va_list, va_start
 #include <time.h> // time_t
@@ -27,16 +28,35 @@
 #include "api.h"
 #include "log.h"
 
+#ifndef LOG_DEFAULT_LEVEL
+#define LOG_DEFAULT_LEVEL LOG_TYPE_DEBUG
+#endif
+
 static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData);
+static void defaultLogHandler(LogType type, char *message);
+
+static LogHandler *logHandler = &defaultLogHandler;
 
 /**
  * Inits logging
  */
 API void initLog()
 {
-	addHook("log");
-
 	g_log_set_default_handler(handleGlibLogMessage, NULL);
+}
+
+/**
+ * Sets or resets the log handler
+ *
+ * @param handler		the new log handler to use or NULL if the default handler should be restored
+ */
+API void setLogHandler(LogHandler *handler)
+{
+	if(handler == NULL) {
+		logHandler = &defaultLogHandler;
+	} else {
+		logHandler = handler;
+	}
 }
 
 /**
@@ -53,7 +73,7 @@ API void logMessage(LogType type, char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, LOG_MSG_MAXLEN, message, va);
 
-	triggerHook("log", type, buffer);
+	logHandler(type, buffer);
 }
 
 /**
@@ -90,4 +110,29 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 		default:
 			logMessage(LOG_TYPE_WARNING, "Unknown '%s' log type: %d, message: '%s'", fixedDomain, logLevel, message);
 	}
+}
+
+static void defaultLogHandler(LogType type, char *message)
+{
+	GTimeVal now;
+	g_get_current_time(&now);
+	char *dateTime = g_time_val_to_iso8601(&now);
+
+	switch(LOG_DEFAULT_LEVEL) {
+		case LOG_TYPE_DEBUG:
+			if(type == LOG_TYPE_DEBUG)
+				fprintf(stderr, "%s DEBUG: %s\n", dateTime, message);
+		case LOG_TYPE_INFO:
+			if(type == LOG_TYPE_INFO)
+				fprintf(stderr, "%s INFO: %s\n", dateTime, message);
+		case LOG_TYPE_WARNING:
+			if(type == LOG_TYPE_WARNING)
+				fprintf(stderr, "%s WARNING: %s\n", dateTime, message);
+		case LOG_TYPE_ERROR:
+			if(type == LOG_TYPE_ERROR)
+				fprintf(stderr, "%s ERROR: %s\n", dateTime, message);
+	}
+
+	free(dateTime);
+	fflush(stderr);
 }

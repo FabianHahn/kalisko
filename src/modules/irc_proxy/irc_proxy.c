@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 6);
+MODULE_VERSION(0, 3, 7);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -461,6 +461,7 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 		proxyClientIrcSend(client, "QUIT :%s", quitmsg);
 	}
 
+	$(int, event, triggerEvent)(client->proxy, "client_disconnected", client);
 	$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
 	$(void, event, detachEventListener)(client->socket, "read", NULL, &listener_clientRead);
 	$(void, event, detachEventListener)(client->socket, "disconnect", NULL, &listener_clientDisconnect);

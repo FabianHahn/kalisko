@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "timer.h"
@@ -34,7 +33,7 @@
 MODULE_NAME("getopts");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module parses command line arguments and stores them for later use.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 

@@ -21,7 +21,6 @@
 #include <glib.h>
 #include <stdlib.h>
 #include "dll.h"
-#include "hooks.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/store/write.h"
@@ -56,7 +55,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 

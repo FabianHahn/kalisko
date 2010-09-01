@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
-#include "hooks.h"
 #include "timer.h"
 #include "module.h"
 #include "memory_alloc.h"
@@ -48,7 +47,6 @@ int main(int argc, char **argv)
 	setArgv(argv);
 
 	initMemory();
-	initHooks();
 	initTimers();
 	initLog();
 	initModules();
@@ -64,7 +62,6 @@ int main(int argc, char **argv)
 
 	freeModules();
 	freeTimers();
-	freeHooks();
 
 	return EXIT_SUCCESS;
 }

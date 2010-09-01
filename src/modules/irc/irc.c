@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
@@ -195,7 +195,7 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 
 	if(!$(bool, socket, connectSocket)(irc->socket) || !$(bool, socket, enableSocketPolling)(irc->socket)) {
 		LOG_ERROR("Failed to connect IRC connection socket");
-		$(void, socket, freeIrcConnection)(irc);
+		freeIrcConnection(irc);
 		return NULL;
 	}
 
@@ -222,41 +222,41 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	char *real;
 	char *nick;
 
-	if((param = $(Store *, config, getStorePath)(params, "server")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "server")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'server', aborting IRC connection");
 		return NULL;
 	}
 
 	server = param->content.string;
 
-	if((param = $(Store *, config, getStorePath)(params, "port")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "port")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'port', aborting IRC connection");
 		return NULL;
 	}
 
 	port = param->content.string;
 
-	if((param = $(Store *, config, getStorePath)(params, "password")) != NULL && param->type == STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "password")) != NULL && param->type == STORE_STRING) {
 		password = param->content.string;
 	} else {
 		password = NULL;
 	}
 
-	if((param = $(Store *, config, getStorePath)(params, "user")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "user")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'user', aborting IRC connection");
 		return NULL;
 	}
 
 	user = param->content.string;
 
-	if((param = $(Store *, config, getStorePath)(params, "real")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "real")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'real', aborting IRC connection");
 		return NULL;
 	}
 
 	real = param->content.string;
 
-	if((param = $(Store *, config, getStorePath)(params, "nick")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(params, "nick")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'nick', aborting IRC connection");
 		return NULL;
 	}

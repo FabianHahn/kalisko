@@ -37,7 +37,7 @@
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a multi-user multi-connection IRC bouncer service that can be configured via the standard config");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -153,7 +153,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	Store *param;
 	char *password;
 
-	if((param = $(Store *, config, getStorePath)(config, "password")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(config, "password")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'password' for IRC bouncer configuration '%s', aborting IRC proxy", name);
 		$(void, irc, freeIrcConnection)(irc);
 		return NULL;
@@ -176,7 +176,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	}
 
 	// Enable plugins listed in config / params
-	if((param = $(Store *, config, getStorePath)(config, "plugins")) != NULL && param->type == STORE_LIST) {
+	if((param = $(Store *, store, getStorePath)(config, "plugins")) != NULL && param->type == STORE_LIST) {
 		GQueue *plugins = param->content.list;
 		unsigned int i = 0;
 

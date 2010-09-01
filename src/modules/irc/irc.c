@@ -24,7 +24,6 @@
 #include <glib.h>
 #include "dll.h"
 #include "log.h"
-#include "hooks.h"
 #include "memory_alloc.h"
 #include "util.h"
 #include "modules/store/store.h"
@@ -33,20 +32,21 @@
 #include "modules/socket/poll.h"
 #include "modules/string_util/string_util.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/event/event.h"
 #include "api.h"
 #include "irc.h"
 
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(throttle_poll);
-HOOK_LISTENER(irc_disconnect);
-HOOK_LISTENER(irc_line);
-HOOK_LISTENER(irc_read);
+static void listener_throttlePoll(void *subject, const char *event, void *data, va_list args);
+static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args);
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
+static void listener_ircRead(void *subject, const char *event, void *data, va_list args);
 
 static GHashTable *connections;
 static GQueue *throttled;
@@ -58,14 +58,7 @@ MODULE_INIT
 	connections = g_hash_table_new(NULL, NULL);
 	throttled = g_queue_new();
 
-	HOOK_ATTACH(socket_poll, throttle_poll);
-	HOOK_ATTACH(socket_read, irc_read);
-	HOOK_ATTACH(socket_disconnect, irc_disconnect);
-	HOOK_ADD(irc_send);
-	HOOK_ADD(irc_line);
-	HOOK_ADD(irc_nick);
-	HOOK_ADD(irc_disconnect);
-	HOOK_ATTACH(irc_line, irc_line);
+	$(void, event, attachEventListener)(NULL, "sockets_polled", NULL, &listener_throttlePoll);
 
 	return true;
 }
@@ -75,17 +68,10 @@ MODULE_FINALIZE
 	g_hash_table_destroy(connections);
 	g_queue_free(throttled);
 
-	HOOK_DEL(irc_disconnect);
-	HOOK_DEL(irc_nick);
-	HOOK_DEL(irc_send);
-	HOOK_DETACH(irc_line, irc_line);
-	HOOK_DEL(irc_line);
-	HOOK_DETACH(socket_disconnect, irc_disconnect);
-	HOOK_DETACH(socket_read, irc_read);
-	HOOK_DETACH(socket_poll, throttle_poll);
+	$(void, event, detachEventListener)(NULL, "sockets_polled", NULL, &listener_throttlePoll);
 }
 
-HOOK_LISTENER(throttle_poll)
+static void listener_throttlePoll(void *subject, const char *event, void *data, va_list args)
 {
 	double now = $$(double, getMicroTime)();
 
@@ -105,7 +91,7 @@ HOOK_LISTENER(throttle_poll)
 
 		while(!g_queue_is_empty(irc->obuffer) && (irc->throttle_time - now) < 10.0) { // repeat while lines and throttle space left
 			GString *line = g_queue_pop_head(irc->obuffer); // pop the next output buffer line
-			HOOK_TRIGGER(irc_send, irc, line->str); // trigger send hook
+			$(int, event, triggerEvent)(irc, "send", line->str); // trigger send event
 			g_string_append_c(line, '\n'); // append newline
 			$(bool, socket, socketWriteRaw)(irc->socket, line->str, line->len); // send it
 			irc->throttle_time += (2.0 + line->len) / 120.0; // penalty throttle time by line length
@@ -122,20 +108,20 @@ HOOK_LISTENER(throttle_poll)
 	g_queue_free(dead);
 }
 
-HOOK_LISTENER(irc_disconnect)
+static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *socket = HOOK_ARG(Socket *);
+	Socket *socket = subject;
 
 	IrcConnection *irc;
 	if((irc = g_hash_table_lookup(connections, socket)) != NULL) { // This socket belongs to an IRC connection
-		HOOK_TRIGGER(irc_disconnect, irc);
+		$(int, event, triggerEvent)(irc, "disconnect");
 	}
 }
 
-HOOK_LISTENER(irc_read)
+static void listener_ircRead(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *socket = HOOK_ARG(Socket *);
-	char *message = HOOK_ARG(char *);
+	Socket *socket = subject;
+	char *message = va_arg(args, char *);
 
 	IrcConnection *irc;
 	if((irc = g_hash_table_lookup(connections, socket)) != NULL) {
@@ -144,10 +130,10 @@ HOOK_LISTENER(irc_read)
 	}
 }
 
-HOOK_LISTENER(irc_line)
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcConnection *irc = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
@@ -158,7 +144,7 @@ HOOK_LISTENER(irc_line)
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Our own nickname was changed
 				free(irc->nick); // free old nick
 				irc->nick = strdup(mask->nick); // store new nick
-				HOOK_TRIGGER(irc_nick, irc); // notify listeners
+				$(int, event, triggerEvent)(irc, "nick"); // notify listeners
 			}
 
 			free(mask);
@@ -192,6 +178,10 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 	irc->throttle = false;
 	irc->obuffer = NULL;
 	irc->socket = $(Socket *, socket, createClientSocket)(server, port);
+
+	$(void, event, attachEventListener)(irc->socket, "read", NULL, &listener_ircRead);
+	$(void, event, attachEventListener)(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
+	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
 
 	if(!$(bool, socket, connectSocket)(irc->socket) || !$(bool, socket, enableSocketPolling)(irc->socket)) {
 		LOG_ERROR("Failed to connect IRC connection socket");
@@ -329,6 +319,10 @@ API void freeIrcConnection(IrcConnection *irc)
 
 	g_hash_table_remove(connections, irc->socket);
 
+	$(void, event, detachEventListener)(irc->socket, "read", NULL, &listener_ircRead);
+	$(void, event, detachEventListener)(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
+	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
+
 	$(void, socket, freeSocket)(irc->socket);
 	free(irc->password);
 	free(irc->user);
@@ -360,7 +354,7 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
 		return true;
 	}
 
-	HOOK_TRIGGER(irc_send, irc, buffer);
+	$(int, event, triggerEvent)(irc, "send", buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
@@ -419,7 +413,7 @@ static void checkForBufferLine(IrcConnection *irc)
 					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
 
 					if(ircMessage != NULL) {
-						HOOK_TRIGGER(irc_line, irc, ircMessage);
+						$(int, event, triggerEvent)(irc, "line", ircMessage);
 
 						// Free the IRC message
 						$(void, irc_parser, freeIrcMessage)(ircMessage);

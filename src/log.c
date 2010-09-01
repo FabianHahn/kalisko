@@ -26,7 +26,6 @@
 
 #include "api.h"
 #include "log.h"
-#include "hooks.h"
 
 static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData);
 

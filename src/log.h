@@ -43,6 +43,8 @@ typedef enum
 	LOG_TYPE_ERROR
 } LogType;
 
+typedef void (LogHandler)(LogType type, char *message);
+
 API void initLog();
 API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
 

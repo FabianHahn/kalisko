@@ -22,7 +22,6 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "modules/irc/irc.h"
@@ -32,16 +31,19 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
+#include "modules/event/event.h"
 #include "api.h"
 
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a multi-user multi-connection IRC bouncer service that can be configured via the standard config");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(bouncer_reattach);
+static void listener_bouncerReattached(void *subject, const char *event, void *data, va_list args);
+static void listener_clientConnected(void *subject, const char *event, void *data, va_list args);
+static void listener_clientDisconnected(void *subject, const char *event, void *data, va_list args);
 static IrcProxy *createIrcProxyByStore(char *name, Store *config);
 
 /**
@@ -70,20 +72,18 @@ MODULE_INIT
 		if((proxy = createIrcProxyByStore(name, bnc)) == NULL) { // creating bouncer failed
 			LOG_WARNING("Failed to create IRC proxy for IRC bouncer configuration '%s', skipping", name);
 		} else {
+			$(void, event, attachEventListener)(proxy, "client_connect", NULL, &listener_clientConnected);
+			$(void, event, attachEventListener)(proxy, "client_disconnect", NULL, &listener_clientDisconnected);
 			LOG_INFO("Successfully created an IRC proxy for IRC bouncer configuration '%s'", name);
 			g_hash_table_insert(proxies, proxy->name, proxy); // add the proxy to the table
 		}
 	}
-
-	HOOK_ATTACH(irc_proxy_client_authenticated, bouncer_reattach);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(irc_proxy_client_authenticated, bouncer_reattach);
-
 	GHashTableIter iter;
 	char *name;
 	IrcProxy *proxy;
@@ -99,9 +99,9 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxies);
 }
 
-HOOK_LISTENER(bouncer_reattach)
+static void listener_bouncerReattached(void *subject, const char *event, void *data, va_list args)
 {
-	IrcProxyClient *client = HOOK_ARG(IrcProxyClient *);
+	IrcProxyClient *client = subject;
 	IrcConnection *irc = client->proxy->irc;
 
 	if(g_hash_table_lookup(proxies, client->proxy->name) != NULL) { // this proxy is actually a bouncer proxy
@@ -116,6 +116,20 @@ HOOK_LISTENER(bouncer_reattach)
 
 		g_list_free(channels);
 	}
+}
+
+static void listener_clientConnected(void *subject, const char *event, void *data, va_list args)
+{
+	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
+
+	$(void, event, attachEventListener)(client, "authenticated", NULL, &listener_bouncerReattached);
+}
+
+static void listener_clientDisconnected(void *subject, const char *event, void *data, va_list args)
+{
+	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
+
+	$(void, event, detachEventListener)(client, "authenticated", NULL, &listener_bouncerReattached);
 }
 
 /**

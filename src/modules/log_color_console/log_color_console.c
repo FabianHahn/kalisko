@@ -38,7 +38,7 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
 
@@ -59,7 +59,7 @@ static void updateConfig();
 	static int getWindowsConsoleColor();
 #endif
 
-#define COLORS_CONFIG_PATH "kalisko/logColors"
+#define COLORS_CONFIG_PATH "logColors"
 #define ERROR_COLOR_PATH "/error"
 #define WARNING_COLOR_PATH "/warning"
 #define INFO_COLOR_PATH "/info"
@@ -67,9 +67,9 @@ static void updateConfig();
 
 #ifdef WIN32
 	#define STD_ERROR_COLOR 12 // red
-	#define STD_WARNING_COLOR 4 // dark red
-	#define STD_INFO_COLOR 10 // green
-	#define STD_DEBUG_COLOR 9 // blue
+	#define STD_WARNING_COLOR 10 // green
+	#define STD_INFO_COLOR 15 // white
+	#define STD_DEBUG_COLOR 7 // grey
 #else
 	#define STD_ERROR_COLOR "1;31m" // bold red
 	#define STD_WARNING_COLOR "31m" // red

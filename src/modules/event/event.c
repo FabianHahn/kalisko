@@ -32,8 +32,8 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
 static void freeEventListenerQueue(void *queue_p);
@@ -64,10 +64,10 @@ MODULE_FINALIZE
  *
  * @param subject		the subject to attach the event listener to
  * @param event			the event to attach the event listener to
- * @param listener		the listener to attach
  * @param custom		custom data passed to the listener when the event is triggered
+ * @param listener		the listener to attach
  */
-API void attachEventListener(void *subject, const char *event, EventListener *listener, void *custom)
+API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener)
 {
 	if(g_thread_self() != mainthread) {
 		return;
@@ -99,10 +99,10 @@ API void attachEventListener(void *subject, const char *event, EventListener *li
  *
  * @param subject		the subject to detach the event listener from
  * @param event			the event to detach the event listener from
- * @param listener		the listener to detach
  * @param custom		custom data passed to the listener when the event was triggered
+ * @param listener		the listener to attach
  */
-API void detachEventListener(void *subject, const char *event, EventListener *listener, void *custom)
+API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener)
 {
 	if(g_thread_self() != mainthread) {
 		return;

@@ -43,8 +43,8 @@ typedef struct
 	void *custom;
 } EventListenerEntry;
 
-API void attachEventListener(void *subject, const char *event, EventListener *listener, void *custom);
-API void detachEventListener(void *subject, const char *event, EventListener *listener, void *custom);
+API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
 API int triggerEvent(void *subject, const char *event, ...);
 
 #endif

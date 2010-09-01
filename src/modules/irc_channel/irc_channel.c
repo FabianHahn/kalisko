@@ -21,24 +21,24 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "memory_alloc.h"
 #include "modules/irc/irc.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/event/event.h"
 #include "api.h"
 #include "irc_channel.h"
 
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(irc_line);
-HOOK_LISTENER(irc_disconnect);
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
+static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args);
 static void freeIrcChannel(void *channel_p);
 static bool freeIrcChannelTracker(void *key_p, void *tracker_p, void *data);
 
@@ -51,24 +51,19 @@ MODULE_INIT
 {
 	tracked = g_hash_table_new(NULL, NULL);
 
-	HOOK_ATTACH(irc_line, irc_line);
-	HOOK_ATTACH(irc_disconnect, irc_disconnect);
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(irc_disconnect, irc_disconnect);
-	HOOK_DETACH(irc_line, irc_line);
 	g_hash_table_foreach_remove(tracked, &freeIrcChannelTracker, NULL);
 	g_hash_table_destroy(tracked);
 }
 
-HOOK_LISTENER(irc_line)
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcConnection *irc = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
 	if(mask == NULL) {
@@ -115,9 +110,9 @@ HOOK_LISTENER(irc_line)
 	}
 }
 
-HOOK_LISTENER(irc_disconnect)
+static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
+	IrcConnection *irc = subject;
 
 	IrcChannelTracker *tracker;
 	if((tracker = g_hash_table_lookup(tracked, irc)) != NULL) { // we are tracking channels for this connection
@@ -147,6 +142,9 @@ API bool enableChannelTracking(IrcConnection *irc)
 
 	g_hash_table_insert(tracked, irc, tracker);
 
+	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
+	$(void, event, attachEventListener)(irc, "disconnect", NULL, &listener_ircDisconnect);
+
 	return true;
 }
 
@@ -166,6 +164,11 @@ API void disableChannelTracking(IrcConnection *irc)
 
 	g_hash_table_destroy(tracker->channels);
 	free(tracker);
+
+	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
+	$(void, event, detachEventListener)(irc, "disconnect", NULL, &listener_ircDisconnect);
+
+	g_hash_table_remove(tracked, irc);
 }
 
 /**

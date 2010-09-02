@@ -34,5 +34,6 @@
 
 API void initMemory();
 API void *allocateMemory(int size);
+API void *reallocateMemory(void *ptr, int size);
 
 #endif

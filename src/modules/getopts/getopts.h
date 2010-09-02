@@ -22,5 +22,19 @@
 #define GETOPTS_GETOPTS_H
 
 API char *getOpt(char *opt);
+API char *getOptValue(char *opt, ...) G_GNUC_NULL_TERMINATED;
+
+#ifdef DLL_API_IMPORT
+
+/**
+ * Checks if the CLI option (OPT) exists. It does not have to have a value.
+ *
+ * @param OPT	The CLI option name as a string
+ * @result		true if the CLI option exists.
+ */
+#define HAS_OPT(OPT) \
+	($(char *, getopts, getOpt)(OPT) != NULL)
+
+#endif
 
 #endif

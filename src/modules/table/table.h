@@ -32,15 +32,6 @@ typedef void (NewCellCallback)(Table *table, TableCell *newCell);
 typedef void (CopyCellCallback)(Table *table, TableCell *original, TableCell *copy);
 
 /**
- * Defines the alignemtn of the content in a cell.
- */
-typedef enum {
-	CELL_FORMAT_ALIGN_CENTER,
-	CELL_FORMAT_ALIGN_LEFT,
-	CELL_FORMAT_ALIGN_RIGHT
-} CellFormatAlign;
-
-/**
  * Reprecents a single cell of a table. It can hold a string as content.
  */
 struct TableCell {
@@ -53,11 +44,6 @@ struct TableCell {
 	 * @see setTableCellContent
 	 */
 	char *content;
-
-	/**
-	 * The alignment of the content.
-	 */
-	CellFormatAlign format;
 
 	/**
 	 * Reference to additional data for the cell provided by

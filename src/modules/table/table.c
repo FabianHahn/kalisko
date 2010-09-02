@@ -34,8 +34,8 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -86,7 +86,6 @@ API TableCell *newTableCell(Table *table)
 {
 	TableCell *cell = ALLOCATE_OBJECT(TableCell);
 	cell->content = NULL;
-	cell->format = 0;
 	cell->freeCell = NULL;
 	cell->tag = NULL;
 
@@ -285,7 +284,6 @@ API TableCell *copyTableCell(Table *table, TableCell *original)
 {
 	TableCell *copy = newTableCell(table);
 	copy->content = original->content != NULL ? strdup(original->content) : NULL;
-	copy->format = original->format;
 
 	if(table->copyCell) {
 		table->copyCell(table, original, copy);

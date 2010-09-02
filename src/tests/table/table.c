@@ -32,9 +32,9 @@
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the table module");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 1));
 
 static char *generatorFunc(Table *table);
 
@@ -115,7 +115,6 @@ TEST_CASE(cell_template)
 	// create template
 	TableCell *tpl = $(TableCell *, table, newTableCell)(table);
 	tpl->content = "foo";
-	tpl->format = CELL_FORMAT_ALIGN_CENTER;
 
 	// create cols and rows
 	$(int, table, appendTableCol)(table, 5, tpl);
@@ -128,7 +127,6 @@ TEST_CASE(cell_template)
 	for(int row = 0; row < table->rows; row++) {
 		for(int col = 0; col < table->cols; col++) {
 			TEST_ASSERT(strcmp(table->table[row][col].content, "foo") == 0);
-			TEST_ASSERT(table->table[row][col].format == CELL_FORMAT_ALIGN_CENTER);
 		}
 	}
 
@@ -146,7 +144,6 @@ TEST_CASE(replace_table_cell)
 	// create template
 	TableCell *tpl = $(TableCell *, table, newTableCell)(table);
 	tpl->content = "foo";
-	tpl->format = CELL_FORMAT_ALIGN_CENTER;
 
 	// create cols and rows
 	$(int, table, appendTableCol)(table, 5, tpl);

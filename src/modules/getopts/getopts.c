@@ -129,7 +129,7 @@ API char *getOpt(char *opt)
  * @param opt	A list of options to look up.
  * @return		The value for the first matched option or NULL
  */
-API inline char *getOptValue(char *opt, ...)
+API char *getOptValue(char *opt, ...)
 {
 	if(opt == NULL) {
 		return NULL;

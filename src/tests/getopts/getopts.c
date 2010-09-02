@@ -50,6 +50,8 @@ TEST_CASE(getopts)
 		"---", "100",   // Tokens that don't belong anywhere
 		"--d=",         // Long option with empty argument
 		"--e=foo",      // Long option with argument
+		"--world=hallo",
+		"-w welt",
 		"--",           // End of token list, everything hereafter should be dismissed
 		"--b=200",
 		"-e",
@@ -60,7 +62,7 @@ TEST_CASE(getopts)
 	};
 
 	$$(void, setArgv)(argv);
-	$$(void, setArgc)(13);
+	$$(void, setArgc)(sizeof(argv) / sizeof(argv[0]));
 
 	char *opt;
 	// Short option without argument, should have an empty value (!= NULL)
@@ -88,6 +90,15 @@ TEST_CASE(getopts)
 	TEST_ASSERT($(char *, getopts, getOpt)("g") == NULL);
 	TEST_ASSERT($(char *, getopts, getOpt)("-") == NULL);
 	TEST_ASSERT($(char *, getopts, getOpt)("==") == NULL);
+
+	// Test getOptValue
+	TEST_ASSERT((opt = $(char *, getopts, getOptValue)("world", "w", NULL)) != NULL);
+	TEST_ASSERT(strcmp(opt, "hallo") == 0);
+
+	TEST_ASSERT((opt = $(char *, getopts, getOptValue)("w", "world", NULL)) != NULL);
+	TEST_ASSERT(strcmp(opt, "welt"));
+
+	TEST_ASSERT((opt = $(char *, getopts, getOptValue)(NULL)) == NULL);
 
 	TEST_PASS;
 }

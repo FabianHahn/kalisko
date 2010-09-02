@@ -26,8 +26,9 @@
 
 #ifdef DLL_API_IMPORT
 
-#define ALLOCATE_OBJECT(TYPE) $$(void *, allocateMemory)(sizeof(TYPE))
-#define ALLOCATE_OBJECTS(TYPE, COUNT) $$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
+#define ALLOCATE_OBJECT(TYPE) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE))
+#define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
+#define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
 
 #endif
 

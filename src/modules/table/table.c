@@ -34,7 +34,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
@@ -241,7 +241,7 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 
 	// Create the space to store new row(s)
 	if(table->table == NULL) {
-		table->table = ALLOCATE_OBJECT(TableCell **);
+		table->table = ALLOCATE_OBJECT(TableCell *);
 	} else {
 		TableCell **extendedTable = (TableCell **)realloc(table->table, sizeof(TableCell *) * rowCount);
 		if(extendedTable == NULL) {

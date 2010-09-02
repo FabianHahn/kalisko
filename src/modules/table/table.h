@@ -38,6 +38,7 @@ struct TableCell {
 	/**
 	 * Content of the cell. Can be null. Do not change it
 	 * directly, use instead setTableCellContent function.
+	 * The content should be encoded in UTF-8 (or ASCII)
 	 *
 	 * Do not free it with the custom freeTable function.
 	 *
@@ -76,14 +77,6 @@ struct Table {
 	 * Do not free it with the custom freeTable function.
 	 */
 	TableCell **table;
-
-	/**
-	 * Cache for the longest length of a cell content.
-	 *
-	 * Everytime a change to a content is made or new content is added this value may
-	 * change.
-	 */
-	int longestContentLength;
 
 	/**
 	 * Cache for the amount of columns.
@@ -137,14 +130,6 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate);
 API TableCell *getTableCell(Table *table, int row, int col);
 API TableCell *copyTableCell(Table *table, TableCell *original);
 API bool replaceTableCell(Table *table, TableCell *cell, int row, int col);
-API void setTableCellContent(Table *table, TableCell *cell, char *content);
 API char *getTableString(Table *table);
-
-#ifdef DLL_API_IMPORT
-
-#define setTableColRowContent(TABLE, CONTENT, ROW, COL) \
-	$(void, table, setTableCellContent)(TABLE, &(TABLE->table[ROW][COL]), CONTENT)
-
-#endif
 
 #endif

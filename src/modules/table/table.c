@@ -34,8 +34,8 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -58,7 +58,6 @@ API Table *newTable()
 	Table *table = ALLOCATE_OBJECT(Table);
 	table->cols = 0;
 	table->freeTable = NULL;
-	table->longestContentLength = 0;
 	table->newCell = NULL;
 	table->outputGenerator = NULL;
 	table->rows = 0;
@@ -319,31 +318,6 @@ API bool replaceTableCell(Table *table, TableCell *cell, int row, int col)
 	table->table[row][col] = *cell;
 
 	return true;
-}
-
-/**
- * Sets the content of a given cell. Always use this function as
- * it checks the length of the content and updates Table.longestContentLength.
- *
- * @param table		The table to which the cell belongs
- * @param cell		The cell to use
- * @param content	The new content. The content must be UTF-8 encoded
- */
-API void setTableCellContent(Table *table, TableCell *cell, char *content)
-{
-	// free old content
-	free(cell->content);
-
-	if(content != NULL) {
-		cell->content = strdup(content);
-
-		int contentLength = g_utf8_strlen(content, -1);
-		if(contentLength > table->longestContentLength) {
-			table->longestContentLength = contentLength;
-		}
-	} else {
-		cell->content = NULL;
-	}
 }
 
 /**

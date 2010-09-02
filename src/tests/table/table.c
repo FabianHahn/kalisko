@@ -26,15 +26,16 @@
 #include "string.h"
 #include "util.h"
 #include "modules/table/table.h"
+#include "modules/plaintext_table/plaintext_table.h"
 
 #include "api.h"
 
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the table module");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 3));
 
 static char *generatorFunc(Table *table);
 
@@ -91,14 +92,10 @@ TEST_CASE(basic_table_functions)
 
 	currentCell = $(TableCell *, table, getTableCell)(table, 0, 0);
 	TEST_ASSERT(currentCell != NULL);
-	$(void, table, setTableCellContent)(table, currentCell, "Hello");
-	TEST_ASSERT(table->longestContentLength == 5);
 	currentCell = NULL;
 
 	currentCell = $(TableCell *, table, getTableCell)(table, 0, 1);
 	TEST_ASSERT(currentCell != NULL);
-	setTableColRowContent(table, "Hello World", 0, 1);
-	TEST_ASSERT(table->longestContentLength == 11);
 	currentCell = NULL;
 
 	$(void, table, freeTable)(table);

@@ -40,7 +40,7 @@ struct TableCell {
 	 * directly, use instead setTableCellContent function.
 	 * The content should be encoded in UTF-8 (or ASCII)
 	 *
-	 * Do not free it with the custom freeTable function.
+	 * The content is not freed by the table module.
 	 *
 	 * @see setTableCellContent
 	 */
@@ -76,7 +76,7 @@ struct Table {
 	 *
 	 * Do not free it with the custom freeTable function.
 	 */
-	TableCell **table;
+	TableCell ***table;
 
 	/**
 	 * Cache for the amount of columns.

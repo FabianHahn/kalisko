@@ -33,7 +33,7 @@
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the table module");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 3));
 
@@ -62,7 +62,7 @@ static char *generatorFunc(Table *table)
 	GString *str = g_string_new("");
 	for(int row = 0; row < table->rows; row++) {
 		for(int col = 0; col < table->cols; col++) {
-			g_string_append_printf(str, "%s,", table->table[row][col].content);
+			g_string_append_printf(str, "%s,", table->table[row][col]->content);
 		}
 	}
 
@@ -74,7 +74,6 @@ static char *generatorFunc(Table *table)
 
 TEST_CASE(basic_table_functions)
 {
-	// create table
 	Table *table = $(Table *, table, newTable)();
 	TEST_ASSERT(table != NULL);
 
@@ -87,16 +86,8 @@ TEST_CASE(basic_table_functions)
 	TEST_ASSERT(table->rows == 2);
 	TEST_ASSERT(firstRowIndex == 1);
 
-	// Set some random value
-	TableCell *currentCell = NULL;
-
-	currentCell = $(TableCell *, table, getTableCell)(table, 0, 0);
+	TableCell *currentCell = $(TableCell *, table, getTableCell)(table, 0, 0);
 	TEST_ASSERT(currentCell != NULL);
-	currentCell = NULL;
-
-	currentCell = $(TableCell *, table, getTableCell)(table, 0, 1);
-	TEST_ASSERT(currentCell != NULL);
-	currentCell = NULL;
 
 	$(void, table, freeTable)(table);
 
@@ -123,7 +114,7 @@ TEST_CASE(cell_template)
 
 	for(int row = 0; row < table->rows; row++) {
 		for(int col = 0; col < table->cols; col++) {
-			TEST_ASSERT(strcmp(table->table[row][col].content, "foo") == 0);
+			TEST_ASSERT(strcmp(table->table[row][col]->content, "foo") == 0);
 		}
 	}
 
@@ -159,8 +150,8 @@ TEST_CASE(replace_table_cell)
 	TEST_ASSERT($(bool, table, replaceTableCell)(table, replace, 1, 1));
 
 	// check the replacement
-	TEST_ASSERT(strcmp(table->table[1][1].content, "bar") == 0);
-	TEST_ASSERT(strcmp(table->table[1][0].content, "foo") == 0);
+	TEST_ASSERT(strcmp(table->table[1][1]->content, "bar") == 0);
+	TEST_ASSERT(strcmp(table->table[1][0]->content, "foo") == 0);
 
 	$(void, table, freeTable)(table);
 

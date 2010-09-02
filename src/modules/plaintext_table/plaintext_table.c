@@ -88,7 +88,7 @@ static char *getPlaintextTableString(Table *table)
 
 	for(int row = 0; row < table->rows; row++) {
 		for(int col = 0; col < table->cols; col++) {
-			char *txt = table->table[row][col].content;
+			char *txt = table->table[row][col]->content;
 
 			if(txt != NULL) {
 				int length = g_utf8_strlen(txt, -1);
@@ -102,8 +102,8 @@ static char *getPlaintextTableString(Table *table)
 	// write output
 	for(int row = 0; row < table->rows; row++) {
 		for(int col = 0; col < table->cols; col++) {
-			TableCell cell = table->table[row][col];
-			char *txt = cell.content;
+			TableCell *cell = table->table[row][col];
+			char *txt = cell->content;
 
 			if(txt != NULL) {
 				int txtLength = g_utf8_strlen(txt, -1);
@@ -113,7 +113,7 @@ static char *getPlaintextTableString(Table *table)
 					int spacesLeft = 0;
 					int spacesRight = 0;
 
-					switch(((PlaintextTableCellTag *)cell.tag)->alignment) {
+					switch(((PlaintextTableCellTag *)cell->tag)->alignment) {
 						case PLAINTEXT_TABLE_ALIGN_CENTER:
 							spacesLeft = (int)ceil(diff / 2);
 							spacesRight = diff - spacesLeft;

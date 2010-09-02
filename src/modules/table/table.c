@@ -106,9 +106,9 @@ API TableCell *newTableCell(Table *table)
 API void freeTable(Table *table)
 {
 	// free cells
-	for(int iCol = 0; iCol < table->cols; iCol++) {
-		for(int iRow = 0; iRow < table->rows; iRow++) {
-			TableCell *cell = getTableCell(table, iRow, iCol);
+	for(int iRow = 0; iRow < table->rows; iRow++) {
+		for(int iCol = 0; iCol < table->cols; iCol++) {
+			TableCell *cell = table->table[iRow][iCol];
 			freeCell(cell);
 		}
 	}
@@ -132,12 +132,8 @@ API void freeTable(Table *table)
  */
 API void freeCell(TableCell *cell)
 {
-	if(cell->freeCell) {
+	if(cell->freeCell != NULL) {
 		cell->freeCell(cell);
-	}
-
-	if(cell->content) {
-		free(cell->content);
 	}
 
 	free(cell);
@@ -165,7 +161,7 @@ API TableCell *getTableCell(Table *table, int row, int col)
 		return NULL;
 	}
 
-	return &(table->table[row][col]);
+	return table->table[row][col];
 }
 
 /**
@@ -196,15 +192,15 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 	for(int row = 0; row < table->rows; row++) {
 
 		// Create the space to store new column(s)
-		TableCell *extendedCols = REALLOCATE_OBJECT(TableCell, table->table[row], sizeof(TableCell) * colCount);
+		TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
 		table->table[row] = extendedCols;
 
 		// Fill rows with new TableCells for the new column
 		for(int col = table->cols; col < colCount; col++) {
 			if(cellTemplate == NULL) {
-				table->table[row][col] = *(newTableCell(table));
+				table->table[row][col] = newTableCell(table);
 			} else {
-				table->table[row][col] = *(copyTableCell(table, cellTemplate));
+				table->table[row][col] = copyTableCell(table, cellTemplate);
 			}
 		}
 	}
@@ -236,21 +232,21 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 
 	// Create the space to store new row(s)
 	if(table->table == NULL) {
-		table->table = ALLOCATE_OBJECT(TableCell *);
+		table->table = ALLOCATE_OBJECT(TableCell **);
 	} else {
-		TableCell **extendedTable = REALLOCATE_OBJECT(TableCell *, table->table, sizeof(TableCell *) * rowCount);
+		TableCell ***extendedTable = REALLOCATE_OBJECT(TableCell **, table->table, sizeof(TableCell **) * rowCount);
 		table->table = extendedTable;
 	}
 
 	// Fill new rows with TableCells
 	for(int row = table->rows; row < rowCount; row++) {
-		table->table[row] = ALLOCATE_OBJECTS(TableCell, table->cols);
+		table->table[row] = ALLOCATE_OBJECTS(TableCell *, table->cols);
 
 		for(int col = 0; col < table->cols; col++) {
 			if(cellTemplate == NULL) {
-				table->table[row][col] = *(newTableCell(table));
+				table->table[row][col] = newTableCell(table);
 			} else {
-				table->table[row][col] = *(copyTableCell(table, cellTemplate));
+				table->table[row][col] = copyTableCell(table, cellTemplate);
 			}
 		}
 	}
@@ -312,10 +308,10 @@ API bool replaceTableCell(Table *table, TableCell *cell, int row, int col)
 	}
 
 	// remove old cell
-	freeCell(&table->table[row][col]);
+	freeCell(table->table[row][col]);
 
 	// set new cell
-	table->table[row][col] = *cell;
+	table->table[row][col] = cell;
 
 	return true;
 }

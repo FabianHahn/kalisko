@@ -36,7 +36,7 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -45,17 +45,8 @@ MODULE_INIT
 	HOOK_ADD(module_perform_finished);
 
 	// Check for CLI options
-	char *moduleList = NULL;
-	if((moduleList = $(char *, getopts, getOpt)("load-modules")) == NULL || *moduleList == '\0') {
-		if((moduleList = $(char *, getopts, getOpt)("m")) == NULL || *moduleList == '\0') {
-			moduleList = NULL;
-		}
-	}
-
-	char *appendModuleList = NULL;
-	if((appendModuleList = $(char *, getopts, getOpt)("append-modules")) == NULL || *appendModuleList == '\0') {
-		appendModuleList = NULL;
-	}
+	char *moduleList = $(char *, getopts, getOptValue)("load-modules", "m", NULL);
+	char *appendModuleList = $(char *, getopts, getOptValue)("append-modules", NULL);
 
 	if(!moduleList) {
 		LOG_INFO("Requesting perform modules from configuration");

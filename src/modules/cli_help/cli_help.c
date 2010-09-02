@@ -37,7 +37,7 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -124,7 +124,7 @@ MODULE_FINALIZE
 
 HOOK_LISTENER(modules_loaded)
 {
-	if(!$(char *, getopts, getOpt)("h") && !$(char *, getopts, getOpt)("help")) {
+	if(!HAS_OPT("h") && !HAS_OPT("help")) {
 		return;
 	}
 

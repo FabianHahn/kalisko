@@ -37,7 +37,7 @@
 MODULE_NAME("module_unload");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module reads a list from standard configuration to unload specific modules");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -46,12 +46,7 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 
 MODULE_INIT
 {
 	// Check for CLI options
-	char *moduleList = NULL;
-	if((moduleList = $(char *, getopts, getOpt)("unload-modules")) == NULL || *moduleList == '\0') {
-		if((moduleList = $(char *, getopts, getOpt)("u")) == NULL || *moduleList == '\0') {
-			moduleList = NULL;
-		}
-	}
+	char *moduleList = $(char *, getopts, getOptValue)("unload-module", "u", NULL);
 
 	if(moduleList) {
 		LOG_INFO("Unloading modules given by command line argument");

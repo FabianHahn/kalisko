@@ -56,7 +56,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -65,15 +65,7 @@ MODULE_INIT
 	config = NULL;
 	profilePath = NULL;
 
-	char *configFilePath = NULL;
-	// Check for --config
-	if((configFilePath = $(char *, getopts, getOpt)("config")) == NULL || *configFilePath == '\0') {
-		// Not found, check for -c
-		if((configFilePath = $(char *, getopts, getOpt)("c")) == NULL || *configFilePath == '\0') {
-			LOG_INFO("Could not find config file command line option, use '-c [file path]' or '--config=[file path]'");
-			configFilePath = NULL;
-		}
-	}
+	char *configFilePath = $(char *, getopts, getOptValue)("config", "c", NULL);
 
 	if(configFilePath == NULL) {
 		loadDefaultConfigs();
@@ -96,14 +88,7 @@ MODULE_INIT
 
 	checkFilesMerge(config); // once check without the profile ...
 
-	// Check for --profile
-	if((profilePath = $(char *, getopts, getOpt)("profile")) == NULL || *profilePath == '\0') {
-		// Not found, check for -p
-		if((profilePath = $(char *, getopts, getOpt)("p")) == NULL || *profilePath == '\0') {
-			LOG_INFO("Could not find profile command line option, use '-p [profile]' or '--profile=[profile]'");
-			profilePath = NULL;
-		}
-	}
+	profilePath = $(char *, getopts, getOptValue)("profile", "p", NULL);
 
 	if(profilePath) {
 		LOG_DEBUG("Using profile '%s'", profilePath);

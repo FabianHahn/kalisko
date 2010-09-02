@@ -197,11 +197,7 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 	for(int row = 0; row < table->rows; row++) {
 
 		// Create the space to store new column(s)
-		TableCell *extendedCols = (TableCell *)realloc(table->table[row], sizeof(TableCell) * colCount);
-		if(extendedCols == NULL) {
-			exit(EXIT_FAILURE); // TODO: see appendTableRow
-		}
-
+		TableCell *extendedCols = REALLOCATE_OBJECT(TableCell, table->table[row], sizeof(TableCell) * colCount);
 		table->table[row] = extendedCols;
 
 		// Fill rows with new TableCells for the new column
@@ -243,11 +239,7 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 	if(table->table == NULL) {
 		table->table = ALLOCATE_OBJECT(TableCell *);
 	} else {
-		TableCell **extendedTable = (TableCell **)realloc(table->table, sizeof(TableCell *) * rowCount);
-		if(extendedTable == NULL) {
-			exit(EXIT_FAILURE); // TODO: Create function/macro for the code above in memory_alloc.c/.h
-		}
-
+		TableCell **extendedTable = REALLOCATE_OBJECT(TableCell *, table->table, sizeof(TableCell *) * rowCount);
 		table->table = extendedTable;
 	}
 

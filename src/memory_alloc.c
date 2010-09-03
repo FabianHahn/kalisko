@@ -60,3 +60,21 @@ API void *allocateMemory(int size)
 
 	return mem;
 }
+
+/**
+ * Reallocate a block of memory on the heap
+ *
+ * @param mem		A pointer to a previously allocated memory block to be reallocated
+ * @result			a pointer to the reallocated
+ */
+API void *reallocateMemory(void *ptr, int size)
+{
+	void *mem = realloc(ptr, size);
+
+	if(mem == NULL) {
+		logMessage(LOG_TYPE_ERROR, "Could not reallocate memory block %p to requested size of %d", ptr, size);
+		exit(EXIT_FAILURE);
+	}
+
+	return mem;
+}

@@ -19,21 +19,30 @@
  */
 
 
-#ifndef MEMORY_ALLOC_H
-#define MEMORY_ALLOC_H
+#ifndef PLAINTEXT_TABLE_PLAINTEXT_TABLE_H
+#define PLAINTEXT_TABLE_PLAINTEXT_TABLE_H
 
-#include <stdlib.h> // malloc, free
+typedef struct PlaintextTableCellTag PlaintextTableCellTag;
 
-#ifdef DLL_API_IMPORT
+/**
+ * Defines the alignment of the content in a column.
+ */
+typedef enum {
+	PLAINTEXT_TABLE_ALIGN_CENTER,
+	PLAINTEXT_TABLE_ALIGN_RIGHT,
+	PLAINTEXT_TABLE_ALIGN_LEFT
+} PlaintextTableAlignment;
 
-#define ALLOCATE_OBJECT(TYPE) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE))
-#define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
-#define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
+/**
+ * The Plaintext Table module specific TableCell tag struct
+ */
+struct PlaintextTableCellTag {
+	/**
+	 * The alignment of the content of the cell
+	 */
+	PlaintextTableAlignment alignment;
+};
 
-#endif
-
-API void initMemory();
-API void *allocateMemory(int size);
-API void *reallocateMemory(void *ptr, int size);
+API Table *newPlainTextTable();
 
 #endif

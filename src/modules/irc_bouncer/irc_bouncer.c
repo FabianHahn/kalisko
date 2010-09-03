@@ -151,7 +151,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	Store *param;
 	char *password;
 
-	if((param = $(Store *, config, getStorePath)(config, "password")) == NULL || param->type != STORE_STRING) {
+	if((param = $(Store *, store, getStorePath)(config, "password")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required config value 'password' for IRC bouncer configuration '%s', aborting IRC proxy", name);
 		$(void, irc, freeIrcConnection)(irc);
 		return NULL;
@@ -174,7 +174,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	}
 
 	// Enable plugins listed in config / params
-	if((param = $(Store *, config, getStorePath)(config, "plugins")) != NULL && param->type == STORE_LIST) {
+	if((param = $(Store *, store, getStorePath)(config, "plugins")) != NULL && param->type == STORE_LIST) {
 		GQueue *plugins = param->content.list;
 		unsigned int i = 0;
 

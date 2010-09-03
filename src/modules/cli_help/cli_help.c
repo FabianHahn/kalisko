@@ -121,7 +121,7 @@ MODULE_FINALIZE
 
 static void listener_modulesLoaded(void *subject, const char *event, void *data, va_list args)
 {
-	if(!$(char *, getopts, getOpt)("h") && !$(char *, getopts, getOpt)("help")) {
+	if(!HAS_OPT("h") && !HAS_OPT("help")) {
 		return;
 	}
 

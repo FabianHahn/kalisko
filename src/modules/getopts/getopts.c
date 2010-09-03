@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "dll.h"
 #include "log.h"
@@ -108,6 +109,10 @@ void parseArgv()
  */
 API char *getOpt(char *opt)
 {
+	if(opt == NULL) {
+		return NULL;
+	}
+
 	// Have the arguments been parsed yet?
 	if(!parsed) {
 		parseArgv();
@@ -116,3 +121,35 @@ API char *getOpt(char *opt)
 	return (char*)g_hash_table_lookup(opts, opt);
 }
 
+/**
+ * Looks up a list of options to check if they exist with a value. The first match of an option and a value
+ * is used to return the given value. All other options are ignored.
+ *
+ * @param opt	A list of options to look up.
+ * @return		The value for the first matched option or NULL
+ */
+API char *getOptValue(char *opt, ...)
+{
+	if(opt == NULL) {
+		return NULL;
+	}
+
+	// check first opt which is not part of the list
+	char *value;
+	if((value = getOpt(opt)) != NULL && *value != '\0') {
+		return value;
+	}
+
+	// check the list
+	va_list vl;
+	va_start(vl, opt);
+
+	char *key;
+	while((key = va_arg(vl, char *)) != NULL) {
+		if((value = getOpt(key)) != NULL && *value != '\0') {
+			return value;
+		}
+	}
+
+	return NULL;
+}

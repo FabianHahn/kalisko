@@ -37,7 +37,7 @@
 MODULE_NAME("module_package");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Loads modules of a given package from standard configruations");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -48,13 +48,7 @@ static void loadPackage(char *package);
 
 MODULE_INIT
 {
-	char *usePackage = NULL;
-	// Check for CLI options
-	if((usePackage = $(char *, getopts, getOpt)("load-package")) == NULL || *usePackage == '\0') {
-		if((usePackage = $(char *, getopts, getOpt)("l")) == NULL || *usePackage == '\0') {
-			usePackage = NULL;
-		}
-	}
+	char *usePackage = $(char *, getopts, getOptValue)("load-package", "l", NULL);
 
 	if(usePackage) {
 		LOG_INFO("Loading package given by command line argument: '%s'", usePackage);

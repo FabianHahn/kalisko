@@ -59,7 +59,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 12);
+MODULE_VERSION(0, 6, 13);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -719,6 +719,10 @@ API Socket *socketAccept(Socket *server)
 	client->host = ip->str;
 	client->port = port->str;
 	client->type = SOCKET_SERVER_CLIENT;
+#ifdef WIN32
+	client->in = NULL;
+	client->out = NULL;
+#endif
 
 	LOG_DEBUG("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
 

@@ -23,7 +23,6 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "modules/xcall/xcall.h"
 #include "modules/store/store.h"
@@ -35,7 +34,7 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 7, 2);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 7), MODULE_DEPENDENCY("store", 0, 5, 3));
 

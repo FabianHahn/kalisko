@@ -29,6 +29,8 @@
 #include "util.h"
 #include "memory_alloc.h"
 #include "modules/getopts/getopts.h"
+#include "modules/table/table.h"
+#include "modules/plaintext_table/plaintext_table.h"
 
 #include "api.h"
 #include "cli_help.h"
@@ -37,9 +39,9 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 0), MODULE_DEPENDENCY("table", 0, 1, 3));
 
 typedef struct {
 	char *module;
@@ -56,8 +58,8 @@ typedef struct {
 
 HOOK_LISTENER(modules_loaded);
 
-static void printOptionsHelp();
-static void printArgumentHelp();
+static void printOptionsHelp(Table *table);
+static void printArgumentHelp(Table *table, bool isAfterOptions);
 
 #define SHORT_OPT_PREFIX "-"
 #define LONG_OPT_PREFIX "--"
@@ -65,9 +67,6 @@ static void printArgumentHelp();
 
 static GSList *clOptions;
 static GSList *clArguments;
-static int maxShortOptLength;
-static int maxLongOptLength;
-static int maxArgumentLength;
 static bool hasOptions;
 static bool hasArguments;
 
@@ -75,9 +74,6 @@ MODULE_INIT
 {
 	clOptions = NULL;
 	clArguments = NULL;
-	maxShortOptLength = 0;
-	maxLongOptLength = 0;
-	maxArgumentLength = 0;
 	hasOptions = false;
 	hasArguments = false;
 
@@ -132,20 +128,28 @@ HOOK_LISTENER(modules_loaded)
 	printf("\n%s%s ", "Usage: ", execName);
 	free(execName);
 
+	Table *table = $(Table *, plaintext_table, newPlainTextTable)();
+	$(int, table, appendTableCol)(table, 3, NULL);
+
 	if(hasOptions && hasArguments) {
 		printf("[options] [arguments]\n\n");
-		printOptionsHelp();
-		printf("\n\n");
-		printArgumentHelp();
+		printOptionsHelp(table);
+		printArgumentHelp(table, true);
 	} else if(hasOptions && !hasArguments) {
 		printf("[options]\n\n");
-		printOptionsHelp();
+		printOptionsHelp(table);
 	} else if (hasArguments && !hasOptions) {
 		printf("[arguments]\n\n");
-		printArgumentHelp();
+		printArgumentHelp(table, false);
 	} else {
 		printf("\n\nNo help for usage, options or arguments were given.\n");
 	}
+
+	char *output = $(char *, table, getTableString)(table);
+	printf("%s", output);
+
+	free(output);
+	$(void, table, freeTable)(table);
 }
 
 /**
@@ -188,17 +192,6 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 
 	clOptions = g_slist_prepend(clOptions, option);
 
-	// Check length of shortOpt and longOpt to create a nice output later
-	int shortOptLength = shortOpt ? g_utf8_strlen(shortOpt, -1) : 0;
-	if(maxShortOptLength < shortOptLength) {
-		maxShortOptLength = shortOptLength;
-	}
-
-	int longOptLength = longOpt ?  g_utf8_strlen(longOpt, -1) : 0;
-	if(maxLongOptLength < longOptLength) {
-		maxLongOptLength = longOptLength;
-	}
-
 	hasOptions = true;
 
 	return true;
@@ -235,74 +228,64 @@ API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp)
 
 	// Create entry
 	CLArgument *argument = ALLOCATE_OBJECT(CLArgument);
-	argument->module = moduleName;
-	argument->name = name;
-	argument->briefHelp = briefHelp;
+	argument->module = strdup(moduleName);
+	argument->name = strdup(name);
+	argument->briefHelp = strdup(briefHelp);
 
 	clArguments = g_slist_prepend(clArguments, argument);
-
-	// Check length of argument name to create a nice output later
-	int nameLength = g_utf8_strlen(name, -1);
-	if(maxArgumentLength < nameLength) {
-		maxArgumentLength = nameLength;
-	}
 
 	hasArguments = true;
 	return true;
 }
 
-static void printArgumentHelp()
+static void printArgumentHelp(Table *table, bool isAfterOptions)
 {
 	clArguments = g_slist_reverse(clArguments);
 
-	printf("%s\n", "Arguments:");
+	int headRowIndex = 0;
+	if(isAfterOptions) {
+		headRowIndex = $(int, table, appendTableRow)(table, 2, NULL) + 1; // first line is a space
+	}
+
+	table->table[headRowIndex][0]->content = "Arguments:";
 
 	for(GSList *current = clArguments; current != NULL; current = g_slist_next(current)) {
 		CLArgument *argument = (CLArgument *)current->data;
+		int rowIndex = $(int, table, appendTableRow)(table, 1, NULL);
 
-		int whitespaces = maxArgumentLength + 4 - g_utf8_strlen(argument->name, -1);
-		char *whitespace = g_strnfill(whitespaces, ' ');
+		table->table[rowIndex][0]->content = argument->name;
+		table->table[rowIndex][1]->content = argument->briefHelp;
 
-		printf("%s%s%s (Module: %s)\n", argument->name, whitespace, argument->briefHelp, argument->module);
-
-		free(whitespace);
+		table->table[rowIndex][2]->content = g_strjoin("", "Module: ", argument->module, NULL);
+		table->table[rowIndex][2]->freeContent = true;
 	}
 }
 
-static void printOptionsHelp()
+static void printOptionsHelp(Table *table)
 {
 	clOptions = g_slist_reverse(clOptions);
 
-	printf("%s\n", "Options:");
+	table->table[0][0]->content = "Options:";
 
 	for(GSList *current = clOptions; current != NULL; current = g_slist_next(current)) {
 		CLOption *option = (CLOption *)current->data;
+		int row = $(int, table, appendTableRow)(table, 1, NULL);
 
-		// Print shortOpt & longOpt
-		if(option->shortOpt) {
-			printf("%s%s", SHORT_OPT_PREFIX, option->shortOpt);
+		// Add shortOpt & longOpt
+		if(option->shortOpt && option->longOpt) {
+			table->table[row][0]->content = g_strjoin("", option->shortOpt, ", ", option->longOpt, NULL);
+			table->table[row][0]->freeContent = true;
+		} else if (option->shortOpt && !option->longOpt) {
+			table->table[row][0]->content = option->shortOpt;
+		} else if (!option->shortOpt && option->longOpt) {
+			table->table[row][0]->content = option->longOpt;
 		}
 
-		if(!option->shortOpt && option->longOpt) {
-			printf("%s%s", LONG_OPT_PREFIX, option->longOpt);
-		}
+		// Add brief help
+		table->table[row][1]->content = option->briefHelp;
 
-		if(option->longOpt && option->shortOpt) {
-			printf("%s%s%s", OPT_SEPERATOR, LONG_OPT_PREFIX, option->longOpt);
-		}
-
-		// Print brief help & module name
-
-		// Amount of whitespaces between the short/long option and the help text so all help text are one below the other
-		int whitespaces = maxShortOptLength + maxLongOptLength + strlen(OPT_SEPERATOR) + strlen(SHORT_OPT_PREFIX) + strlen(LONG_OPT_PREFIX) + 4 \
-		- (option->shortOpt ? (g_utf8_strlen(option->shortOpt, -1) + strlen(SHORT_OPT_PREFIX)) : 0) \
-		- (option->longOpt ? (g_utf8_strlen(option->longOpt, -1) + strlen(LONG_OPT_PREFIX)) : 0) \
-		- (option->longOpt && option->shortOpt ? strlen(OPT_SEPERATOR) : 0);
-
-		char *whitepace = g_strnfill(whitespaces, ' '); // Change the whitespace char (' ') to a dot ('.') and you see where the whitespaces are used ;-)
-
-		printf("%s%s (Module: %s)\n", whitepace, option->briefHelp, option->module);
-
-		free(whitepace);
+		// Add Module
+		table->table[row][2]->content = g_strjoin("", "Module: ", option->module, NULL);
+		table->table[row][2]->freeContent = true;
 	}
 }

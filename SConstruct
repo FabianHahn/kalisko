@@ -44,10 +44,16 @@ for key, value in ARGLIST:
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
-env = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
+testenv = Environment(ENV = os.environ)
+if testenv['PLATFORM'] == 'win32':
+	tools = ['mingw', 'yacc']
+else:
+	tools = testenv['TOOLS']
+
+env = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = tools)
 
 if env['PLATFORM'] == 'win32':
-	env.Append(LINKFLAGS = ['-Wl,--export-all-symbols'], TOOLS = ['mingw', 'yacc'])
+	env.Append(LINKFLAGS = ['-Wl,--export-all-symbols'])
 	env['WINDOWS_INSERT_DEF'] = True
 else:
 	env.Append(LINKFLAGS = ['-Wl,--export-dynamic'])

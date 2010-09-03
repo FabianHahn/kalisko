@@ -47,7 +47,8 @@ ccflags = ['-std=gnu99', '-Wall', '-pipe']
 env = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
 if env['PLATFORM'] == 'win32':
-	env.Append(WINDOWS_INSERT_DEF = True, LINKFLAGS = ['-Wl,--export-all-symbols'], TOOLS = ['mingw', 'yacc'])
+	env.Append(LINKFLAGS = ['-Wl,--export-all-symbols'], TOOLS = ['mingw', 'yacc'])
+	env['WINDOWS_INSERT_DEF'] = True
 else:
 	env.Append(LINKFLAGS = ['-Wl,--export-dynamic'])
 

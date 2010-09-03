@@ -32,7 +32,7 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
@@ -82,7 +82,7 @@ API void attachEventListener(void *subject, const char *event, void *custom, Eve
 
 	GQueue *queue;
 
-	if((queue = g_hash_table_lookup(subject, event)) == NULL) { // Create queue if it doesn't exist yet
+	if((queue = g_hash_table_lookup(events, event)) == NULL) { // Create queue if it doesn't exist yet
 		queue = g_queue_new();
 		g_hash_table_insert(events, strdup(event), queue);
 	}

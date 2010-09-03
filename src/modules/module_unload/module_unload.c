@@ -22,7 +22,6 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "module.h"
 #include "types.h"
@@ -37,7 +36,7 @@
 MODULE_NAME("module_unload");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module reads a list from standard configuration to unload specific modules");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 

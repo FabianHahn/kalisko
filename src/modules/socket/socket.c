@@ -44,9 +44,9 @@
 #include "types.h"
 #include "memory_alloc.h"
 #include "module.h"
-#include "hooks.h"
 #include "modules/config/config.h"
 #include "modules/store/path.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 #include "socket.h"
@@ -59,9 +59,9 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 13);
+MODULE_VERSION(0, 6, 14);
 MODULE_BCVERSION(0, 4, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static int connectionTimeout = 10; // set default connection timeout to 10 seconds
 

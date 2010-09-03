@@ -28,9 +28,9 @@
 #endif
 
 #include "dll.h"
-#include "hooks.h"
 #include "module.h"
 #include "modules/config/config.h"
+#include "modules/event/event.h"
 
 #include "log.h"
 #include "api.h"
@@ -38,11 +38,11 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(log);
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 
 static void updateConfig();
 
@@ -91,9 +91,7 @@ static void updateConfig();
 
 MODULE_INIT
 {
-	if(!HOOK_ATTACH(log, log)) {
-		return false;
-	}
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
 
 	updateConfig(); // we initialize the colors after attaching the log hook so we can see possible problems on the console.
 
@@ -102,16 +100,16 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(log, log);
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
 }
 
 /**
  * Log message listener to write them colored into stderr.
  */
-HOOK_LISTENER(log)
+static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
 
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);

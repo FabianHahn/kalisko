@@ -24,7 +24,7 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
+#include "modules/event/event.h"
 #include "log.h"
 
 #include "api.h"
@@ -32,33 +32,35 @@
 MODULE_NAME("log_default");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko's default log provider that's always loaded initially");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 1, 2));
+
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 
 #ifndef LOG_DEFAULT_LEVEL
 #define LOG_DEFAULT_LEVEL LOG_TYPE_DEBUG
 #endif
 
-HOOK_LISTENER(log);
-
 MODULE_INIT
 {
-	return HOOK_ATTACH(log, log);
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
+
+	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(log, log);
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
 }
 
 /**
  * Log message listener to write them into stderr.
  */
-HOOK_LISTENER(log)
+static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
 
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);

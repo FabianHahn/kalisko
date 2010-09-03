@@ -30,6 +30,8 @@
 #include "test.h"
 #include "memory_alloc.h"
 
+static void nullLogHandler(LogType type, char *message);
+
 static int test = 0;
 static int passed = 0;
 static int count = 0;
@@ -45,8 +47,8 @@ int main(int argc, char **argv)
 	initLog();
 	initModules();
 
-#ifdef TEST_LOG_DEFAULT
-	requestModule("log_default");
+#ifndef TEST_LOG_DEFAULT
+	setLogHandler(&nullLogHandler);
 #endif
 
 	printf("Running test cases...\n");
@@ -137,4 +139,15 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 	}
 
 	count++;
+}
+
+/**
+ * Log handler that logs does nothing
+ *
+ * @param type		the log type of the message
+ * @param message	the log message
+ */
+static void nullLogHandler(LogType type, char *message)
+{
+	// Do nothing
 }

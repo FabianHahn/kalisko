@@ -49,6 +49,7 @@ typedef enum
 typedef void (LogHandler)(LogType type, char *message);
 
 API void initLog();
+API void setLogHandler(LogHandler *handler);
 API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
 
 #ifdef DLL_API_IMPORT

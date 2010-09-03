@@ -47,8 +47,8 @@ ccflags = ['-std=gnu99', '-Wall', '-pipe']
 dummy = Environment(ENV = os.environ)
 
 if dummy['PLATFORM'] == 'win32':
-	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
-	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])	
+	coretpl = Environment(WINDOWS_INSERT_DEF = True, CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-all-symbols'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
+	modtpl = Environment(WINDOWS_INSERT_DEF = True, CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])
 else:
 	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
 	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])

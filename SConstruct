@@ -44,47 +44,39 @@ for key, value in ARGLIST:
 ccflags = ['-std=gnu99', '-Wall', '-pipe']
 
 # Start of actual makefile
-dummy = Environment(ENV = os.environ)
+env = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
 
-if dummy['PLATFORM'] == 'win32':
-	coretpl = Environment(WINDOWS_INSERT_DEF = True, CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-all-symbols'], ENV = os.environ, CPPPATH = ['.'], TOOLS = ['mingw', 'yacc'])
-	modtpl = Environment(WINDOWS_INSERT_DEF = True, CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = ['mingw', 'yacc'])
+if env['PLATFORM'] == 'win32':
+	env.Append(WINDOWS_INSERT_DEF = True, LINKFLAGS = ['-Wl,--export-all-symbols'], TOOLS = ['mingw', 'yacc'])
 else:
-	coretpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, LINKFLAGS = ['-Wl,--export-dynamic'], ENV = os.environ, CPPPATH = ['.'])
-	modtpl = Environment(CPPDEFINES = [('SRC_REVISION', srcversion)] + cppdefines, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'])
+	env.Append(LINKFLAGS = ['-Wl,--export-dynamic'])
 
 # Add glib support
-coretpl.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
-modtpl.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
+env.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
 
 buildtests = True
 
 # Build modes
 if ARGUMENTS.get('debug') == '0' or ARGUMENTS.get('release') == '1':
 	prefix = 'bin/release'
-	coretpl.Append(CCFLAGS = ['-O2'])
-	coretpl.VariantDir(prefix, 'src', 0)
-	modtpl.Append(CCFLAGS = ['-O2'])
-	modtpl.VariantDir(prefix, 'src', 0)
+	env.Append(CCFLAGS = ['-O2'])
+	env.VariantDir(prefix, 'src', 0)
 	buildtests = False
 else:
 	prefix = 'bin/debug'
-	coretpl.Append(CCFLAGS = ['-g'])
-	coretpl.VariantDir(prefix, 'src', 0)
-	coretpl.VariantDir('bin/test', 'src', 0)
-	modtpl.Append(CCFLAGS = ['-g'])
-	modtpl.VariantDir(prefix, 'src', 0)
-	modtpl.VariantDir('bin/test', 'src', 0)
+	env.Append(CCFLAGS = ['-g'])
+	env.VariantDir(prefix, 'src', 0)
+	env.VariantDir('bin/test', 'src', 0)
 	
 if ARGUMENTS.get('verbose') != '1':
-	coretpl.Replace(CCCOMSTR = 'Compiling object: $TARGET')
-	coretpl.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
-	modtpl.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
-	modtpl.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
-	modtpl.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
+	env.Replace(CCCOMSTR = 'Compiling object: $TARGET')
+	env.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
+	env.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
+	env.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
+	env.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
 
 # Build core
-core = coretpl.Clone()
+core = env.Clone()
 corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'test.c']
 SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
 
@@ -95,16 +87,16 @@ for moddir in modules:
 	if os.path.isdir(os.path.join('src/modules', moddir)) and not moddir in exclude:
 		if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 			# Build module
-			module = modtpl.Clone()
+			module = env.Clone()
 			SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), 'module')
 			if buildtests:
-				module = modtpl.Clone()
+				module = env.Clone()
 				SConscript(os.path.join('bin/test', 'modules', moddir, 'SConscript'), 'module')
 
 # Build tests
 if buildtests:
 	# Build tester core
-	core = coretpl.Clone()
+	core = env.Clone()
 	corefiles = [x for x in core.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
 	SConscript('bin/test/SConscript', ['core', 'corefiles'])
 
@@ -115,5 +107,5 @@ if buildtests:
 		if os.path.isdir(os.path.join('src/tests', testdir)) and not testdir in exclude:
 			if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 				# Build test
-				test = modtpl.Clone()		
+				test = env.Clone()		
 				SConscript(os.path.join('bin/test/tests', testdir, 'SConscript'), 'test')

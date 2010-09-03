@@ -98,7 +98,7 @@ TEST_CASE(getopts)
 	TEST_ASSERT((opt = $(char *, getopts, getOptValue)("w", "world", NULL)) != NULL);
 	TEST_ASSERT(strcmp(opt, "welt"));
 
-	TEST_ASSERT((opt = $(char *, getopts, getOptValue)(NULL)) == NULL);
+	TEST_ASSERT((opt = $(char *, getopts, getOptValue)(NULL, NULL)) == NULL);
 
 	TEST_PASS;
 }

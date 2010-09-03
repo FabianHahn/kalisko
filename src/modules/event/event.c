@@ -32,7 +32,7 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
@@ -113,7 +113,7 @@ API void detachEventListener(void *subject, const char *event, void *custom, Eve
 	if((events = g_hash_table_lookup(subjects, subject)) != NULL) {
 		GQueue *queue;
 
-		if((queue = g_hash_table_lookup(subject, event)) != NULL) {
+		if((queue = g_hash_table_lookup(events, event)) != NULL) {
 			for(GList *iter = queue->head; iter != NULL; iter = iter->next) {
 				EventListenerEntry *entry = iter->data;
 
@@ -163,7 +163,7 @@ API int triggerEvent(void *subject, const char *event, ...)
 
 	GQueue *queue;
 
-	if((queue = g_hash_table_lookup(subject, event)) == NULL) {
+	if((queue = g_hash_table_lookup(events, event)) == NULL) {
 		return -1;
 	}
 

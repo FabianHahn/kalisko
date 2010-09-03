@@ -34,7 +34,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
@@ -87,6 +87,7 @@ API TableCell *newTableCell(Table *table)
 	cell->content = NULL;
 	cell->freeCell = NULL;
 	cell->tag = NULL;
+	cell->freeContent = false;
 
 	if(table->newCell) {
 		table->newCell(table, cell);
@@ -134,6 +135,10 @@ API void freeCell(TableCell *cell)
 {
 	if(cell->freeCell != NULL) {
 		cell->freeCell(cell);
+	}
+
+	if(cell->freeContent) {
+		free(cell->content);
 	}
 
 	free(cell);

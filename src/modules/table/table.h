@@ -40,11 +40,18 @@ struct TableCell {
 	 * directly, use instead setTableCellContent function.
 	 * The content should be encoded in UTF-8 (or ASCII)
 	 *
-	 * The content is not freed by the table module.
+	 * The content is only freed if freeContent is true.
 	 *
 	 * @see setTableCellContent
 	 */
 	char *content;
+
+	/**
+	 * Tells the Table module if it has to free the contet.
+	 *
+	 * Default value is false.
+	 */
+	bool freeContent;
 
 	/**
 	 * Reference to additional data for the cell provided by

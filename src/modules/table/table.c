@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "memory_alloc.h"
@@ -34,7 +33,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 

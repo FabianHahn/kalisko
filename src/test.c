@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
-#include "hooks.h"
 #include "module.h"
 #include "types.h"
 #include "timer.h"
@@ -42,7 +41,6 @@ int main(int argc, char **argv)
 	g_thread_init(NULL);
 
 	initMemory();
-	initHooks();
 	initTimers();
 	initLog();
 	initModules();
@@ -95,8 +93,6 @@ int main(int argc, char **argv)
 		double perc = 100.0 * passed / count;
 		printf("\n%d of %d test cases passed (%.2f%%)\n", passed, count, perc);
 	}
-
-	freeHooks();
 
 	return EXIT_SUCCESS;
 }

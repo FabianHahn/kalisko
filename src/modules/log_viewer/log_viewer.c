@@ -22,7 +22,6 @@
 #include <assert.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "timer.h"
 #include "module.h"
@@ -30,6 +29,7 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 #include "modules/log_viewer/log_viewer.h"
@@ -37,13 +37,13 @@
 MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 5));
 
 #define PERFORM_CONFIG_PATH "loadModules"
 
-HOOK_LISTENER(newLogMessage);
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 
 static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean addLogMessage(GtkWidget *widget, GdkEvent *event, gpointer data);
@@ -59,7 +59,7 @@ MODULE_INIT
 		LogViewerWindow *window = newLogViewerWindow();
 		g_signal_connect(G_OBJECT(window->window), "delete_event", G_CALLBACK(closeWindow), window);
 
-		HOOK_ATTACH_EX(log, newLogMessage, window);
+		$(void, event, attachEventListener)(NULL, "log", window, &listener_log);
 
 		// show and start
 		gtk_widget_show_all(GTK_WIDGET(window->window));
@@ -184,12 +184,12 @@ API void logViewerAddMessage(LogViewer *logViewer, char *time, char *message, Gd
 	gtk_tree_path_free(path);
 }
 
-HOOK_LISTENER(newLogMessage)
+static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
-	LogViewerWindow *window = (LogViewerWindow *)custom_data;
+	LogViewerWindow *window = (LogViewerWindow *) data;
 
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
 
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);
@@ -220,7 +220,7 @@ HOOK_LISTENER(newLogMessage)
 
 static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	HOOK_DETACH_EX(log, newLogMessage, data);
+	$(void, event, detachEventListener)(NULL, "log", data, &listener_log);
 
 	LogViewerWindow *window = (LogViewerWindow *)data;
 	freeLogViewerWindow(window);

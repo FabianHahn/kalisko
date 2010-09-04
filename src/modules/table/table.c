@@ -21,6 +21,7 @@
 
 #include <glib.h>
 #include <string.h>
+#include <math.h>
 
 #include "dll.h"
 #include "hooks.h"
@@ -35,7 +36,7 @@ MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
 MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 5);
+MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -55,15 +56,45 @@ MODULE_FINALIZE
  */
 API Table *newTable()
 {
+	return newTableFull(MODULE_TABLE_DEFAULT_ALLOC_ROWS, MODULE_TABLE_DEFAULT_ALLOC_COLS);
+}
+
+/**
+ * Returns a newly created Table with alreasy allocated rows and columns.
+ *
+ * This functions just allocate space but not create the TableCells. So you still
+ * have to use the append* functions for example.
+ *
+ * @param preAllocRows		Amount of rows to allocate
+ * @param preAllocCols		Amount of cols to allocate
+ * @return the new Table
+ */
+API Table *newTableFull(int preAllocRows, int preAllocCols)
+{
+	// create table in memory
 	Table *table = ALLOCATE_OBJECT(Table);
-	table->cols = 0;
 	table->freeTable = NULL;
 	table->newCell = NULL;
 	table->outputGenerator = NULL;
-	table->rows = 0;
 	table->table = NULL;
 	table->tag = NULL;
 	table->copyCell = NULL;
+	table->rows = 0;
+	table->cols = 0;
+	table->freeRowsAmount = preAllocRows;
+	table->freeColsAmount = preAllocCols;
+
+	// speed up the return, we do not need to do the rest
+	if(preAllocRows == 0 && preAllocCols == 0) {
+		return table;
+	}
+
+	// allocate the space we need
+	table->table = ALLOCATE_OBJECTS(TableCell **, preAllocRows);
+
+	for(int row = 0; row < preAllocRows; row++) {
+		table->table[row] = ALLOCATE_OBJECTS(TableCell *, preAllocCols);
+	}
 
 	return table;
 }
@@ -164,17 +195,28 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 		return -1;
 	}
 
-	if(table->table == NULL) {
+	if(table->table == 0 || table->rows == 0) {
 		appendTableRow(table, 1, cellTemplate);
 	}
 
 	int colCount = table->cols + colAmount;
+	int colCountToAlloc = colAmount - table->freeColsAmount;
+
+	// Allocated the extra space if needed
+	if(colCountToAlloc > 0) {
+		for(int row = 0; row < table->rows; row++) {
+			// Create the space to store new column(s)
+			TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
+			table->table[row] = extendedCols;
+		}
+
+		table->freeColsAmount = 0; // we used all up
+	} else {
+		table->freeColsAmount = abs(colCountToAlloc);
+	}
+
+	// Fill the space
 	for(int row = 0; row < table->rows; row++) {
-
-		// Create the space to store new column(s)
-		TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
-		table->table[row] = extendedCols;
-
 		// Fill rows with new TableCells for the new column
 		for(int col = table->cols; col < colCount; col++) {
 			if(cellTemplate == NULL) {
@@ -209,13 +251,20 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 	}
 
 	int rowCount = table->rows + rowAmount;
+	int rowCountToAlloc = rowAmount - table->freeRowsAmount;
 
-	// Create the space to store new row(s)
-	if(table->table == NULL) {
-		table->table = ALLOCATE_OBJECT(TableCell **);
+	// Allocate the extra needed space
+	if(rowCountToAlloc > 0) {
+		if(table->table == NULL) {
+			table->table = ALLOCATE_OBJECTS(TableCell **, rowCount);
+		} else {
+			TableCell ***extendedTable = REALLOCATE_OBJECT(TableCell **, table->table, sizeof(TableCell **) * rowCount);
+			table->table = extendedTable;
+		}
+
+		table->freeRowsAmount = 0; // we used all up
 	} else {
-		TableCell ***extendedTable = REALLOCATE_OBJECT(TableCell **, table->table, sizeof(TableCell **) * rowCount);
-		table->table = extendedTable;
+		table->freeRowsAmount = abs(rowCountToAlloc);
 	}
 
 	// Fill new rows with TableCells

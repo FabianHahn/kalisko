@@ -17,4 +17,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
+module.Append(LINKFLAGS = ['-lm'])
+
 module.SharedLibrary('../kalisko_table', Glob('*.c'))

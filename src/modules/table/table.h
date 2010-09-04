@@ -96,6 +96,16 @@ struct Table {
 	int rows;
 
 	/**
+	 * Amount of allocated but not used rows.
+	 */
+	int freeRowsAmount;
+
+	/**
+	 * Amount of allocated but not used cols.
+	 */
+	int freeColsAmount;
+
+	/**
 	 * Reference to additional data for the table provided by
 	 * a more specific Table implementation.
 	 *
@@ -128,7 +138,16 @@ struct Table {
 	CopyCellCallback *copyCell;
 };
 
+#ifndef MODULE_TABLE_DEFAULT_ALLOC_ROWS
+	#define MODULE_TABLE_DEFAULT_ALLOC_ROWS 10
+#endif
+
+#ifndef MODULE_TABLE_DEFAULT_ALLOC_COLS
+	#define MODULE_TABLE_DEFAULT_ALLOC_COLS 3
+#endif
+
 API Table *newTable();
+API Table *newTableFull(int preAllocRows, int preAllocCols);
 API TableCell *newTableCell(Table *table);
 API void freeTable(Table *table);
 API void freeCell(TableCell *cell);

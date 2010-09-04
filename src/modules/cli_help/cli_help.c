@@ -41,7 +41,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
 MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 0), MODULE_DEPENDENCY("table", 0, 1, 5), MODULE_DEPENDENCY("event", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 2), MODULE_DEPENDENCY("table", 0, 1, 5), MODULE_DEPENDENCY("event", 0, 1, 1));
 
 typedef struct {
 	char *module;
@@ -125,7 +125,7 @@ static void listener_modulesLoaded(void *subject, const char *event, void *data,
 	printf("\n%s%s ", "Usage: ", execName);
 	free(execName);
 
-	Table *table = $(Table *, plaintext_table, newPlainTextTable)();
+	Table *table = $(Table *, plaintext_table, newPlaintextTableFull)(MODULE_TABLE_DEFAULT_ALLOC_ROWS, 3);
 	$(int, table, appendTableCol)(table, 3, NULL);
 
 	if(hasOptions && hasArguments) {

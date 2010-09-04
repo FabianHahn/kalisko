@@ -38,9 +38,9 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 7);
+MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 static void listener_log(void *subject, const char *event, void *data, va_list args);
 
@@ -54,7 +54,7 @@ static void updateConfig();
 
 #ifdef WIN32
 	static bool inWindowsColorRange(int color);
-	static void writeMessage(char *dateTime, int color, char *logType, char *message);
+	static void writeMessage(char *dateTime, int color, const char *module, char *logType, char *message);
 	static void setWindowsConsoleColor(int color);
 	static int getWindowsConsoleColor();
 #endif
@@ -108,6 +108,7 @@ MODULE_FINALIZE
  */
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
+	const char *module = va_arg(args, const char *);
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 
@@ -118,33 +119,33 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	switch(type) {
 		case LOG_TYPE_ERROR:
 #ifdef WIN32
-			writeMessage(dateTime, errorColor, "ERROR", message);
+			writeMessage(dateTime, errorColor, module, "ERROR", message);
 #else
-			fprintf(stderr, "%s \033[%sERROR: %s\033[m\n", dateTime, errorColor, message);
+			fprintf(stderr, "%s [%s] \033[%sERROR: %s\033[m\n", dateTime, module, errorColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_WARNING:
 #ifdef WIN32
-			writeMessage(dateTime, warningColor, "WARNING", message);
+			writeMessage(dateTime, warningColor, module, "WARNING", message);
 #else
-			fprintf(stderr, "%s \033[%sWARNING: %s\033[m\n", dateTime, warningColor, message);
+			fprintf(stderr, "%s [%s] \033[%sWARNING: %s\033[m\n", dateTime, module, warningColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_INFO:
 #ifdef WIN32
-			writeMessage(dateTime, infoColor, "INFO", message);
+			writeMessage(dateTime, infoColor, module, "INFO", message);
 #else
-			fprintf(stderr, "%s \033[%sINFO: %s\033[m\n", dateTime, infoColor, message);
+			fprintf(stderr, "%s [%s] \033[%sINFO: %s\033[m\n", dateTime, module, infoColor, message);
 #endif
 
 		break;
 		case LOG_TYPE_DEBUG:
 #ifdef WIN32
-			writeMessage(dateTime, debugColor, "DEBUG", message);
+			writeMessage(dateTime, debugColor, module, "DEBUG", message);
 #else
-			fprintf(stderr, "%s \033[%sDEBUG: %s\033[m\n", dateTime, debugColor, message);
+			fprintf(stderr, "%s [%s] \033[%sDEBUG: %s\033[m\n", dateTime, module, debugColor, message);
 #endif
 		break;
 	}
@@ -252,13 +253,14 @@ static void updateConfig() {
 	 *
 	 * @param dateTime	The date & time string
 	 * @param color		The color to use on the console
+	 * @param module	the module in which the log message occured
 	 * @param logType	The string representing the current log type
 	 * @param message	The message itself
 	 */
-	static void writeMessage(char *dateTime, int color, char *logType, char *message) {
+	static void writeMessage(char *dateTime, int color, const char *module, char *logType, char *message) {
 		int currentColor = getWindowsConsoleColor();
 
-		fprintf(stderr, dateTime);
+		fprintf(stderr, "%s [%s]", dateTime, module);
 		setWindowsConsoleColor(color);
 		fprintf(stderr, " %s: %s\n", logType, message);
 

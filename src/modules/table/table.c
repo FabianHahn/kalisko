@@ -205,7 +205,7 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 	if(colCountToAlloc > 0) {
 		for(int row = 0; row < table->freeRowsAmount + table->rows; row++) {
 			// Create the space to store new column(s)
-			TableCell **extendedCols = (TableCell **)reallocateMemory(table->table[row], sizeof(TableCell *) * colCount);
+			TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
 			table->table[row] = extendedCols;
 		}
 

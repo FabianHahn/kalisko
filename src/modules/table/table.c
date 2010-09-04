@@ -21,7 +21,7 @@
 
 #include <glib.h>
 #include <string.h>
-#include <math.h>
+#include <stdio.h>
 
 #include "dll.h"
 #include "log.h"
@@ -34,7 +34,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
@@ -194,7 +194,7 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 		return -1;
 	}
 
-	if(table->table == 0 || table->rows == 0) {
+	if(table->table == NULL || table->rows == 0) {
 		appendTableRow(table, 1, cellTemplate);
 	}
 
@@ -211,7 +211,7 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 
 		table->freeColsAmount = 0; // we used all up
 	} else {
-		table->freeColsAmount = abs(colCountToAlloc);
+		table->freeColsAmount -= colAmount;
 	}
 
 	// Fill the space
@@ -251,6 +251,7 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 
 	int rowCount = table->rows + rowAmount;
 	int rowCountToAlloc = rowAmount - table->freeRowsAmount;
+	int startNotPreAllocedRows = table->rows + table->freeRowsAmount - 1;
 
 	// Allocate the extra needed space
 	if(rowCountToAlloc > 0) {
@@ -263,12 +264,14 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 
 		table->freeRowsAmount = 0; // we used all up
 	} else {
-		table->freeRowsAmount = abs(rowCountToAlloc);
+		table->freeRowsAmount -= rowAmount;
 	}
 
 	// Fill new rows with TableCells
 	for(int row = table->rows; row < rowCount; row++) {
-		table->table[row] = ALLOCATE_OBJECTS(TableCell *, table->cols);
+		if(row > startNotPreAllocedRows) {
+			table->table[row] = ALLOCATE_OBJECTS(TableCell *, table->cols);
+		}
 
 		for(int col = 0; col < table->cols; col++) {
 			if(cellTemplate == NULL) {

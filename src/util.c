@@ -92,7 +92,7 @@ API char *getExecutablePath()
 
 #ifdef WIN32
 	if((length = GetModuleFileName(NULL, execpath, BUF - 1)) == 0) {
-		logMessage(LOG_TYPE_ERROR, "Failed to determine executable path");
+		logMessage("core", LOG_TYPE_ERROR, "Failed to determine executable path");
 		return NULL;
 	}
 #else

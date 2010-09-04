@@ -34,7 +34,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 7);
+MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
@@ -203,9 +203,9 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 
 	// Allocated the extra space if needed
 	if(colCountToAlloc > 0) {
-		for(int row = 0; row < table->freeRowsAmount; row++) {
+		for(int row = 0; row < table->freeRowsAmount + table->rows; row++) {
 			// Create the space to store new column(s)
-			TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
+			TableCell **extendedCols = (TableCell **)reallocateMemory(table->table[row], sizeof(TableCell *) * colCount);
 			table->table[row] = extendedCols;
 		}
 
@@ -257,6 +257,7 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 	if(rowCountToAlloc > 0) {
 		if(table->table == NULL) {
 			table->table = ALLOCATE_OBJECTS(TableCell **, rowCount);
+			memset(table->table, 0, sizeof(TableCell **) * rowCount);
 		} else {
 			TableCell ***extendedTable = REALLOCATE_OBJECT(TableCell **, table->table, sizeof(TableCell **) * rowCount);
 			table->table = extendedTable;
@@ -268,9 +269,10 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 	}
 
 	// Fill new rows with TableCells
+	int allocCols = table->cols + table->freeColsAmount;
 	for(int row = table->rows; row < rowCount; row++) {
-		if(row > startNotPreAllocedRows) {
-			table->table[row] = ALLOCATE_OBJECTS(TableCell *, table->cols + table->freeColsAmount);
+		if(row > startNotPreAllocedRows && allocCols > 0) {
+			table->table[row] = ALLOCATE_OBJECTS(TableCell *, allocCols);
 		}
 
 		for(int col = 0; col < table->cols; col++) {

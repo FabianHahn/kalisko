@@ -23,11 +23,11 @@
 #include "log.h"
 #include "module.h"
 #include "types.h"
-#include "hooks.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
 #include "modules/getopts/getopts.h"
 #include "modules/store/store.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 
@@ -36,14 +36,12 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 MODULE_INIT
 {
-	HOOK_ADD(module_perform_finished);
-
 	// Check for CLI options
 	char *moduleList = $(char *, getopts, getOptValue)("load-modules", "m", NULL);
 	char *appendModuleList = $(char *, getopts, getOptValue)("append-modules", NULL);
@@ -108,12 +106,12 @@ MODULE_INIT
 		}
 	}
 
-	HOOK_TRIGGER(module_perform_finished);
+	$(int, event, triggerEvent)(NULL, "module_perform_finished");
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DEL(module_perform_finished);
+
 }

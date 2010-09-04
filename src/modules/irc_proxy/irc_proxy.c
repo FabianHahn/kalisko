@@ -24,7 +24,6 @@
 #include <stdarg.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "util.h"
@@ -35,15 +34,16 @@
 #include "modules/string_util/string_util.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/config/config.h"
+#include "modules/event/event.h"
 #include "api.h"
 #include "irc_proxy.h"
 
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 5);
+MODULE_VERSION(0, 3, 7);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static void checkForBufferLine(IrcProxyClient *client);
@@ -68,11 +68,11 @@ static GHashTable *clients;
  */
 static Socket *server;
 
-HOOK_LISTENER(remote_line);
-HOOK_LISTENER(client_accept);
-HOOK_LISTENER(client_read);
-HOOK_LISTENER(client_disconnect);
-HOOK_LISTENER(client_line);
+static void listener_remoteLine(void *subject, const char *event, void *data, va_list args);
+static void listener_clientAccept(void *subject, const char *event, void *data, va_list args);
+static void listener_clientRead(void *subject, const char *event, void *data, va_list args);
+static void listener_clientDisconnect(void *subject, const char *event, void *data, va_list args);
+static void listener_clientLine(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
@@ -92,6 +92,8 @@ MODULE_INIT
 	// Create and connect our listening server socket
 	server = $(Socket *, socket, createServerSocket)(port);
 
+	$(void, event, attachEventListener)(server, "accept", NULL, &listener_clientAccept);
+
 	if(!$(bool, socket, connectSocket)(server)) {
 		LOG_ERROR("Failed to connect IRC proxy server socket on port %s, aborting", port);
 		return false;
@@ -101,14 +103,6 @@ MODULE_INIT
 		LOG_ERROR("Failed to enable polling for IRC proxy server socket on port %s, aborting", port);
 		return false;
 	}
-
-	HOOK_ATTACH(irc_line, remote_line);
-	HOOK_ATTACH(socket_accept, client_accept);
-	HOOK_ATTACH(socket_read, client_read);
-	HOOK_ATTACH(socket_disconnect, client_disconnect);
-	HOOK_ADD(irc_proxy_client_line);
-	HOOK_ATTACH(irc_proxy_client_line, client_line);
-	HOOK_ADD(irc_proxy_client_authenticated);
 
 	return true;
 }
@@ -125,22 +119,16 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
 
+	$(void, event, detachEventListener)(server, "accept", NULL, &listener_clientAccept);
+
 	// Free the server socket
 	$(void, socket, freeSocket)(server);
-
-	HOOK_DEL(irc_proxy_client_authenticated);
-	HOOK_DETACH(irc_proxy_client_line, client_line);
-	HOOK_DEL(irc_proxy_client_line);
-	HOOK_DETACH(irc_line, remote_line);
-	HOOK_DETACH(socket_accept, client_accept);
-	HOOK_DETACH(socket_read, client_read);
-	HOOK_DETACH(socket_disconnect, client_disconnect);
 }
 
-HOOK_LISTENER(remote_line)
+static void listener_remoteLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcConnection *irc = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	IrcProxy *proxy;
 	if((proxy = g_hash_table_lookup(proxyConnections, irc)) != NULL) { // One of our proxy servers got a new remote line
@@ -154,10 +142,10 @@ HOOK_LISTENER(remote_line)
 	}
 }
 
-HOOK_LISTENER(client_accept)
+static void listener_clientAccept(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *listener = HOOK_ARG(Socket *);
-	Socket *client = HOOK_ARG(Socket *);
+	Socket *listener = subject;
+	Socket *client = va_arg(args, Socket *);
 
 	if(listener == server) { // new IRC proxy client
 		$(bool, socket, enableSocketPolling)(client); // also poll the new socket
@@ -170,16 +158,20 @@ HOOK_LISTENER(client_accept)
 		pc->authenticated = false;
 		pc->ibuffer = g_string_new("");
 
+		$(void, event, attachEventListener)(pc, "line", NULL, &listener_clientLine);
+		$(void, event, attachEventListener)(client, "read", NULL, &listener_clientRead);
+		$(void, event, attachEventListener)(client, "disconnect", NULL, &listener_clientDisconnect);
+
 		g_hash_table_insert(clients, client, pc); // connect the client socket to the proxy client object
 
 		proxyClientIrcSend(pc, ":kalisko.proxy NOTICE AUTH :*** Welcome to the Kalisko IRC proxy server! Please use the %cPASS [id]:[password]%c command to authenticate...", (char) 2, (char) 2);
 	}
 }
 
-HOOK_LISTENER(client_read)
+static void listener_clientRead(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *socket = HOOK_ARG(Socket *);
-	char *message = HOOK_ARG(char *);
+	Socket *socket = subject;
+	char *message = va_arg(args, char *);
 
 	IrcProxyClient *client;
 	if((client = g_hash_table_lookup(clients, socket)) != NULL) {
@@ -188,9 +180,9 @@ HOOK_LISTENER(client_read)
 	}
 }
 
-HOOK_LISTENER(client_disconnect)
+static void listener_clientDisconnect(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *socket = HOOK_ARG(Socket *);
+	Socket *socket = subject;
 
 	IrcProxyClient *client;
 	if((client = g_hash_table_lookup(clients, socket)) != NULL) { // one of our proxy clients disconnected
@@ -204,10 +196,10 @@ HOOK_LISTENER(client_disconnect)
 	}
 }
 
-HOOK_LISTENER(client_line)
+static void listener_clientLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcProxyClient *client = HOOK_ARG(IrcProxyClient *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcProxyClient *client = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	if(!client->authenticated) { // not yet authenticated, wait for password
 		if(g_strcmp0(message->command, "PASS") == 0 && message->params_count > 0) {
@@ -232,7 +224,7 @@ HOOK_LISTENER(client_line)
 
 						proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", proxy->irc->socket->host, proxy->irc->nick);
 						proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
-						HOOK_TRIGGER(irc_proxy_client_authenticated, client);
+						$(int, event, triggerEvent)(proxy, "client_authenticated", client);
 					} else {
 						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
 					}
@@ -293,6 +285,8 @@ API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 	proxy->clients = g_queue_new();
 	proxy->relay_exceptions = g_queue_new();
 
+	$(void, event, attachEventListener)(irc, "line", NULL, &listener_remoteLine);
+
 	g_hash_table_insert(proxies, strdup(name), proxy); // clone name again to make it independent of the IrcProxy object
 	g_hash_table_insert(proxyConnections, irc, proxy);
 
@@ -350,6 +344,8 @@ API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket)
  */
 API void freeIrcProxy(IrcProxy *proxy)
 {
+	$(void, event, detachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
+
 	g_hash_table_remove(proxies, proxy->name);
 	g_hash_table_remove(proxyConnections, proxy->irc);
 
@@ -465,6 +461,11 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 		proxyClientIrcSend(client, "QUIT :%s", quitmsg);
 	}
 
+	$(int, event, triggerEvent)(client->proxy, "client_disconnected", client);
+	$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
+	$(void, event, detachEventListener)(client->socket, "read", NULL, &listener_clientRead);
+	$(void, event, detachEventListener)(client->socket, "disconnect", NULL, &listener_clientDisconnect);
+
 	g_hash_table_remove(clients, client->socket); // remove ourselves from the irc proxy client sockets table
 
 	$(void, socket, freeSocket)(client->socket); // free the socket
@@ -494,7 +495,7 @@ static void checkForBufferLine(IrcProxyClient *client)
 					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
 
 					if(ircMessage != NULL) {
-						HOOK_TRIGGER(irc_proxy_client_line, client, ircMessage);
+						$(int, event, triggerEvent)(client, "line", ircMessage);
 						$(void, irc_parser, freeIrcMessage)(ircMessage);
 					}
 				}

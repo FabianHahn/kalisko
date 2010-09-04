@@ -21,7 +21,6 @@
 #include <stdarg.h>
 #include <glib.h>
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "module.h"
@@ -31,18 +30,18 @@
 #include "modules/store/parse.h"
 #include "modules/store/path.h"
 #include "modules/store/write.h"
+#include "modules/event/event.h"
 #include "api.h"
 #include "version2store.h"
 
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 8);
+MODULE_VERSION(0, 3, 9);
 MODULE_BCVERSION(0, 3, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static Store *xcall_exitGracefully(Store *xcall);
-static Store *xcall_getHookStats(Store *xcall);
 static Store *xcall_attachLog(Store *xcall);
 static Store *xcall_detachLog(Store *xcall);
 static Store *xcall_getModuleAuthor(Store *xcall);
@@ -65,7 +64,7 @@ static bool attachLogListener(char *listener);
 static bool detachLogListener(char *listener);
 static void freeLogListenerEntry(void *listener_p);
 
-HOOK_LISTENER(xcall_log);
+static void listener_xcallLog(void *subject, const char *event, void *data, va_list args);
 
 GHashTable *logListeners;
 static bool logExecuting;
@@ -76,7 +75,6 @@ MODULE_INIT
 	logListeners = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeLogListenerEntry);
 
 	$(bool, xcall, addXCallFunction)("exitGracefully", &xcall_exitGracefully);
-	$(bool, xcall, addXCallFunction)("getHookStats", &xcall_getHookStats);
 	$(bool, xcall, addXCallFunction)("attachLog", &xcall_attachLog);
 	$(bool, xcall, addXCallFunction)("detachLog", &xcall_detachLog);
 	$(bool, xcall, addXCallFunction)("getModuleAuthor", &xcall_getModuleAuthor);
@@ -102,7 +100,6 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(bool, xcall, delXCallFunction)("exitGracefully");
-	$(bool, xcall, delXCallFunction)("getHookStats");
 	$(bool, xcall, delXCallFunction)("attachLog");
 	$(bool, xcall, delXCallFunction)("detachLog");
 	$(bool, xcall, delXCallFunction)("getModuleAuthor");
@@ -135,42 +132,6 @@ static Store *xcall_exitGracefully(Store *xcall)
 {
 	$$(void, exitGracefully)();
 	return $(Store *, store, createStore)();
-}
-
-/**
- * XCallFunction to retrieve hook stats
- * XCall result:
- * 	* list hooks 				an array list with (name, listeners) pairs
- *  * string hooks/name			the name of the hook
- *  * integer hooks/listeners	the listeners count for the hook
- *
- * @param xcall		the xcall as store
- * @result			a return value as store
- */
-static Store *xcall_getHookStats(Store *xcall)
-{
-	Store *retstore = $(Store *, store, createStore)();
-	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-
-	GQueue *stats = $$(GQueue *, getHookStats)();
-	Store *hooksStore = $(Store *, store, createStoreListValue)(NULL);
-
-	for(GList *iter = stats->head; iter != NULL; iter = iter->next) {
-		HookStatsEntry *entry = iter->data;
-
-		// Read data from entry
-		Store *hook = $(Store *, store, createStoreArrayValue)(NULL);
-		$(bool, store, setStorePath)(hook, "name", $(Store *, store, createStoreStringValue)(entry->hook_name));
-		$(bool, store, setStorePath)(hook, "listeners", $(Store *, store, createStoreIntegerValue)(entry->num_listeners));
-
-		// Push to hook store
-		g_queue_push_tail(hooksStore->content.list, hook);
-	}
-
-	$(bool, store, setStorePath)(retstore, "hooks", hooksStore);
-	$$(void, freeHookStats)(stats);
-
-	return retstore;
 }
 
 /**
@@ -239,7 +200,7 @@ static Store *xcall_detachLog(Store *xcall)
 	return retstore;
 }
 
-HOOK_LISTENER(xcall_log)
+static void listener_xcallLog(void *subject, const char *event, void *data, va_list args)
 {
 	if(logExecuting) {
 		return; // Prevent infinite loop
@@ -247,9 +208,9 @@ HOOK_LISTENER(xcall_log)
 
 	logExecuting = true;
 
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
-	char *listener = custom_data;
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
+	char *listener = data;
 
 	Store *xcall = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
@@ -301,7 +262,9 @@ static bool attachLogListener(char *listener)
 	char *identifier = strdup(listener);
 
 	g_hash_table_insert(logListeners, identifier, identifier);
-	return HOOK_ATTACH_EX(log, xcall_log, identifier);
+	$(void, event, attachEventListener)(NULL, "log", identifier, &listener_xcallLog);
+
+	return true;
 }
 
 /**
@@ -322,7 +285,7 @@ static void freeLogListenerEntry(void *listener_p)
 {
 	char *listener = listener_p;
 
-	HOOK_DETACH_EX(log, xcall_log, listener_p);
+	$(void, event, detachEventListener)(NULL, "log", listener_p, &listener_xcallLog);
 
 	free(listener);
 }

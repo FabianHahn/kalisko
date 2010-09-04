@@ -22,10 +22,10 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "timer.h"
 #include "log.h"
 #include "memory_alloc.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 #include "socket.h"
@@ -52,12 +52,6 @@ API void initPoll(int interval)
 {
 	pollInterval = interval;
 
-	HOOK_ADD(socket_poll);
-	HOOK_ADD(socket_read);
-	HOOK_ADD(socket_error);
-	HOOK_ADD(socket_disconnect);
-	HOOK_ADD(socket_accept);
-
 	poll_table = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
 
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
@@ -71,12 +65,6 @@ API void initPoll(int interval)
 API void freePoll()
 {
 	TIMER_DEL(lastScheduledPollTime);
-
-	HOOK_DEL(socket_poll);
-	HOOK_DEL(socket_read);
-	HOOK_DEL(socket_error);
-	HOOK_DEL(socket_disconnect);
-	HOOK_DEL(socket_accept);
 
 	g_hash_table_destroy(poll_table);
 }
@@ -155,7 +143,7 @@ API Socket *getPolledSocketByFd(int fd)
 TIMER_CALLBACK(poll)
 {
 	pollSockets();
-	HOOK_TRIGGER(socket_poll);
+	$(int, event, triggerEvent)(NULL, "sockets_polled");
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 
@@ -171,7 +159,7 @@ static bool pollSocket(Socket *socket, int *fd_p)
 	*fd_p = socket->fd; // backup file descriptor
 
 	if(!socket->connected) { // Socket is disconnected
-		HOOK_TRIGGER(socket_disconnect, socket);
+		$(int, event, triggerEvent)(socket, "disconnect");
 		return true;
 	}
 
@@ -179,22 +167,22 @@ static bool pollSocket(Socket *socket, int *fd_p)
 		int ret;
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected
-				HOOK_TRIGGER(socket_disconnect, socket);
+				$(int, event, triggerEvent)(socket, "disconnect");
 			} else { // error
-				HOOK_TRIGGER(socket_error, socket);
+				$(int, event, triggerEvent)(socket, "error");
 			}
 
 			return true;
 		} else if(ret > 0) { // we actually read something
-			HOOK_TRIGGER(socket_read, socket, poll_buffer, ret);
+			$(int, event, triggerEvent)(socket, "read", poll_buffer, ret);
 		}
 	} else {
 		Socket *clientSocket;
 
 		if((clientSocket = socketAccept(socket)) != NULL) {
-			HOOK_TRIGGER(socket_accept, socket, clientSocket);
+			$(int, event, triggerEvent)(socket, "accept", clientSocket);
 		} else {
-			HOOK_TRIGGER(socket_error, socket);
+			$(int, event, triggerEvent)(socket, "error");
 		}
 	}
 

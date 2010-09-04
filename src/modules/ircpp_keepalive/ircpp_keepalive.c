@@ -21,7 +21,6 @@
 
 #include <glib.h>
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "timer.h"
@@ -32,19 +31,20 @@
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
+#include "modules/event/event.h"
 #include "api.h"
 
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
-HOOK_LISTENER(remote_line);
-HOOK_LISTENER(remote_disconnect);
+static void listener_remoteLine(void *subject, const char *event, void *data, va_list args);
+static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args);
 static void reconnectRemoteConnection(IrcProxy *proxy);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
@@ -100,17 +100,11 @@ MODULE_INIT
 		return false;
 	}
 
-	HOOK_ATTACH(irc_line, remote_line);
-	HOOK_ATTACH(irc_disconnect, remote_disconnect);
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(irc_line, remote_line);
-	HOOK_DETACH(socket_disconnect, remote_disconnect);
-
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
 
 	// Since all plugins and their timeouts are already freed, we don't need to remove the contents
@@ -118,10 +112,10 @@ MODULE_FINALIZE
 	g_hash_table_destroy(challengeTimeouts);
 }
 
-HOOK_LISTENER(remote_line)
+static void listener_remoteLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcConnection *irc = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	IrcProxy *proxy;
 	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // this IRC connection is actually proxied
@@ -143,9 +137,9 @@ HOOK_LISTENER(remote_line)
 	}
 }
 
-HOOK_LISTENER(remote_disconnect)
+static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *irc = HOOK_ARG(IrcConnection *);
+	IrcConnection *irc = subject;
 
 	IrcProxy *proxy;
 	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
@@ -252,6 +246,9 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 		return false;
 	}
 
+	$(void, event, attachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
+	$(void, event, attachEventListener)(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
+
 	g_hash_table_insert(challenges, proxy, timeout);
 
 	return true;
@@ -267,6 +264,9 @@ static void finiPlugin(IrcProxy *proxy, char *name)
 {
 	// Fetch the timeout for this proxy from the timeouts table
 	GTimeVal *timeout = g_hash_table_lookup(challenges, proxy);
+
+	$(void, event, detachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
+	$(void, event, detachEventListener)(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
 
 	// Free the timeout from the timeouts table
 	g_hash_table_remove(challenges, proxy);

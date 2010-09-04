@@ -25,10 +25,10 @@
 #include "dll.h"
 #include "log.h"
 #include "types.h"
-#include "hooks.h"
 #include "memory_alloc.h"
 #include "util.h"
 #include "modules/config/config.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 #include "log_file.h"
@@ -44,7 +44,7 @@
 
 #define LOGFILE_DIR_PERMISSION 0700
 
-HOOK_LISTENER(log);
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 static void finalize();
 
 static GList *logFiles = NULL;
@@ -52,9 +52,9 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 MODULE_INIT
 {
@@ -110,10 +110,7 @@ MODULE_INIT
 		}
 	}
 
-	if(!HOOK_ATTACH(log, log)) {
-		finalize();
-		return false;
-	}
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
 
 	return true;
 }
@@ -172,10 +169,11 @@ API void removeLogFile(LogFileConfig *logFile)
 	free(logFile);
 }
 
-HOOK_LISTENER(log)
+static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
+	const char *module = va_arg(args, const char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
 
 	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
 	g_get_current_time(now);
@@ -201,16 +199,16 @@ HOOK_LISTENER(log)
     	switch(logFile->logType) {
 			case LOG_TYPE_DEBUG:
 				if(type == LOG_TYPE_DEBUG)
-					fprintf(logFile->fileAppend, "%s DEBUG: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] DEBUG: %s\n", dateTime, module, message);
 			case LOG_TYPE_INFO:
 				if(type == LOG_TYPE_INFO)
-					fprintf(logFile->fileAppend, "%s INFO: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] INFO: %s\n", dateTime, module, message);
 			case LOG_TYPE_WARNING:
 				if(type == LOG_TYPE_WARNING)
-					fprintf(logFile->fileAppend, "%s WARNING: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] WARNING: %s\n", dateTime, module, message);
 			case LOG_TYPE_ERROR:
 				if(type == LOG_TYPE_ERROR)
-					fprintf(logFile->fileAppend, "%s ERROR: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] ERROR: %s\n", dateTime, module, message);
     	}
     }
 
@@ -220,7 +218,7 @@ HOOK_LISTENER(log)
 
 static void finalize()
 {
-	HOOK_DETACH(log, log);
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
 
 	if(logFiles) {
 		for(GList *item = logFiles; item != NULL; item = item->next) {

@@ -23,7 +23,6 @@
 #include <stdio.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "util.h"
@@ -31,6 +30,7 @@
 #include "modules/getopts/getopts.h"
 #include "modules/table/table.h"
 #include "modules/plaintext_table/plaintext_table.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 #include "cli_help.h"
@@ -41,7 +41,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
 MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 2), MODULE_DEPENDENCY("table", 0, 1, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 2), MODULE_DEPENDENCY("table", 0, 1, 5), MODULE_DEPENDENCY("event", 0, 1, 1));
 
 typedef struct {
 	char *module;
@@ -56,8 +56,7 @@ typedef struct {
 	char *briefHelp;
 } CLArgument;
 
-HOOK_LISTENER(modules_loaded);
-
+static void listener_modulesLoaded(void *subject, const char *event, void *data, va_list args);
 static void printOptionsHelp(Table *table);
 static void printArgumentHelp(Table *table, bool isAfterOptions);
 
@@ -77,16 +76,14 @@ MODULE_INIT
 	hasOptions = false;
 	hasArguments = false;
 
-	if(!HOOK_ATTACH(module_perform_finished, modules_loaded)) {
-		return false;
-	}
+	$(void, event, attachEventListener)(NULL, "module_perform_finished", NULL, &listener_modulesLoaded);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(module_perform_finished, modules_loaded);
+	$(void, event, detachEventListener)(NULL, "module_perform_finished", NULL, &listener_modulesLoaded);
 
 	for(GSList *current = clOptions; current != NULL; current = g_slist_next(current)) {
 		CLOption *option = (CLOption *) current->data;
@@ -118,7 +115,7 @@ MODULE_FINALIZE
 	g_slist_free(clArguments);
 }
 
-HOOK_LISTENER(modules_loaded)
+static void listener_modulesLoaded(void *subject, const char *event, void *data, va_list args)
 {
 	if(!HAS_OPT("h") && !HAS_OPT("help")) {
 		return;

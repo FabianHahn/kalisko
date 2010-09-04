@@ -24,7 +24,6 @@
 #include <jsapi.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "memory_alloc.h"

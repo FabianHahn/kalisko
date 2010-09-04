@@ -21,7 +21,6 @@
 #include <gtk/gtk.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "timer.h"
 #include "module.h"
@@ -33,7 +32,7 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 

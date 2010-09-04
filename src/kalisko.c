@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
-#include "hooks.h"
 #include "timer.h"
 #include "module.h"
 #include "memory_alloc.h"
@@ -48,23 +47,26 @@ int main(int argc, char **argv)
 	setArgv(argv);
 
 	initMemory();
-	initHooks();
 	initTimers();
 	initLog();
 	initModules();
 
-	requestModule("log_default");
+	logMessage("core", LOG_TYPE_INFO, "Core startup complete - welcome to the Kalisko framework!");
+
 	requestModule("module_perform");
 
+	logMessage("core", LOG_TYPE_DEBUG, "Entering Kalisko event loop");
 	while(hasMoreTimerCallbacks()) {
 		int sleepTime = getCurrentSleepTime();
 		g_usleep(sleepTime < MIN_SLEEP_TIME ? MIN_SLEEP_TIME : sleepTime);
 		notifyTimerCallbacks();
 	}
+	logMessage("core", LOG_TYPE_DEBUG, "Leaving Kalisko event loop");
 
 	freeModules();
 	freeTimers();
-	freeHooks();
+
+	logMessage("core", LOG_TYPE_INFO, "Kalisko core shutting down - goodbye!");
 
 	return EXIT_SUCCESS;
 }

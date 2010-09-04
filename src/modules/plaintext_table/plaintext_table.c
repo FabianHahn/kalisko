@@ -23,7 +23,6 @@
 #include <math.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "modules/table/table.h"

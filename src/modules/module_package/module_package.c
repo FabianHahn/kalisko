@@ -25,7 +25,6 @@
 #include "log.h"
 #include "module.h"
 #include "types.h"
-#include "hooks.h"
 #include "modules/config/config.h"
 #include "modules/config/util.h"
 #include "modules/getopts/getopts.h"
@@ -37,7 +36,7 @@
 MODULE_NAME("module_package");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Loads modules of a given package from standard configruations");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 

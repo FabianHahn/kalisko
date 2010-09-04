@@ -23,13 +23,14 @@
 #include <stdlib.h>
 #include "api.h"
 #include "log.h"
-#include "hooks.h"
 #include "module.h"
 #include "types.h"
 #include "timer.h"
 #include "util.h"
 #include "test.h"
 #include "memory_alloc.h"
+
+static void nullLogHandler(const char *module, LogType type, char *message);
 
 static int test = 0;
 static int passed = 0;
@@ -42,13 +43,12 @@ int main(int argc, char **argv)
 	g_thread_init(NULL);
 
 	initMemory();
-	initHooks();
 	initTimers();
 	initLog();
 	initModules();
 
-#ifdef TEST_LOG_DEFAULT
-	requestModule("log_default");
+#ifndef TEST_LOG_DEFAULT
+	setLogHandler(&nullLogHandler);
 #endif
 
 	printf("Running test cases...\n");
@@ -96,8 +96,6 @@ int main(int argc, char **argv)
 		printf("\n%d of %d test cases passed (%.2f%%)\n", passed, count, perc);
 	}
 
-	freeHooks();
-
 	return EXIT_SUCCESS;
 }
 
@@ -141,4 +139,16 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 	}
 
 	count++;
+}
+
+/**
+ * Log handler that logs does nothing
+ *
+ * @param module	the module in which the log message occured
+ * @param type		the log type of the message
+ * @param message	the log message
+ */
+static void nullLogHandler(const char *module, LogType type, char *message)
+{
+	// Do nothing
 }

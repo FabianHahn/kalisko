@@ -97,10 +97,10 @@ API char *getExecutablePath()
 	}
 #else
 	if((length = readlink("/proc/self/exe", execpath, BUF - 1)) < 0) {
-		logMessage(LOG_TYPE_ERROR, "Failed to determine executable path: %s", strerror(errno));
+		logMessage("core", LOG_TYPE_ERROR, "Failed to determine executable path: %s", strerror(errno));
 		return NULL;
 	} else if(length >= BUF) {
-		logMessage(LOG_TYPE_WARNING, "Path buffer too small, truncating...");
+		logMessage("core", LOG_TYPE_WARNING, "Path buffer too small, truncating...");
 	}
 #endif
 	execpath[length] = '\0'; // Terminate string

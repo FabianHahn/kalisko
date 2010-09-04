@@ -21,20 +21,20 @@
 #include <gtk/gtk.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "module.h"
 #include "modules/gtk+/gtk+.h"
 #include "modules/lang_php/lang_php.h"
+#include "modules/event/event.h"
 #include "timer.h"
 #include "api.h"
 
 MODULE_NAME("php_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical PHP console using GTK+");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_php", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_php", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 // Columns
 typedef enum {
@@ -55,8 +55,8 @@ static gboolean closeWindow(GtkWidget *widget, GdkEvent *event, gpointer data);
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 
-HOOK_LISTENER(php_out);
-HOOK_LISTENER(php_log);
+static void listener_phpOut(void *subject, const char *event, void *data, va_list args);
+static void listener_phpLog(void *subject, const char *event, void *data, va_list args);
 
 static GtkWidget *window;
 static GtkWidget *list;
@@ -115,8 +115,8 @@ MODULE_INIT
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-	HOOK_ATTACH(php_out, php_out);
-	HOOK_ATTACH(php_log, php_log);
+	$(void, event, attachEventListener)(NULL, "php_out", NULL, &listener_phpOut);
+	$(void, event, attachEventListener)(NULL, "php_log", NULL, &listener_phpLog);
 
 	// run
 	$(void, gtk+, runGtkLoop)();
@@ -126,21 +126,21 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(php_out, php_out);
-	HOOK_DETACH(php_log, php_log);
+	$(void, event, detachEventListener)(NULL, "php_out", NULL, &listener_phpOut);
+	$(void, event, detachEventListener)(NULL, "php_log", NULL, &listener_phpLog);
 	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
-HOOK_LISTENER(php_out)
+static void listener_phpOut(void *subject, const char *event, void *data, va_list args)
 {
-	char *message = HOOK_ARG(char *);
-	unsigned int length = HOOK_ARG(unsigned int);
+	char *message = va_arg(args, char *);
+	unsigned int length = va_arg(args, unsigned int);
 	g_string_append_len(buffer, message, length);
 }
 
-HOOK_LISTENER(php_log)
+static void listener_phpLog(void *subject, const char *event, void *data, va_list args)
 {
-	char *message = HOOK_ARG(char *);
+	char *message = va_arg(args, char *);
 	appendMessage(message, MESSAGE_LOG);
 }
 

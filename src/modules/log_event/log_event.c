@@ -31,7 +31,7 @@
 MODULE_NAME("log_event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The log_event module provides access to the Kalisko log system using a global event that clients can attach to");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 0));
 
@@ -60,26 +60,39 @@ MODULE_FINALIZE
 {
 	$(void, event, detachEventListener)(NULL, "listener_attached", NULL, &listener_attached);
 	$(void, event, detachEventListener)(NULL, "listener_detached", NULL, &listener_detached);
+
+	if(count > 0) {
+		$$(void, setLogHandler)(NULL); // restore log handler
+		LOG_DEBUG("Default log handler restored");
+	}
 }
 
 static void listener_attached(void *subject, const char *event, void *data, va_list args)
 {
-	if(count == 0) {
-		$$(void, setLogHandler)(&eventLogHandler); // set log handler
-		LOG_DEBUG("Log event handler installed");
-	}
+	char *attached_event = va_arg(args, char *);
 
-	count++;
+	if(g_strcmp0(attached_event, "log") == 0) {
+		if(count == 0) {
+			$$(void, setLogHandler)(&eventLogHandler); // set log handler
+			LOG_DEBUG("Log event handler installed");
+		}
+
+		count++;
+	}
 }
 
 static void listener_detached(void *subject, const char *event, void *data, va_list args)
 {
-	if(count == 1) {
-		$$(void, setLogHandler)(NULL); // restore log handler
-		LOG_DEBUG("Default log handler restored");
-	}
+	char *attached_event = va_arg(args, char *);
 
-	count--;
+	if(g_strcmp0(attached_event, "log") == 0) {
+		if(count == 1) {
+			$$(void, setLogHandler)(NULL); // restore log handler
+			LOG_DEBUG("Default log handler restored");
+		}
+
+		count--;
+	}
 }
 
 /**

@@ -46,5 +46,6 @@ typedef struct
 API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
 API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
 API int triggerEvent(void *subject, const char *event, ...);
+API int getEventListenerCount(void *subject, const char *event);
 
 #endif

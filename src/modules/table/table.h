@@ -134,7 +134,6 @@ API void freeTable(Table *table);
 API void freeCell(TableCell *cell);
 API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate);
 API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate);
-API TableCell *getTableCell(Table *table, int row, int col);
 API TableCell *copyTableCell(Table *table, TableCell *original);
 API bool replaceTableCell(Table *table, TableCell *cell, int row, int col);
 API char *getTableString(Table *table);

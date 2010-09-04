@@ -34,8 +34,8 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 4);
-MODULE_BCVERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 5);
+MODULE_BCVERSION(0, 1, 5);
 MODULE_NODEPS;
 
 MODULE_INIT
@@ -142,31 +142,6 @@ API void freeCell(TableCell *cell)
 	}
 
 	free(cell);
-}
-
-/**
- * Returns the TableCell at the given row and col positions.
- *
- * @param table		The table to use
- * @param row		The index of the row (it starts with 0)
- * @param col		The index of the column (it starts with 0)
- * @return the TableCell at the given coordinates or NULL on error
- */
-API TableCell *getTableCell(Table *table, int row, int col)
-{
-	if(table == NULL) {
-		return NULL;
-	}
-
-	if(row >= table->rows) {
-		return NULL;
-	}
-
-	if(col >= table->cols) {
-		return NULL;
-	}
-
-	return table->table[row][col];
 }
 
 /**

@@ -21,7 +21,6 @@
 #include <glib.h>
 #include <stdlib.h>
 #include "dll.h"
-#include "hooks.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/store/write.h"

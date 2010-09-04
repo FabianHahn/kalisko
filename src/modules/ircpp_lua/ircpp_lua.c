@@ -22,7 +22,6 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "modules/irc_proxy/irc_proxy.h"
@@ -30,16 +29,19 @@
 #include "modules/lang_lua/lang_lua.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/string_util/string_util.h"
+#include "modules/event/event.h"
 #include "api.h"
 
 MODULE_NAME("ircpp_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows proxy clients to evaluate Lua code by sending private messages to a virtual *lua bot");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 7), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(client_line);
+static void listener_clientLine(void *subject, const char *event, void *data, va_list args);
+static void listener_clientAuthenticated(void *subject, const char *event, void *data, va_list args);
+static void listener_clientDisconnected(void *subject, const char *event, void *data, va_list args);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
 static IrcProxyPlugin plugin;
@@ -55,22 +57,18 @@ MODULE_INIT
 		return false;
 	}
 
-	HOOK_ATTACH(irc_proxy_client_line, client_line);
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(irc_proxy_client_line, client_line);
-
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
 }
 
-HOOK_LISTENER(client_line)
+static void listener_clientLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcProxyClient *client = HOOK_ARG(IrcProxyClient *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcProxyClient *client = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(client->proxy, "lua")) { // plugin is enabled for this proxy
 		if(g_strcmp0(message->command, "PRIVMSG") == 0 && message->params_count > 0 && g_strcmp0(message->params[0], "*lua") == 0 && message->trailing != NULL) { // there is a lua command to evaluate
@@ -101,6 +99,20 @@ HOOK_LISTENER(client_line)
 	}
 }
 
+static void listener_clientAuthenticated(void *subject, const char *event, void *data, va_list args)
+{
+	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
+
+	$(void, event, attachEventListener)(client, "line", NULL, &listener_clientLine);
+}
+
+static void listener_clientDisconnected(void *subject, const char *event, void *data, va_list args)
+{
+	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
+
+	$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
+}
+
 /**
  * Initializes the plugin
  *
@@ -110,7 +122,15 @@ HOOK_LISTENER(client_line)
  */
 static bool initPlugin(IrcProxy *proxy, char *name)
 {
+	// Attach to existing clients
+	for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) {
+		IrcProxyClient *client = iter->data;
+		$(void, event, attachEventListener)(client, "line", NULL, &listener_clientLine);
+	}
+
 	$(void, irc_proxy, addIrcProxyRelayException)(proxy, "*lua");
+	$(void, event, attachEventListener)(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
+	$(void, event, attachEventListener)(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
 
 	return true;
 }
@@ -124,4 +144,12 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 static void finiPlugin(IrcProxy *proxy, char *name)
 {
 	$(void, irc_proxy, delIrcProxyRelayException)(proxy, "*lua");
+	$(void, event, detachEventListener)(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
+	$(void, event, detachEventListener)(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
+
+	// Detach from remaining clients
+	for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) {
+		IrcProxyClient *client = iter->data;
+		$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
+	}
 }

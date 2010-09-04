@@ -30,8 +30,8 @@
 #include <php_ini.h>
 
 #include "dll.h"
+#include "modules/event/event.h"
 #include "log.h"
-#include "hooks.h"
 #include "api.h"
 #include "lang_php.h"
 #include "phpext_kalisko.h"
@@ -39,9 +39,9 @@
 MODULE_NAME("lang_php");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides support for the PHP scripting language");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static int ub_write(const char *str, unsigned int str_length TSRMLS_DC);
 static void log_message(char *message);
@@ -72,9 +72,6 @@ MODULE_INIT
 	zend_alter_ini_entry("error_log", sizeof("error_log"), "", sizeof("") - 1, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
 	zend_alter_ini_entry("error_reporting", sizeof("error_reporting"), "6143", sizeof("6143") - 1, PHP_INI_SYSTEM, PHP_INI_STAGE_RUNTIME);
 
-	HOOK_ADD(php_out);
-	HOOK_ADD(php_log);
-
 	return true;
 }
 
@@ -82,15 +79,12 @@ MODULE_FINALIZE
 {
 	LOG_INFO("Shutting down the PHP SAPI");
 	php_embed_shutdown(TSRMLS_C);
-
-	HOOK_DEL(php_out);
-	HOOK_DEL(php_log);
 }
 
 static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 {
 	if(str_length > 0) {
-		HOOK_TRIGGER(php_out, str, str_length);
+		$(int, event, triggerEvent)(NULL, "php_out", str, str_length);
 	}
 
 	return 0;
@@ -98,7 +92,7 @@ static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 
 static void log_message(char *message)
 {
-	HOOK_TRIGGER(php_log, message);
+	$(int, event, triggerEvent)(NULL, "php_log", message);
 	LOG_WARNING("%s", message);
 }
 

@@ -21,7 +21,6 @@
 #include <gtk/gtk.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "module.h"
 #include "modules/gtk+/gtk+.h"
@@ -32,7 +31,7 @@
 MODULE_NAME("lua_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua console using GTK+");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
 

@@ -22,22 +22,22 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "types.h"
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/event/event.h"
 #include "api.h"
 
 MODULE_NAME("ircpp_log");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows log messages to be relayed to IRC proxy clients");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
-HOOK_LISTENER(log);
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
 static IrcProxyPlugin plugin_debug;
@@ -108,7 +108,7 @@ MODULE_INIT
 		return false;
 	}
 
-	HOOK_ATTACH(log, log);
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
 
 	return true;
 }
@@ -120,7 +120,7 @@ MODULE_FINALIZE
 	g_queue_free(proxies_warning);
 	g_queue_free(proxies_error);
 
-	HOOK_DETACH(log, log);
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
 
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin_debug);
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin_info);
@@ -128,10 +128,11 @@ MODULE_FINALIZE
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin_error);
 }
 
-HOOK_LISTENER(log)
+static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
-	LogType type = HOOK_ARG(LogType);
-	char *message = HOOK_ARG(char *);
+	const char *module = va_arg(args, const char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
 
 	GString *msg = g_string_new("");
 
@@ -139,19 +140,19 @@ HOOK_LISTENER(log)
 
 	switch(type) {
 		case LOG_TYPE_DEBUG:
-			g_string_append_printf(msg, "(%c3debug%c) %s", (char) 3, (char) 0x0f, message);
+			g_string_append_printf(msg, "[%s] %c3DEBUG%c: %s", module, (char) 3, (char) 0x0f, message);
 			proxies = proxies_debug;
 		break;
 		case LOG_TYPE_INFO:
-			g_string_append_printf(msg, "(%c12info%c) %s", (char) 3, (char) 0x0f, message);
+			g_string_append_printf(msg, "[%s] (%c12INFO%c) %s", module, (char) 3, (char) 0x0f, message);
 			proxies = proxies_info;
 		break;
 		case LOG_TYPE_WARNING:
-			g_string_append_printf(msg, "(%c7warning%c) %s", (char) 3, (char) 0x0f, message);
+			g_string_append_printf(msg, "[%s] (%c7WARNING%c) %s", module, (char) 3, (char) 0x0f, message);
 			proxies = proxies_warning;
 		break;
 		case LOG_TYPE_ERROR:
-			g_string_append_printf(msg, "(%c4error%c) %s", (char) 3, (char) 0x0f, message);
+			g_string_append_printf(msg, "[%s] (%c4ERROR%c) %s", module, (char) 3, (char) 0x0f, message);
 			proxies = proxies_error;
 		break;
 	}

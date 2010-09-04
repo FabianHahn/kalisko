@@ -18,37 +18,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEWER_LOG_VIEWER_H
-#define LOG_VIEWER_LOG_VIEWER_H
 
-typedef struct {
-		GtkWidget *container;
-		GtkWidget *treeViewScrollbar;
-		GtkWidget *treeView;
-		GtkListStore *listStore;
-		GtkTreeIter *listIter;
-		GtkWidget *toolbar;
-		unsigned int lines;
-} LogViewer;
+#ifndef EVENT_EVENT_H
+#define EVENT_EVENT_H
 
-enum {
-		COLUMN_LOG_TYPE = 0,
-		COLUMN_DATE_TIME,
-		COLUMN_MESSAGE,
-		COLUMN_COUNT
-} LogViewerTreeViewColumns;
 
-typedef struct {
-		GtkWidget *window;
-		LogViewer* logViewer;
-} LogViewerWindow;
+#include <glib.h>
+#include <stdarg.h>
+#include "types.h"
 
-API LogViewer *newLogViewer();
-API void freeLogViewer(LogViewer *viewer);
+/**
+ * Generic event listener function pointer type
+ */
+typedef void (EventListener)(void *subject, const char *event, void *custom_data, va_list args);
 
-API LogViewerWindow *newLogViewerWindow();
-API void freeLogViewerWindow(LogViewerWindow *window);
+/**
+ * Struct to represent a listener entry
+ */
+typedef struct
+{
+	/** The listener function pointer */
+	EventListener *listener;
+	/** Custom data to pass to the function when triggered */
+	void *custom;
+} EventListenerEntry;
 
-API void logViewerAddMessage(LogViewer *logViewer, char *time, char *message, GdkPixbuf *icon);
+API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+API int triggerEvent(void *subject, const char *event, ...);
+API int getEventListenerCount(void *subject, const char *event);
 
 #endif

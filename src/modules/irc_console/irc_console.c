@@ -21,7 +21,6 @@
 #include <gtk/gtk.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "log.h"
 #include "module.h"
 #include "modules/gtk+/gtk+.h"
@@ -29,15 +28,16 @@
 #include "modules/config/config.h"
 #include "modules/store/path.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/event/event.h"
 #include "timer.h"
 #include "api.h"
 
 MODULE_NAME("irc_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 // Columns
 typedef enum {
@@ -65,8 +65,8 @@ static gboolean inputActivate(GtkWidget *widget, gpointer data);
 static void formatMessageCell(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 static void freeConsoleTab(void *tab_p);
 
-HOOK_LISTENER(irc_send);
-HOOK_LISTENER(irc_line);
+static void listener_ircSend(void *subject, const char *event, void *data, va_list args);
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
 
 static IrcConnection *irc;
 static GHashTable *tabs;
@@ -84,6 +84,9 @@ MODULE_INIT
 	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
 		return false;
 	}
+
+	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
+	$(void, event, attachEventListener)(irc, "send", NULL, &listener_ircSend);
 
 	Store *param = $(Store *, store, getStorePath)(config, "throttle");
 
@@ -108,9 +111,6 @@ MODULE_INIT
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
 
-	HOOK_ATTACH(irc_send, irc_send);
-	HOOK_ATTACH(irc_line, irc_line);
-
 	// run
 	$(void, gtk+, runGtkLoop)();
 
@@ -119,29 +119,30 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
+	$(void, event, detachEventListener)(irc, "send", NULL, &listener_ircSend);
+
 	$(void, irc, freeIrcConnection)(irc);
 
-	HOOK_DETACH(irc_send, irc_send);
-	HOOK_DETACH(irc_line, irc_line);
 	gtk_widget_destroy(GTK_WIDGET(window));
 
 	g_hash_table_destroy(tabs);
 }
 
-HOOK_LISTENER(irc_send)
+static void listener_ircSend(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *connection = HOOK_ARG(IrcConnection *);
-	char *message = HOOK_ARG(char *);
+	IrcConnection *connection = subject;
+	char *message = va_arg(args, char *);
 
 	if(irc == connection) {
 		appendMessage("*status", message, MESSAGE_SEND);
 	}
 }
 
-HOOK_LISTENER(irc_line)
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args)
 {
-	IrcConnection *connection = HOOK_ARG(IrcConnection *);
-	IrcMessage *message = HOOK_ARG(IrcMessage *);
+	IrcConnection *connection = subject;
+	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	if(irc != connection) {
 		return;

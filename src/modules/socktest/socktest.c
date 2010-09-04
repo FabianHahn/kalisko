@@ -23,9 +23,9 @@
 #include <glib.h>
 
 #include "dll.h"
-#include "hooks.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
+#include "modules/event/event.h"
 
 #include "api.h"
 
@@ -37,47 +37,43 @@ static Socket *server;
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 2, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 4, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-HOOK_LISTENER(sample_read);
-HOOK_LISTENER(sample_disconnect);
-HOOK_LISTENER(sample_accept);
+static void listener_socketRead(void *subject, const char *event, void *data, va_list args);
+static void listener_socketDisconnect(void *subject, const char *event, void *data, va_list args);
+static void listener_socketAccept(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
-	HOOK_ATTACH(socket_read, sample_read);
-	HOOK_ATTACH(socket_disconnect, sample_disconnect);
-	HOOK_ATTACH(socket_accept, sample_accept);
-
 	Socket *http = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
 	$(bool, socket, connectSocket)(http);
 	$(bool, socket, socketWriteRaw)(http, REQUEST, sizeof(REQUEST));
 	$(bool, socket, enableSocketPolling)(http);
+	$(void, event, attachEventListener)(http, "read", NULL, &listener_socketRead);
+	$(void, event, attachEventListener)(http, "disconnect", NULL, &listener_socketDisconnect);
 
 	server = $(Socket *, socket, createServerSocket)("1337");
 	if(!$(bool, socket, connectSocket)(server)) {
 		return false;
 	}
 	$(bool, socket, enableSocketPolling)(server);
+	$(void, event, attachEventListener)(server, "accept", NULL, &listener_socketAccept);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	HOOK_DETACH(socket_read, sample_read);
-	HOOK_DETACH(socket_disconnect, sample_disconnect);
-	HOOK_DETACH(socket_accept, sample_accept);
-
+	$(void, event, detachEventListener)(server, "accept", NULL, &listener_socketAccept);
 	$(bool, socket, freeSocket)(server);
 }
 
-HOOK_LISTENER(sample_read)
+static void listener_socketRead(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *s = HOOK_ARG(Socket *);
-	char *read = HOOK_ARG(char *);
+	Socket *s = subject;
+	char *read = va_arg(args, char *);
 
 	if(s != NULL) {
 		printf("%s", read);
@@ -85,22 +81,26 @@ HOOK_LISTENER(sample_read)
 	}
 }
 
-HOOK_LISTENER(sample_disconnect)
+static void listener_socketDisconnect(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *s = HOOK_ARG(Socket *);
+	Socket *s = subject;
+
+	$(void, event, detachEventListener)(s, "read", NULL, &listener_socketRead);
+	$(void, event, detachEventListener)(s, "disconnect", NULL, &listener_socketDisconnect);
 
 	$(void, socket, freeSocket)(s);
 }
 
-HOOK_LISTENER(sample_accept)
+static void listener_socketAccept(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *srv = HOOK_ARG(Socket *);
-	Socket *s = HOOK_ARG(Socket *);
+	Socket *srv = subject;
+	Socket *s = va_arg(args, Socket *);
 
 	if(srv == NULL) {
 		return;
 	}
 
+	$(void, event, attachEventListener)(s, "disconnect", NULL, &listener_socketDisconnect);
 	$(bool, socket, socketWriteRaw)(s, ANSWER, sizeof(ANSWER));
 	$(bool, socket, disconnectSocket)(s);
 }

@@ -46,11 +46,11 @@ typedef enum
 /**
  * Log handler function pointer type
  */
-typedef void (LogHandler)(LogType type, char *message);
+typedef void (LogHandler)(const char *module, LogType type, char *message);
 
 API void initLog();
 API void setLogHandler(LogHandler *handler);
-API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
+API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC_PRINTF(3, 4);
 
 #ifdef DLL_API_IMPORT
 
@@ -60,7 +60,7 @@ API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
  * @see logMessage
  * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
-#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
+#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(module_name(), LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
 
 /**
  * Logs a message as an error.
@@ -68,7 +68,7 @@ API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_ERROR(...) $$(void, logMessage)(LOG_TYPE_ERROR, __VA_ARGS__);
+#define LOG_ERROR(...) $$(void, logMessage)(module_name(), LOG_TYPE_ERROR, __VA_ARGS__);
 
 /**
  * Logs a message as a warning.
@@ -76,7 +76,7 @@ API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_WARNING(...) $$(void, logMessage)(LOG_TYPE_WARNING, __VA_ARGS__);
+#define LOG_WARNING(...) $$(void, logMessage)(module_name(), LOG_TYPE_WARNING, __VA_ARGS__);
 
 /**
  * Logs a message as an info.
@@ -84,7 +84,7 @@ API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_INFO(...) $$(void, logMessage)(LOG_TYPE_INFO, __VA_ARGS__);
+#define LOG_INFO(...) $$(void, logMessage)(module_name(), LOG_TYPE_INFO, __VA_ARGS__);
 
 /**
  * Logs a message as a debug information
@@ -92,7 +92,7 @@ API void logMessage(LogType type, char *message, ...) G_GNUC_PRINTF(2, 3);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_DEBUG(...) $$(void, logMessage)(LOG_TYPE_DEBUG, __VA_ARGS__);
+#define LOG_DEBUG(...) $$(void, logMessage)(module_name(), LOG_TYPE_DEBUG, __VA_ARGS__);
 
 #endif
 

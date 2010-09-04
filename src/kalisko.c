@@ -51,22 +51,22 @@ int main(int argc, char **argv)
 	initLog();
 	initModules();
 
-	logMessage(LOG_TYPE_INFO, "Core startup complete - welcome to the Kalisko framework!");
+	logMessage("core", LOG_TYPE_INFO, "Core startup complete - welcome to the Kalisko framework!");
 
 	requestModule("module_perform");
 
-	logMessage(LOG_TYPE_DEBUG, "Entering Kalisko event loop");
+	logMessage("core", LOG_TYPE_DEBUG, "Entering Kalisko event loop");
 	while(hasMoreTimerCallbacks()) {
 		int sleepTime = getCurrentSleepTime();
 		g_usleep(sleepTime < MIN_SLEEP_TIME ? MIN_SLEEP_TIME : sleepTime);
 		notifyTimerCallbacks();
 	}
-	logMessage(LOG_TYPE_DEBUG, "Leaving Kalisko event loop");
+	logMessage("core", LOG_TYPE_DEBUG, "Leaving Kalisko event loop");
 
 	freeModules();
 	freeTimers();
 
-	logMessage(LOG_TYPE_INFO, "Kalisko core shutting down - goodbye!");
+	logMessage("core", LOG_TYPE_INFO, "Kalisko core shutting down - goodbye!");
 
 	return EXIT_SUCCESS;
 }

@@ -84,13 +84,13 @@ API void initModules()
  */
 API void freeModules()
 {
-	logMessage(LOG_TYPE_INFO, "Revoking all modules...");
+	logMessage("core", LOG_TYPE_INFO, "Revoking all modules...");
 	g_hash_table_foreach_remove(core->dependencies, &unneedModuleWrapper, core);
 
 	assert(g_hash_table_size(core->rdeps) == 0);
 	assert(g_hash_table_size(modules) == 0);
 
-	logMessage(LOG_TYPE_INFO, "All modules successfully revoked");
+	logMessage("core", LOG_TYPE_INFO, "All modules successfully revoked");
 
 	g_hash_table_destroy(modules);
 
@@ -132,7 +132,7 @@ API void setModuleSearchPath(char *path)
 
 #ifdef WIN32
 	if(!SetDllDirectory(modpath)) {
-		logMessage(LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
+		logMessage("core", LOG_TYPE_ERROR, "Failed to set DLL directory to %s", modpath);
 	}
 #endif
 }
@@ -308,11 +308,11 @@ API bool isModuleLoaded(const char *name)
 API bool requestModule(char *name)
 {
 	if(g_hash_table_lookup(core->dependencies, name) != NULL) {
-		logMessage(LOG_TYPE_ERROR, "Cannot request already requested module %s", name);
+		logMessage("core", LOG_TYPE_ERROR, "Cannot request already requested module %s", name);
 		return false;
 	}
 
-	logMessage(LOG_TYPE_INFO, "Requesting module %s", name);
+	logMessage("core", LOG_TYPE_INFO, "Requesting module %s", name);
 
 	return needModule(name, NULL, core);
 }
@@ -328,16 +328,16 @@ API bool revokeModule(char *name)
 	Module *mod = g_hash_table_lookup(core->dependencies, name);
 
 	if(mod == NULL) {
-		logMessage(LOG_TYPE_ERROR, "Cannot revoke unrequested module %s", name);
+		logMessage("core", LOG_TYPE_ERROR, "Cannot revoke unrequested module %s", name);
 		return false;
 	}
 
-	logMessage(LOG_TYPE_INFO, "Revoking module %s", name);
+	logMessage("core", LOG_TYPE_INFO, "Revoking module %s", name);
 
 	// This needs to be done BEFORE unneedModule because modules enter themselves by their own name into the hashtables
 	// and after unneedModule, their names are freed
 	if(!g_hash_table_remove(core->dependencies, name)) {
-		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from root set", name);
+		logMessage("core", LOG_TYPE_ERROR, "Failed to remove %s from root set", name);
 		exit(EXIT_FAILURE);
 	}
 
@@ -357,11 +357,11 @@ API bool forceUnloadModule(char *name)
 	Module *mod = g_hash_table_lookup(modules, name);
 
 	if(mod == NULL) {
-		logMessage(LOG_TYPE_ERROR, "Cannot revoke unloaded module %s", name);
+		logMessage("core", LOG_TYPE_ERROR, "Cannot revoke unloaded module %s", name);
 		return false;
 	}
 
-	logMessage(LOG_TYPE_INFO, "Force unloading module %s", name);
+	logMessage("core", LOG_TYPE_INFO, "Force unloading module %s", name);
 
 	GList *rdeps = g_hash_table_get_keys(mod->rdeps);
 
@@ -401,7 +401,7 @@ static void *getLibraryFunction(Module *mod, char *funcname)
 #else
 	if((func = dlsym(mod->handle, funcname)) == NULL) {
 #endif
-		logMessage(LOG_TYPE_WARNING, "Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
+		logMessage("core", LOG_TYPE_WARNING, "Function %s doesn't exist in library %s of module %s", funcname, mod->dlname, mod->name);
 		return NULL;
 	}
 
@@ -422,12 +422,12 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 		return true;
 	}
 
-	logMessage(LOG_TYPE_DEBUG, "Loading dynamic library %s of module %s", mod->dlname, mod->name);
+	logMessage("core", LOG_TYPE_DEBUG, "Loading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
 	if((mod->handle = LoadLibrary(mod->dlname)) == NULL) {
 		char *error = g_win32_error_message(GetLastError());
-		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, error);
+		logMessage("core", LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, error);
 		free(error);
 		return false;
 	}
@@ -443,7 +443,7 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 	}
 
 	if((mod->handle = dlopen(mod->dlname, mode)) == NULL) {
-		logMessage(LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+		logMessage("core", LOG_TYPE_ERROR, "Failed to load dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
 		return false;
 	}
 #endif
@@ -462,15 +462,15 @@ static void unloadDynamicLibrary(Module *mod)
 		return;
 	}
 
-	logMessage(LOG_TYPE_DEBUG, "Unloading dynamic library %s of module %s", mod->dlname, mod->name);
+	logMessage("core", LOG_TYPE_DEBUG, "Unloading dynamic library %s of module %s", mod->dlname, mod->name);
 
 #ifdef WIN32
 	if(FreeLibrary(mod->handle) == 0) {
-		logMessage(LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s", mod->dlname, mod->name);
+		logMessage("core", LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s", mod->dlname, mod->name);
 	}
 #else
 	if(dlclose(mod->handle) != 0) {
-		logMessage(LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
+		logMessage("core", LOG_TYPE_ERROR, "Failed to unload dynamic library %s of module %s: %s", mod->dlname, mod->name, dlerror());
 	}
 #endif
 
@@ -491,7 +491,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 
 	if(mod != NULL) {
 		if(!mod->loaded) {
-			logMessage(LOG_TYPE_ERROR, "Circular dependency on module %s", mod->name);
+			logMessage("core", LOG_TYPE_ERROR, "Circular dependency on module %s", mod->name);
 			return false;
 		}
 
@@ -501,7 +501,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 				GString *ver = dumpVersion(mod->version);
 				GString *bcver = dumpVersion(mod->bcversion);
 				GString *needver = dumpVersion(needversion);
-				logMessage(LOG_TYPE_ERROR, "Loaded module %s %s is too new to satisfy dependency on version %s, only backwards compatible down to %s", mod->name, ver->str, needver->str, bcver->str);
+				logMessage("core", LOG_TYPE_ERROR, "Loaded module %s %s is too new to satisfy dependency on version %s, only backwards compatible down to %s", mod->name, ver->str, needver->str, bcver->str);
 				g_string_free(ver, TRUE);
 				g_string_free(bcver, TRUE);
 				g_string_free(needver, TRUE);
@@ -509,7 +509,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 			} else if(compareVersions(needversion, mod->version) > 0) {
 				GString *ver = dumpVersion(mod->version);
 				GString *needver = dumpVersion(needversion);
-				logMessage(LOG_TYPE_ERROR, "Loaded module %s %s is too old to satisfy dependency on version %s", mod->name, ver->str, needver->str);
+				logMessage("core", LOG_TYPE_ERROR, "Loaded module %s %s is too old to satisfy dependency on version %s", mod->name, ver->str, needver->str);
 				g_string_free(ver, TRUE);
 				g_string_free(needver, TRUE);
 				return false;
@@ -517,9 +517,9 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 		}
 
 		mod->rc++;
-		logMessage(LOG_TYPE_DEBUG, "Module %s is now needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
+		logMessage("core", LOG_TYPE_DEBUG, "Module %s is now needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
 	} else {
-		logMessage(LOG_TYPE_DEBUG, "Unloaded module %s needed, loading...", name);
+		logMessage("core", LOG_TYPE_DEBUG, "Unloaded module %s needed, loading...", name);
 
 		mod = allocateMemory(sizeof(Module));
 
@@ -601,7 +601,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 				GString *ver = dumpVersion(meta_version);
 				GString *bcver = dumpVersion(meta_bcversion);
 				GString *needver = dumpVersion(needversion);
-				logMessage(LOG_TYPE_ERROR, "Available module %s %s is too new to satisfy dependency on version %s (only backwards compatible down to %s), aborting load", mod->name, ver->str, needver->str, bcver->str);
+				logMessage("core", LOG_TYPE_ERROR, "Available module %s %s is too new to satisfy dependency on version %s (only backwards compatible down to %s), aborting load", mod->name, ver->str, needver->str, bcver->str);
 				g_string_free(ver, TRUE);
 				g_string_free(bcver, TRUE);
 				g_string_free(needver, TRUE);
@@ -609,7 +609,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 			} else if(compareVersions(needversion, meta_version) > 0) {
 				GString *ver = dumpVersion(meta_version);
 				GString *needver = dumpVersion(needversion);
-				logMessage(LOG_TYPE_ERROR, "Available module %s %s is too old to satisfy dependency on version %s, aborting load", mod->name, ver->str, needver->str);
+				logMessage("core", LOG_TYPE_ERROR, "Available module %s %s is too old to satisfy dependency on version %s, aborting load", mod->name, ver->str, needver->str);
 				g_string_free(ver, TRUE);
 				g_string_free(needver, TRUE);
 				meta_error = true;
@@ -638,14 +638,14 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 
 		GString *ver = dumpVersion(mod->version);
 		GString *bcver = dumpVersion(mod->bcversion);
-		logMessage(LOG_TYPE_INFO, "Loading module %s %s by %s, compatible >= %s", mod->name, ver->str, mod->author, bcver->str);
+		logMessage("core", LOG_TYPE_INFO, "Loading module %s %s by %s, compatible >= %s", mod->name, ver->str, mod->author, bcver->str);
 		g_string_free(ver, TRUE);
 		g_string_free(bcver, TRUE);
 
 		// Load dependencies
 		for(ModuleDependency *dep = meta_dependencies; dep->name != NULL; dep++) {
 			GString *depver = dumpVersion(&dep->version);
-			logMessage(LOG_TYPE_DEBUG, "Module %s depends on %s %s, needing...", mod->name, dep->name, depver->str);
+			logMessage("core", LOG_TYPE_DEBUG, "Module %s depends on %s %s, needing...", mod->name, dep->name, depver->str);
 			g_string_free(depver, TRUE);
 
 			// Need the dependency
@@ -672,16 +672,16 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 		}
 
 		// Call module initializer
-		logMessage(LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
+		logMessage("core", LOG_TYPE_DEBUG, "Initializing module %s", mod->name);
 		if(!init_func()) {
-			logMessage(LOG_TYPE_ERROR, "Failed to initialize module %s", mod->name);
+			logMessage("core", LOG_TYPE_ERROR, "Failed to initialize module %s", mod->name);
 			unneedModule(mod->name, mod, parent);
 			return false;
 		}
 
 		mod->loaded = true; // finished loading
 
-		logMessage(LOG_TYPE_INFO, "Module %s loaded", mod->name);
+		logMessage("core", LOG_TYPE_INFO, "Module %s loaded", mod->name);
 	}
 
 	// Add dependency
@@ -714,15 +714,15 @@ static void unneedModule(void *name, void *mod_p, void *parent_p)
 	mod->rc--;
 
 	if(mod->rc > 0) {
-		logMessage(LOG_TYPE_DEBUG, "Module %s is still needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
+		logMessage("core", LOG_TYPE_DEBUG, "Module %s is still needed by %d other %s", mod->name, mod->rc, mod->rc > 1 ? "dependencies" : "dependency");
 		return;
 	}
 
-	logMessage(LOG_TYPE_DEBUG, "Module %s is no longer needed, unloading...", mod->name);
+	logMessage("core", LOG_TYPE_DEBUG, "Module %s is no longer needed, unloading...", mod->name);
 
 	if(mod->loaded) { // Only finalize modules that are fully loaded
 		// Call module finalizer
-		logMessage(LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
+		logMessage("core", LOG_TYPE_DEBUG, "Finalizing module %s", mod->name);
 		ModuleFinalizer *finalize_func;
 
 		if((finalize_func = getLibraryFunction(mod, MODULE_FINALIZER_FUNC)) != NULL) {
@@ -735,11 +735,11 @@ static void unneedModule(void *name, void *mod_p, void *parent_p)
 
 	// Remove ourselves from the modules table
 	if(!g_hash_table_remove(modules, mod->name)) {
-		logMessage(LOG_TYPE_ERROR, "Failed to remove %s from modules table", mod->name);
+		logMessage("core", LOG_TYPE_ERROR, "Failed to remove %s from modules table", mod->name);
 		exit(EXIT_FAILURE);
 	}
 
-	logMessage(LOG_TYPE_INFO, "Module %s unloaded", mod->name);
+	logMessage("core", LOG_TYPE_INFO, "Module %s unloaded", mod->name);
 
 	// Tell our dependencies they are no longer needed
 	g_hash_table_foreach_remove(mod->dependencies, &unneedModuleWrapper, mod);

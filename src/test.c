@@ -30,7 +30,7 @@
 #include "test.h"
 #include "memory_alloc.h"
 
-static void nullLogHandler(LogType type, char *message);
+static void nullLogHandler(const char *module, LogType type, char *message);
 
 static int test = 0;
 static int passed = 0;
@@ -144,10 +144,11 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 /**
  * Log handler that logs does nothing
  *
+ * @param module	the module in which the log message occured
  * @param type		the log type of the message
  * @param message	the log message
  */
-static void nullLogHandler(LogType type, char *message)
+static void nullLogHandler(const char *module, LogType type, char *message)
 {
 	// Do nothing
 }

@@ -52,9 +52,9 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 MODULE_INIT
 {
@@ -171,6 +171,7 @@ API void removeLogFile(LogFileConfig *logFile)
 
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
+	const char *module = va_arg(args, const char *);
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 
@@ -198,16 +199,16 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     	switch(logFile->logType) {
 			case LOG_TYPE_DEBUG:
 				if(type == LOG_TYPE_DEBUG)
-					fprintf(logFile->fileAppend, "%s DEBUG: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] DEBUG: %s\n", dateTime, module, message);
 			case LOG_TYPE_INFO:
 				if(type == LOG_TYPE_INFO)
-					fprintf(logFile->fileAppend, "%s INFO: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] INFO: %s\n", dateTime, module, message);
 			case LOG_TYPE_WARNING:
 				if(type == LOG_TYPE_WARNING)
-					fprintf(logFile->fileAppend, "%s WARNING: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] WARNING: %s\n", dateTime, module, message);
 			case LOG_TYPE_ERROR:
 				if(type == LOG_TYPE_ERROR)
-					fprintf(logFile->fileAppend, "%s ERROR: %s\n", dateTime, message);
+					fprintf(logFile->fileAppend, "%s [%s] ERROR: %s\n", dateTime, module, message);
     	}
     }
 

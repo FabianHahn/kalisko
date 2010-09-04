@@ -32,13 +32,13 @@ typedef void (NewCellCallback)(Table *table, TableCell *newCell);
 typedef void (CopyCellCallback)(Table *table, TableCell *original, TableCell *copy);
 
 /**
- * Reprecents a single cell of a table. It can hold a string as content.
+ * Represents a single cell of a table. It can hold a string as content.
  */
 struct TableCell {
 	/**
 	 * Content of the cell. Can be null. Do not change it
 	 * directly, use instead setTableCellContent function.
-	 * The content should be encoded in UTF-8 (or ASCII)
+	 * The content should be encoded in UTF-8 (or ASCII).
 	 *
 	 * The content is only freed if freeContent is true.
 	 *
@@ -47,7 +47,7 @@ struct TableCell {
 	char *content;
 
 	/**
-	 * Tells the Table module if it has to free the contet.
+	 * Tells the Table module if it has to free the content.
 	 *
 	 * Default value is false.
 	 */
@@ -77,31 +77,29 @@ struct TableCell {
 struct Table {
 	/**
 	 * Two dimensional array representing the cell. First index is the row and
-	 * the second index is the col.
-	 *
-	 * The last col and last row is always NULL.
+	 * the second index is the column.
 	 *
 	 * Do not free it with the custom freeTable function.
 	 */
 	TableCell ***table;
 
 	/**
-	 * Cache for the amount of columns.
+	 * Column count.
 	 */
 	int cols;
 
 	/**
-	 * Cache for the amount of rows.
+	 * Row count.
 	 */
 	int rows;
 
 	/**
-	 * Amount of allocated but not used rows.
+	 * Count of allocated but not used rows.
 	 */
 	int freeRowsAmount;
 
 	/**
-	 * Amount of allocated but not used cols.
+	 * Count of allocated but not used columns.
 	 */
 	int freeColsAmount;
 
@@ -121,28 +119,38 @@ struct Table {
 	OutputGeneratorCallback *outputGenerator;
 
 	/**
-	 * A callback to free the content of @see tag.
+	 * A callback to free the content of tag.
 	 *
 	 * @see tag
 	 */
 	FreeTableCallback *freeTable;
 
 	/**
-	 * A callback to apply a specific TableCell.tag and TableCell.freeCell to a new TableCell
+	 * A callback to apply the specific stuff to a new TableCell.
 	 */
 	NewCellCallback *newCell;
 
 	/**
-	 * A callback to apply a specific TableCell.tag and TableCell.freeCell to a copy of a TableCell
+	 * A callback to apply a specific stuff to a copy of a TableCell.
 	 */
 	CopyCellCallback *copyCell;
 };
 
 #ifndef MODULE_TABLE_DEFAULT_ALLOC_ROWS
+	/**
+	 * Defines the default count of rows to allocate if you call newTable function.
+	 *
+	 * @see newTable
+	 */
 	#define MODULE_TABLE_DEFAULT_ALLOC_ROWS 10
 #endif
 
 #ifndef MODULE_TABLE_DEFAULT_ALLOC_COLS
+	/**
+	 * Defines the default count of columns to allocate if you call newTable function.
+	 *
+	 * @see newTable
+	 */
 	#define MODULE_TABLE_DEFAULT_ALLOC_COLS 3
 #endif
 

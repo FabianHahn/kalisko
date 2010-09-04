@@ -66,7 +66,7 @@ API Table *newTable()
  * have to use the append* functions for example.
  *
  * @param preAllocRows		Amount of rows to allocate
- * @param preAllocCols		Amount of cols to allocate
+ * @param preAllocCols		Amount of columns to allocate
  * @return the new Table
  */
 API Table *newTableFull(int preAllocRows, int preAllocCols)
@@ -315,7 +315,7 @@ API TableCell *copyTableCell(Table *table, TableCell *original)
  * @param cell		The cell to use as replacement
  * @param row		The row index of the cell (it starts with 0)
  * @param col		The column index of the cell (it starts with 0)
- * @ret true if the replacement was successful, else false
+ * @return true if the replacement was successful, else false
  */
 API bool replaceTableCell(Table *table, TableCell *cell, int row, int col)
 {

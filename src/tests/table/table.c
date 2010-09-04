@@ -43,12 +43,16 @@ TEST_CASE(basic_table_functions);
 TEST_CASE(cell_template);
 TEST_CASE(replace_table_cell);
 TEST_CASE(generator);
+TEST_CASE(pre_alloc);
+TEST_CASE(no_pre_alloc);
 
 TEST_SUITE_BEGIN(table)
 	TEST_CASE_ADD(basic_table_functions);
 	TEST_CASE_ADD(cell_template);
 	TEST_CASE_ADD(replace_table_cell);
 	TEST_CASE_ADD(generator);
+	TEST_CASE_ADD(pre_alloc);
+	TEST_CASE_ADD(no_pre_alloc);
 TEST_SUITE_END
 
 /**
@@ -185,6 +189,47 @@ TEST_CASE(generator)
 	TEST_ASSERT(strcmp(str, "foo,foo,foo,foo,") == 0);
 
 	free(str);
+	$(void, table, freeTable)(table);
+
+	TEST_PASS;
+}
+
+TEST_CASE(pre_alloc)
+{
+	Table *table = $(Table *, table, newTable)();
+	TEST_ASSERT(table != NULL);
+	TEST_ASSERT(table->freeColsAmount == MODULE_TABLE_DEFAULT_ALLOC_COLS);
+	TEST_ASSERT(table->freeRowsAmount == MODULE_TABLE_DEFAULT_ALLOC_ROWS);
+	TEST_ASSERT(table->rows == 0);
+	TEST_ASSERT(table->cols == 0);
+
+	TEST_ASSERT($(int, table, appendTableCol)(table, 2, NULL) == 0);
+	TEST_ASSERT(table->freeColsAmount == (MODULE_TABLE_DEFAULT_ALLOC_COLS - 2));
+
+	// Do not forget that after adding a column to a empty table there will be already a row
+	TEST_ASSERT($(int, table, appendTableRow)(table, 1, NULL) == 1);
+	TEST_ASSERT(table->freeRowsAmount == (MODULE_TABLE_DEFAULT_ALLOC_ROWS - 2));
+	TEST_ASSERT(table->rows == 2);
+	TEST_ASSERT(table->cols == 2);
+
+	$(void, table, freeTable)(table);
+
+	TEST_PASS;
+}
+
+TEST_CASE(no_pre_alloc)
+{
+	Table *table = $(Table *, table, newTableFull)(0, 0);
+	TEST_ASSERT(table != NULL);
+	TEST_ASSERT(table->table == NULL);
+	TEST_ASSERT(table->freeColsAmount == 0);
+	TEST_ASSERT(table->freeRowsAmount == 0);
+	TEST_ASSERT(table->rows == 0);
+	TEST_ASSERT(table->cols == 0);
+
+	TEST_ASSERT($(int, table, appendTableCol)(table, 5, NULL) == 0);
+	TEST_ASSERT($(int, table, appendTableRow)(table, 5, NULL) == 1);
+
 	$(void, table, freeTable)(table);
 
 	TEST_PASS;

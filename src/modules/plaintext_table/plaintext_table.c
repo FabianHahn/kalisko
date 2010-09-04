@@ -36,9 +36,9 @@
 MODULE_NAME("plaintext_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A plaintext table for output in CLI or text files");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 5));
 
 static char *getPlaintextTableString(Table *table);
 static void freePlaintextTableCell(TableCell *cell);

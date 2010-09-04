@@ -33,9 +33,9 @@
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the table module");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 5));
 
 static char *generatorFunc(Table *table);
 
@@ -86,7 +86,7 @@ TEST_CASE(basic_table_functions)
 	TEST_ASSERT(table->rows == 2);
 	TEST_ASSERT(firstRowIndex == 1);
 
-	TableCell *currentCell = $(TableCell *, table, getTableCell)(table, 0, 0);
+	TableCell *currentCell = table->table[0][0];
 	TEST_ASSERT(currentCell != NULL);
 
 	$(void, table, freeTable)(table);

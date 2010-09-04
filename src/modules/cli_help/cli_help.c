@@ -39,9 +39,9 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 0), MODULE_DEPENDENCY("table", 0, 1, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 0), MODULE_DEPENDENCY("table", 0, 1, 5));
 
 typedef struct {
 	char *module;

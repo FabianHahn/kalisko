@@ -37,9 +37,9 @@
 MODULE_NAME("log_viewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Provides a widget and window to show log messages.");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 5), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 #define PERFORM_CONFIG_PATH "loadModules"
 
@@ -188,6 +188,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 {
 	LogViewerWindow *window = (LogViewerWindow *) data;
 
+	va_arg(args, const char *); // FIXME: include this in output
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 

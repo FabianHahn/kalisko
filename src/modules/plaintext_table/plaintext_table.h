@@ -43,6 +43,7 @@ struct PlaintextTableCellTag {
 	PlaintextTableAlignment alignment;
 };
 
-API Table *newPlainTextTable();
+API Table *newPlaintextTable();
+API Table *newPlaintextTableFull(int preAllocRows, int preAllocCols);
 
 #endif

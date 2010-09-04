@@ -36,8 +36,8 @@
 MODULE_NAME("plaintext_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A plaintext table for output in CLI or text files");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 5));
 
 static char *getPlaintextTableString(Table *table);
@@ -59,11 +59,24 @@ MODULE_FINALIZE
  * Creates a new Table which is prepared to create
  * output for the CLI or a plaintext file.
  *
- * @return the specialized Table
+ * @return the specialised Table
  */
-API Table *newPlainTextTable()
+API Table *newPlaintextTable()
 {
-	Table *table = $(Table *, table, newTable)();
+	return newPlaintextTableFull(MODULE_TABLE_DEFAULT_ALLOC_ROWS, MODULE_TABLE_DEFAULT_ALLOC_COLS);
+}
+
+/**
+ * Creates a new Table which is prepared to create
+ * output for the CLI or plaintext files.
+ *
+ * @see newTableFull
+ * @param preAllocRows		Amount of rows to allocate
+ * @param preAllocCols		Amount of columns to allocate
+ */
+API Table *newPlaintextTableFull(int preAllocRows, int preAllocCols)
+{
+	Table *table = $(Table *, table, newTableFull)(preAllocRows, preAllocCols);
 
 	table->newCell = &newPlaintextTableCellCallback;
 	table->outputGenerator = &getPlaintextTableString;

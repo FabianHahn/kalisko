@@ -31,9 +31,9 @@
 MODULE_NAME("log_event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The log_event module provides access to the Kalisko log system using a global event that clients can attach to");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 0));
 
 static void listener_attached(void *subject, const char *event, void *data, va_list args);
 static void listener_detached(void *subject, const char *event, void *data, va_list args);

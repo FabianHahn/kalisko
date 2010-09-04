@@ -33,7 +33,7 @@
 #include "table.h"
 
 MODULE_NAME("table");
-MODULE_AUTHOR("The kalisko team");
+MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
 MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 3);
@@ -60,7 +60,7 @@ API Table *newTable()
 }
 
 /**
- * Returns a newly created Table with alreasy allocated rows and columns.
+ * Returns a newly created Table with already allocated rows and columns.
  *
  * This functions just allocate space but not create the TableCells. So you still
  * have to use the append* functions for example.

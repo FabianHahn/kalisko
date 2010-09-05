@@ -95,9 +95,11 @@ for moddir in modules:
 		if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 			# Build module
 			module = env.Clone()
+			module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
 			SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), 'module')
 			if buildtests:
 				module = env.Clone()
+				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
 				SConscript(os.path.join('bin/test', 'modules', moddir, 'SConscript'), 'module')
 
 # Build tests

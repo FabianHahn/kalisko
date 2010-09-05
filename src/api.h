@@ -32,6 +32,3 @@
 #else
 #define API
 #endif
-
-// Forward declaration of module_name function so source files besides the primary file in a module can also use module based logging
-API char *module_name();

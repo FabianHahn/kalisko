@@ -439,7 +439,7 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 	if(lazy) {
 		mode = RTLD_LAZY;
 	} else {
-		mode = RTLD_NOW | RTLD_GLOBAL | RTLD_DEEPBIND;
+		mode = RTLD_NOW | RTLD_GLOBAL;
 	}
 
 	if((mod->handle = dlopen(mod->dlname, mode)) == NULL) {

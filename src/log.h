@@ -54,13 +54,16 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
 
 #ifdef DLL_API_IMPORT
 
+#define STR_EXPAND(S) #S
+#define STR(S) STR_EXPAND(S)
+
 /**
  * Logs a system error (strerror).
  *
  * @see logMessage
  * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
-#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(module_name(), LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
+#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
 
 /**
  * Logs a message as an error.
@@ -68,7 +71,7 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_ERROR(...) $$(void, logMessage)(module_name(), LOG_TYPE_ERROR, __VA_ARGS__);
+#define LOG_ERROR(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_ERROR, __VA_ARGS__);
 
 /**
  * Logs a message as a warning.
@@ -76,7 +79,7 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_WARNING(...) $$(void, logMessage)(module_name(), LOG_TYPE_WARNING, __VA_ARGS__);
+#define LOG_WARNING(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_WARNING, __VA_ARGS__);
 
 /**
  * Logs a message as an info.
@@ -84,7 +87,7 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_INFO(...) $$(void, logMessage)(module_name(), LOG_TYPE_INFO, __VA_ARGS__);
+#define LOG_INFO(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_INFO, __VA_ARGS__);
 
 /**
  * Logs a message as a debug information
@@ -92,7 +95,7 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_DEBUG(...) $$(void, logMessage)(module_name(), LOG_TYPE_DEBUG, __VA_ARGS__);
+#define LOG_DEBUG(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_DEBUG, __VA_ARGS__);
 
 #endif
 

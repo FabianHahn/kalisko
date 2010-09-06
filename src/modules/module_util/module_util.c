@@ -32,7 +32,7 @@
 MODULE_NAME("module_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Utility module offering functions to handle Kalisko modules");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -54,7 +54,7 @@ MODULE_FINALIZE
 
 TIMER_CALLBACK(REQUEST_SELF)
 {
-	if($$(bool, isModuleRequested)("module_util")) {
+	if(!$$(bool, isModuleRequested)("module_util")) {
 		// Request ourselves to prevent being unloaded by a garbage collecting revoke call
 		$$(bool, requestModule)("module_util");
 	}

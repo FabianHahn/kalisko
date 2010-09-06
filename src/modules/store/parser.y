@@ -75,7 +75,7 @@ node:	STRING '=' value
 			@$.last_line = @1.last_line;
 			@$.last_column = @1.last_column;
 			$$ = ALLOCATE_OBJECT(StoreNode);
-			$$->key = strdup($1);
+			$$->key = $1;
 			$$->value = $3;
 		}
 ;
@@ -85,6 +85,7 @@ value:		STRING
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
 				$$ = createStoreStringValue($1);
+				free($1);
 			}
 		|	INTEGER
 			{

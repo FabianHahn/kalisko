@@ -17,9 +17,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
+conf = Configure(module)
 	
-	if conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
-		module = conf.Finish()
-		module.SharedLibrary('../kalisko_opengl', Glob('*.c'))
+if conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
+	module = conf.Finish()
+
+module.SharedLibrary('../kalisko_opengl', Glob('*.c'))

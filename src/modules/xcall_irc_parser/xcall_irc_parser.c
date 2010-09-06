@@ -40,7 +40,7 @@ static Store *xcall_parseIrcUserMask(Store *xcall);
 MODULE_NAME("xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall Module for irc_parser");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -116,26 +116,26 @@ static Store *xcall_parseIrcMessage(Store *xcall)
 
 	$(bool, store, setStorePath)(ret, "ircMessage", $(Store *, store, createStoreArrayValue)(NULL));
 	if(ircMessage->prefix) {
-		$(bool, store, setStorePath)(ret, "ircMessage/prefix", $(Store *, store, createStoreStringValue)(strdup(ircMessage->prefix)));
+		$(bool, store, setStorePath)(ret, "ircMessage/prefix", $(Store *, store, createStoreStringValue)(ircMessage->prefix));
 	}
 
 	if(ircMessage->command) {
-		$(bool, store, setStorePath)(ret, "ircMessage/command", $(Store *, store, createStoreStringValue)(strdup(ircMessage->command)));
+		$(bool, store, setStorePath)(ret, "ircMessage/command", $(Store *, store, createStoreStringValue)(ircMessage->command));
 	}
 
 	if(ircMessage->trailing) {
-		$(bool, store, setStorePath)(ret, "ircMessage/trailing", $(Store *, store, createStoreStringValue)(strdup(ircMessage->trailing)));
+		$(bool, store, setStorePath)(ret, "ircMessage/trailing", $(Store *, store, createStoreStringValue)(ircMessage->trailing));
 	}
 
 	if(ircMessage->raw_message) {
-		$(bool, store, setStorePath)(ret, "ircMessage/raw_message", $(Store *, store, createStoreStringValue)(strdup(ircMessage->raw_message)));
+		$(bool, store, setStorePath)(ret, "ircMessage/raw_message", $(Store *, store, createStoreStringValue)(ircMessage->raw_message));
 	}
 
 	$(bool, store, setStorePath)(ret, "ircMessage/params_count", $(Store *, store, createStoreIntegerValue)(ircMessage->params_count));
 
 	GQueue *paramQueue = g_queue_new();
 	for(int i = 0; i < ircMessage->params_count; i++) {
-		g_queue_push_tail(paramQueue, $(Store *, store, createStoreStringValue)(strdup(ircMessage->params[i])));
+		g_queue_push_tail(paramQueue, $(Store *, store, createStoreStringValue)(ircMessage->params[i]));
 	}
 	$(bool, store, setStorePath)(ret, "ircMessage/params", $(Store *, store, createStoreListValue)(paramQueue));
 
@@ -197,15 +197,15 @@ static Store *xcall_parseIrcUserMask(Store *xcall)
 	$(bool, store, setStorePath)(ret, "ircUserMask", $(Store *, store, createStoreArrayValue)(NULL));
 
 	if(userMask->host) {
-		$(bool, store, setStorePath)(ret, "ircUserMask/host", $(Store *, store, createStoreStringValue)(strdup(userMask->host)));
+		$(bool, store, setStorePath)(ret, "ircUserMask/host", $(Store *, store, createStoreStringValue)(userMask->host));
 	}
 
 	if(userMask->nick) {
-		$(bool, store, setStorePath)(ret, "ircUserMask/nick", $(Store *, store, createStoreStringValue)(strdup(userMask->nick)));
+		$(bool, store, setStorePath)(ret, "ircUserMask/nick", $(Store *, store, createStoreStringValue)(userMask->nick));
 	}
 
 	if(userMask->user) {
-		$(bool, store, setStorePath)(ret, "ircUserMask/user", $(Store *, store, createStoreStringValue)(strdup(userMask->user)));
+		$(bool, store, setStorePath)(ret, "ircUserMask/user", $(Store *, store, createStoreStringValue)(userMask->user));
 	}
 
 	$(void, irc_parser, freeIrcUserMask)(userMask);

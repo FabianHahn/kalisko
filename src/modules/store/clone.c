@@ -55,7 +55,7 @@ API Store *cloneStore(Store *source)
 			return clone;
 		break;
 		case STORE_STRING:
-			return createStoreStringValue(strdup(source->content.string));
+			return createStoreStringValue(source->content.string);
 		break;
 		case STORE_INTEGER:
 			return createStoreIntegerValue(source->content.integer);

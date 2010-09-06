@@ -19,6 +19,7 @@
  */
 
 #include <glib.h>
+#include <string.h>
 #include "api.h"
 #include "timer.h"
 #include "util.h"
@@ -26,13 +27,20 @@
 #include "types.h"
 
 static bool findFirstEntry(void *key, void *value, void *data);
+static bool findModuleTimers(void *key, void *value, void *data);
+static void freeTimerTreeEntry(void *entry_p);
 
-typedef struct
-{
+typedef struct {
 	GTimeVal *time;
 	TimerCallback *callback;
 	void *custom_data;
+	char *module;
 } TimerEntry;
+
+typedef struct {
+	GQueue *queue;
+	char *module;
+} ModuleTimerInfo;
 
 /**
  * Tree structure that organizes timer callbacks as a priority queue
@@ -44,7 +52,7 @@ static GTree *timers;
  */
 API void initTimers()
 {
-	timers = g_tree_new_full(&compareTimes, NULL, &free, &free);
+	timers = g_tree_new_full(&compareTimes, NULL, &free, &freeTimerTreeEntry);
 }
 
 /**
@@ -80,6 +88,7 @@ API GTimeVal *addTimer(const char *module, GTimeVal time, TimerCallback *callbac
 	entry->time = timeContainer;
 	entry->callback = callback;
 	entry->custom_data = custom_data;
+	entry->module = strdup(module);
 	g_tree_insert(timers, timeContainer, entry);
 
 	return timeContainer;
@@ -232,13 +241,34 @@ API bool isExiting()
  */
 API int removeModuleTimers(char *module)
 {
-	return 0;
+	if(timers == NULL) {
+		return 0;
+	}
+
+	ModuleTimerInfo info;
+	info.queue = g_queue_new();
+	info.module = module;
+
+	// Collect all timers for this module
+	g_tree_foreach(timers, &findModuleTimers, &info);
+
+	int count = 0;
+
+	for(GList *iter = info.queue->head; iter != NULL; iter = iter->next) {
+		// Remove timer
+		g_tree_remove(timers, iter->data);
+		count++;
+	}
+
+	g_queue_free(info.queue);
+
+	return count;
 }
 
 /**
  * A GTraverseFunc to read the smallest tree entry and return immediately
  * @param key		the key of the node
- * @param value		the value of the node, unused
+ * @param value		the value of the node
  * @param data		a container into which the pointer to the smallest tree entry should be written
  * @result			true if traversal should abort
  */
@@ -247,5 +277,36 @@ static bool findFirstEntry(void *key, void *value, void *data)
 	TimerEntry **target = (TimerEntry **) data;
 	*target = (TimerEntry *) value;
 
-	return TRUE;
+	return true;
+}
+
+/**
+ * A GTraverseFunc to find all timers belonging to a specific module
+ * @param key		the key of the node
+ * @param value		the value of the node, unused
+ * @param data		a pointer to the ModuleTimerInfo struct that records the modules
+ * @result			true if traversal should abort
+ */
+static bool findModuleTimers(void *key, void *value, void *data)
+{
+	TimerEntry *entry = (TimerEntry *) value;
+	ModuleTimerInfo *info = (ModuleTimerInfo *) data;
+
+	if(g_strcmp0(entry->module, info->module) == 0) { // this timer belongs to our module
+		g_queue_push_tail(info->queue, key); // record the key
+	}
+
+	return false;
+}
+
+/**
+ * A GDestroyNotify wrapper to free a timer tree entry
+ *
+ * @param entry_p		 a pointer to the timer entry to be destroyed
+ */
+static void freeTimerTreeEntry(void *entry_p)
+{
+	TimerEntry *entry = (TimerEntry *) entry_p;
+	free(entry->module);
+	free(entry);
 }

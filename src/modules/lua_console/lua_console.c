@@ -31,7 +31,7 @@
 MODULE_NAME("lua_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua console using GTK+");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
 
@@ -122,8 +122,8 @@ MODULE_FINALIZE
 
 static void appendMessage(char *message, PhpConsoleMessageType type)
 {
-	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
-	g_get_current_time(now);
+	GTimeVal now;
+	g_get_current_time(&now);
 	char *dateTime = g_time_val_to_iso8601(now);
 
 	GtkTreeIter iter;
@@ -132,6 +132,7 @@ static void appendMessage(char *message, PhpConsoleMessageType type)
 
 	GtkTreePath	*path = gtk_tree_path_new_from_indices(lines++, -1);
 	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(list), path, NULL, TRUE, 0.0, 0.0);
+	gtk_tree_path_free(path);
 }
 
 static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)

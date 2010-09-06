@@ -37,7 +37,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -53,7 +53,6 @@ static float getFloatTime();
  * A list of OpenGL windows registered
  */
 static GQueue *windows;
-static GTimeVal *lastScheduledPollTime;
 static float loopTime;
 
 MODULE_INIT
@@ -73,16 +72,13 @@ MODULE_INIT
 	loopTime = getFloatTime();
 	windows = g_queue_new();
 
-	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
+	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	TIMER_DEL(lastScheduledPollTime);
-
-
 	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
 		freeOpenGLWindow(iter->data);
 	}
@@ -93,7 +89,7 @@ MODULE_FINALIZE
 TIMER_CALLBACK(GLUT_MAIN_LOOP)
 {
 	glutMainLoopEvent();
-	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
+	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 }
 
 /**

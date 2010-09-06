@@ -46,7 +46,7 @@ var kalisko = {
 		var call = {
 			message: message,
 			xcall: {
-				function: "logDeug"
+				function: "logDebug"
 			}
 		};
 		

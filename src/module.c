@@ -73,6 +73,7 @@ API void initModules()
 	core->author = "The Kalisko team";
 	core->version = createVersion(0, 0, 0, 0);
 	core->bcversion = createVersion(0, 0, 0, 0);
+	core->rc = 0;
 	core->dependencies = g_hash_table_new(&g_str_hash, &g_str_equal);
 	core->rdeps = g_hash_table_new(&g_str_hash, &g_str_equal);
 	core->skip_reload = false;
@@ -163,6 +164,10 @@ API char *getModuleAuthor(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
+
 	if(mod == NULL) {
 		return NULL;
 	}
@@ -179,6 +184,10 @@ API char *getModuleAuthor(const char *name)
 API char *getModuleDescription(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
 
 	if(mod == NULL) {
 		return NULL;
@@ -197,6 +206,10 @@ API Version *getModuleVersion(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
+
 	if(mod == NULL) {
 		return NULL;
 	}
@@ -213,6 +226,10 @@ API Version *getModuleVersion(const char *name)
 API Version *getModuleBcVersion(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
 
 	if(mod == NULL) {
 		return NULL;
@@ -231,6 +248,10 @@ API int getModuleReferenceCount(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
+
 	if(mod == NULL) {
 		return -1;
 	}
@@ -248,6 +269,10 @@ API GList *getModuleDependencies(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
 
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
+
 	if(mod == NULL) {
 		return NULL;
 	}
@@ -264,6 +289,10 @@ API GList *getModuleDependencies(const char *name)
 API GList *getModuleReverseDependencies(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(g_strcmp0(name, "core") == 0) {
+		mod = core;
+	}
 
 	if(mod == NULL) {
 		return NULL;
@@ -318,6 +347,11 @@ API bool isModuleRequested(const char *name)
  */
 API bool requestModule(char *name)
 {
+	if(g_strcmp0(name, "core") == 0) {
+		logMessage("core", LOG_TYPE_ERROR, "The Kalisko core can be neither requested nor revoked");
+		return false;
+	}
+
 	if(g_hash_table_lookup(core->dependencies, name) != NULL) {
 		logMessage("core", LOG_TYPE_ERROR, "Cannot request already requested module %s", name);
 		return false;
@@ -336,6 +370,11 @@ API bool requestModule(char *name)
  */
 API bool revokeModule(char *name)
 {
+	if(g_strcmp0(name, "core") == 0) {
+		logMessage("core", LOG_TYPE_ERROR, "The Kalisko core can be neither requested nor revoked");
+		return false;
+	}
+
 	Module *mod = g_hash_table_lookup(core->dependencies, name);
 
 	if(mod == NULL) {
@@ -365,6 +404,11 @@ API bool revokeModule(char *name)
  */
 API bool forceUnloadModule(char *name)
 {
+	if(g_strcmp0(name, "core") == 0) {
+		logMessage("core", LOG_TYPE_ERROR, "The Kalisko core can be neither requested nor revoked");
+		return false;
+	}
+
 	Module *mod = g_hash_table_lookup(modules, name);
 
 	if(mod == NULL) {

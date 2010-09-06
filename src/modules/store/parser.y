@@ -56,6 +56,7 @@
 %type <node> node
 %destructor { freeStore($$); } array list value
 %destructor { freeStore($$->value); free($$->key); free($$); } node
+%destructor { free($$); } STRING
 
 %%
 root:		// empty string

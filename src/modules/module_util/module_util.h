@@ -23,5 +23,6 @@
 #define MODULE_UTIL_MODULE_UTIL_H
 
 API void safeRevokeModule(char *name);
+API void safeForceUnloadModule(char *name);
 
 #endif

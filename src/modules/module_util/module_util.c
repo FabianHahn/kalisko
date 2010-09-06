@@ -32,22 +32,32 @@
 MODULE_NAME("module_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Utility module offering functions to handle Kalisko modules");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
+TIMER_CALLBACK(REQUEST_SELF);
 TIMER_CALLBACK(SAFE_REMOVE_MODULE);
 TIMER_CALLBACK(SAFE_FORCE_UNLOAD_MODULE);
 
 MODULE_INIT
 {
-	// Request ourselves to prevent being unloaded by a garbage collecting revoke call
-	return $$(bool, requestModule)("module_util");
+	TIMER_ADD_TIMEOUT(0, REQUEST_SELF);
+
+	return true;
 }
 
 MODULE_FINALIZE
 {
 
+}
+
+TIMER_CALLBACK(REQUEST_SELF)
+{
+	if($$(bool, isModuleRequested)("module_util")) {
+		// Request ourselves to prevent being unloaded by a garbage collecting revoke call
+		$$(bool, requestModule)("module_util");
+	}
 }
 
 /**

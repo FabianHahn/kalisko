@@ -18,26 +18,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 KaliskoLog = {}
 
-function KaliskoLog:debug(message)
-	xcall = invokeXCall('xcall = { function = logDebug }; message = "' .. message .. '"')
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+function KaliskoLog:debug(msg)
+	logDebug({message = msg})
 end
 
-function KaliskoLog:info(message)
-	xcall = invokeXCall('xcall = { function = logInfo }; message = "' .. message .. '"')
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+function KaliskoLog:info(msg)
+	logInfo({message = msg})
 end
 
-function KaliskoLog:warning(message)
-	xcall = invokeXCall('xcall = { function = logWarning }; message = "' .. message .. '"')
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+function KaliskoLog:warning(msg)
+	logWarning({message = msg})
 end
 
-function KaliskoLog:error(message)
-	xcall = invokeXCall('xcall = { function = logError }; message = "' .. message .. '"')
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+function KaliskoLog:error(msg)
+	logError({message = msg})
 end

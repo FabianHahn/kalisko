@@ -59,8 +59,8 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 3, 3);
-MODULE_BCVERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
+MODULE_BCVERSION(0, 3, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_SUITE_BEGIN(store)
@@ -243,6 +243,8 @@ TEST_CASE(parse_path)
 	TEST_ASSERT((path = $(Store *, store, getStorePath)(s, "path")) != NULL);
 	TEST_ASSERT(path->type == STORE_STRING);
 	TEST_ASSERT(g_strcmp0(path->content.string, "/home/user/file.cfg") == 0);
+
+	$(void, store, freeStore)(s);
 
 	TEST_PASS;
 }

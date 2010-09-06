@@ -270,6 +270,7 @@ static int lua_parseStore(lua_State *state)
 		lua_newtable(state);
 	} else {
 		parseStoreToLua(state, store);
+		$(void, store, freeStore)(store);
 	}
 
 	return 1;

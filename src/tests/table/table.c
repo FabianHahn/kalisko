@@ -33,7 +33,7 @@
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the table module");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 5));
 
@@ -122,6 +122,7 @@ TEST_CASE(cell_template)
 		}
 	}
 
+	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
 
 	TEST_PASS;
@@ -157,6 +158,7 @@ TEST_CASE(replace_table_cell)
 	TEST_ASSERT(strcmp(table->table[1][1]->content, "bar") == 0);
 	TEST_ASSERT(strcmp(table->table[1][0]->content, "foo") == 0);
 
+	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
 
 	TEST_PASS;
@@ -189,6 +191,7 @@ TEST_CASE(generator)
 	TEST_ASSERT(strcmp(str, "foo,foo,foo,foo,") == 0);
 
 	free(str);
+	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
 
 	TEST_PASS;

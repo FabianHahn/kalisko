@@ -33,8 +33,8 @@
 MODULE_NAME("test_lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lang_lua module");
-MODULE_VERSION(0, 4, 0);
-MODULE_BCVERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
+MODULE_BCVERSION(0, 4, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("lang_lua", 0, 7, 1), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 6, 3));
 
 TEST_CASE(lua2store);
@@ -228,6 +228,7 @@ TEST_CASE(xcall_direct_call)
 	char *ret;
 	TEST_ASSERT((ret = $(char *, lang_lua, popLuaString)()) != NULL);
 	TEST_ASSERT(g_strcmp0(ret, "42") == 0);
+	free(ret);
 
 	TEST_ASSERT($(bool, lang_lua, evaluateLua)("delXCallFunction('luatest')"));
 

@@ -40,7 +40,7 @@ static Store *xcall_parseIrcUserMask(Store *xcall);
 MODULE_NAME("xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall Module for irc_parser");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0));
 
@@ -98,6 +98,7 @@ static Store *xcall_parseIrcMessage(Store *xcall)
 
 	if(message == NULL || message->type != STORE_STRING) {
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 
 		return ret;
@@ -177,6 +178,7 @@ static Store *xcall_parseIrcUserMask(Store *xcall)
 
 	if(prefix == NULL || prefix->type != STORE_STRING) {
 		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'prefix'"));
 
 		return ret;

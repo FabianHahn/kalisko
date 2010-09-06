@@ -36,7 +36,7 @@ static bool pollSocket(Socket *socket, int *fd_p);
 static GHashTable *poll_table;
 static char poll_buffer[SOCKET_POLL_BUFSIZE];
 static int pollInterval;
-static GTimeVal *lastScheduledPollTime;
+
 /**
  * True if we're currently polling
  */
@@ -54,7 +54,7 @@ API void initPoll(int interval)
 
 	poll_table = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
 
-	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
+	TIMER_ADD_TIMEOUT(pollInterval, poll);
 
 	polling = false;
 }
@@ -64,8 +64,6 @@ API void initPoll(int interval)
  */
 API void freePoll()
 {
-	TIMER_DEL(lastScheduledPollTime);
-
 	g_hash_table_destroy(poll_table);
 }
 
@@ -144,7 +142,7 @@ TIMER_CALLBACK(poll)
 {
 	pollSockets();
 	$(int, event, triggerEvent)(NULL, "sockets_polled");
-	lastScheduledPollTime = TIMER_ADD_TIMEOUT(pollInterval, poll);
+	TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 
 /**

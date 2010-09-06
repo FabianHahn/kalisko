@@ -32,7 +32,7 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
@@ -43,7 +43,6 @@ MODULE_NODEPS;
 TIMER_CALLBACK(GTK_MAIN_LOOP);
 
 static bool isLoopRunning;
-static GTimeVal *lastScheduledPollTime;
 
 MODULE_INIT
 {
@@ -61,8 +60,6 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	stopGtkLoop();
-
 	// Continue until there are no more pending events to make sure all remaining windows are properly closed. Otherwise, they just become orphans that cannot be closed anymore
 	while(gtk_events_pending()) {
 		gtk_main_iteration();
@@ -71,22 +68,22 @@ MODULE_FINALIZE
 
 TIMER_CALLBACK(GTK_MAIN_LOOP)
 {
-	gtk_main_iteration_do(FALSE);
-	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
+	gtk_main_iteration_do(false);
+	TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 }
 
 API void runGtkLoop()
 {
 	if(!isLoopRunning) {
 		isLoopRunning = true;
-		lastScheduledPollTime = TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
+		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 	}
 }
 
 API void stopGtkLoop()
 {
 	if(isLoopRunning) {
-		TIMER_DEL(lastScheduledPollTime);
+		TIMERS_CLEAR;
 		isLoopRunning = false;
 	}
 }

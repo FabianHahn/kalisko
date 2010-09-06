@@ -31,15 +31,16 @@ typedef void (TimerCallback)(GTimeVal time, void *custom_data);
 
 API void initTimers();
 API void freeTimers();
-API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data);
+API GTimeVal *addTimer(const char *module, GTimeVal time, TimerCallback *callback, void *custom_data);
 API bool delTimer(GTimeVal *time);
-API GTimeVal *addTimeout(int timeout, TimerCallback *callback, void *custom_data);
+API GTimeVal *addTimeout(const char *module, int timeout, TimerCallback *callback, void *custom_data);
 API GTimeVal getNextTimerTime();
 API int getCurrentSleepTime();
 API void notifyTimerCallbacks();
 API bool hasMoreTimerCallbacks();
 API void exitGracefully();
 API bool isExiting();
+API int removeModuleTimers(char *module);
 
 // Wrapper macros for timers
 /**
@@ -63,7 +64,7 @@ API bool isExiting();
  * @param TIME			the time when the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD(TIME, CALLBACK) $$(GTimeVal *, addTimer)((TIME), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+#define TIMER_ADD(TIME, CALLBACK) $$(GTimeVal *, addTimer)(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
 
 /**
  * @see addTimer
@@ -71,14 +72,14 @@ API bool isExiting();
  * @param CALLBACK		the callback to schedule
  * @param CDATA			custom data to be passed to the callback
  */
-#define TIMER_ADD_EX(TIME, CALLBACK, CDATA) $$(GTimeVal *, addTimer)((TIME), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
+#define TIMER_ADD_EX(TIME, CALLBACK, CDATA) $$(GTimeVal *, addTimer)(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see addTimeout
  * @param TIME			the timeout in microseconds after which the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
 
 /**
  * @see addTimeout
@@ -86,7 +87,7 @@ API bool isExiting();
  * @param CALLBACK		the callback to schedule
  * @param CDATA			custom data to be passed to the callback
  */
-#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK, CDATA) $$(GTimeVal *, addTimeout)((TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
+#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK, CDATA) $$(GTimeVal *, addTimeout)(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see delTimer

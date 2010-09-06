@@ -35,6 +35,7 @@
 #include "memory_alloc.h"
 #include "util.h"
 #include "module.h"
+#include "timer.h"
 
 #ifdef WIN32
 #define MODULE_PREFIX "kalisko_"
@@ -782,6 +783,13 @@ static void unneedModule(void *name, void *mod_p, void *parent_p)
 
 		if((finalize_func = getLibraryFunction(mod, MODULE_FINALIZER_FUNC)) != NULL) {
 			finalize_func(); // Call finalizer if it exists
+		}
+
+		// Remove orphaned timers for this module
+		int count = removeModuleTimers(mod->name);
+
+		if(count > 0) {
+			logMessage("core", LOG_TYPE_DEBUG, "Removed %d orphaned timers from module %s", count, mod->name);
 		}
 	}
 

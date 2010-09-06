@@ -57,12 +57,13 @@ API void freeTimers()
 
 /**
  * Adds a timer callback
+ * @param module			the module that registers this timer
  * @param time				the time when the callback should be executed
  * @param callback			the callback that should be called at the specified time
  * @param custom_data		custom data to be passed to the timer callback on execution
  * @result 					a pointer to the actual time scheduled
  */
-API GTimeVal *addTimer(GTimeVal time, TimerCallback *callback, void *custom_data)
+API GTimeVal *addTimer(const char *module, GTimeVal time, TimerCallback *callback, void *custom_data)
 {
 	if(timers == NULL) {
 		return NULL;
@@ -106,16 +107,17 @@ API bool delTimer(GTimeVal *time)
 
 /**
  * Adds a timer callback after a specific timeout
+ * @param module			the module that registers this timer
  * @param timeout			the timeout from now after which the timer should be executed in microseconds
  * @param callback			the callback that should be called after the time elapsed
  * @param custom_data		custom data to be passed to the timer callback on execution
  */
-API GTimeVal *addTimeout(int timeout, TimerCallback *callback, void *custom_data)
+API GTimeVal *addTimeout(const char *module, int timeout, TimerCallback *callback, void *custom_data)
 {
 	GTimeVal time;
 	g_get_current_time(&time);
 	g_time_val_add(&time, timeout);
-	return addTimer(time, callback, custom_data);
+	return addTimer(module, time, callback, custom_data);
 }
 
 /**
@@ -220,6 +222,17 @@ API void exitGracefully()
 API bool isExiting()
 {
 	return timers == NULL;
+}
+
+/**
+ * Removes all timers registered by a module
+ *
+ * @param module	the name of the module to remove all timers from
+ * @result			the number of timers removed
+ */
+API int removeModuleTimers(char *module)
+{
+	return 0;
 }
 
 /**

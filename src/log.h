@@ -54,9 +54,6 @@ API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC
 
 #ifdef DLL_API_IMPORT
 
-#define STR_EXPAND(S) #S
-#define STR(S) STR_EXPAND(S)
-
 /**
  * Logs a system error (strerror).
  *

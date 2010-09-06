@@ -31,4 +31,7 @@ typedef gboolean bool;
 #define false FALSE
 #endif
 
+#define STR_EXPAND(S) #S
+#define STR(S) STR_EXPAND(S)
+
 #endif

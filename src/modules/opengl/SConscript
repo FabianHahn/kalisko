@@ -20,10 +20,6 @@ Import('module')
 if not module.GetOption('clean'):
 	conf = Configure(module)
 	
-	if not conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
-		print('Error: Could not find libglut and/or the corresponding freeglut.h header file!')
-		Exit(1)
-			
-	module = conf.Finish()
-
-module.SharedLibrary('../kalisko_opengl', Glob('*.c'))
+	if conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
+		module = conf.Finish()
+		module.SharedLibrary('../kalisko_opengl', Glob('*.c'))

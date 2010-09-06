@@ -177,7 +177,7 @@ API void notifyTimerCallbacks()
 			void *custom_data = entry->custom_data;
 
 			// Remove it from the tree first
-			g_tree_remove(timers, entry);
+			g_tree_remove(timers, entry->time);
 
 			// Now notify the callback
 			callback(entryTime, custom_data);

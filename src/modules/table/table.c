@@ -34,7 +34,7 @@
 MODULE_NAME("table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module containing a basic table representation");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_NODEPS;
 
@@ -93,6 +93,7 @@ API Table *newTableFull(int preAllocRows, int preAllocCols)
 
 	for(int row = 0; row < preAllocRows; row++) {
 		table->table[row] = ALLOCATE_OBJECTS(TableCell *, preAllocCols);
+		memset(table->table[row], 0, sizeof(TableCell *) * preAllocCols);
 	}
 
 	return table;
@@ -136,21 +137,26 @@ API TableCell *newTableCell(Table *table)
  */
 API void freeTable(Table *table)
 {
-	// free cells
-	for(int iRow = 0; iRow < table->rows; iRow++) {
-		for(int iCol = 0; iCol < table->cols; iCol++) {
+	int rowCount = table->rows + table->freeRowsAmount;
+	int colCount = table->cols + table->freeColsAmount;
+
+	for(int iRow = 0; iRow < rowCount; iRow++) {
+		for(int iCol = 0; iCol < colCount; iCol++) {
 			TableCell *cell = table->table[iRow][iCol];
-			freeCell(cell);
+			if(cell != NULL) {
+				freeCell(cell);
+			}
 		}
+
+		free(table->table[iRow]);
 	}
 
-	// free table
-	if(table->freeTable) {
-		table->freeTable(table);
-	}
-
-	if(table->table) {
+	if(table->table != NULL) {
 		free(table->table);
+	}
+
+	if(table->freeTable != NULL) {
+		table->freeTable(table);
 	}
 
 	free(table);
@@ -205,8 +211,8 @@ API int appendTableCol(Table *table, int colAmount, TableCell *cellTemplate)
 	if(colCountToAlloc > 0) {
 		for(int row = 0; row < table->freeRowsAmount + table->rows; row++) {
 			// Create the space to store new column(s)
-			TableCell **extendedCols = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
-			table->table[row] = extendedCols;
+			table->table[row] = REALLOCATE_OBJECT(TableCell *, table->table[row], sizeof(TableCell *) * colCount);
+			memset(table->table[row], 0, sizeof(TableCell *) * colCount);
 		}
 
 		table->freeColsAmount = 0; // we used all up
@@ -303,7 +309,10 @@ API int appendTableRow(Table *table, int rowAmount, TableCell *cellTemplate)
 API TableCell *copyTableCell(Table *table, TableCell *original)
 {
 	TableCell *copy = newTableCell(table);
-	copy->content = original->content != NULL ? strdup(original->content) : NULL;
+	if(original->content != NULL) {
+		copy->content = strdup(original->content);
+		copy->freeContent = true;
+	}
 
 	if(table->copyCell) {
 		table->copyCell(table, original, copy);

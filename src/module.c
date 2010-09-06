@@ -300,6 +300,17 @@ API bool isModuleLoaded(const char *name)
 }
 
 /**
+ * Checks whether a module with a given name is requested. Note that modules currently loading are reported as not being requested yet.
+ *
+ * @param name		the name of the module to check
+ * @result			true if the module is requested
+ */
+API bool isModuleRequested(const char *name)
+{
+	return g_hash_table_lookup(core->dependencies, name) != NULL;
+}
+
+/**
  * Requests a module
  *
  * @param name		the module's name

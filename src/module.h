@@ -67,6 +67,7 @@ API GList *getModuleDependencies(const char *name);
 API GList *getModuleReverseDependencies(const char *name);
 API GList *getActiveModules();
 API bool isModuleLoaded(const char *name);
+API bool isModuleRequested(const char *name);
 API bool requestModule(char *name);
 API bool revokeModule(char *name);
 API bool forceUnloadModule(char *name);

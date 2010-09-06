@@ -37,7 +37,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -68,6 +68,7 @@ MODULE_INIT
 
 	glutIdleFunc(&globalIdleFunc);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
 	loopTime = getFloatTime();
 	windows = g_queue_new();
@@ -80,6 +81,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	TIMER_DEL(lastScheduledPollTime);
+
 
 	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
 		freeOpenGLWindow(iter->data);
@@ -105,6 +107,10 @@ API OpenGLWindow *createOpenGLWindow(char *name)
 	int *window = ALLOCATE_OBJECT(int);
 	*window = glutCreateWindow(name);
 
+	g_queue_push_tail(windows, window);
+
+	LOG_INFO("Created new OpenGL window with name '%s', OpenGL vendor: %s %s", name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+
 	return window;
 }
 
@@ -115,7 +121,9 @@ API OpenGLWindow *createOpenGLWindow(char *name)
  */
 API void freeOpenGLWindow(OpenGLWindow *window)
 {
+	glutSetWindow(*window);
 	glutDestroyWindow(*window);
+	free(window);
 }
 
 /**
@@ -128,7 +136,9 @@ static void globalIdleFunc()
 	loopTime = now;
 
 	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
-		$(int, event, triggerEvent)(iter->data, "update", dt);
+		int *window = iter->data;
+		glutSetWindow(*window);
+		$(int, event, triggerEvent)(window, "update", dt);
 	}
 }
 

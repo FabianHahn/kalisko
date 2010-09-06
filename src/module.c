@@ -601,6 +601,8 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 			g_hash_table_remove(modules, mod->name);
 			free(mod->name);
 			free(mod->dlname);
+			g_hash_table_destroy(mod->dependencies);
+			g_hash_table_destroy(mod->rdeps);
 			free(mod);
 			return false;
 		}

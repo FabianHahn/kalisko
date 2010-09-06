@@ -21,11 +21,6 @@ if module['PLATFORM'] != 'win32':
 	if not module.GetOption('clean'):
 		conf = Configure(module)
 		module.ParseConfig('php-config-embed --includes')
-	
-		if not conf.CheckLibWithHeader('php5', 'sapi/embed/php_embed.h', 'c'):
-			print('Error: Could not find libphp5 and the corresponding php_embed.h header file!')
-			Exit(1)
-				
 		module = conf.Finish()
 	
 	module.SharedLibrary('../kalisko_lang_php', Glob('*.c'))

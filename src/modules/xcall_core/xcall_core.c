@@ -31,15 +31,16 @@
 #include "modules/store/path.h"
 #include "modules/store/write.h"
 #include "modules/event/event.h"
+#include "modules/module_util/module_util.h"
 #include "api.h"
 #include "version2store.h"
 
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 3, 9);
-MODULE_BCVERSION(0, 3, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("module_util", 0, 1, 0));
 
 static Store *xcall_exitGracefully(Store *xcall);
 static Store *xcall_attachLog(Store *xcall);
@@ -616,8 +617,9 @@ static Store *xcall_requestModule(Store *xcall)
  * XCallFunction to revoke a module
  * XCall parameters:
  *  * string module		the module to revoke
+ *  * int unsafe		set to nonzero if the unsafe call should be used
  * XCall result:
- * 	* int success		nonzero if successful
+ * 	* int success		nonzero if successful, only available if the unsafe flag was set
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -633,9 +635,20 @@ static Store *xcall_revokeModule(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
+		bool unsafe = false;
+		Store *param;
+		if((param = $(Store *, store, getStorePath)(xcall, "unsafe")) != NULL && param->type == STORE_INTEGER && param->content.integer != 0) { // Check for unsafe parameter
+			unsafe = true;
+		}
+
 		char *modname = module->content.string;
-		bool loaded = $$(bool, revokeModule)(modname);
-		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+
+		if(unsafe) {
+			bool loaded = $$(bool, revokeModule)(modname);
+			$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+		} else {
+			$(void, module_util, safeRevokeModule)(modname);
+		}
 	}
 
 	return retstore;
@@ -645,8 +658,9 @@ static Store *xcall_revokeModule(Store *xcall)
  * XCallFunction to force unload a module
  * XCall parameters:
  *  * string module		the module to force unload
+ *  * int unsafe		set to nonzero if the unsafe call should be used
  * XCall result:
- * 	* int success		nonzero if successful
+ * 	* int success		nonzero if successful, only available if the unsafe flag was set
  *
  * @param xcall		the xcall as store
  * @result			a return value as store
@@ -662,9 +676,20 @@ static Store *xcall_forceUnloadModule(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'module'"));
 	} else {
+		bool unsafe = false;
+		Store *param;
+		if((param = $(Store *, store, getStorePath)(xcall, "unsafe")) != NULL && param->type == STORE_INTEGER && param->content.integer != 0) { // Check for unsafe parameter
+			unsafe = true;
+		}
+
 		char *modname = module->content.string;
-		bool loaded = $$(bool, forceUnloadModule)(modname);
-		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+
+		if(unsafe) {
+			bool loaded = $$(bool, forceUnloadModule)(modname);
+			$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(loaded));
+		} else {
+			$(void, module_util, safeForceUnloadModule)(modname);
+		}
 	}
 
 	return retstore;

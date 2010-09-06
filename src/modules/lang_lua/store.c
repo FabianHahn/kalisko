@@ -249,6 +249,7 @@ static int lua_dumpStore(lua_State *state)
 	GString *str = $(GString *, store, writeStoreGString)(store); // write store to string
 	lua_pushstring(state, str->str); // push return value to stack
 	g_string_free(str, true); // free the temp string
+	$(void, store, freeStore)(store); // free the parsed store
 
 	return 1;
 }

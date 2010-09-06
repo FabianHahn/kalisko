@@ -27,25 +27,34 @@
 #include "types.h"
 #include "timer.h"
 #include "util.h"
+#include "memory_alloc.h"
+#include "modules/event/event.h"
 
 #include "api.h"
+#include "opengl.h"
 
 
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 #ifndef GLUT_MAIN_TIMEOUT
 #define GLUT_MAIN_TIMEOUT 5000
 #endif
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP);
+static void globalIdleFunc();
 static float getFloatTime();
 
+/**
+ * A list of OpenGL windows registered
+ */
+static GQueue *windows;
 static GTimeVal *lastScheduledPollTime;
+static float loopTime;
 
 MODULE_INIT
 {
@@ -57,6 +66,12 @@ MODULE_INIT
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(argc);
 
+	glutIdleFunc(&globalIdleFunc);
+	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+
+	loopTime = getFloatTime();
+	windows = g_queue_new();
+
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 
 	return true;
@@ -65,12 +80,56 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	TIMER_DEL(lastScheduledPollTime);
+
+	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
+		freeOpenGLWindow(iter->data);
+	}
+
+	g_queue_free(windows);
 }
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP)
 {
 	glutMainLoopEvent();
 	lastScheduledPollTime = TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
+}
+
+/**
+ * Creates a new OpenGL window
+ *
+ * @param name			the name of the window to create
+ * @result				the created window
+ */
+API OpenGLWindow *createOpenGLWindow(char *name)
+{
+	int *window = ALLOCATE_OBJECT(int);
+	*window = glutCreateWindow(name);
+
+	return window;
+}
+
+/**
+ * Frees an OpenGL window
+ *
+ * @param window		the window to free
+ */
+API void freeOpenGLWindow(OpenGLWindow *window)
+{
+	glutDestroyWindow(*window);
+}
+
+/**
+ * Idle function called by freeglut when no other events are processed
+ */
+static void globalIdleFunc()
+{
+	float now = getFloatTime();
+	float dt = now - loopTime;
+	loopTime = now;
+
+	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
+		$(int, event, triggerEvent)(iter->data, "update", dt);
+	}
 }
 
 /**

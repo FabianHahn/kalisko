@@ -39,7 +39,7 @@ typedef struct {
 
 typedef struct {
 	GQueue *queue;
-	char *module;
+	const char *module;
 } ModuleTimerInfo;
 
 /**
@@ -239,7 +239,7 @@ API bool isExiting()
  * @param module	the name of the module to remove all timers from
  * @result			the number of timers removed
  */
-API int removeModuleTimers(char *module)
+API int removeModuleTimers(const char *module)
 {
 	if(timers == NULL) {
 		return 0;

@@ -40,7 +40,7 @@ API void notifyTimerCallbacks();
 API bool hasMoreTimerCallbacks();
 API void exitGracefully();
 API bool isExiting();
-API int removeModuleTimers(char *module);
+API int removeModuleTimers(const char *module);
 
 // Wrapper macros for timers
 /**
@@ -94,6 +94,11 @@ API int removeModuleTimers(char *module);
  * @param TIME			the scheduled time of the callback to be deleted
  */
 #define TIMER_DEL(TIME) $$(bool, delTimer)((TIME))
+
+/**
+ * Removes all timers registered by this module
+ */
+#define TIMERS_CLEAR $$(int, removeModuleTimers)(STR(KALISKO_MODULE))
 
 #endif
 

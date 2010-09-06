@@ -133,6 +133,9 @@ API bool luaFreeStateXCall(lua_State *state)
 
 	g_hash_table_foreach_remove(functionRefs, &unregisterLuaXCallFunction, state); // Remove all functions in the functionRefs table
 
+	g_hash_table_remove(stateFunctions, state); // also remove the functionRefs table from the stateFunctions
+	g_hash_table_destroy(functionRefs); // destroy the table
+
 	return true;
 }
 

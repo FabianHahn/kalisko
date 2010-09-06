@@ -35,58 +35,33 @@ function KaliskoModule:getName()
 end
 
 function KaliskoModule:isLoaded()
-	xcall = invokeXCall('xcall = { function = isModuleLoaded }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.loaded > 0
+	return isModuleLoaded({module = self.name}).loaded > 0
 end
 
 function KaliskoModule:getAuthor()
-	xcall = invokeXCall('xcall = { function = getModuleAuthor }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.author
+	return getModuleAuthor({module = self.name}).author
 end
 
 function KaliskoModule:getDescription()
-	xcall = invokeXCall('xcall = { function = getModuleDescription }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.description
+	return getModuleDescription({module = self.name}).description
 end
 
 function KaliskoModule:getVersion()
-	xcall = invokeXCall('xcall = { function = getModuleVersion }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	
-	if xcs.version ~= nil then
-		return xcs.version.string
-	else
-		return nil
-	end
+	return getModuleVersion({module = self.name}).version.string
 end
 
 function KaliskoModule:getBcVersion()
-	xcall = invokeXCall('xcall = { function = getModuleBcVersion }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	
-	if xcs.bcversion ~= nil then
-		return xcs.bcversion.string
-	else
-		return nil
-	end
+	return getModuleBcVersion({module = self.name}).bcversion.string
 end
 
 function KaliskoModule:getReferenceCount()
-	xcall = invokeXCall('xcall = { function = getModuleReferenceCount }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.reference_count
+	return getModuleReferenceCount({module = self.name}).reference_count
 end
 
 function KaliskoModule:getDependencies()
-	xcall = invokeXCall('xcall = { function = getModuleDependencies }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	
 	ret = {}
-	
-	for i, modname in ipairs(xcs.modules) do
+
+	for i, modname in ipairs(getModuleDependencies({module = self.name}).modules) do
 		table.insert(ret, KaliskoModule:new(modname))
 	end
 	
@@ -94,12 +69,9 @@ function KaliskoModule:getDependencies()
 end
 
 function KaliskoModule:getReverseDependencies()
-	xcall = invokeXCall('xcall = { function = getModuleReverseDependencies }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	
 	ret = {}
-	
-	for i, modname in ipairs(xcs.modules) do
+
+	for i, modname in ipairs(getModuleReverseDependencies({module = self.name}).modules) do
 		table.insert(ret, KaliskoModule:new(modname))
 	end
 	
@@ -107,30 +79,21 @@ function KaliskoModule:getReverseDependencies()
 end
 
 function KaliskoModule:request()
-	xcall = invokeXCall('xcall = { function = requestModule }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+	requestModule({module = self.name})
 end
 
 function KaliskoModule:revoke()
-	xcall = invokeXCall('xcall = { function = revokeModule }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+	revokeModule({module = self.name})
 end
 
 function KaliskoModule:forceUnload()
-	xcall = invokeXCall('xcall = { function = forceUnloadModule }; module = ' .. self.name)
-	xcs = parseStore(xcall)
-	return xcs.success > 0
+	forceUnloadModule({module = self.name})
 end
 
 function KaliskoModule:getActiveModules() -- declared as method for convenience, doesn't really need a self
-	xcall = invokeXCall('xcall = { function = getActiveModules }')
-	xcs = parseStore(xcall)
-	
 	ret = {}
 	
-	for i, modname in ipairs(xcs.modules) do
+	for i, modname in ipairs(getActiveModules({module = self.name}).modules) do
 		table.insert(ret, KaliskoModule:new(modname))
 	end
 	

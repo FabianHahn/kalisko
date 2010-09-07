@@ -135,7 +135,7 @@ API GTimeVal *addTimeout(const char *module, int timeout, TimerCallback *callbac
  */
 API GTimeVal getNextTimerTime()
 {
-	GTimeVal nextTime;
+	GTimeVal nextTime = {0,0};
 
 	if(timers != NULL) {
 		TimerEntry *entry = NULL;

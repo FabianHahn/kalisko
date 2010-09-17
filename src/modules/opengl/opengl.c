@@ -37,8 +37,8 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 #ifndef GLUT_MAIN_TIMEOUT
@@ -46,7 +46,19 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 #endif
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP);
-static void globalIdleFunc();
+
+static void openGL_idle();
+static void openGL_keyDown(unsigned char key, int x, int y);
+static void openGL_keyUp(unsigned char key, int x, int y);
+static void openGL_specialKeyDown(int key, int x, int y);
+static void openGL_specialKeyUp(int key, int x, int y);
+static void openGL_reshape(int x, int y);
+static void openGL_display();
+static void openGL_mouse(int button, int state, int x, int y);
+static void openGL_motion(int x, int y);
+static void openGL_passiveMotion(int x, int y);
+static void openGL_close();
+
 static float getFloatTime();
 
 /**
@@ -65,7 +77,18 @@ MODULE_INIT
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(argc);
 
-	glutIdleFunc(&globalIdleFunc);
+	glutIdleFunc(&openGL_idle);
+	glutKeyboardFunc(&openGL_keyDown);
+	glutKeyboardUpFunc(&openGL_keyUp);
+	glutSpecialFunc(&openGL_specialKeyDown);
+	glutSpecialUpFunc(&openGL_specialKeyUp);
+	glutReshapeFunc(&openGL_reshape);
+	glutDisplayFunc(&openGL_display);
+	glutMouseFunc(&openGL_mouse);
+	glutMotionFunc(&openGL_motion);
+	glutPassiveMotionFunc(&openGL_passiveMotion);
+	glutCloseFunc(&openGL_close);
+
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -123,9 +146,29 @@ API void freeOpenGLWindow(OpenGLWindow *window)
 }
 
 /**
+ * Returns the currently active OpenGL window
+ *
+ * @result		the OpenGL window that is currently active
+ */
+API OpenGLWindow *getCurrentOpenGLWindow()
+{
+	int id = glutGetWindow();
+
+	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
+		OpenGLWindow *window = iter->data;
+
+		if(*window == id) { // this is our window
+			return window;
+		}
+	}
+
+	return NULL; // window not found
+}
+
+/**
  * Idle function called by freeglut when no other events are processed
  */
-static void globalIdleFunc()
+static void openGL_idle()
 {
 	float now = getFloatTime();
 	float dt = now - loopTime;
@@ -135,6 +178,131 @@ static void globalIdleFunc()
 		int *window = iter->data;
 		glutSetWindow(*window);
 		$(int, event, triggerEvent)(window, "update", dt);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a key is pressed
+ */
+static void openGL_keyDown(unsigned char key, int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "keyDown", key, x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a key is released
+ */
+static void openGL_keyUp(unsigned char key, int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "keyUp", key, x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a special key is pressed
+ */
+static void openGL_specialKeyDown(int key, int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "specialKeyDown", key, x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a special key is released
+ */
+static void openGL_specialKeyUp(int key, int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "specialKeyUp", key, x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when an OpenGL window is reshaped
+ */
+static void openGL_reshape(int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "reshape", x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when an OpenGL window is to be displayed
+ */
+static void openGL_display()
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "display");
+		glutSwapBuffers(); // double buffering
+	}
+}
+
+/**
+ * Callback function called by freeglut when a mouse action occurs
+ */
+static void openGL_mouse(int button, int state, int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		if(state == GLUT_DOWN) {
+			$(int, event, triggerEvent)(window, "mouseDown", button, x, y);
+		} else if (state == GLUT_UP) {
+			$(int, event, triggerEvent)(window, "mouseUp", button, x, y);
+		}
+	}
+}
+
+/**
+ * Callback function called by freeglut when a mouse motion occurs
+ */
+static void openGL_motion(int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "mouseMove", x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a passive mouse motion occurs
+ */
+static void openGL_passiveMotion(int x, int y)
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "passiveMouseMove", x, y);
+	}
+}
+
+/**
+ * Callback function called by freeglut when a window is closed
+ */
+static void openGL_close()
+{
+	OpenGLWindow *window = getCurrentOpenGLWindow();
+
+	if(window != NULL) {
+		$(int, event, triggerEvent)(window, "close");
 	}
 }
 

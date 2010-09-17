@@ -25,6 +25,7 @@
 typedef int OpenGLWindow;
 
 API OpenGLWindow *createOpenGLWindow(char *name);
+API OpenGLWindow *getCurrentOpenGLWindow();
 API void freeOpenGLWindow(OpenGLWindow *window);
 
 #endif

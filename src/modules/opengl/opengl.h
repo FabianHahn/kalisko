@@ -22,7 +22,12 @@
 #ifndef OPENGL_OPENGL_H
 #define OPENGL_OPENGL_H
 
-typedef int OpenGLWindow;
+#include "types.h"
+
+typedef struct {
+	int id;
+	bool active;
+} OpenGLWindow;
 
 API OpenGLWindow *createOpenGLWindow(char *name);
 API OpenGLWindow *getCurrentOpenGLWindow();

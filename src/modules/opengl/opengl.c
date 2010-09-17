@@ -37,12 +37,16 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 2, 2);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 #ifndef GLUT_MAIN_TIMEOUT
 #define GLUT_MAIN_TIMEOUT 5000
+#endif
+
+#ifndef GLUT_CLEANUP_ITERATIONS
+#define GLUT_CLEANUP_ITERATIONS 2
 #endif
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP);
@@ -60,11 +64,12 @@ static void openGL_passiveMotion(int x, int y);
 static void openGL_close();
 
 static float getFloatTime();
+static void freeOpenGLWindowEntry(void *window_p);
 
 /**
- * A list of OpenGL windows registered
+ * A table of OpenGL windows registered
  */
-static GQueue *windows;
+static GHashTable *windows;
 static float loopTime;
 
 MODULE_INIT
@@ -82,7 +87,7 @@ MODULE_INIT
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
 	loopTime = getFloatTime();
-	windows = g_queue_new();
+	windows = g_hash_table_new_full(&g_int_hash, &g_int_equal, NULL, &freeOpenGLWindowEntry);
 
 	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 
@@ -91,11 +96,13 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
-		freeOpenGLWindow(iter->data);
+	g_hash_table_remove_all(windows);
+
+	for(int i = 0; i < GLUT_CLEANUP_ITERATIONS; i++) { // Let freeglut perform cleanup (close all remaining windows, etc.)
+		glutMainLoopEvent();
 	}
 
-	g_queue_free(windows);
+	g_hash_table_destroy(windows);
 }
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP)
@@ -112,8 +119,11 @@ TIMER_CALLBACK(GLUT_MAIN_LOOP)
  */
 API OpenGLWindow *createOpenGLWindow(char *name)
 {
-	int *window = ALLOCATE_OBJECT(int);
-	*window = glutCreateWindow(name);
+	OpenGLWindow *window = ALLOCATE_OBJECT(OpenGLWindow);
+	window->id = glutCreateWindow(name);
+	window->active = true;
+
+	glutSetWindow(window->id);
 
 	glutKeyboardFunc(&openGL_keyDown);
 	glutKeyboardUpFunc(&openGL_keyUp);
@@ -126,9 +136,9 @@ API OpenGLWindow *createOpenGLWindow(char *name)
 	glutPassiveMotionFunc(&openGL_passiveMotion);
 	glutCloseFunc(&openGL_close);
 
-	g_queue_push_tail(windows, window);
+	g_hash_table_insert(windows, &window->id, window);
 
-	LOG_INFO("Created new OpenGL window with name '%s', OpenGL vendor: %s %s", name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+	LOG_INFO("Created new OpenGL window %d with name '%s', OpenGL vendor: %s %s", window->id, name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
 
 	return window;
 }
@@ -140,11 +150,7 @@ API OpenGLWindow *createOpenGLWindow(char *name)
  */
 API void freeOpenGLWindow(OpenGLWindow *window)
 {
-	g_queue_remove(windows, window);
-
-	glutSetWindow(*window);
-	glutDestroyWindow(*window);
-	free(window);
+	g_hash_table_remove(windows, &window->id);
 }
 
 /**
@@ -156,15 +162,7 @@ API OpenGLWindow *getCurrentOpenGLWindow()
 {
 	int id = glutGetWindow();
 
-	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
-		OpenGLWindow *window = iter->data;
-
-		if(*window == id) { // this is our window
-			return window;
-		}
-	}
-
-	return NULL; // window not found
+	return g_hash_table_lookup(windows, &id);
 }
 
 /**
@@ -176,10 +174,15 @@ static void openGL_idle()
 	float dt = now - loopTime;
 	loopTime = now;
 
-	for(GList *iter = windows->head; iter != NULL; iter = iter->next) {
-		int *window = iter->data;
-		glutSetWindow(*window);
-		$(int, event, triggerEvent)(window, "update", dt);
+	GHashTableIter iter;
+	int id;
+	OpenGLWindow *window;
+	g_hash_table_iter_init(&iter, windows);
+	while(g_hash_table_iter_next(&iter, (void *) &id, (void *) &window)) {
+		if(window->active) {
+			glutSetWindow(window->id);
+			$(int, event, triggerEvent)(window, "update", dt);
+		}
 	}
 }
 
@@ -190,7 +193,7 @@ static void openGL_keyDown(unsigned char key, int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "keyDown", key, x, y);
 	}
 }
@@ -202,7 +205,7 @@ static void openGL_keyUp(unsigned char key, int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "keyUp", key, x, y);
 	}
 }
@@ -214,7 +217,7 @@ static void openGL_specialKeyDown(int key, int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "specialKeyDown", key, x, y);
 	}
 }
@@ -226,7 +229,7 @@ static void openGL_specialKeyUp(int key, int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "specialKeyUp", key, x, y);
 	}
 }
@@ -238,7 +241,7 @@ static void openGL_reshape(int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "reshape", x, y);
 	}
 }
@@ -250,7 +253,7 @@ static void openGL_display()
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "display");
 		glutSwapBuffers(); // double buffering
 	}
@@ -263,7 +266,7 @@ static void openGL_mouse(int button, int state, int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		if(state == GLUT_DOWN) {
 			$(int, event, triggerEvent)(window, "mouseDown", button, x, y);
 		} else if (state == GLUT_UP) {
@@ -279,7 +282,7 @@ static void openGL_motion(int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "mouseMove", x, y);
 	}
 }
@@ -291,7 +294,7 @@ static void openGL_passiveMotion(int x, int y)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "passiveMouseMove", x, y);
 	}
 }
@@ -303,8 +306,10 @@ static void openGL_close()
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
-	if(window != NULL) {
+	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "close");
+		window->active = false;
+		LOG_INFO("OpenGL window %d closed", window->id);
 	}
 }
 
@@ -318,4 +323,23 @@ static float getFloatTime()
 	GTimeVal time;
 	g_get_current_time(&time);
 	return (G_USEC_PER_SEC * time.tv_sec + time.tv_usec) * (1 / G_USEC_PER_SEC);
+}
+
+/**
+ * A GDestroyNotify function to free an OpenGLWindow from the windows hash table
+ *
+ * @param window_p		a pointer to the window to free
+ */
+static void freeOpenGLWindowEntry(void *window_p)
+{
+	OpenGLWindow *window = window_p;
+
+	glutDestroyWindow(window->id);
+
+	if(window->active) {
+		window->active = false;
+		LOG_INFO("OpenGL window %d closed", window->id);
+	}
+
+	free(window);
 }

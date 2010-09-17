@@ -37,7 +37,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -194,7 +194,7 @@ static void openGL_keyDown(unsigned char key, int x, int y)
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
 	if(window != NULL && window->active) {
-		$(int, event, triggerEvent)(window, "keyDown", key, x, y);
+		$(int, event, triggerEvent)(window, "keyDown", (int) key, x, y);
 	}
 }
 
@@ -206,7 +206,7 @@ static void openGL_keyUp(unsigned char key, int x, int y)
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
 	if(window != NULL && window->active) {
-		$(int, event, triggerEvent)(window, "keyUp", key, x, y);
+		$(int, event, triggerEvent)(window, "keyUp", (int) key, x, y);
 	}
 }
 

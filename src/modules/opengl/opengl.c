@@ -37,7 +37,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -78,17 +78,6 @@ MODULE_INIT
 	$$(void, setArgc)(argc);
 
 	glutIdleFunc(&openGL_idle);
-	glutKeyboardFunc(&openGL_keyDown);
-	glutKeyboardUpFunc(&openGL_keyUp);
-	glutSpecialFunc(&openGL_specialKeyDown);
-	glutSpecialUpFunc(&openGL_specialKeyUp);
-	glutReshapeFunc(&openGL_reshape);
-	glutDisplayFunc(&openGL_display);
-	glutMouseFunc(&openGL_mouse);
-	glutMotionFunc(&openGL_motion);
-	glutPassiveMotionFunc(&openGL_passiveMotion);
-	glutCloseFunc(&openGL_close);
-
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -125,6 +114,17 @@ API OpenGLWindow *createOpenGLWindow(char *name)
 {
 	int *window = ALLOCATE_OBJECT(int);
 	*window = glutCreateWindow(name);
+
+	glutKeyboardFunc(&openGL_keyDown);
+	glutKeyboardUpFunc(&openGL_keyUp);
+	glutSpecialFunc(&openGL_specialKeyDown);
+	glutSpecialUpFunc(&openGL_specialKeyUp);
+	glutReshapeFunc(&openGL_reshape);
+	glutDisplayFunc(&openGL_display);
+	glutMouseFunc(&openGL_mouse);
+	glutMotionFunc(&openGL_motion);
+	glutPassiveMotionFunc(&openGL_passiveMotion);
+	glutCloseFunc(&openGL_close);
 
 	g_queue_push_tail(windows, window);
 

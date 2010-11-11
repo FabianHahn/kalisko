@@ -7,13 +7,13 @@ Vector::Vector(unsigned int n) :
 	size(n)
 {
 	assert(size > 0);
-	data = new double[size];
+	data = new float[size];
 }
 
 Vector::Vector(const Vector& other) :
 	size(other.getSize())
 {
-	data = new double[size];
+	data = new float[size];
 
 	for(unsigned int i = 0; i < size; i++) {
 		data[i] = other[i];
@@ -51,7 +51,7 @@ Vector& Vector::clear()
 
 Vector& Vector::normalize()
 {
-	double length = getLength();
+	float length = getLength();
 
 	// assert(length > 0.0);
 
@@ -62,14 +62,14 @@ Vector& Vector::normalize()
 	return (*this) /= length;
 }
 
-double Vector::getLength() const
+float Vector::getLength() const
 {
 	return std::sqrt(getLength2());
 }
 
-double Vector::getLength2() const
+float Vector::getLength2() const
 {
-	double ss = 0.0;
+	float ss = 0.0;
 
 	for(unsigned int i = 0; i < size; i++) {
 		ss += data[i] * data[i];
@@ -126,11 +126,11 @@ Vector& Vector::operator-=(const Vector& other)
 	return *this;
 }
 
-double Vector::operator*(const Vector& other) const
+float Vector::operator*(const Vector& other) const
 {
 	assert(size == other.getSize());
 
-	double dot = 0.0;
+	float dot = 0.0;
 
 	for(unsigned int i = 0; i < size; i++) {
 		dot += data[i] * other[i];
@@ -163,7 +163,7 @@ Vector& Vector::operator%=(const Vector& other)
 	return *this;
 }
 
-Vector Vector::operator*(double factor) const
+Vector Vector::operator*(float factor) const
 {
 	Vector result = Vector(size);
 
@@ -174,7 +174,7 @@ Vector Vector::operator*(double factor) const
 	return result;
 }
 
-Vector& Vector::operator*=(double factor)
+Vector& Vector::operator*=(float factor)
 {
 	Vector result = Vector(size);
 
@@ -185,7 +185,7 @@ Vector& Vector::operator*=(double factor)
 	return *this;
 }
 
-Vector Vector::operator/(double factor) const
+Vector Vector::operator/(float factor) const
 {
 	assert(factor != 0.0);
 
@@ -198,7 +198,7 @@ Vector Vector::operator/(double factor) const
 	return result;
 }
 
-Vector& Vector::operator/=(double factor)
+Vector& Vector::operator/=(float factor)
 {
 	assert(factor != 0.0);
 
@@ -239,7 +239,7 @@ std::ostream& operator<<(std::ostream& stream, const Vector& vector)
 	return stream << "]" << std::endl;
 }
 
-Vector Vector2(double x, double y)
+Vector Vector2(float x, float y)
 {
 	Vector result(2);
 
@@ -249,7 +249,7 @@ Vector Vector2(double x, double y)
 	return result;
 }
 
-Vector Vector3(double x, double y, double z)
+Vector Vector3(float x, float y, float z)
 {
 	Vector result(3);
 
@@ -260,7 +260,7 @@ Vector Vector3(double x, double y, double z)
 	return result;
 }
 
-Vector Vector4(double x, double y, double z, double w)
+Vector Vector4(float x, float y, float z, float w)
 {
 	Vector result(4);
 

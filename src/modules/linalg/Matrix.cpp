@@ -7,13 +7,13 @@ Matrix::Matrix(unsigned int r, unsigned int c) :
 	rows(r), cols(c)
 {
 	assert(rows > 0 && cols > 0);
-	data = new double[rows * cols];
+	data = new float[rows * cols];
 }
 
 Matrix::Matrix(const Matrix& other) :
 	rows(other.getRows()), cols(other.getCols())
 {
-	data = new double[rows * cols];
+	data = new float[rows * cols];
 
 	for(unsigned int i = 0; i < rows; i++) {
 		for(unsigned int j = 0; j < cols; j++) {
@@ -48,7 +48,7 @@ Matrix& Matrix::clear()
 {
 	for(unsigned int i = 0; i < rows; i++) {
 		for(unsigned int j = 0; j < cols; j++) {
-			(*this)(i, j) = 0.0;
+			(*this)(i, j) = 0.0f;
 		}
 	}
 
@@ -60,9 +60,9 @@ Matrix& Matrix::identity()
 	for(unsigned int i = 0; i < rows; i++) {
 		for(unsigned int j = 0; j < cols; j++) {
 			if(i == j) {
-				(*this)(i, j) = 1.0;
+				(*this)(i, j) = 1.0f;
 			} else {
-				(*this)(i, j) = 0.0;
+				(*this)(i, j) = 0.0f;
 			}
 		}
 	}
@@ -147,7 +147,7 @@ Matrix Matrix::operator*(const Matrix& other) const
 
 	for(unsigned int i = 0; i < rows; i++) {
 		for(unsigned int j = 0; j < other.getCols(); j++) {
-			double sum = 0.0;
+			float sum = 0.0;
 			for(unsigned int k = 0; k < cols; k++) {
 				sum += (*this)(i, k) * other(k, j);
 			}
@@ -175,7 +175,7 @@ Vector Matrix::operator*(Vector vector) const
 	return result;
 }
 
-Matrix Matrix::operator*(double factor) const
+Matrix Matrix::operator*(float factor) const
 {
 	Matrix result(rows, cols);
 
@@ -188,7 +188,7 @@ Matrix Matrix::operator*(double factor) const
 	return result;
 }
 
-Matrix& Matrix::operator*=(double factor)
+Matrix& Matrix::operator*=(float factor)
 {
 	for(unsigned int i = 0; i < rows; i++) {
 		for(unsigned int j = 0; j < cols; j++) {
@@ -199,7 +199,7 @@ Matrix& Matrix::operator*=(double factor)
 	return *this;
 }
 
-Matrix Matrix::operator/(double factor) const
+Matrix Matrix::operator/(float factor) const
 {
 	assert(factor != 0.0);
 
@@ -214,7 +214,7 @@ Matrix Matrix::operator/(double factor) const
 	return result;
 }
 
-Matrix& Matrix::operator/=(double factor)
+Matrix& Matrix::operator/=(float factor)
 {
 	assert(factor != 0.0);
 
@@ -296,4 +296,127 @@ API Matrix *copyMatrix(Matrix *other)
 API void freeMatrix(Matrix *matrix)
 {
 	delete matrix;
+}
+
+/**
+ * Clears a matrix by setting all its elements to zero
+ *
+ * @param matrix	the matrix to clear
+ */
+API void clearMatrix(Matrix *matrix)
+{
+	matrix->clear();
+}
+
+/**
+ * Converts a matrix into an identity matrix by setting all diagonal elements to one and all other elements to zero
+ *
+ * @param matrix	the matrix to convert to identity
+ */
+API void eyeMatrix(Matrix *matrix)
+{
+	matrix->identity();
+}
+
+/**
+ * Transposes a matrix
+ *
+ * @param matrix	the matrix to transpose
+ * @result			the transposed matrix
+ */
+API Matrix *transposeMatrix(Matrix *matrix)
+{
+	return new Matrix(matrix->transpose());
+}
+
+/**
+ * Adds a matrix to another matrix
+ *
+ * @param matrix	the matrix to which the other matrix should be added
+ * @param other		the matrix that should be added
+ */
+API void addMatrix(Matrix *matrix, Matrix *other)
+{
+	*matrix += *other;
+}
+
+/**
+ * Computes the sum of two matrices
+ *
+ * @param matrix1	the first matrix to sum
+ * @param matrix2	the second matrix to sum
+ * @result			the sum of the two matrices
+ */
+API Matrix *sumMatrices(Matrix *matrix1, Matrix *matrix2)
+{
+	return new Matrix(*matrix1 + *matrix2);
+}
+
+/**
+ * Subtracts a matrix from another matrix
+ *
+ * @param matrix	the matrix from which the other matrix should be substracted
+ * @param other		the matrix that should be substracted
+ */
+API void subtractMatrix(Matrix *matrix, Matrix *other)
+{
+	*matrix -= *other;
+}
+
+/**
+ * Computes the different of two matrices
+ *
+ * @param matrix1	the matrix subtract from
+ * @param matrix2	the matrix that should be substracted from the first one
+ * @result			the signed difference of the two matrices
+ */
+API Matrix *diffMatrices(Matrix *matrix1, Matrix *matrix2)
+{
+	return new Matrix(*matrix1 - *matrix2);
+}
+
+/**
+ * Multiplies two matrices
+ *
+ * @param matrix1		the first matrix that should be multiplied
+ * @param matrix2		the second matrix that should be multiplied
+ * @result				the product of the two matrices
+ */
+API Matrix *multiplyMatrices(Matrix *matrix1, Matrix *matrix2)
+{
+	return new Matrix(*matrix1 * *matrix2);
+}
+
+/**
+ * Computes a matrix-vector product
+ *
+ * @param matrix		the matrix that should be multiplied with the vector
+ * @param vector		the vector that should be multiplied with the matrix
+ * @result				the matrix-vector product of the input values
+ */
+API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector)
+{
+	return new Vector(*matrix * *vector);
+}
+
+/**
+ * Multiplies a matrix with a scalar
+ *
+ * @param matrix		the matrix to multiply with a scalar
+ * @param scalar		the scalar to multiply the matrix with
+ */
+API void multiplyMatrixScalar(Matrix *matrix, float scalar)
+{
+	*matrix *= scalar;
+}
+
+/**
+ * Divides a matrix by a scalar
+ *
+ * @param matrix		the matrix to divide by a scalar
+ * @param scalar		the scalar to divide the matrix by
+ */
+API void divideMatrixScalar(Matrix *matrix, float scalar)
+{
+	*matrix /= scalar;
 }

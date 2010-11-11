@@ -17,31 +17,31 @@ class Vector
 		Vector& clear();
 		Vector& normalize();
 
-		double getLength() const;
-		double getLength2() const;
+		float getLength() const;
+		float getLength2() const;
 
 		Vector operator+(const Vector& other) const;
 		Vector& operator+=(const Vector& other);
 		Vector operator-(const Vector& other) const;
 		Vector& operator-=(const Vector& other);
-		double operator*(const Vector& other) const;
+		float operator*(const Vector& other) const;
 		Vector operator%(const Vector& other) const;
 		Vector& operator%=(const Vector& other);
 
-		Vector operator*(double factor) const;
-		Vector& operator*=(double factor);
-		Vector operator/(double factor) const;
-		Vector& operator/=(double factor);
+		Vector operator*(float factor) const;
+		Vector& operator*=(float factor);
+		Vector operator/(float factor) const;
+		Vector& operator/=(float factor);
 
 		bool operator==(const Vector& other) const;
 
-		double& operator[](unsigned int i)
+		float& operator[](unsigned int i)
 		{
 			assert(i < size);
 			return data[i];
 		}
 
-		const double& operator[](unsigned int i) const
+		const float& operator[](unsigned int i) const
 		{
 			assert(i < size);
 			return data[i];
@@ -54,19 +54,19 @@ class Vector
 
 	private:
 		unsigned int size;
-		double *data;
+		float *data;
 };
 
-inline Vector operator*(double factor, const Vector& vector)
+inline Vector operator*(float factor, const Vector& vector)
 {
 	return vector * factor;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Vector& vector);
 
-Vector Vector2(double x, double y);
-Vector Vector3(double x, double y, double z);
-Vector Vector4(double x, double y, double z, double w);
+Vector Vector2(float x, float y);
+Vector Vector3(float x, float y, float z);
+Vector Vector4(float x, float y, float z, float w);
 
 #else
 typedef struct Vector Vector;

@@ -25,20 +25,20 @@ class Matrix
 		Matrix operator*(const Matrix& other) const;
 		Vector operator*(Vector vector) const;
 
-		Matrix operator*(double factor) const;
-		Matrix& operator*=(double factor);
-		Matrix operator/(double factor) const;
-		Matrix& operator/=(double factor);
+		Matrix operator*(float factor) const;
+		Matrix& operator*=(float factor);
+		Matrix operator/(float factor) const;
+		Matrix& operator/=(float factor);
 
 		bool operator==(const Matrix& other) const;
 
-		double& operator()(unsigned int i, unsigned int j)
+		float& operator()(unsigned int i, unsigned int j)
 		{
 			assert(i < rows && j < cols);
 			return data[i * cols + j];
 		}
 
-		const double& operator()(unsigned int i, unsigned int j) const
+		const float& operator()(unsigned int i, unsigned int j) const
 		{
 			assert(i < rows && j < cols);
 			return data[i * cols + j];
@@ -57,10 +57,10 @@ class Matrix
 	private:
 		unsigned int rows;
 		unsigned int cols;
-		double *data;
+		float *data;
 };
 
-inline Matrix operator*(double factor, const Matrix& matrix)
+inline Matrix operator*(float factor, const Matrix& matrix)
 {
 	return matrix * factor;
 }
@@ -78,6 +78,17 @@ extern "C" {
 API Matrix *createMatrix(unsigned int r, unsigned int c);
 API Matrix *copyMatrix(Matrix *other);
 API void freeMatrix(Matrix *matrix);
+API void clearMatrix(Matrix *matrix);
+API void eyeMatrix(Matrix *matrix);
+API Matrix *transposeMatrix(Matrix *matrix);
+API void addMatrix(Matrix *matrix, Matrix *other);
+API Matrix *sumMatrices(Matrix *matrix1, Matrix *matrix2);
+API void subtractMatrix(Matrix *matrix, Matrix *other);
+API Matrix *diffMatrices(Matrix *matrix1, Matrix *matrix2);
+API Matrix *multiplyMatrices(Matrix *matrix1, Matrix *matrix2);
+API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector);
+API void multiplyMatrixScalar(Matrix *matrix, float scalar);
+API void divideMatrixScalar(Matrix *matrix, float scalar);
 
 #ifdef __cplusplus
 }

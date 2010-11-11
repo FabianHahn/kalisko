@@ -1,4 +1,6 @@
 #include <cmath>
+#include "dll.h"
+#include "api.h"
 #include "Vector.h"
 
 Vector::Vector(unsigned int n) :

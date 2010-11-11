@@ -1,4 +1,6 @@
 #include <cmath>
+#include "dll.h"
+#include "api.h"
 #include "Matrix.h"
 
 Matrix::Matrix(unsigned int r, unsigned int c) :
@@ -261,4 +263,37 @@ std::ostream& operator<<(std::ostream& stream, const Matrix& matrix)
 	}
 
 	return stream << "]" << std::endl;
+}
+
+/**
+ * Creates a matrix
+ *
+ * @param r		the number of rows
+ * @param c		the number of columns
+ * @result		the created matrix
+ */
+API Matrix *createMatrix(unsigned int r, unsigned int c)
+{
+	return new Matrix(r, c);
+}
+
+/**
+ * Copies a matrix
+ *
+ * @param other		the matrix to copy from
+ * @result			the copied matrix
+ */
+API Matrix *copyMatrix(Matrix *other)
+{
+	return new Matrix(*other);
+}
+
+/**
+ * Deletes a matrix
+ *
+ * @param matrix	the matrix to delete
+ */
+API void freeMatrix(Matrix *matrix)
+{
+	delete matrix;
 }

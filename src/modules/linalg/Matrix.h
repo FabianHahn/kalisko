@@ -3,6 +3,7 @@
 
 #include "Vector.h"
 
+#ifdef __cplusplus
 class Matrix
 {
 	public:
@@ -65,5 +66,21 @@ inline Matrix operator*(double factor, const Matrix& matrix)
 }
 
 std::ostream& operator<<(std::ostream& stream, const Matrix& matrix);
+
+#else
+typedef struct Matrix Matrix;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+API Matrix *createMatrix(unsigned int r, unsigned int c);
+API Matrix *copyMatrix(Matrix *other);
+API void freeMatrix(Matrix *matrix);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

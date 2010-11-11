@@ -1,6 +1,7 @@
 #ifndef LINALG_VECTOR_H
 #define LINALG_VECTOR_H
 
+#ifdef __cplusplus
 #include <iostream>
 #include <assert.h>
 
@@ -66,5 +67,17 @@ std::ostream& operator<<(std::ostream& stream, const Vector& vector);
 Vector Vector2(double x, double y);
 Vector Vector3(double x, double y, double z);
 Vector Vector4(double x, double y, double z, double w);
+
+#else
+typedef struct Vector Vector;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

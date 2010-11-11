@@ -27,12 +27,13 @@
 #include "memory_alloc.h"
 
 #include "api.h"
+#include "Matrix.h"
 
 
 MODULE_NAME("linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic linear algebra module providing matrix and vector classes");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 

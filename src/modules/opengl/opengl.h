@@ -22,6 +22,7 @@
 #ifndef OPENGL_OPENGL_H
 #define OPENGL_OPENGL_H
 
+#include <GL/freeglut.h>
 #include "types.h"
 
 typedef struct {

@@ -33,17 +33,13 @@ vars.Add('cflags_release', 'Flags to be passed to the compiler when compiling th
 vars.Add('cflags_debug', 'Flags to be passed to the compiler when compiling the release target', '-pipe -g')
 vars.Add('cflags_test', 'Flags to be passed to the compiler when compiling the release target', '-pipe -g')
 
-# Config section
-ccflags = ['-std=gnu99', '-Wall']
-
-# Start of actual makefile
 testenv = Environment(ENV = os.environ)
 if testenv['PLATFORM'] == 'win32':
 	tools = ['mingw', 'yacc']
 else:
 	tools = testenv['TOOLS']
 
-env = Environment(variables = vars, CCFLAGS = ccflags, ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = tools)
+env = Environment(variables = vars, CCFLAGS = ['-Wall'], CFLAGS = ['-std=gnu99'], ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = tools)
 Help(vars.GenerateHelpText(env))
 
 if env['force_zero_revision']:
@@ -70,8 +66,10 @@ env.Append(CPPDEFINES = cppdefines)
 
 if not env['verbose']:
 	env.Replace(CCCOMSTR = 'Compiling object: $TARGET')
+	env.Replace(CXXCOMSTR = 'Compiling class: $TARGET')
 	env.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
 	env.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
+	env.Replace(SHCXXCOMSTR = 'Compiling shared class: $TARGET')
 	env.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
 	env.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
 

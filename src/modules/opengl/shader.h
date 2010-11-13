@@ -62,6 +62,8 @@ typedef struct {
 	OpenGLUniformType type;
 	/** The content of the uniform value */
 	OpenGLUniformContent content;
+	/** The location of the uniform in the shader program */
+	GLint location;
 } OpenGLUniform;
 
 API GLuint createShaderFromString(const char *source, GLenum type);
@@ -70,5 +72,6 @@ API OpenGLUniform *createUniformInt(int value);
 API OpenGLUniform *createUniformFloat(float value);
 API OpenGLUniform *createUniformVector(Vector *value);
 API OpenGLUniform *createUniformMatrix(Matrix *value);
+API bool useUniform(OpenGLUniform *uniform);
 
 #endif

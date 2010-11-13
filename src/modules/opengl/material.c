@@ -140,6 +140,20 @@ API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, Op
 		return false;
 	}
 
+	if(material->program == 0) {
+		LOG_ERROR("Material '%s' doesn't have shader associated yet, aborting attaching of uniform %s", material_name, uniform_name);
+		return false;
+	}
+
+	GLint location = glGetUniformLocation(material->program, uniform_name);
+
+	if(location == -1) {
+		LOG_ERROR("Failed to find uniform location for '%s' in shader program for material '%s'", uniform_name, material_name);
+		return false;
+	}
+
+	uniform->location = location;
+
 	g_hash_table_insert(material->uniforms, strdup(uniform_name), uniform);
 
 	return true;
@@ -180,9 +194,19 @@ API bool useOpenGLMaterial(char *name)
 
 	if(material->program == 0) {
 		LOG_ERROR("Material '%s' doesn't have shader associated yet, aborting use", material->name);
+		return false;
 	}
 
 	glUseProgram(material->program);
+
+	// Iterate over all uniforms for this shaders and use them
+	GList *uniforms = g_hash_table_get_values(material->uniforms);
+	for(GList *iter = uniforms; iter != NULL; iter = iter->next) {
+		OpenGLUniform *uniform = iter->data;
+		useUniform(uniform);
+	}
+
+	g_list_free(uniforms);
 
 	return true;
 }

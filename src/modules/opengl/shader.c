@@ -104,6 +104,7 @@ API OpenGLUniform *createUniformInt(int value)
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_INT;
 	uniform->content.int_value = value;
+	uniform->location = -1;
 
 	return uniform;
 }
@@ -119,6 +120,7 @@ API OpenGLUniform *createUniformFloat(float value)
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_FLOAT;
 	uniform->content.float_value = value;
+	uniform->location = -1;
 
 	return uniform;
 }
@@ -140,6 +142,7 @@ API OpenGLUniform *createUniformVector(Vector *value)
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_VECTOR;
 	uniform->content.vector_value = value;
+	uniform->location = -1;
 
 	return uniform;
 }
@@ -162,7 +165,38 @@ API OpenGLUniform *createUniformMatrix(Matrix *value)
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_MATRIX;
 	uniform->content.matrix_value = value;
+	uniform->location = -1;
 
 	return uniform;
 }
 
+/**
+ * Uses a uniform in the current shader program
+ *
+ * @param uniform		the uniform to use
+ * @result				true if successful
+ */
+API bool useUniform(OpenGLUniform *uniform)
+{
+	if(uniform->location == -1) {
+		LOG_ERROR("Tried to use uniform with unspecified location, aborting");
+		return false;
+	}
+
+	switch(uniform->type) {
+		case OPENGL_UNIFORM_INT:
+			glUniform1i(uniform->location, uniform->content.int_value);
+		break;
+		case OPENGL_UNIFORM_FLOAT:
+			glUniform1f(uniform->location, uniform->content.float_value);
+		break;
+		case OPENGL_UNIFORM_VECTOR:
+			glUniform4fv(uniform->location, 1, $(float *, linalg, getVectorData)(uniform->content.vector_value));
+		break;
+		case OPENGL_UNIFORM_MATRIX:
+			glUniformMatrix4fv(uniform->location, 1, GL_TRUE, $(float *, linalg, getMatrixData)(uniform->content.matrix_value));
+		break;
+	}
+
+	return true;
+}

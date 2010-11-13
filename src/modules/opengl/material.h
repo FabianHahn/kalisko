@@ -28,6 +28,7 @@ API void initOpenGLMaterials();
 API void freeOpenGLMaterials();
 API bool createOpenGLMaterial(char *name);
 API bool deleteOpenGLMaterial(char *name);
+API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program);
 API bool useOpenGLMaterial(char *name);
 
 #endif

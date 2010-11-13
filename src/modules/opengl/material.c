@@ -95,6 +95,27 @@ API bool deleteOpenGLMaterial(char *name)
 }
 
 /**
+ * Attaches a shader program to an OpenGL material
+ *
+ * @param name		the name of the OpenGL material to add the shader program to
+ * @param program	the identifier of the OpenGL shader program that should be attached to the material
+ * @result			true if successful
+ */
+API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program)
+{
+	OpenGLMaterial *material;
+
+	if((material = g_hash_table_lookup(materials, name)) == NULL) {
+		LOG_ERROR("Failed to attach a shader to non existing material '%s'", name);
+		return false;
+	}
+
+	material->program = program;
+
+	return true;
+}
+
+/**
  * Uses an OpenGL material for rendering
  *
  * @param		the name of the material to use

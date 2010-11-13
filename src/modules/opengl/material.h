@@ -23,12 +23,15 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include "shader.h"
 
 API void initOpenGLMaterials();
 API void freeOpenGLMaterials();
 API bool createOpenGLMaterial(char *name);
 API bool deleteOpenGLMaterial(char *name);
 API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program);
+API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, OpenGLUniform *uniform);
+API bool detachOpenGLMaterialUniform(char *material_name, char *uniform_name);
 API bool useOpenGLMaterial(char *name);
 
 #endif

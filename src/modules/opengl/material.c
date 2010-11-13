@@ -36,6 +36,8 @@ typedef struct {
 	char *name;
 	/** The shader program that belongs to this material */
 	GLuint program;
+	/** A table of uniforms for the material's shader */
+	GHashTable *uniforms;
 } OpenGLMaterial;
 
 /**
@@ -77,6 +79,7 @@ API bool createOpenGLMaterial(char *name)
 	OpenGLMaterial *material = ALLOCATE_OBJECT(OpenGLMaterial);
 	material->name = strdup(name);
 	material->program = 0;
+	material->uniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
 
 	g_hash_table_insert(materials, material->name, material);
 
@@ -116,6 +119,52 @@ API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program)
 }
 
 /**
+ * Attaches a uniform to an OpenGL material
+ *
+ * @param material_name		the name of the OpenGL material to add the uniform to
+ * @param uniform_name		the name of the uniform to be added
+ * @param uniform			the uniform to be added
+ * @result					true if successful
+ */
+API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, OpenGLUniform *uniform)
+{
+	OpenGLMaterial *material;
+
+	if((material = g_hash_table_lookup(materials, material_name)) == NULL) {
+		LOG_ERROR("Failed to attach a uniform to non existing material '%s'", material_name);
+		return false;
+	}
+
+	if(g_hash_table_lookup(material->uniforms, uniform_name) != NULL) {
+		LOG_ERROR("Failed to attach already existing uniform '%s' to material '%s'", uniform_name, material_name);
+		return false;
+	}
+
+	g_hash_table_insert(material->uniforms, strdup(uniform_name), uniform);
+
+	return true;
+}
+
+/**
+ * Detaches a uniform from an OpenGL material
+ *
+ * @param material_name		the name of the OpenGL material to remove the uniform from
+ * @param uniform_name		the name of the uniform to be removed
+ * @result					true if successful
+ */
+API bool detachOpenGLMaterialUniform(char *material_name, char *uniform_name)
+{
+	OpenGLMaterial *material;
+
+	if((material = g_hash_table_lookup(materials, material_name)) == NULL) {
+		LOG_ERROR("Failed to detach a uniform from non existing material '%s'", material_name);
+		return false;
+	}
+
+	return g_hash_table_remove(material->uniforms, uniform_name);
+}
+
+/**
  * Uses an OpenGL material for rendering
  *
  * @param		the name of the material to use
@@ -149,4 +198,5 @@ static void freeOpenGLMaterial(void *material_p)
 
 	free(material->name);
 	glDeleteProgram(material->program);
+	g_hash_table_destroy(material->uniforms);
 }

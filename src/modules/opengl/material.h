@@ -18,13 +18,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPENGL_SHADER_H
-#define OPENGL_SHADER_H
+#ifndef OPENGL_MATERIAL_H
+#define OPENGL_MATERIAL_H
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
-API GLuint createShaderFromString(const char *source, GLenum type);
-API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
+API void initOpenGLMaterials();
+API void freeOpenGLMaterials();
+API bool createOpenGLMaterial(char *name);
+API bool deleteOpenGLMaterial(char *name);
+API bool useOpenGLMaterial(char *name);
 
 #endif

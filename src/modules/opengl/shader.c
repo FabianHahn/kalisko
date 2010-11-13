@@ -59,9 +59,10 @@ API GLuint createShaderFromString(const char *source, GLenum type)
  *
  * @param vertexShader		the vertex shader to link into the program
  * @param fragmentShader	the fragment shader to link into the program
+ * @param recycleShaders	should the shaders be marked for deletion after linking them into the program?
  * @result					the linked shader program, or 0 on error
  */
-API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader)
+API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders)
 {
 	GLuint program = glCreateProgram();
 
@@ -79,6 +80,11 @@ API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader)
 		glGetProgramInfoLog(program, length, NULL, errorstr);
 		LOG_ERROR("Failed to link shader: %s", errorstr);
 		return 0;
+	}
+
+	if(recycleShaders) {
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
 	}
 
 	return program;

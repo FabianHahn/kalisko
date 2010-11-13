@@ -20,6 +20,7 @@
 
 
 #include <glib.h>
+#include <GL/glew.h>
 #include <GL/freeglut.h>
 
 #include "dll.h"
@@ -32,12 +33,13 @@
 
 #include "api.h"
 #include "opengl.h"
+#include "material.h"
 
 
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -91,6 +93,8 @@ MODULE_INIT
 
 	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 
+	initOpenGLMaterials();
+
 	return true;
 }
 
@@ -103,6 +107,8 @@ MODULE_FINALIZE
 	}
 
 	g_hash_table_destroy(windows);
+
+	freeOpenGLMaterials();
 }
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP)

@@ -108,6 +108,7 @@ API void setMatrix(Matrix *matrix, int i, int j, float value);
 API unsigned int getMatrixRows(Matrix *matrix);
 API unsigned int getMatrixCols(Matrix *matrix);
 API GString *dumpMatrix(Matrix *matrix);
+API float *getMatrixData(Matrix *matrix);
 
 #ifdef __cplusplus
 }

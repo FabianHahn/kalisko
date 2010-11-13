@@ -1,6 +1,14 @@
 #ifndef LINALG_MATRIX_H
 #define LINALG_MATRIX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <glib.h>
+#ifdef __cplusplus
+}
+#endif
+
 #include "Vector.h"
 
 #ifdef __cplusplus
@@ -52,6 +60,11 @@ class Matrix
 		unsigned int getCols() const
 		{
 			return cols;
+		}
+
+		float *getData()
+		{
+			return data;
 		}
 
 	private:

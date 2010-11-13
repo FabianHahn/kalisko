@@ -2,6 +2,14 @@
 #define LINALG_VECTOR_H
 
 #ifdef __cplusplus
+extern "C" {
+#endif
+#include <glib.h>
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
 #include <iostream>
 #include <assert.h>
 
@@ -52,6 +60,11 @@ class Vector
 			return size;
 		}
 
+		float *getData()
+		{
+			return data;
+		}
+
 	private:
 		unsigned int size;
 		float *data;
@@ -75,6 +88,31 @@ typedef struct Vector Vector;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+API Vector *createVector(unsigned int n);
+API Vector *copyVector(Vector *vector);
+API void freeVector(Vector *vector);
+API void clearVector(Vector *vector);
+API void normalizeVector(Vector *vector);
+API float getVectorLength(Vector *vector);
+API float getVectorLength2(Vector *vector);
+API void addVector(Vector *vector, Vector *other);
+API Vector *sumVectors(Vector *vector1, Vector *vector2);
+API void subtractVector(Vector *vector, Vector *other);
+API Vector *diffVectors(Vector *vector1, Vector *vector2);
+API float dotVectors(Vector *vector1, Vector *vector2);
+API Vector *crossVectors(Vector *vector1, Vector *vector2);
+API void multiplyVectorScalar(Vector *vector, float scalar);
+API void divideVectorScalar(Vector *vector, float scalar);
+API bool vectorEquals(Vector *vector1, Vector *vector2);
+API float getVector(Vector *vector, int i);
+API void setVector(Vector *vector, int i, float value);
+API unsigned int getVectorSize(Vector *vector);
+API GString *dumpVector(Vector *vector);
+API float *getVectorData(Vector *vector);
+API Vector *createVector2(float x, float y);
+API Vector *createVector3(float x, float y, float z);
+API Vector *createVector4(float x, float y, float z, float w);
 
 #ifdef __cplusplus
 }

@@ -372,7 +372,7 @@ API void subtractMatrix(Matrix *matrix, Matrix *other)
 /**
  * Computes the different of two matrices
  *
- * @param matrix1	the matrix subtract from
+ * @param matrix1	the matrix to subtract from
  * @param matrix2	the matrix that should be substracted from the first one
  * @result			the signed difference of the two matrices
  */
@@ -490,7 +490,7 @@ API unsigned int getMatrixCols(Matrix *matrix)
 /**
  * Returns the string representation of a matrix
  *
- * @param 			the matrix to be dumped
+ * @param matrix	the matrix to be dumped
  * @result			the string representation of the matrix
  */
 API GString *dumpMatrix(Matrix *matrix)
@@ -500,4 +500,15 @@ API GString *dumpMatrix(Matrix *matrix)
 	std::string outstr;
 	stream >> outstr;
 	return g_string_new(outstr.c_str());
+}
+
+/**
+ * Returns a pointer to the matrix data
+ *
+ * @param matrix	the matrix for which the data pointer should be returned
+ * @result			the data pointer of the matrix
+ */
+API float *getMatrixData(Matrix *matrix)
+{
+	return matrix->getData();
 }

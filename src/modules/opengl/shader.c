@@ -139,7 +139,7 @@ API OpenGLUniform *createUniformVector(Vector *value)
 
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_VECTOR;
-	uniform->content.vector_value = $(Vector *, linalg, copyVector)(value);
+	uniform->content.vector_value = value;
 
 	return uniform;
 }
@@ -161,7 +161,7 @@ API OpenGLUniform *createUniformMatrix(Matrix *value)
 
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_FLOAT;
-	uniform->content.matrix_value = $(Matrix *, linalg, copyMatrix)(value);
+	uniform->content.matrix_value = value;
 
 	return uniform;
 }

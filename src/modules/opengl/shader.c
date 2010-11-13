@@ -160,7 +160,7 @@ API OpenGLUniform *createUniformMatrix(Matrix *value)
 	}
 
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
-	uniform->type = OPENGL_UNIFORM_FLOAT;
+	uniform->type = OPENGL_UNIFORM_MATRIX;
 	uniform->content.matrix_value = value;
 
 	return uniform;

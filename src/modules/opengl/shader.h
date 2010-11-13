@@ -23,8 +23,52 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include "modules/linalg/Matrix.h"
+#include "modules/linalg/Vector.h"
+
+/**
+ * Enum for possible OpenGL uniform types
+ */
+typedef enum {
+	/** A uniform int value */
+	OPENGL_UNIFORM_INT,
+	/** A uniform float value */
+	OPENGL_UNIFORM_FLOAT,
+	/** A uniform 4-vector value */
+	OPENGL_UNIFORM_VECTOR,
+	/** A uniform 4x4-matrix value */
+	OPENGL_UNIFORM_MATRIX
+} OpenGLUniformType;
+
+/**
+ * Union for possible OpenGL uniform values
+ */
+typedef union {
+	/** A uniform int value */
+	int int_value;
+	/** A uniform float value */
+	float float_value;
+	/** A uniform vector value */
+	Vector *vector_value;
+	/** A uniform matrix value */
+	Matrix *matrix_value;
+} OpenGLUniformContent;
+
+/**
+ * Struct representing an OpenGL uniform value
+ */
+typedef struct {
+	/** The type of the uniform value */
+	OpenGLUniformType type;
+	/** The content of the uniform value */
+	OpenGLUniformContent content;
+} OpenGLUniform;
 
 API GLuint createShaderFromString(const char *source, GLenum type);
 API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
+API OpenGLUniform *createUniformInt(int value);
+API OpenGLUniform *createUniformFloat(float value);
+API OpenGLUniform *createUniformVector(Vector *value);
+API OpenGLUniform *createUniformMatrix(Matrix *value);
 
 #endif

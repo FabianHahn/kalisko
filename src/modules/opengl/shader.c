@@ -21,6 +21,9 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "dll.h"
+#include "modules/linalg/Matrix.h"
+#include "modules/linalg/Vector.h"
+#include "memory_alloc.h"
 #include "log.h"
 #include "api.h"
 #include "shader.h"
@@ -89,3 +92,77 @@ API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool 
 
 	return program;
 }
+
+/**
+ * Creates an int valued OpenGL uniform
+ *
+ * @param value			the value of the uniform
+ * @result				the created uniform
+ */
+API OpenGLUniform *createUniformInt(int value)
+{
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_INT;
+	uniform->content.int_value = value;
+
+	return uniform;
+}
+
+/**
+ * Creates a float valued OpenGL uniform
+ *
+ * @param value			the value of the uniform
+ * @result				the created uniform
+ */
+API OpenGLUniform *createUniformFloat(float value)
+{
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_FLOAT;
+	uniform->content.float_value = value;
+
+	return uniform;
+}
+
+/**
+ * Creates a vector valued OpenGL uniform
+ *
+ * @param value			the value of the uniform, must be a 4-vector
+ * @result				the created uniform or NULL on failure
+ */
+API OpenGLUniform *createUniformVector(Vector *value)
+{
+	unsigned int size;
+	if((size = $(unsigned int, linalg, getVectorSize)(value)) != 4) {
+		LOG_ERROR("Failed to create vector uniform with size %u instead of 4", size);
+		return NULL;
+	}
+
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_VECTOR;
+	uniform->content.vector_value = $(Vector *, linalg, copyVector)(value);
+
+	return uniform;
+}
+
+/**
+ * Creates a matrix valued OpenGL uniform
+ *
+ * @param value			the value of the uniform, must be a 4x4-matrix
+ * @result				the created uniform or NULL on failure
+ */
+API OpenGLUniform *createUniformMatrix(Matrix *value)
+{
+	unsigned int rows = $(unsigned int, linalg, getMatrixRows)(value);
+	unsigned int cols = $(unsigned int, linalg, getMatrixCols)(value);
+	if(rows != 4 || cols != 4) {
+		LOG_ERROR("Failed to create matrix uniform with size %ux%u instead of 4x4", rows, cols);
+		return NULL;
+	}
+
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_FLOAT;
+	uniform->content.matrix_value = $(Matrix *, linalg, copyMatrix)(value);
+
+	return uniform;
+}
+

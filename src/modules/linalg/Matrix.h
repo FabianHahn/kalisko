@@ -89,6 +89,12 @@ API Matrix *multiplyMatrices(Matrix *matrix1, Matrix *matrix2);
 API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector);
 API void multiplyMatrixScalar(Matrix *matrix, float scalar);
 API void divideMatrixScalar(Matrix *matrix, float scalar);
+API bool matrixEquals(Matrix *matrix1, Matrix *matrix2);
+API float getMatrix(Matrix *matrix, int i, int j);
+API void setMatrix(Matrix *matrix, int i, int j, float value);
+API unsigned int getMatrixRows(Matrix *matrix);
+API unsigned int getMatrixCols(Matrix *matrix);
+API GString *dumpMatrix(Matrix *matrix);
 
 #ifdef __cplusplus
 }

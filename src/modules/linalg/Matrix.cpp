@@ -1,3 +1,9 @@
+extern "C" {
+#include <glib.h>
+}
+
+#include <string>
+#include <sstream>
 #include <cmath>
 #include "dll.h"
 #include "api.h"
@@ -419,4 +425,79 @@ API void multiplyMatrixScalar(Matrix *matrix, float scalar)
 API void divideMatrixScalar(Matrix *matrix, float scalar)
 {
 	*matrix /= scalar;
+}
+
+/**
+ * Checks if two matrices are equal
+ *
+ * @param matrix1		the first matrix to compare
+ * @param matrix2		the second matrix to compare
+ * @result				true if the matrices are equal
+ */
+API bool matrixEquals(Matrix *matrix1, Matrix *matrix2)
+{
+	return matrix1 == matrix2;
+}
+
+/**
+ * Returns a matrix element
+ *
+ * @param matrix		the matrix to read
+ * @param i				the row of the matrix element to retrieve
+ * @param j				the column of the matrix element to retrieve
+ * @result				the element at matrix position (i,j)
+ */
+API float getMatrix(Matrix *matrix, int i, int j)
+{
+	return (*matrix)(i, j);
+}
+
+/**
+ * Sets a matrix element
+ *
+ * @param matrix		the matrix to set
+ * @param i				the row of the matrix element to set
+ * @param j				the column of the matrix element to set
+ * @param value			the new value for the matrix element at position (i,j)
+ */
+API void setMatrix(Matrix *matrix, int i, int j, float value)
+{
+	(*matrix)(i, j) = value;
+}
+
+/**
+ * Returns the number of rows of a matrix
+ *
+ * @param matrix		the matrix for which the number of rows should be retrieved
+ * @result				the number of rows of the matrix
+ */
+API unsigned int getMatrixRows(Matrix *matrix)
+{
+	return matrix->getRows();
+}
+
+/**
+ * Returns the number of columns of a matrix
+ *
+ * @param matrix		the matrix for which the number of columns should be retrieved
+ * @result				the number of columns of the matrix
+ */
+API unsigned int getMatrixCols(Matrix *matrix)
+{
+	return matrix->getCols();
+}
+
+/**
+ * Returns the string representation of a matrix
+ *
+ * @param 			the matrix to be dumped
+ * @result			the string representation of the matrix
+ */
+API GString *dumpMatrix(Matrix *matrix)
+{
+	std::stringstream stream;
+	stream << *matrix;
+	std::string outstr;
+	stream >> outstr;
+	return g_string_new(outstr.c_str());
 }

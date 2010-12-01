@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <glib.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -28,3 +29,42 @@
 #include "shader.h"
 #include "material.h"
 #include "model.h"
+
+/**
+ * Creates a new mesh by allocating space for a number of vertices and triangles. Also allocates needed OpenGL buffer objects
+ *
+ * @param num_vertices			the number of vertices the mesh should have
+ * @param num_triangles			the number of triangles the mesh should have
+ */
+OpenGLMesh *createMesh(int num_vertices, int num_triangles)
+{
+	assert(num_vertices > 0);
+	assert(num_triangles > 0);
+
+	OpenGLMesh *mesh = ALLOCATE_OBJECT(OpenGLMesh);
+	mesh->vertices = ALLOCATE_OBJECTS(OpenGLVertex, num_vertices);
+	mesh->num_vertices = num_vertices;
+	mesh->triangles = ALLOCATE_OBJECTS(OpenGLTriangle, num_triangles);
+	mesh->num_triangles = num_triangles;
+
+	glGenBuffers(1, &mesh->vertexBuffer);
+	glGenBuffers(1, &mesh->indexBuffer);
+
+	return mesh;
+}
+
+/**
+ * Frees an OpenGL mesh
+ *
+ * @param mesh			the mesh to free
+ */
+void freeMesh(OpenGLMesh *mesh)
+{
+	assert(mesh != NULL);
+
+	glDeleteBuffers(1, &mesh->vertexBuffer);
+	glDeleteBuffers(1, &mesh->indexBuffer);
+	free(mesh->vertices);
+	free(mesh->triangles);
+	free(mesh);
+}

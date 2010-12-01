@@ -21,4 +21,48 @@
 #ifndef OPENGL_MODEL_H
 #define OPENGL_MODEL_H
 
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+
+/**
+ * Struct representing an OpenGL vertex
+ */
+typedef struct {
+	/** The position of the vertex */
+	float position[4];
+	/** The normal vector of the vertex */
+	float normal[3];
+	/** The color of the vertex */
+	float color[4];
+} OpenGLVertex;
+
+/**
+ * Struct representing an OpenGL triangle
+ */
+typedef struct {
+	/** The vertex indices of the triangle */
+	unsigned short indices[3];
+} OpenGLTriangle;
+
+/**
+ * Struct representing an OpenGL triangle mesh
+ */
+typedef struct {
+	/** An array of OpenGLVertex objects for this mesh */
+	OpenGLVertex *vertices;
+	/** The number of vertices in this mesh */
+	int num_vertices;
+	/** An array of OpenGLTriangle objects for this mesh */
+	OpenGLTriangle *triangles;
+	/** The number of triangles in this mesh */
+	int num_triangles;
+	/** The OpenGL vertex buffer associated with this mesh */
+	GLuint vertexBuffer;
+	/** The OpenGL index buffer associated with this mesh */
+	GLuint indexBuffer;
+} OpenGLMesh;
+
+OpenGLMesh *createMesh(int num_vertices, int num_triangles);
+void freeMesh(OpenGLMesh *mesh);
+
 #endif

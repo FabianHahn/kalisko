@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -115,6 +115,27 @@ TIMER_CALLBACK(GLUT_MAIN_LOOP)
 {
 	glutMainLoopEvent();
 	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
+}
+
+/**
+ * Checks whether an OpenGL error has occurred
+ *
+ * @result		true if an error occurred
+ */
+API bool checkOpenGLError()
+{
+	GLenum err = glGetError();
+
+	if(err != GL_NO_ERROR) {
+		const GLubyte *errstr = gluErrorString(err);
+		if(errstr != NULL) {
+			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 /**

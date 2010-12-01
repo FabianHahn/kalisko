@@ -24,6 +24,10 @@ if not module.GetOption('clean'):
 		print('Error: Could not find the glut library and/or the GL/freeglut.h header file!')
 		Exit(1)
 		
+	if not conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C'):
+		print('Error: Could not find the glut library and/or the GL/freeglut.h header file!')
+		Exit(1)		
+		
 	if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):
 		print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
 		Exit(1)

@@ -30,6 +30,7 @@ typedef struct {
 	bool active;
 } OpenGLWindow;
 
+API bool checkOpenGLError();
 API OpenGLWindow *createOpenGLWindow(char *name);
 API OpenGLWindow *getCurrentOpenGLWindow();
 API void freeOpenGLWindow(OpenGLWindow *window);

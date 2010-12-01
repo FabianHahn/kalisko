@@ -19,13 +19,17 @@ Import('module')
 
 if not module.GetOption('clean'):
 	conf = Configure(module)
+	
+	if not conf.CheckLibWithHeader('m', 'math.h', 'C'):
+		print('Error: Could not find the m library and/or the math.h header file!')
+		Exit(1)
 		
 	if not conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
 		print('Error: Could not find the glut library and/or the GL/freeglut.h header file!')
 		Exit(1)
 		
 	if not conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C'):
-		print('Error: Could not find the glut library and/or the GL/freeglut.h header file!')
+		print('Error: Could not find the GLU library and/or the GL/glu.h header file!')
 		Exit(1)		
 		
 	if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):

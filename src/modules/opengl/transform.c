@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <math.h>
 #include <assert.h>
 #include <glib.h>
 #include <GL/glew.h>
@@ -92,4 +93,29 @@ API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
 	$(void, linalg, freeMatrix)(transform);
 
 	return lookAt;
+}
+
+/**
+ * Creates a perspective matrix that projects point from the world coordinate system into the camera coordinate system (with depth values as z)
+ *
+ * @param fovy		the viewing angle of the camera in radians
+ * @param ar		the aspect ratio of the camera (width / height)
+ * @param near		the projection plane of the camera
+ * @param far		the back plane of the camera viewing volume
+ */
+API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far)
+{
+	Matrix *perspective = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, clearMatrix)(perspective);
+	float *perspectiveData = $(float *, linalg, getMatrixData)(perspective);
+
+	float f = tan(fovy / 2);
+
+	perspectiveData[0*4+0] = f / ar;
+	perspectiveData[1*4+1] = f;
+	perspectiveData[2*4+2] = (far + near) / (far - near);
+	perspectiveData[2*4+3] = (2 * far * near) / (near - far);
+	perspectiveData[3*4+2] = -1;
+
+	return perspective;
 }

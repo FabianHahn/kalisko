@@ -70,7 +70,7 @@ API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
 	// Construct basis transform to camera coordinates
 	Matrix *transform = $(Matrix *, linalg, createMatrix)(4, 4);
 	$(void, linalg, eyeMatrix)(transform);
-	float *transformData = $(float *, linalg, getMatrixData)(shift);
+	float *transformData = $(float *, linalg, getMatrixData)(transform);
 
 	transformData[0*4+0] = sData[0];
 	transformData[0*4+1] = sData[1];

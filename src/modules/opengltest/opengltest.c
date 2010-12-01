@@ -39,9 +39,9 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 5, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
 static OpenGLWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -73,7 +73,7 @@ MODULE_INIT
 
 
 		// Create geometry
-		if((mesh = $(OpenGLMesh *, opengl, createMesh)(3, 1, GL_STATIC_DRAW)) == NULL) {
+		if((mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(3, 1, GL_STATIC_DRAW)) == NULL) {
 			break;
 		}
 
@@ -113,7 +113,7 @@ MODULE_INIT
 		mesh->triangles[0].indices[2] = 2;
 
 		// Write the mesh changes back to the OpenGL buffer
-		if(!$(bool, opengl, updateMesh)(mesh)) {
+		if(!$(bool, opengl, updateOpenGLMesh)(mesh)) {
 			break;
 		}
 
@@ -148,15 +148,15 @@ MODULE_INIT
 		g_string_free(path, true);
 
 		// Compile and link shader program
-		if((vertexShader = $(GLuint, opengl, createShaderFromString)(vertexShaderSource, GL_VERTEX_SHADER)) == 0) {
+		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromString)(vertexShaderSource, GL_VERTEX_SHADER)) == 0) {
 			break;
 		}
 
-		if((fragmentShader = $(GLuint, opengl, createShaderFromString)(fragmentShaderSource, GL_FRAGMENT_SHADER)) == 0) {
+		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromString)(fragmentShaderSource, GL_FRAGMENT_SHADER)) == 0) {
 			break;
 		}
 
-		if((program = $(GLuint, opengl, createShaderProgram)(vertexShader, fragmentShader, true)) == 0) {
+		if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, true)) == 0) {
 			break;
 		}
 
@@ -189,7 +189,7 @@ MODULE_INIT
 		}
 
 		if(mesh != NULL) {
-			$(void, opengl, freeMesh)(mesh);
+			$(void, opengl, freeOpenGLMesh)(mesh);
 		}
 
 		if(window != NULL) {
@@ -199,18 +199,13 @@ MODULE_INIT
 		return false;
 	}
 
-	glutReshapeWindow(800, 600);
-	glViewport(0, 0, 800, 600);
-
-	$(bool, opengl, checkOpenGLError)();
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
 	$(bool, opengl, deleteOpenGLMaterial)("opengltest");
-	$(void, opengl, freeMesh)(mesh);
+	$(void, opengl, freeOpenGLMesh)(mesh);
 
 	$(void, event, detachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
 	$(void, event, detachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
@@ -268,12 +263,8 @@ static void listener_keyUp(void *subject, const char *event, void *data, va_list
 static void listener_display(void *subject, const char *event, void *data, va_list args)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	$(bool, opengl, checkOpenGLError)();
 	$(bool, opengl, useOpenGLMaterial)("opengltest");
-	$(bool, opengl, checkOpenGLError)();
-	$(bool, opengl, drawMesh)(mesh);
-	$(bool, opengl, checkOpenGLError)();
+	$(bool, opengl, drawOpenGLMesh)(mesh);
 	glutSwapBuffers();
-	$(bool, opengl, checkOpenGLError)();
 }
 

@@ -39,7 +39,7 @@
  * @param usage					specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
  * @result						the created OpenGLMesh object or NULL on failure
  */
-OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
+OpenGLMesh *createOpenGLMesh(int num_vertices, int num_triangles, GLenum usage)
 {
 	assert(num_vertices > 0);
 	assert(num_triangles > 0);
@@ -59,7 +59,7 @@ OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * num_triangles, NULL, usage);
 
 	if(checkOpenGLError()) {
-		freeMesh(mesh);
+		freeOpenGLMesh(mesh);
 		return NULL;
 	}
 
@@ -72,7 +72,7 @@ OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
  * @param mesh			the mesh to be updated
  * @result				true if successful
  */
-bool updateMesh(OpenGLMesh *mesh)
+bool updateOpenGLMesh(OpenGLMesh *mesh)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(OpenGLVertex) * mesh->num_vertices, mesh->vertices, mesh->usage);
@@ -91,7 +91,7 @@ bool updateMesh(OpenGLMesh *mesh)
  *
  * @param mesh			the mesh to draw
  */
-bool drawMesh(OpenGLMesh *mesh)
+bool drawOpenGLMesh(OpenGLMesh *mesh)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, position));
@@ -120,7 +120,7 @@ bool drawMesh(OpenGLMesh *mesh)
  *
  * @param mesh			the mesh to free
  */
-void freeMesh(OpenGLMesh *mesh)
+void freeOpenGLMesh(OpenGLMesh *mesh)
 {
 	assert(mesh != NULL);
 

@@ -35,7 +35,7 @@
  * @param type		the type of the shader, usually either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
  * @result			the compiled shader identifier, or 0 on error
  */
-API GLuint createShaderFromString(const char *source, GLenum type)
+API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 {
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &source, NULL);
@@ -65,7 +65,7 @@ API GLuint createShaderFromString(const char *source, GLenum type)
  * @param recycleShaders	should the shaders be marked for deletion after linking them into the program?
  * @result					the linked shader program, or 0 on error
  */
-API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders)
+API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders)
 {
 	GLuint program = glCreateProgram();
 
@@ -104,7 +104,7 @@ API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool 
  * @param value			the value of the uniform
  * @result				the created uniform
  */
-API OpenGLUniform *createUniformInt(int value)
+API OpenGLUniform *createOpenGLUniformInt(int value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_INT;
@@ -120,7 +120,7 @@ API OpenGLUniform *createUniformInt(int value)
  * @param value			the value of the uniform
  * @result				the created uniform
  */
-API OpenGLUniform *createUniformFloat(float value)
+API OpenGLUniform *createOpenGLUniformFloat(float value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_FLOAT;
@@ -136,7 +136,7 @@ API OpenGLUniform *createUniformFloat(float value)
  * @param value			the value of the uniform, must be a 4-vector
  * @result				the created uniform or NULL on failure
  */
-API OpenGLUniform *createUniformVector(Vector *value)
+API OpenGLUniform *createOpenGLUniformVector(Vector *value)
 {
 	unsigned int size;
 	if((size = $(unsigned int, linalg, getVectorSize)(value)) != 4) {
@@ -158,7 +158,7 @@ API OpenGLUniform *createUniformVector(Vector *value)
  * @param value			the value of the uniform, must be a 4x4-matrix
  * @result				the created uniform or NULL on failure
  */
-API OpenGLUniform *createUniformMatrix(Matrix *value)
+API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value)
 {
 	unsigned int rows = $(unsigned int, linalg, getMatrixRows)(value);
 	unsigned int cols = $(unsigned int, linalg, getMatrixCols)(value);
@@ -181,7 +181,7 @@ API OpenGLUniform *createUniformMatrix(Matrix *value)
  * @param uniform		the uniform to use
  * @result				true if successful
  */
-API bool useUniform(OpenGLUniform *uniform)
+API bool useOpenGLUniform(OpenGLUniform *uniform)
 {
 	if(uniform->location == -1) {
 		LOG_ERROR("Tried to use uniform with unspecified location, aborting");

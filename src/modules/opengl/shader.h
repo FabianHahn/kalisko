@@ -78,12 +78,12 @@ typedef struct {
 	GLint location;
 } OpenGLUniform;
 
-API GLuint createShaderFromString(const char *source, GLenum type);
-API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
-API OpenGLUniform *createUniformInt(int value);
-API OpenGLUniform *createUniformFloat(float value);
-API OpenGLUniform *createUniformVector(Vector *value);
-API OpenGLUniform *createUniformMatrix(Matrix *value);
-API bool useUniform(OpenGLUniform *uniform);
+API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
+API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
+API OpenGLUniform *createOpenGLUniformInt(int value);
+API OpenGLUniform *createOpenGLUniformFloat(float value);
+API OpenGLUniform *createOpenGLUniformVector(Vector *value);
+API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
+API bool useOpenGLUniform(OpenGLUniform *uniform);
 
 #endif

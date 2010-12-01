@@ -64,9 +64,9 @@ typedef struct {
 	GLenum usage;
 } OpenGLMesh;
 
-OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage);
-bool updateMesh(OpenGLMesh *mesh);
-bool drawMesh(OpenGLMesh *mesh);
-void freeMesh(OpenGLMesh *mesh);
+OpenGLMesh *createOpenGLMesh(int num_vertices, int num_triangles, GLenum usage);
+bool updateOpenGLMesh(OpenGLMesh *mesh);
+bool drawOpenGLMesh(OpenGLMesh *mesh);
+void freeOpenGLMesh(OpenGLMesh *mesh);
 
 #endif

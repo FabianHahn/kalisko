@@ -203,7 +203,7 @@ API bool useOpenGLMaterial(char *name)
 	GList *uniforms = g_hash_table_get_values(material->uniforms);
 	for(GList *iter = uniforms; iter != NULL; iter = iter->next) {
 		OpenGLUniform *uniform = iter->data;
-		useUniform(uniform);
+		useOpenGLUniform(uniform);
 	}
 
 	g_list_free(uniforms);

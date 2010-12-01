@@ -79,6 +79,7 @@ typedef struct {
 } OpenGLUniform;
 
 API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
+API GLuint createOpenGLShaderFromFile(char *filename, GLenum type);
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
 API OpenGLUniform *createOpenGLUniformInt(int value);
 API OpenGLUniform *createOpenGLUniformFloat(float value);

@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "dll.h"
@@ -53,6 +54,31 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 		LOG_ERROR("Failed to compile shader: %s", errorstr);
 		return 0;
 	}
+
+	return shader;
+}
+
+/**
+ * Creates an OpenGL shader from a file
+ *
+ * @param filename	the file name of the shader
+ * @param type		the type of the shader, usually either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
+ * @result			the compiled shader identifier, or 0 on error
+ */
+API GLuint createOpenGLShaderFromFile(char *filename, GLenum type)
+{
+	char *shaderSource;
+	unsigned long shaderLength;
+	if(!g_file_get_contents(filename, &shaderSource, &shaderLength, NULL)) {
+		LOG_ERROR("Failed to read shader source from %s", filename);
+		return false;
+	}
+
+	// Create the shader from the read source string
+	GLuint shader = createOpenGLShaderFromString(shaderSource, type);
+
+	// Free read file
+	free(shaderSource);
 
 	return shader;
 }

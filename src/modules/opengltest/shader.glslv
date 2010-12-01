@@ -8,5 +8,7 @@ varying vec4 v_color;
 
 void main()
 {
+	v_color = color;
 	gl_Position.xyz = position;
+	gl_Position.w = 1;
 }

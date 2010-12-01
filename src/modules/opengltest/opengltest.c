@@ -39,7 +39,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -78,14 +78,14 @@ MODULE_INIT
 		}
 
 		// Draw a simple tri colored triangle
-		mesh->vertices[0].position[0] = -1;
-		mesh->vertices[0].position[1] = 0;
+		mesh->vertices[0].position[0] = -0.5;
+		mesh->vertices[0].position[1] = -0.5;
 		mesh->vertices[0].position[2] = 0;
-		mesh->vertices[1].position[0] = 1;
-		mesh->vertices[1].position[1] = 0;
+		mesh->vertices[1].position[0] = 0.5;
+		mesh->vertices[1].position[1] = -0.5;
 		mesh->vertices[1].position[2] = 0;
 		mesh->vertices[2].position[0] = 0;
-		mesh->vertices[2].position[1] = 1;
+		mesh->vertices[2].position[1] = 0.5;
 		mesh->vertices[2].position[2] = 0;
 		mesh->vertices[0].normal[0] = 0;
 		mesh->vertices[0].normal[1] = 0;
@@ -199,6 +199,11 @@ MODULE_INIT
 		return false;
 	}
 
+	glutReshapeWindow(800, 600);
+	glViewport(0, 0, 800, 600);
+
+	$(bool, opengl, checkOpenGLError)();
+
 	return true;
 }
 
@@ -262,7 +267,13 @@ static void listener_keyUp(void *subject, const char *event, void *data, va_list
 
 static void listener_display(void *subject, const char *event, void *data, va_list args)
 {
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	$(bool, opengl, checkOpenGLError)();
+	$(bool, opengl, useOpenGLMaterial)("opengltest");
+	$(bool, opengl, checkOpenGLError)();
+	$(bool, opengl, drawMesh)(mesh);
+	$(bool, opengl, checkOpenGLError)();
+	glutSwapBuffers();
+	$(bool, opengl, checkOpenGLError)();
 }
 

@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 5, 7);
+MODULE_VERSION(0, 5, 8);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -87,6 +87,7 @@ MODULE_INIT
 	GLenum err;
 	if((err = glewInit()) != GLEW_OK) {
 		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
+		return false;
 	}
 
 	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));

@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 5, 8);
+MODULE_VERSION(0, 5, 9);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -83,14 +83,6 @@ MODULE_INIT
 
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(argc);
-
-	GLenum err;
-	if((err = glewInit()) != GLEW_OK) {
-		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
-		return false;
-	}
-
-	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
 
 	glutIdleFunc(&openGL_idle);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
@@ -175,6 +167,15 @@ API OpenGLWindow *createOpenGLWindow(char *name)
 	g_hash_table_insert(windows, &window->id, window);
 
 	LOG_INFO("Created new OpenGL window %d with name '%s', OpenGL vendor: %s %s", window->id, name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+
+	// Initialize GLEW as well
+	GLenum err;
+	if((err = glewInit()) != GLEW_OK) {
+		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
+		return false;
+	}
+
+	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
 
 	return window;
 }

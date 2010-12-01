@@ -18,11 +18,78 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <glib.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "dll.h"
 #include "log.h"
 #include "memory_alloc.h"
+#include "modules/linalg/Vector.h"
+#include "modules/linalg/Matrix.h"
 #include "api.h"
 #include "transform.h"
+
+/**
+ * Creates a look-at matrix which transforms the world into a coordinate system as seen from a camera at position eye looking at focus with specified up vector
+ *
+ * @param eye		the position of the camera ("the eye")
+ * @param focus		the focused point at which the camera is looking
+ * @param up		the up vector for the camera coordinate system - as a side-effect, this vector is normalized
+ * @result			the created loot-at matrix
+ */
+API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
+{
+	assert($(unsigned int, linalg, getVectorSize)(eye) == 3);
+	assert($(unsigned int, linalg, getVectorSize)(focus) == 3);
+	assert($(unsigned int, linalg, getVectorSize)(up) == 3);
+
+	// Construct camera coordinate system basis
+	Vector *f = $(Vector *, linalg, diffVectors)(focus, eye);
+	$(void, linalg, normalizeVector)(f);
+	$(void, linalg, normalizeVector)(up);
+
+	Vector *s = $(Vector *s, linalg, crossVectors)(f, up);
+	Vector *u = $(Vector *s, linalg, crossVectors)(s, f);
+
+	float *eyeData = $(float *, linalg, getVectorData)(eye);
+	float *sData = $(float *, linalg, getVectorData)(s);
+	float *uData = $(float *, linalg, getVectorData)(u);
+	float *fData = $(float *, linalg, getVectorData)(f);
+
+	// Construct shift matrix to camera position
+	Matrix *shift = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(shift);
+	float *shiftData = $(float *, linalg, getMatrixData)(shift);
+
+	shiftData[0*4+3] = -eyeData[0];
+	shiftData[1*4+3] = -eyeData[1];
+	shiftData[2*4+3] = -eyeData[2];
+
+	// Construct basis transform to camera coordinates
+	Matrix *transform = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(transform);
+	float *transformData = $(float *, linalg, getMatrixData)(shift);
+
+	transformData[0*4+0] = sData[0];
+	transformData[0*4+1] = sData[1];
+	transformData[0*4+2] = sData[2];
+	transformData[1*4+0] = uData[0];
+	transformData[1*4+1] = uData[1];
+	transformData[1*4+2] = uData[2];
+	transformData[2*4+0] = -fData[0];
+	transformData[2*4+1] = -fData[1];
+	transformData[2*4+2] = -fData[2];
+
+	// Create look at matrix
+	Matrix *lookAt = $(Matrix *, linalg, multiplyMatrices)(transform, shift);
+
+	// Clean up
+	$(void, linalg, freeVector)(f);
+	$(void, linalg, freeVector)(s);
+	$(void, linalg, freeVector)(u);
+	$(void, linalg, freeMatrix)(shift);
+	$(void, linalg, freeMatrix)(transform);
+
+	return lookAt;
+}

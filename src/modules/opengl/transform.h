@@ -24,4 +24,6 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
+API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up);
+
 #endif

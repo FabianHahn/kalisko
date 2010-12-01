@@ -35,8 +35,9 @@
  *
  * @param num_vertices			the number of vertices the mesh should have
  * @param num_triangles			the number of triangles the mesh should have
+ * @param usage					specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
  */
-OpenGLMesh *createMesh(int num_vertices, int num_triangles)
+OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
 {
 	assert(num_vertices > 0);
 	assert(num_triangles > 0);
@@ -46,9 +47,14 @@ OpenGLMesh *createMesh(int num_vertices, int num_triangles)
 	mesh->num_vertices = num_vertices;
 	mesh->triangles = ALLOCATE_OBJECTS(OpenGLTriangle, num_triangles);
 	mesh->num_triangles = num_triangles;
+	mesh->usage = usage;
 
 	glGenBuffers(1, &mesh->vertexBuffer);
 	glGenBuffers(1, &mesh->indexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(OpenGLVertex) * num_vertices, NULL, usage);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * num_triangles, NULL, usage);
 
 	return mesh;
 }

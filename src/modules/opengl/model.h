@@ -60,9 +60,11 @@ typedef struct {
 	GLuint vertexBuffer;
 	/** The OpenGL index buffer associated with this mesh */
 	GLuint indexBuffer;
+	/** The OpenGL usage pattern of this mesh */
+	GLenum usage;
 } OpenGLMesh;
 
-OpenGLMesh *createMesh(int num_vertices, int num_triangles);
+OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage);
 void freeMesh(OpenGLMesh *mesh);
 
 #endif

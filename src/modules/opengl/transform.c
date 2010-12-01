@@ -113,7 +113,7 @@ API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far)
 
 	perspectiveData[0*4+0] = f / ar;
 	perspectiveData[1*4+1] = f;
-	perspectiveData[2*4+2] = (far + near) / (far - near);
+	perspectiveData[2*4+2] = (far + near) / (near - far);
 	perspectiveData[2*4+3] = (2.0f * far * near) / (near - far);
 	perspectiveData[3*4+2] = -1.0f;
 

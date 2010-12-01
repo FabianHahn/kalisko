@@ -35,3 +35,5 @@ if not module.GetOption('clean'):
 	module = conf.Finish()
 
 module.SharedLibrary('../kalisko_opengltest', Glob('*.c'))
+module.Command("shader.glslv", File("shader.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+module.Command("shader.glslf", File("shader.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))

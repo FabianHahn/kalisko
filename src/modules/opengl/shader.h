@@ -41,6 +41,18 @@ typedef enum {
 } OpenGLUniformType;
 
 /**
+ * Enum for possible predefined OpenGL vertex shader attribute locations
+ */
+typedef enum {
+	/** The vertex attribute */
+	OPENGL_ATTRIBUTE_VERTEX,
+	/** The normal attribute */
+	OPENGL_ATTRIBUTE_NORMAL,
+	/** The color attribute */
+	OPENGL_ATTRIBUTE_COLOR
+} OpenGLAttributeLocation;
+
+/**
  * Union for possible OpenGL uniform values
  */
 typedef union {

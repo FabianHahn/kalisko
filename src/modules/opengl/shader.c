@@ -71,6 +71,11 @@ API GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool 
 
 	glAttachShader(program, vertexShader);
 	glAttachShader(program, fragmentShader);
+
+	glBindAttribLocation(program, OPENGL_ATTRIBUTE_VERTEX, "vertex");
+	glBindAttribLocation(program, OPENGL_ATTRIBUTE_NORMAL, "normal");
+	glBindAttribLocation(program, OPENGL_ATTRIBUTE_COLOR, "color");
+
 	glLinkProgram(program);
 
 	GLint status;

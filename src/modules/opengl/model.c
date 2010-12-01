@@ -26,6 +26,7 @@
 #include "log.h"
 #include "memory_alloc.h"
 #include "api.h"
+#include "opengl.h"
 #include "shader.h"
 #include "material.h"
 #include "model.h"
@@ -36,6 +37,7 @@
  * @param num_vertices			the number of vertices the mesh should have
  * @param num_triangles			the number of triangles the mesh should have
  * @param usage					specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
+ * @result						the created OpenGLMesh object or NULL on failure
  */
 OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
 {
@@ -56,7 +58,32 @@ OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * num_triangles, NULL, usage);
 
+	if(checkOpenGLError()) {
+		freeMesh(mesh);
+		return NULL;
+	}
+
 	return mesh;
+}
+
+/**
+ * Updates a mesh by synchronizing it with its associated OpenGL buffer objects
+ *
+ * @param mesh			the mesh to be updated
+ * @result				true if successful
+ */
+bool updateMesh(OpenGLMesh *mesh)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(OpenGLVertex) * mesh->num_vertices, mesh->vertices, mesh->usage);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * mesh->num_triangles, mesh->triangles, mesh->usage);
+
+	if(checkOpenGLError()) {
+		return false;
+	}
+
+	return true;
 }
 
 /**

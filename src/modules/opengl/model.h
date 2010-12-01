@@ -65,6 +65,7 @@ typedef struct {
 } OpenGLMesh;
 
 OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage);
+bool updateMesh(OpenGLMesh *mesh);
 void freeMesh(OpenGLMesh *mesh);
 
 #endif

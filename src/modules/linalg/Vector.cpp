@@ -505,8 +505,7 @@ API GString *dumpVector(Vector *vector)
 {
 	std::stringstream stream;
 	stream << *vector;
-	std::string outstr;
-	stream >> outstr;
+	std::string outstr = stream.str();
 	return g_string_new(outstr.c_str());
 }
 

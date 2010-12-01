@@ -18,8 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPENGL_MODEL_H
-#define OPENGL_MODEL_H
+#ifndef OPENGL_MESH_H
+#define OPENGL_MESH_H
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>

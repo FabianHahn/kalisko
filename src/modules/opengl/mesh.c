@@ -29,7 +29,7 @@
 #include "opengl.h"
 #include "shader.h"
 #include "material.h"
-#include "model.h"
+#include "mesh.h"
 
 /**
  * Creates a new mesh by allocating space for a number of vertices and triangles. Also allocates needed OpenGL buffer objects

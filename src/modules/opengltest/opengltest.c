@@ -31,21 +31,26 @@
 #include "modules/opengl/material.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/mesh.h"
+#include "modules/opengl/transform.h"
 #include "modules/module_util/module_util.h"
 #include "modules/event/event.h"
+#include "modules/linalg/Vector.h"
+#include "modules/linalg/Matrix.h"
 
 #include "api.h"
 
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 5, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 5, 19), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 6));
 
 static OpenGLWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
 static GLuint program = 0;
+static Matrix *camera = NULL;
+static Matrix *perspective = NULL;
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args);
 static void listener_mouseUp(void *subject, const char *event, void *data, va_list args);
@@ -80,13 +85,13 @@ MODULE_INIT
 		// Draw a simple tri colored triangle
 		mesh->vertices[0].position[0] = -0.5;
 		mesh->vertices[0].position[1] = -0.5;
-		mesh->vertices[0].position[2] = 0;
+		mesh->vertices[0].position[2] = 1.5;
 		mesh->vertices[1].position[0] = 0.5;
 		mesh->vertices[1].position[1] = -0.5;
-		mesh->vertices[1].position[2] = 0;
+		mesh->vertices[1].position[2] = 1.5;
 		mesh->vertices[2].position[0] = 0;
 		mesh->vertices[2].position[1] = 0.5;
-		mesh->vertices[2].position[2] = 0;
+		mesh->vertices[2].position[2] = 1.5;
 		mesh->vertices[0].normal[0] = 0;
 		mesh->vertices[0].normal[1] = 0;
 		mesh->vertices[0].normal[2] = -1;
@@ -151,7 +156,28 @@ MODULE_INIT
 			break;
 		}
 
+		Vector *eye = $(Vector *, linalg, createVector3)(0, 0, 0);
+		Vector *target = $(Vector *, linalg, createVector3)(0, 0, 1);
+		Vector *up = $(Vector *, linalg, createVector3)(0, 1, 0);
+		camera = $(Matrix *, opengl, createLookAtMatrix)(eye, target, up);
+		perspective = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1, 0.1, 100);
+
+		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera);
+		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspective);
+
+		$(void, linalg, freeVector)(eye);
+		$(void, linalg, freeVector)(target);
+		$(void, linalg, freeVector)(up);
+
 		if(!$(bool, opengl, attachOpenGLMaterialShaderProgram("opengltest", program))) {
+			break;
+		}
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "camera", cameraUniform)) {
+			break;
+		}
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "perspective", perspectiveUniform)) {
 			break;
 		}
 
@@ -159,6 +185,14 @@ MODULE_INIT
 	} while(false);
 
 	if(!done) {
+		if(camera != NULL) {
+			$(void, linalg, freeMatrix)(camera);
+		}
+
+		if(perspective != NULL) {
+			$(void, linalg, freeMatrix)(perspective);
+		}
+
 		if(vertexShader != 0) {
 			glDeleteShader(vertexShader);
 		}
@@ -196,6 +230,9 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "keyUp", NULL, &listener_keyUp);
 	$(void, event, detachEventListener)(window, "display", NULL, &listener_display);
 	$(void, opengl, freeOpenGLWindow)(window);
+
+	$(void, linalg, freeMatrix)(camera);
+	$(void, linalg, freeMatrix)(perspective);
 }
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args)

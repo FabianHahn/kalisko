@@ -106,7 +106,7 @@ bool drawMesh(OpenGLMesh *mesh)
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
-	glDrawElements(GL_TRIANGLES, mesh->num_triangles, GL_UNSIGNED_SHORT, NULL);
+	glDrawElements(GL_TRIANGLES, mesh->num_triangles * 3, GL_UNSIGNED_SHORT, NULL);
 
 	if(checkOpenGLError()) {
 		return false;

@@ -19,12 +19,17 @@
  */
 
 
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 #include <glib.h>
 
 #include "dll.h"
 #include "log.h"
 #include "types.h"
 #include "modules/opengl/opengl.h"
+#include "modules/opengl/material.h"
+#include "modules/opengl/shader.h"
+#include "modules/opengl/mesh.h"
 #include "modules/module_util/module_util.h"
 #include "modules/event/event.h"
 
@@ -33,7 +38,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -45,20 +50,69 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
 static void listener_display(void *subject, const char *event, void *data, va_list args);
 
+static OpenGLMesh *mesh;
+
 MODULE_INIT
 {
-	window = $(window, opengl, createOpenGLWindow)("Kalisko OpenGL test");
+	if((window = $(window, opengl, createOpenGLWindow)("Kalisko OpenGL test")) == NULL) {
+		return false;
+	}
+
 	$(void, event, attachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
 	$(void, event, attachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
 	$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
 	$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
 	$(void, event, attachEventListener)(window, "display", NULL, &listener_display);
 
-	return window != NULL;
+	if((mesh = $(OpenGLMesh *, opengl, createMesh)(3, 1, GL_STATIC_DRAW)) == NULL) {
+		return false;
+	}
+
+	mesh->vertices[0].position[0] = -1;
+	mesh->vertices[0].position[1] = 0;
+	mesh->vertices[0].position[2] = 0;
+	mesh->vertices[1].position[0] = 1;
+	mesh->vertices[1].position[1] = 0;
+	mesh->vertices[1].position[2] = 0;
+	mesh->vertices[2].position[0] = 0;
+	mesh->vertices[2].position[1] = 1;
+	mesh->vertices[2].position[2] = 0;
+	mesh->vertices[0].normal[0] = 0;
+	mesh->vertices[0].normal[1] = 0;
+	mesh->vertices[0].normal[2] = -1;
+	mesh->vertices[1].normal[0] = 0;
+	mesh->vertices[1].normal[1] = 0;
+	mesh->vertices[1].normal[2] = -1;
+	mesh->vertices[2].normal[0] = 0;
+	mesh->vertices[2].normal[1] = 0;
+	mesh->vertices[2].normal[2] = -1;
+	mesh->vertices[0].color[0] = 1;
+	mesh->vertices[0].color[1] = 0;
+	mesh->vertices[0].color[2] = 0;
+	mesh->vertices[0].color[3] = 1;
+	mesh->vertices[1].color[0] = 0;
+	mesh->vertices[1].color[1] = 1;
+	mesh->vertices[1].color[2] = 0;
+	mesh->vertices[1].color[3] = 1;
+	mesh->vertices[2].color[0] = 0;
+	mesh->vertices[2].color[1] = 0;
+	mesh->vertices[2].color[2] = 1;
+	mesh->vertices[2].color[3] = 1;
+	mesh->triangles[0].indices[0] = 0;
+	mesh->triangles[0].indices[1] = 1;
+	mesh->triangles[0].indices[2] = 2;
+
+	if(!$(bool, opengl, updateMesh)(mesh)) {
+		return false;
+	}
+
+	return true;
 }
 
 MODULE_FINALIZE
 {
+	$(void, opengl, freeMesh)(mesh);
+
 	$(void, event, detachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
 	$(void, event, detachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
 	$(void, event, detachEventListener)(window, "keyDown", NULL, &listener_keyDown);

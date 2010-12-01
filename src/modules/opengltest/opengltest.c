@@ -39,7 +39,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 5, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -117,48 +117,31 @@ MODULE_INIT
 			break;
 		}
 
-		GString *path;
+		// Read and compile vertex shader source
+		char *execpath = $$(char *, getExecutablePath)();
+		GString *vertexShaderFile = g_string_new(execpath);
+		g_string_append(vertexShaderFile, "/modules/opengltest/shader.glslv");
 
-		// Read vertex shader source
-		path = g_string_new($$(char *, getExecutablePath)());
-		g_string_append(path, "/modules/opengltest/shader.glslv");
-
-		char *vertexShaderSource;
-		unsigned long vertexShaderLength;
-		if(!g_file_get_contents(path->str, &vertexShaderSource, &vertexShaderLength, NULL)) {
-			LOG_ERROR("Failed to read vertex shader source from %s", path->str);
-			g_string_free(path, true);
+		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile->str, GL_VERTEX_SHADER)) == 0) {
 			break;
 		}
 
-		g_string_free(path, true);
+		g_string_free(vertexShaderFile, true);
 
-		// Read fragment shader source
-		path = g_string_new($$(char *, getExecutablePath)());
-		g_string_append(path, "/modules/opengltest/shader.glslf");
+		// Read and compile fragment shader source
+		GString *fragmentShaderFile = g_string_new(execpath);
+		g_string_append(fragmentShaderFile, "/modules/opengltest/shader.glslf");
 
-		char *fragmentShaderSource;
-		unsigned long fragmentShaderLength;
-		if(!g_file_get_contents(path->str, &fragmentShaderSource, &fragmentShaderLength, NULL)) {
-			LOG_ERROR("Failed to read fragment shader source from %s", path->str);
-			g_string_free(path, true);
-			break;
-		}
-
-		g_string_free(path, true);
-
-		// Compile and link shader program
-		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromString)(vertexShaderSource, GL_VERTEX_SHADER)) == 0) {
-			break;
-		}
-
-		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromString)(fragmentShaderSource, GL_FRAGMENT_SHADER)) == 0) {
+		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile->str, GL_FRAGMENT_SHADER)) == 0) {
 			break;
 		}
 
 		if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, true)) == 0) {
 			break;
 		}
+
+		g_string_free(fragmentShaderFile, true);
+		free(execpath);
 
 		vertexShader = 0;
 		fragmentShader = 0;

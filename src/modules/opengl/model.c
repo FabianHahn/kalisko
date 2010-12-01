@@ -87,6 +87,35 @@ bool updateMesh(OpenGLMesh *mesh)
 }
 
 /**
+ * Draws a mesh to OpenGL
+ *
+ * @param mesh			the mesh to draw
+ */
+bool drawMesh(OpenGLMesh *mesh)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, position));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, normal));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, color));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_COLOR);
+
+	if(checkOpenGLError()) {
+		return false;
+	}
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
+	glDrawElements(GL_TRIANGLES, mesh->num_triangles, GL_UNSIGNED_SHORT, NULL);
+
+	if(checkOpenGLError()) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Frees an OpenGL mesh
  *
  * @param mesh			the mesh to free

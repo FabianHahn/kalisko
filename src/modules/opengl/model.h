@@ -29,7 +29,7 @@
  */
 typedef struct {
 	/** The position of the vertex */
-	float position[4];
+	float position[3];
 	/** The normal vector of the vertex */
 	float normal[3];
 	/** The color of the vertex */
@@ -66,6 +66,7 @@ typedef struct {
 
 OpenGLMesh *createMesh(int num_vertices, int num_triangles, GLenum usage);
 bool updateMesh(OpenGLMesh *mesh);
+bool drawMesh(OpenGLMesh *mesh);
 void freeMesh(OpenGLMesh *mesh);
 
 #endif

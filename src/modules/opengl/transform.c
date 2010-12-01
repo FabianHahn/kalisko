@@ -109,13 +109,13 @@ API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far)
 	$(void, linalg, clearMatrix)(perspective);
 	float *perspectiveData = $(float *, linalg, getMatrixData)(perspective);
 
-	float f = tan(fovy / 2);
+	float f = 1.0f / tan(fovy / 2.0f);
 
 	perspectiveData[0*4+0] = f / ar;
 	perspectiveData[1*4+1] = f;
 	perspectiveData[2*4+2] = (far + near) / (far - near);
-	perspectiveData[2*4+3] = (2 * far * near) / (near - far);
-	perspectiveData[3*4+2] = -1;
+	perspectiveData[2*4+3] = (2.0f * far * near) / (near - far);
+	perspectiveData[3*4+2] = -1.0f;
 
 	return perspective;
 }

@@ -38,9 +38,9 @@
 API OpenGLCamera *createOpenGLCamera()
 {
 	OpenGLCamera *camera = ALLOCATE_OBJECT(OpenGLCamera);
-	camera->direction = $(Vector *, linalg, createVector3)(0, 0, 1);
-	camera->position = $(Vector *, linalg, createVector3)(0, 0, 0);
-	camera->up = $(Vector *, linalg, createVector3)(0, 1, 0);
+	camera->direction = $(Vector *, linalg, createVector3)(0.0, 0.0, 1.0);
+	camera->position = $(Vector *, linalg, createVector3)(0.0, 0.0, 0.0);
+	camera->up = $(Vector *, linalg, createVector3)(0.0, 1.0, 0.0);
 
 	return camera;
 }
@@ -52,7 +52,7 @@ API OpenGLCamera *createOpenGLCamera()
  * @param move				the move type to move the camera with
  * @param amount			the amount in coordinate units to move the camera into the specified move direction
  */
-API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, float amount)
+API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double amount)
 {
 	Vector *step;
 

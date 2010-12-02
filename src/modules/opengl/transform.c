@@ -122,7 +122,7 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
  * @param znear		the projection plane of the camera
  * @param zfar		the back plane of the camera viewing volume
  */
-API Matrix *createPerspectiveMatrix(float fovy, float ar, float znear, float zfar)
+API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double zfar)
 {
 	Matrix *perspective = $(Matrix *, linalg, createMatrix)(4, 4);
 	$(void, linalg, clearMatrix)(perspective);

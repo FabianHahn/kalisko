@@ -64,7 +64,7 @@ typedef struct {
 } OpenGLCamera;
 
 API OpenGLCamera *createOpenGLCamera();
-API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, float amount);
+API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double amount);
 API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera);
 API void freeOpenGLCamera(OpenGLCamera *camera);
 

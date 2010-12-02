@@ -28,31 +28,29 @@
 #include "modules/linalg/Matrix.h"
 #include "api.h"
 
-TEST_CASE(matrix_multiply);
+TEST_CASE(matrix_matrix_multiplication);
+TEST_CASE(matrix_vector_multiplication);
 
 MODULE_NAME("test_linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the linalg module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 1, 8));
 
 TEST_SUITE_BEGIN(linalg)
-	TEST_CASE_ADD(matrix_multiply);
+	TEST_CASE_ADD(matrix_matrix_multiplication);
+	TEST_CASE_ADD(matrix_vector_multiplication);
 TEST_SUITE_END
 
-TEST_CASE(matrix_multiply)
+static Matrix *getTestMatrix();
+
+TEST_CASE(matrix_matrix_multiplication)
 {
 	Matrix *identity = $(Matrix *, linalg, createMatrix)(3, 3);
 	$(void, linalg, eyeMatrix)(identity);
 
-	Matrix *testMatrix = $(Matrix *, linalg, createMatrix)(3, 3);
-	$(void, linalg, clearMatrix)(testMatrix);
-	$(void, linalg, setMatrix)(testMatrix, 0, 0, 1);
-	$(void, linalg, setMatrix)(testMatrix, 0, 1, 2);
-	$(void, linalg, setMatrix)(testMatrix, 0, 2, 3);
-	$(void, linalg, setMatrix)(testMatrix, 1, 1, -1);
-	$(void, linalg, setMatrix)(testMatrix, 2, 2, -5);
+	Matrix *testMatrix = getTestMatrix();
 
 	// Multiply with identity
 	Matrix *result = $(Matrix *, linalg, multiplyMatrices)(identity, testMatrix);
@@ -76,4 +74,40 @@ TEST_CASE(matrix_multiply)
 
 
 	TEST_PASS;
+}
+
+TEST_CASE(matrix_vector_multiplication)
+{
+	Matrix *testMatrix = getTestMatrix();
+	Vector *testVector = $(Vector *, linalg, createVector)(3);
+	$(void, linalg, setVector)(testVector, 0, -1);
+	$(void, linalg, setVector)(testVector, 1, 3.14);
+	$(void, linalg, setVector)(testVector, 2, 0.5);
+
+	Vector *result = $(Vector *, linalg, multiplyMatrixWithVector)(testMatrix, testVector);
+	Vector *solution = $(Vector *, linalg, createVector)(3);
+	$(void, linalg, setVector)(solution, 0, 6.78);
+	$(void, linalg, setVector)(solution, 1, -3.14);
+	$(void, linalg, setVector)(solution, 2, -2.5);
+	TEST_ASSERT($(bool, linalg, vectorEquals)(result, solution));
+
+	$(void, linalg, freeMatrix)(testMatrix);
+	$(void, linalg, freeVector)(testVector);
+	$(void, linalg, freeVector)(result);
+	$(void, linalg, freeVector)(solution);
+
+	TEST_PASS;
+}
+
+static Matrix *getTestMatrix()
+{
+	Matrix *testMatrix = $(Matrix *, linalg, createMatrix)(3, 3);
+	$(void, linalg, clearMatrix)(testMatrix);
+	$(void, linalg, setMatrix)(testMatrix, 0, 0, 1);
+	$(void, linalg, setMatrix)(testMatrix, 0, 1, 2);
+	$(void, linalg, setMatrix)(testMatrix, 0, 2, 3);
+	$(void, linalg, setMatrix)(testMatrix, 1, 1, -1);
+	$(void, linalg, setMatrix)(testMatrix, 2, 2, -5);
+
+	return testMatrix;
 }

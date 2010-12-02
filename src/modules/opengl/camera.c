@@ -24,5 +24,35 @@
 #include "dll.h"
 #include "log.h"
 #include "memory_alloc.h"
+#include "modules/linalg/Vector.h"
+#include "modules/linalg/Matrix.h"
 #include "api.h"
 #include "camera.h"
+
+/**
+ * Creates a new OpenGL camera positioned at the origin and looking in z direction with positive y axis as up vector
+ *
+ * @result		the created OpenGL camera
+ */
+API OpenGLCamera *createOpenGLCamera()
+{
+	OpenGLCamera *camera = ALLOCATE_OBJECT(OpenGLCamera);
+	camera->direction = $(Vector *, linalg, createVector3)(0, 0, 1);
+	camera->position = $(Vector *, linalg, createVector3)(0, 0, 0);
+	camera->up = $(Vector *, linalg, createVector3)(0, 1, 0);
+
+	return camera;
+}
+
+/**
+ * Frees an OpenGL camera
+ *
+ * @param camera		the camera to free
+ */
+API void freeOpenGLCamera(OpenGLCamera *camera)
+{
+	$(void, linalg, freeVector)(camera->direction);
+	$(void, linalg, freeVector)(camera->position);
+	$(void, linalg, freeVector)(camera->up);
+	free(camera);
+}

@@ -23,6 +23,8 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include "modules/linalg/Vector.h"
+#include "modules/linalg/Matrix.h"
 
 /**
  * Describes an OpenGL camera move
@@ -54,11 +56,14 @@ typedef enum {
 
 typedef struct {
 	/** The current up direction of the camera */
-	Vector up;
+	Vector *up;
 	/** The looking direction of the camera */
-	Vector direction;
+	Vector *direction;
 	/** The position of the camera */
-	Vector position;
+	Vector *position;
 } OpenGLCamera;
+
+API OpenGLCamera *createOpenGLCamera();
+API void freeOpenGLCamera(OpenGLCamera *camera);
 
 #endif

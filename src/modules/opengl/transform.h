@@ -25,6 +25,7 @@
 #include <GL/freeglut.h>
 
 API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up);
+API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up);
 API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far);
 
 #endif

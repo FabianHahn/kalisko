@@ -45,8 +45,28 @@ API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
 	assert($(unsigned int, linalg, getVectorSize)(focus) == 3);
 	assert($(unsigned int, linalg, getVectorSize)(up) == 3);
 
-	// Construct camera coordinate system basis
 	Vector *f = $(Vector *, linalg, diffVectors)(focus, eye);
+	Matrix *lookAt = createLookIntoDirectionMatrix(eye, f, up);
+	$(void, linalg, freeVector)(f);
+
+	return lookAt;
+}
+
+/**
+ * Creates a look-at matrix which transforms the world into a coordinate system as seen from a camera at position eye looking into a direction with specified up vector
+ *
+ * @param eye		the position of the camera ("the eye")
+ * @param f			the direction into which the camera is looking - as a side-effect, this vector is normalized
+ * @param up		the up vector for the camera coordinate system - as a side-effect, this vector is normalized
+ * @result			the created loot-at matrix
+ */
+API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
+{
+	assert($(unsigned int, linalg, getVectorSize)(eye) == 3);
+	assert($(unsigned int, linalg, getVectorSize)(f) == 3);
+	assert($(unsigned int, linalg, getVectorSize)(up) == 3);
+
+	// Construct camera coordinate system basis
 	$(void, linalg, normalizeVector)(f);
 	$(void, linalg, normalizeVector)(up);
 

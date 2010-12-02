@@ -291,6 +291,17 @@ API Vector *createVector(unsigned int n)
 }
 
 /**
+ * Assigns a vector to another vector, causing its contents to be copied
+ *
+ * @param target		the target vector to which the source vector should be assigned
+ * @param source		the source vector from which the content should be copied
+ */
+API void assignVector(Vector *target, Vector *source)
+{
+	*target = *source;
+}
+
+/**
  * Copies a vector
  *
  * @param vector	the vector to be copied

@@ -89,6 +89,7 @@ extern "C" {
 #endif
 
 API Matrix *createMatrix(unsigned int r, unsigned int c);
+API void assignMatrix(Matrix *target, Matrix *source);
 API Matrix *copyMatrix(Matrix *other);
 API void freeMatrix(Matrix *matrix);
 API void clearMatrix(Matrix *matrix);

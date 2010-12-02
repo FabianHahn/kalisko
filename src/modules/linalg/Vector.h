@@ -90,6 +90,7 @@ extern "C" {
 #endif
 
 API Vector *createVector(unsigned int n);
+API void assignVector(Vector *target, Vector *source);
 API Vector *copyVector(Vector *vector);
 API void freeVector(Vector *vector);
 API void clearVector(Vector *vector);

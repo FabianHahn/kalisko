@@ -284,6 +284,17 @@ API Matrix *createMatrix(unsigned int r, unsigned int c)
 }
 
 /**
+ * Assigns a matrix to another matrix, causing its contents to be copied
+ *
+ * @param target		the target matrix to which the source matrix should be assigned
+ * @param source		the source matrix from which the content should be copied
+ */
+API void assignMatrix(Matrix *target, Matrix *source)
+{
+	*target = *source;
+}
+
+/**
  * Copies a matrix
  *
  * @param other		the matrix to copy from

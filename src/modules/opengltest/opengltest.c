@@ -32,6 +32,7 @@
 #include "modules/opengl/shader.h"
 #include "modules/opengl/mesh.h"
 #include "modules/opengl/transform.h"
+#include "modules/opengl/camera.h"
 #include "modules/module_util/module_util.h"
 #include "modules/event/event.h"
 #include "modules/linalg/Vector.h"
@@ -42,21 +43,24 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 5, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 5, 19), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 6));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 7));
 
 static OpenGLWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
 static GLuint program = 0;
-static Matrix *camera = NULL;
-static Matrix *perspective = NULL;
+static OpenGLCamera *camera = NULL;
+static Matrix *cameraMatrix = NULL;
+static Matrix *perspectiveMatrix = NULL;
+static bool keysPressed[256];
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args);
 static void listener_mouseUp(void *subject, const char *event, void *data, va_list args);
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args);
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
 static void listener_display(void *subject, const char *event, void *data, va_list args);
+static void listener_update(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
@@ -75,6 +79,7 @@ MODULE_INIT
 		$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
 		$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
 		$(void, event, attachEventListener)(window, "display", NULL, &listener_display);
+		$(void, event, attachEventListener)(window, "update", NULL, &listener_update);
 
 
 		// Create geometry
@@ -156,18 +161,12 @@ MODULE_INIT
 			break;
 		}
 
-		Vector *eye = $(Vector *, linalg, createVector3)(0, 0, 0);
-		Vector *target = $(Vector *, linalg, createVector3)(0, 0, 1);
-		Vector *up = $(Vector *, linalg, createVector3)(0, 1, 0);
-		camera = $(Matrix *, opengl, createLookAtMatrix)(eye, target, up);
-		perspective = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1, 0.1, 100);
+		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
+		cameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
+		perspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1, 0.1, 100);
 
-		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera);
-		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspective);
-
-		$(void, linalg, freeVector)(eye);
-		$(void, linalg, freeVector)(target);
-		$(void, linalg, freeVector)(up);
+		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(cameraMatrix);
+		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 
 		if(!$(bool, opengl, attachOpenGLMaterialShaderProgram("opengltest", program))) {
 			break;
@@ -186,11 +185,15 @@ MODULE_INIT
 
 	if(!done) {
 		if(camera != NULL) {
-			$(void, linalg, freeMatrix)(camera);
+			$(void, linalg, freeOpenGLCamera)(camera);
 		}
 
-		if(perspective != NULL) {
-			$(void, linalg, freeMatrix)(perspective);
+		if(cameraMatrix != NULL) {
+			$(void, linalg, freeMatrix)(cameraMatrix);
+		}
+
+		if(perspectiveMatrix != NULL) {
+			$(void, linalg, freeMatrix)(perspectiveMatrix);
 		}
 
 		if(vertexShader != 0) {
@@ -229,10 +232,12 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "keyDown", NULL, &listener_keyDown);
 	$(void, event, detachEventListener)(window, "keyUp", NULL, &listener_keyUp);
 	$(void, event, detachEventListener)(window, "display", NULL, &listener_display);
+	$(void, event, detachEventListener)(window, "update", NULL, &listener_update);
 	$(void, opengl, freeOpenGLWindow)(window);
 
-	$(void, linalg, freeMatrix)(camera);
-	$(void, linalg, freeMatrix)(perspective);
+	$(void, opengl, freeOpenGLCamera)(camera);
+	$(void, linalg, freeMatrix)(cameraMatrix);
+	$(void, linalg, freeMatrix)(perspectiveMatrix);
 }
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args)
@@ -261,6 +266,10 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 
 	LOG_DEBUG("Key '%c' down at %d/%d", key, x, y);
 
+	if(key >= 0 && key < 256) {
+		keysPressed[key] = true;
+	}
+
 	switch(key) {
 		case 27: // escape
 			safeRevokeModule("opengltest");
@@ -278,6 +287,10 @@ static void listener_keyUp(void *subject, const char *event, void *data, va_list
 	int y = va_arg(args, int);
 
 	LOG_DEBUG("Key '%c' up at %d/%d", key, x, y);
+
+	if(key >= 0 && key < 256) {
+		keysPressed[key] = false;
+	}
 }
 
 static void listener_display(void *subject, const char *event, void *data, va_list args)
@@ -286,5 +299,39 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 	$(bool, opengl, useOpenGLMaterial)("opengltest");
 	$(bool, opengl, drawOpenGLMesh)(mesh);
 	glutSwapBuffers();
+}
+
+static void listener_update(void *subject, const char *event, void *data, va_list args)
+{
+	double dt = va_arg(args, double);
+	bool cameraChanged = false;
+
+	if(keysPressed['w']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_FORWARD, dt);
+		cameraChanged = true;
+	}
+
+	if(keysPressed['a']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_LEFT, dt);
+		cameraChanged = true;
+	}
+
+	if(keysPressed['s']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_BACK, dt);
+		cameraChanged = true;
+	}
+
+	if(keysPressed['d']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_RIGHT, dt);
+		cameraChanged = true;
+	}
+
+	// We need to update the camera matrix if some movement happened
+	if(cameraChanged) {
+		Matrix *newCameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
+		$(void, linalg, assignMatrix)(cameraMatrix, newCameraMatrix);
+		$(void, linalg, freeMatrix)(newCameraMatrix);
+		glutPostRedisplay();
+	}
 }
 

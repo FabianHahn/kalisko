@@ -441,7 +441,7 @@ API Vector *crossVectors(Vector *vector1, Vector *vector2)
  * @param vector		the vector to multiply with a scalar
  * @param scalar		the scalar to multiply the vector with
  */
-API void multiplyVectorScalar(Vector *vector, float scalar)
+API void multiplyVectorScalar(Vector *vector, double scalar)
 {
 	*vector *= scalar;
 }
@@ -452,7 +452,7 @@ API void multiplyVectorScalar(Vector *vector, float scalar)
  * @param vector		the vector to divide by a scalar
  * @param scalar		the scalar to divide the vector by
  */
-API void divideVectorScalar(Vector *vector, float scalar)
+API void divideVectorScalar(Vector *vector, double scalar)
 {
 	*vector /= scalar;
 }
@@ -490,7 +490,7 @@ API float getVector(Vector *vector, int i)
  * @param i				the row of the matrix element to set
  * @param value			the new value for the vector element at position i
  */
-API void setVector(Vector *vector, int i, float value)
+API void setVector(Vector *vector, int i, double value)
 {
 	(*vector)[i] = value;
 }
@@ -538,7 +538,7 @@ API float *getVectorData(Vector *vector)
  * @param y			the second element of the resulting vector
  * @result			a 2-vector with elements (x,y)
  */
-API Vector *createVector2(float x, float y)
+API Vector *createVector2(double x, double y)
 {
 	return new Vector(Vector2(x, y));
 }
@@ -551,7 +551,7 @@ API Vector *createVector2(float x, float y)
  * @param z			the third element of the resulting vector
  * @result			a 3-vector with elements (x,y,z)
  */
-API Vector *createVector3(float x, float y, float z)
+API Vector *createVector3(double x, double y, double z)
 {
 	return new Vector(Vector3(x, y, z));
 }
@@ -565,7 +565,7 @@ API Vector *createVector3(float x, float y, float z)
  * @param w			the fourth element of the resulting vector
  * @result			a 4-vector with elements (x,y,z,w)
  */
-API Vector *createVector4(float x, float y, float z, float w)
+API Vector *createVector4(double x, double y, double z, double w)
 {
 	return new Vector(Vector4(x, y, z, w));
 }

@@ -103,17 +103,17 @@ API void subtractVector(Vector *vector, Vector *other);
 API Vector *diffVectors(Vector *vector1, Vector *vector2);
 API float dotVectors(Vector *vector1, Vector *vector2);
 API Vector *crossVectors(Vector *vector1, Vector *vector2);
-API void multiplyVectorScalar(Vector *vector, float scalar);
-API void divideVectorScalar(Vector *vector, float scalar);
+API void multiplyVectorScalar(Vector *vector, double scalar);
+API void divideVectorScalar(Vector *vector, double scalar);
 API bool vectorEquals(Vector *vector1, Vector *vector2);
 API float getVector(Vector *vector, int i);
-API void setVector(Vector *vector, int i, float value);
+API void setVector(Vector *vector, int i, double value);
 API unsigned int getVectorSize(Vector *vector);
 API GString *dumpVector(Vector *vector);
 API float *getVectorData(Vector *vector);
-API Vector *createVector2(float x, float y);
-API Vector *createVector3(float x, float y, float z);
-API Vector *createVector4(float x, float y, float z, float w);
+API Vector *createVector2(double x, double y);
+API Vector *createVector3(double x, double y, double z);
+API Vector *createVector4(double x, double y, double z, double w);
 
 #ifdef __cplusplus
 }

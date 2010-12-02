@@ -422,7 +422,7 @@ API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector)
  * @param matrix		the matrix to multiply with a scalar
  * @param scalar		the scalar to multiply the matrix with
  */
-API void multiplyMatrixScalar(Matrix *matrix, float scalar)
+API void multiplyMatrixScalar(Matrix *matrix, double scalar)
 {
 	*matrix *= scalar;
 }
@@ -433,7 +433,7 @@ API void multiplyMatrixScalar(Matrix *matrix, float scalar)
  * @param matrix		the matrix to divide by a scalar
  * @param scalar		the scalar to divide the matrix by
  */
-API void divideMatrixScalar(Matrix *matrix, float scalar)
+API void divideMatrixScalar(Matrix *matrix, double scalar)
 {
 	*matrix /= scalar;
 }
@@ -471,7 +471,7 @@ API float getMatrix(Matrix *matrix, int i, int j)
  * @param j				the column of the matrix element to set
  * @param value			the new value for the matrix element at position (i,j)
  */
-API void setMatrix(Matrix *matrix, int i, int j, float value)
+API void setMatrix(Matrix *matrix, int i, int j, double value)
 {
 	(*matrix)(i, j) = value;
 }

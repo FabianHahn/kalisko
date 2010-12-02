@@ -26,6 +26,6 @@
 
 API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up);
 API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up);
-API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far);
+API Matrix *createPerspectiveMatrix(float fovy, float ar, float znear, float zfar);
 
 #endif

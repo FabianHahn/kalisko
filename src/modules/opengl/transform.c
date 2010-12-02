@@ -119,10 +119,10 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
  *
  * @param fovy		the viewing angle of the camera in radians
  * @param ar		the aspect ratio of the camera (width / height)
- * @param near		the projection plane of the camera
- * @param far		the back plane of the camera viewing volume
+ * @param znear		the projection plane of the camera
+ * @param zfar		the back plane of the camera viewing volume
  */
-API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far)
+API Matrix *createPerspectiveMatrix(float fovy, float ar, float znear, float zfar)
 {
 	Matrix *perspective = $(Matrix *, linalg, createMatrix)(4, 4);
 	$(void, linalg, clearMatrix)(perspective);
@@ -132,8 +132,8 @@ API Matrix *createPerspectiveMatrix(float fovy, float ar, float near, float far)
 
 	perspectiveData[0*4+0] = f / ar;
 	perspectiveData[1*4+1] = f;
-	perspectiveData[2*4+2] = (far + near) / (near - far);
-	perspectiveData[2*4+3] = (2.0f * far * near) / (near - far);
+	perspectiveData[2*4+2] = (zfar + znear) / (znear - zfar);
+	perspectiveData[2*4+3] = (2.0f * zfar * znear) / (znear - zfar);
 	perspectiveData[3*4+2] = -1.0f;
 
 	return perspective;

@@ -70,8 +70,8 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
 	$(void, linalg, normalizeVector)(f);
 	$(void, linalg, normalizeVector)(up);
 
-	Vector *s = $(Vector *s, linalg, crossVectors)(f, up);
-	Vector *u = $(Vector *s, linalg, crossVectors)(s, f);
+	Vector *s = $(Vector *, linalg, crossVectors)(f, up);
+	Vector *u = $(Vector *, linalg, crossVectors)(s, f);
 
 	float *eyeData = $(float *, linalg, getVectorData)(eye);
 	float *sData = $(float *, linalg, getVectorData)(s);

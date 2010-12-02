@@ -68,7 +68,7 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 API GLuint createOpenGLShaderFromFile(char *filename, GLenum type)
 {
 	char *shaderSource;
-	unsigned long shaderLength;
+	gsize shaderLength;
 	if(!g_file_get_contents(filename, &shaderSource, &shaderLength, NULL)) {
 		LOG_ERROR("Failed to read shader source from %s", filename);
 		return false;

@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 6, 3);
+MODULE_VERSION(0, 6, 4);
 MODULE_BCVERSION(0, 5, 12);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -58,7 +58,7 @@ static void openGL_keyDown(unsigned char key, int x, int y);
 static void openGL_keyUp(unsigned char key, int x, int y);
 static void openGL_specialKeyDown(int key, int x, int y);
 static void openGL_specialKeyUp(int key, int x, int y);
-static void openGL_reshape(int x, int y);
+static void openGL_reshape(int w, int h);
 static void openGL_display();
 static void openGL_mouse(int button, int state, int x, int y);
 static void openGL_motion(int x, int y);
@@ -274,12 +274,12 @@ static void openGL_specialKeyUp(int key, int x, int y)
 /**
  * Callback function called by freeglut when an OpenGL window is reshaped
  */
-static void openGL_reshape(int x, int y)
+static void openGL_reshape(int w, int h)
 {
 	OpenGLWindow *window = getCurrentOpenGLWindow();
 
 	if(window != NULL && window->active) {
-		$(int, event, triggerEvent)(window, "reshape", x, y);
+		$(int, event, triggerEvent)(window, "reshape", w, h);
 	}
 }
 

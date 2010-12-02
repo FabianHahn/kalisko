@@ -22,7 +22,6 @@
 #define OPENGL_CAMERA_H
 
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 

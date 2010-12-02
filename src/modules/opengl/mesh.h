@@ -22,7 +22,6 @@
 #define OPENGL_MESH_H
 
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 
 /**
  * Struct representing an OpenGL vertex

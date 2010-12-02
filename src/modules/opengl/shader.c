@@ -20,7 +20,6 @@
 
 #include <glib.h>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"

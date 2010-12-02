@@ -22,7 +22,6 @@
 #define OPENGL_MATERIAL_H
 
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "shader.h"
 
 API void initOpenGLMaterials();

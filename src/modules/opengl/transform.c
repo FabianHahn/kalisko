@@ -22,7 +22,6 @@
 #include <assert.h>
 #include <glib.h>
 #include <GL/glew.h>
-#include <GL/freeglut.h>
 #include "dll.h"
 #include "log.h"
 #include "memory_alloc.h"

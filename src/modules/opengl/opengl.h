@@ -22,17 +22,8 @@
 #ifndef OPENGL_OPENGL_H
 #define OPENGL_OPENGL_H
 
-#include <GL/freeglut.h>
 #include "types.h"
 
-typedef struct {
-	int id;
-	bool active;
-} OpenGLWindow;
-
 API bool checkOpenGLError();
-API OpenGLWindow *createOpenGLWindow(char *name);
-API OpenGLWindow *getCurrentOpenGLWindow();
-API void freeOpenGLWindow(OpenGLWindow *window);
 
 #endif

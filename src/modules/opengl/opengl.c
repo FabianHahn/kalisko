@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 5, 12);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -65,14 +65,14 @@ static void openGL_motion(int x, int y);
 static void openGL_passiveMotion(int x, int y);
 static void openGL_close();
 
-static float getFloatTime();
+static double getDoubleTime();
 static void freeOpenGLWindowEntry(void *window_p);
 
 /**
  * A table of OpenGL windows registered
  */
 static GHashTable *windows;
-static float loopTime;
+static double loopTime;
 
 MODULE_INIT
 {
@@ -87,7 +87,7 @@ MODULE_INIT
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
-	loopTime = getFloatTime();
+	loopTime = getDoubleTime();
 	windows = g_hash_table_new_full(&g_int_hash, &g_int_equal, NULL, &freeOpenGLWindowEntry);
 
 	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
@@ -207,8 +207,8 @@ API OpenGLWindow *getCurrentOpenGLWindow()
  */
 static void openGL_idle()
 {
-	float now = getFloatTime();
-	float dt = now - loopTime;
+	double now = getDoubleTime();
+	double dt = now - loopTime;
 	loopTime = now;
 
 	GHashTableIter iter;
@@ -351,15 +351,15 @@ static void openGL_close()
 }
 
 /**
- * Returns the current system time as float
+ * Returns the current system time as double
  *
  * @result		the current system time
  */
-static float getFloatTime()
+static double getDoubleTime()
 {
 	GTimeVal time;
 	g_get_current_time(&time);
-	return (G_USEC_PER_SEC * time.tv_sec + time.tv_usec) * (1 / G_USEC_PER_SEC);
+	return (G_USEC_PER_SEC * time.tv_sec + time.tv_usec) * (1.0 / G_USEC_PER_SEC);
 }
 
 /**

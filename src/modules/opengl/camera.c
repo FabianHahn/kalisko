@@ -27,6 +27,7 @@
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "api.h"
+#include "transform.h"
 #include "camera.h"
 
 /**
@@ -42,6 +43,54 @@ API OpenGLCamera *createOpenGLCamera()
 	camera->up = $(Vector *, linalg, createVector3)(0, 1, 0);
 
 	return camera;
+}
+
+/**
+ * Moves an OpenGL camera a certain amount into a certain direction
+ *
+ * @param camera			the OpenGL camera to move
+ * @param move				the move type to move the camera with
+ * @param amount			the amount in coordinate units to move the camera into the specified move direction
+ */
+API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, float amount)
+{
+	Vector *step;
+
+	switch(move) {
+		case OPENGL_CAMERA_MOVE_FORWARD:
+			step = $(Vector *, linalg, copyVector)(camera->direction);
+			$(void, linalg, multiplyVectorScalar)(step, amount);
+		break;
+		case OPENGL_CAMERA_MOVE_BACK:
+			step = $(Vector *, linalg, copyVector)(camera->direction);
+			$(void, linalg, multiplyVectorScalar)(step, -amount);
+		break;
+		case OPENGL_CAMERA_MOVE_LEFT:
+			step = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
+			$(void, linalg, multiplyVectorScalar)(step, -amount);
+		break;
+		case OPENGL_CAMERA_MOVE_RIGHT:
+			step = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
+			$(void, linalg, multiplyVectorScalar)(step, amount);
+		break;
+		default:
+			LOG_ERROR("Trying to move OpenGL camera into unspecified direction %d", move);
+		break;
+	}
+
+	$(void, linalg, addVector)(camera->position, step);
+	$(void, linalg, freeVector)(step);
+}
+
+/**
+ * Generates a look-at matrix for an OpenGL camera
+ *
+ * @param camera		the camera for which to generate a look-at matrix
+ * @result				the created look-at matrix
+ */
+API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
+{
+	return createLookIntoDirectionMatrix(camera->position, camera->direction, camera->up);
 }
 
 /**

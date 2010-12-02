@@ -31,13 +31,13 @@
  */
 typedef enum {
 	/** Move the camera forward */
-	CAMERA_MOVE_FORWARD,
+	OPENGL_CAMERA_MOVE_FORWARD,
 	/** Move the camera backwards */
-	CAMERA_MOVE_BACK,
+	OPENGL_CAMERA_MOVE_BACK,
 	/** Move the camera to the left */
-	CAMERA_MOVE_LEFT,
+	OPENGL_CAMERA_MOVE_LEFT,
 	/** Move the camera to the right */
-	CAMERA_MOVE_RIGHT
+	OPENGL_CAMERA_MOVE_RIGHT
 } OpenGLCameraMove;
 
 /**
@@ -45,13 +45,13 @@ typedef enum {
  */
 typedef enum {
 	/** Tilt the camera upwards */
-	CAMERA_TILT_UP,
+	OPENGL_CAMERA_TILT_UP,
 	/** Tilt the camera downwards */
-	CAMERA_TILT_DOWN,
+	OPENGL_CAMERA_TILT_DOWN,
 	/** Tilt the camera to the left */
-	CAMERA_TILT_LEFT,
+	OPENGL_CAMERA_TILT_LEFT,
 	/** Tilt the camera to the right */
-	CAMERA_TILT_RIGHT
+	OPENGL_CAMERA_TILT_RIGHT
 } OpenGLCameraTilt;
 
 typedef struct {
@@ -64,6 +64,8 @@ typedef struct {
 } OpenGLCamera;
 
 API OpenGLCamera *createOpenGLCamera();
+API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, float amount);
+API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera);
 API void freeOpenGLCamera(OpenGLCamera *camera);
 
 #endif

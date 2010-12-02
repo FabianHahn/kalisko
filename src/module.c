@@ -452,6 +452,11 @@ static void *getLibraryFunction(Module *mod, char *funcname)
 {
 	void *func;
 
+	if(mod->handle == NULL) {
+		logMessage("core", LOG_TYPE_WARNING, "Trying to retrieve function %s in unloaded library %s of module %s", funcname, mod->dlname, mod->name);
+		return NULL;
+	}
+
 #ifdef WIN32
 	if((func = GetProcAddress(mod->handle, funcname)) == NULL) {
 #else
@@ -515,6 +520,10 @@ static bool loadDynamicLibrary(Module *mod, bool lazy)
 static void unloadDynamicLibrary(Module *mod)
 {
 	if(mod->skip_reload) {
+		return;
+	}
+
+	if(mod->handle == NULL) {
 		return;
 	}
 
@@ -585,6 +594,7 @@ static bool needModule(char *name, Version *needversion, Module *parent)
 		mod->skip_reload = false;
 		mod->rc = 1;
 		mod->loaded = false;
+		mod->handle = NULL;
 
 		GString *libname = g_string_new(mod->name);
 		g_string_prepend(libname, MODULE_PREFIX);

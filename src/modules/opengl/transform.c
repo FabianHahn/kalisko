@@ -106,7 +106,6 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
 	Matrix *lookAt = $(Matrix *, linalg, multiplyMatrices)(transform, shift);
 
 	// Clean up
-	$(void, linalg, freeVector)(f);
 	$(void, linalg, freeVector)(s);
 	$(void, linalg, freeVector)(u);
 	$(void, linalg, freeMatrix)(shift);

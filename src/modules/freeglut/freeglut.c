@@ -37,7 +37,7 @@
 MODULE_NAME("freeglut");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The freeglut module is an freeglut context provider suited to rendering into multiple windows");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -158,7 +158,7 @@ API FreeglutWindow *createFreeglutWindow(char *name)
  *
  * @param window		the window to free
  */
-API void freefreeglutWindow(FreeglutWindow *window)
+API void freeFreeglutWindow(FreeglutWindow *window)
 {
 	g_hash_table_remove(windows, &window->id);
 }
@@ -168,7 +168,7 @@ API void freefreeglutWindow(FreeglutWindow *window)
  *
  * @result		the freeglut window that is currently active
  */
-API FreeglutWindow *getCurrentfreeglutWindow()
+API FreeglutWindow *getCurrentFreeglutWindow()
 {
 	int id = glutGetWindow();
 

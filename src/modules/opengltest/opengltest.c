@@ -43,7 +43,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 5, 4);
+MODULE_VERSION(0, 5, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 6, 4), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 7));
 
@@ -167,8 +167,8 @@ MODULE_INIT
 
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
 		cameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
-		perspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1, 0.1, 100);
-
+		perspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
+		
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(cameraMatrix);
 		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 
@@ -303,7 +303,6 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	$(bool, opengl, useOpenGLMaterial)("opengltest");
 	$(bool, opengl, drawOpenGLMesh)(mesh);
-	glutSwapBuffers();
 }
 
 static void listener_update(void *subject, const char *event, void *data, va_list args)
@@ -346,7 +345,7 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	int h = va_arg(args, int);
 
 	glViewport(0, 0, w, h);
-	Matrix *newPerspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (float) w / h, 0.1, 100);
+	Matrix *newPerspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
 	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 }

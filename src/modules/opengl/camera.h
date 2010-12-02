@@ -24,4 +24,41 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
+/**
+ * Describes an OpenGL camera move
+ */
+typedef enum {
+	/** Move the camera forward */
+	CAMERA_MOVE_FORWARD,
+	/** Move the camera backwards */
+	CAMERA_MOVE_BACK,
+	/** Move the camera to the left */
+	CAMERA_MOVE_LEFT,
+	/** Move the camera to the right */
+	CAMERA_MOVE_RIGHT
+} OpenGLCameraMove;
+
+/**
+ * Describes an OpenGL camera tilt
+ */
+typedef enum {
+	/** Tilt the camera upwards */
+	CAMERA_TILT_UP,
+	/** Tilt the camera downwards */
+	CAMERA_TILT_DOWN,
+	/** Tilt the camera to the left */
+	CAMERA_TILT_LEFT,
+	/** Tilt the camera to the right */
+	CAMERA_TILT_RIGHT
+} OpenGLCameraTilt;
+
+typedef struct {
+	/** The current up direction of the camera */
+	Vector up;
+	/** The looking direction of the camera */
+	Vector direction;
+	/** The position of the camera */
+	Vector position;
+} OpenGLCamera;
+
 #endif

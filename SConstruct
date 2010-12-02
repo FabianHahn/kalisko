@@ -74,7 +74,7 @@ if not env['verbose']:
 	env.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
 
 if env['PLATFORM'] == 'win32':
-	env.Append(LINKFLAGS = ['-Wl,--export-all-symbols'])
+	env.Append(LINKFLAGS = ['-Wl,--export-all-symbols', '-Wl,--enable-auto-import'])
 	env['WINDOWS_INSERT_DEF'] = True
 else:
 	env.Append(LINKFLAGS = ['-Wl,--export-dynamic'])

@@ -27,6 +27,7 @@
 #include "log.h"
 #include "types.h"
 #include "util.h"
+#include "modules/freeglut/freeglut.h"
 #include "modules/opengl/opengl.h"
 #include "modules/opengl/material.h"
 #include "modules/opengl/shader.h"
@@ -43,11 +44,11 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 5, 5);
+MODULE_VERSION(0, 6, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 6, 4), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 7));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 7));
 
-static OpenGLWindow *window = NULL;
+static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
 static GLuint program = 0;
 static OpenGLCamera *camera = NULL;
@@ -73,7 +74,7 @@ MODULE_INIT
 
 	do { // use do-while branch out to simplify error handling
 		// Create window and add listeners
-		if((window = $(OpenGLWindow *, opengl, createOpenGLWindow)("Kalisko OpenGL test")) == NULL) {
+		if((window = $(FreeglutWindow *, opengl, createFreeglutWindow)("Kalisko OpenGL test")) == NULL) {
 			break;
 		}
 
@@ -217,7 +218,7 @@ MODULE_INIT
 		}
 
 		if(window != NULL) {
-			$(void, opengl, freeOpenGLWindow)(window);
+			$(void, opengl, freeFreeglutWindow)(window);
 		}
 
 		return false;
@@ -238,7 +239,7 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "display", NULL, &listener_display);
 	$(void, event, detachEventListener)(window, "update", NULL, &listener_update);
 	$(void, event, detachEventListener)(window, "reshape", NULL, &listener_reshape);
-	$(void, opengl, freeOpenGLWindow)(window);
+	$(void, opengl, freeFreeglutWindow)(window);
 
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(cameraMatrix);

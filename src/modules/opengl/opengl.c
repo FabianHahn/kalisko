@@ -39,7 +39,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction by means of the freeglut library");
-MODULE_VERSION(0, 6, 1);
+MODULE_VERSION(0, 6, 2);
 MODULE_BCVERSION(0, 5, 12);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 1, 4));
 
@@ -84,7 +84,6 @@ MODULE_INIT
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(argc);
 
-	glutIdleFunc(&openGL_idle);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
@@ -113,6 +112,7 @@ MODULE_FINALIZE
 
 TIMER_CALLBACK(GLUT_MAIN_LOOP)
 {
+	openGL_idle();
 	glutMainLoopEvent();
 	TIMER_ADD_TIMEOUT(GLUT_MAIN_TIMEOUT, GLUT_MAIN_LOOP);
 }
@@ -212,7 +212,7 @@ static void openGL_idle()
 	loopTime = now;
 
 	GHashTableIter iter;
-	int id;
+	int *id;
 	OpenGLWindow *window;
 	g_hash_table_iter_init(&iter, windows);
 	while(g_hash_table_iter_next(&iter, (void *) &id, (void *) &window)) {

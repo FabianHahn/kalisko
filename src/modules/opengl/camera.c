@@ -82,6 +82,64 @@ API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double am
 }
 
 /**
+ * Tilts an OpenGL camera a certain amount into a certain direction
+ *
+ * @param camera			the OpenGL camera to tilt
+ * @param tilt				the tilt type to tilt the camera with
+ * @param angle				the angle in radians to tilt the camera into the specified move direction
+ */
+API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double angle)
+{
+	Vector *rightDirection = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
+	Vector *axis;
+
+	switch(tilt) {
+		case OPENGL_CAMERA_TILT_UP:
+			axis = $(Vector *, linalg, copyVector)(rightDirection);
+		break;
+		case OPENGL_CAMERA_TILT_DOWN:
+			axis = $(Vector *, linalg, copyVector)(rightDirection);
+			$(void, linalg, multiplyVectorScalar)(axis, -1);
+		break;
+		case OPENGL_CAMERA_TILT_LEFT:
+			axis = $(Vector *, linalg, copyVector)(camera->up);
+		break;
+		case OPENGL_CAMERA_TILT_RIGHT:
+			axis = $(Vector *, linalg, copyVector)(camera->up);
+			$(void, linalg, multiplyVectorScalar)(axis, -1);
+		break;
+		default:
+			LOG_ERROR("Trying to tilt OpenGL camera into unspecified direction %d", tilt);
+		break;
+	}
+
+	// Rotate camera direction
+	Matrix *rotation = createRotationMatrix(axis, angle);
+	Matrix *normalRotation = $(Matrix *, linalg, transposeMatrix)(rotation);
+	Vector *newDirection = $(Vector *, linalg, multiplyMatrixWithVector)(normalRotation, camera->direction);
+	Vector *newRightDirection = $(Vector *, linalg, multiplyMatrixWithVector)(normalRotation, rightDirection);
+
+	// Enforce no camera roll
+	$(void, linalg, setVector)(newRightDirection, 1, 0.0);
+	Vector *newUp = $(Vector *, linalg, crossVectors)(newRightDirection, newDirection);
+
+	// Set new camera vectors
+	$(void, linalg, assignVector)(camera->direction, newDirection);
+	$(void, linalg, normalizeVector)(camera->direction);
+	$(void, linalg, assignVector)(camera->up, newUp);
+	$(void, linalg, normalizeVector)(camera->up);
+
+	// Clean up
+	$(void, linalg, freeMatrix)(rotation);
+	$(void, linalg, freeMatrix)(normalRotation);
+	$(void, linalg, freeVector)(rightDirection);
+	$(void, linalg, freeVector)(axis);
+	$(void, linalg, freeVector)(newDirection);
+	$(void, linalg, freeVector)(newRightDirection);
+	$(void, linalg, freeVector)(newUp);
+}
+
+/**
  * Generates a look-at matrix for an OpenGL camera
  *
  * @param camera		the camera for which to generate a look-at matrix

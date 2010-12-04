@@ -144,11 +144,11 @@ Vector& Vector::operator-=(const Vector& other)
 
 float Vector::operator*(const Vector& other) const
 {
-	assert(size == other.getSize());
+	unsigned int minsize = std::min(size, other.getSize());
 
 	float dot = 0.0f;
 
-	for(unsigned int i = 0; i < size; i++) {
+	for(unsigned int i = 0; i < minsize; i++) {
 		dot += data[i] * other[i];
 	}
 

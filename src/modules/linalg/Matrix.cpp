@@ -166,15 +166,20 @@ Matrix Matrix::operator*(const Matrix& other) const
 
 Vector Matrix::operator*(Vector vector) const
 {
-	assert(cols == vector.getSize());
+	assert(cols >= vector.getSize());
 
 	Vector result(rows);
 
 	for(unsigned int i = 0; i < rows; i++) {
 		result[i] = 0.0;
 
-		for(unsigned int j = 0; j < cols; j++) {
+		for(unsigned int j = 0; j < vector.getSize(); j++) {
 			result[i] += (*this)(i, j) * vector[j];
+		}
+
+		// Assume all other vector dimensions are 1
+		for(unsigned int j = vector.getSize(); j < cols; j++) {
+			result[i] += (*this)(i, j);
 		}
 	}
 

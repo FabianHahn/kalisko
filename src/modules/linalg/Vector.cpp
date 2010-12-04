@@ -38,7 +38,7 @@ Vector& Vector::operator=(const Vector& from)
 		return *this;
 	}
 
-	assert(size == from.getSize());
+	assert(size <= from.getSize());
 
 	for(unsigned int i = 0; i < size; i++) {
 		data[i] = from[i];

@@ -131,6 +131,13 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 	$(void, linalg, assignVector)(camera->up, newUp);
 	$(void, linalg, normalizeVector)(camera->up);
 
+	// Check if we're still correctly turned
+	Vector *check = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
+	if($(float, linalg, dotVectors)(check, newRightDirection) < 0.0f) {
+		// Correct orientation
+		$(void, linalg, multiplyVectorScalar)(camera->up, -1);
+	}
+
 	// Clean up
 	$(void, linalg, freeMatrix)(rotation);
 	$(void, linalg, freeMatrix)(normalRotation);

@@ -206,3 +206,50 @@ API Matrix *createRotationMatrixZ(double angle)
 
 	return rotation;
 }
+
+/**
+ * Creates a rotation matrix around the a general axis
+ *
+ * @param axis		the axis around with to rotate - as a side-effect, this vector is normalized
+ * @param angle		the angle in radians by which the matrix should rotate
+ * @result			the created rotation matrix
+ */
+API Matrix *createRotationMatrix(Vector *axis, double angle)
+{
+	assert($(unsigned int, linalg, getVectorSize)(axis) == 3);
+
+	$(void, linalg, normalizeVector)(axis);
+	float *axisData = $(float *, linalg, getVectorData)(axis);
+
+	float c = cos(angle);
+	float s = sin(angle);
+	float C = 1 - c;
+	float x = axisData[0];
+	float y = axisData[1];
+	float z = axisData[2];
+	float xs = x * s;
+	float ys = y * s;
+	float zs = z * s;
+	float xC = x * C;
+	float yC = y * C;
+	float zC = z * C;
+	float xyC = x * yC;
+	float yzC = y * zC;
+	float zxC = z * xC;
+
+	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(rotation);
+	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+
+	rotationData[0*4+0] = x * xC + c;
+	rotationData[0*4+1] = xyC - zs;
+	rotationData[0*4+2] = zxC + ys;
+	rotationData[1*4+0] = xyC + zs;
+	rotationData[1*4+1] = y * yC + c;
+	rotationData[1*4+2] = yzC - xs;
+	rotationData[2*4+0] = zxC - ys;
+	rotationData[2*4+1] = yzC + xs;
+	rotationData[2*4+2] = z * zC + c;
+
+	return rotation;
+}

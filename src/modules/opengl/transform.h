@@ -29,5 +29,6 @@ API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double
 API Matrix *createRotationMatrixX(double angle);
 API Matrix *createRotationMatrixY(double angle);
 API Matrix *createRotationMatrixZ(double angle);
+API Matrix *createRotationMatrix(Vector *axis, double angle);
 
 #endif

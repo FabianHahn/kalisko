@@ -24,6 +24,7 @@ class Vector
 
 		Vector& clear();
 		Vector& normalize();
+		Vector& homogenize();
 
 		float getLength() const;
 		float getLength2() const;
@@ -95,6 +96,7 @@ API Vector *copyVector(Vector *vector);
 API void freeVector(Vector *vector);
 API void clearVector(Vector *vector);
 API void normalizeVector(Vector *vector);
+API void homogenizeVector(Vector *vector);
 API float getVectorLength(Vector *vector);
 API float getVectorLength2(Vector *vector);
 API void addVector(Vector *vector, Vector *other);

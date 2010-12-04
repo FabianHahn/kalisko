@@ -69,6 +69,15 @@ Vector& Vector::normalize()
 	return (*this) /= length;
 }
 
+Vector& Vector::homogenize()
+{
+	if(data[size - 1] == 0.0f) {
+		return *this;
+	}
+
+	return (*this) /= data[size - 1];
+}
+
 float Vector::getLength() const
 {
 	return std::sqrt(getLength2());
@@ -340,6 +349,16 @@ API void clearVector(Vector *vector)
 API void normalizeVector(Vector *vector)
 {
 	vector->normalize();
+}
+
+/**
+ * Homogenize a vector by dividing every component by the last component
+ *
+ * @param vector	the vector to be homogenized
+ */
+API void homogenizeVector(Vector *vector)
+{
+	vector->homogenize();
 }
 
 /**

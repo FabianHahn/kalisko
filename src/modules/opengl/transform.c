@@ -137,3 +137,72 @@ API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double
 
 	return perspective;
 }
+
+/**
+ * Creates a rotation matrix around the x axis
+ *
+ * @param angle		the angle in radians by which the matrix should rotate
+ * @result			the created rotation matrix
+ */
+API Matrix *createRotationMatrixX(double angle)
+{
+	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(rotation);
+	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+
+	float c = cos(angle);
+	float s = sin(angle);
+
+	rotationData[1*4+1] = c;
+	rotationData[1*4+2] = s;
+	rotationData[2*4+1] = -s;
+	rotationData[2*4+2] = c;
+
+	return rotation;
+}
+
+/**
+ * Creates a rotation matrix around the y axis
+ *
+ * @param angle		the angle in radians by which the matrix should rotate
+ * @result			the created rotation matrix
+ */
+API Matrix *createRotationMatrixY(double angle)
+{
+	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(rotation);
+	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+
+	float c = cos(angle);
+	float s = sin(angle);
+
+	rotationData[0*4+0] = c;
+	rotationData[0*4+2] = -s;
+	rotationData[2*4+0] = s;
+	rotationData[2*4+2] = c;
+
+	return rotation;
+}
+
+/**
+ * Creates a rotation matrix around the z axis
+ *
+ * @param angle		the angle in radians by which the matrix should rotate
+ * @result			the created rotation matrix
+ */
+API Matrix *createRotationMatrixZ(double angle)
+{
+	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(rotation);
+	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+
+	float c = cos(angle);
+	float s = sin(angle);
+
+	rotationData[0*4+0] = c;
+	rotationData[0*4+1] = s;
+	rotationData[1*4+0] = -s;
+	rotationData[1*4+1] = c;
+
+	return rotation;
+}

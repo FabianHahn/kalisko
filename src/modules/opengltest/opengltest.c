@@ -44,7 +44,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 7, 0);
+MODULE_VERSION(0, 7, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 13));
 
@@ -87,20 +87,23 @@ MODULE_INIT
 		glutWarpPointer(400, 300);
 
 		// Create geometry
-		if((mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(3, 1, GL_STATIC_DRAW)) == NULL) {
+		if((mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(4, 4, GL_STATIC_DRAW)) == NULL) {
 			break;
 		}
 
 		// Draw a simple tri colored triangle
 		mesh->vertices[0].position[0] = -0.5;
-		mesh->vertices[0].position[1] = -0.5;
+		mesh->vertices[0].position[1] = -0.25;
 		mesh->vertices[0].position[2] = 1.5;
 		mesh->vertices[1].position[0] = 0.5;
-		mesh->vertices[1].position[1] = -0.5;
+		mesh->vertices[1].position[1] = -0.25;
 		mesh->vertices[1].position[2] = 1.5;
 		mesh->vertices[2].position[0] = 0;
-		mesh->vertices[2].position[1] = 0.5;
-		mesh->vertices[2].position[2] = 1.5;
+		mesh->vertices[2].position[1] = 0.566;
+		mesh->vertices[2].position[2] = 1.772;
+		mesh->vertices[3].position[0] = 0;
+		mesh->vertices[3].position[1] = -0.25;
+		mesh->vertices[3].position[2] = 2.366;
 		mesh->vertices[0].normal[0] = 0;
 		mesh->vertices[0].normal[1] = 0;
 		mesh->vertices[0].normal[2] = -1;
@@ -122,9 +125,24 @@ MODULE_INIT
 		mesh->vertices[2].color[1] = 0;
 		mesh->vertices[2].color[2] = 1;
 		mesh->vertices[2].color[3] = 1;
+		mesh->vertices[3].color[0] = 1;
+		mesh->vertices[3].color[1] = 1;
+		mesh->vertices[3].color[2] = 1;
+		mesh->vertices[3].color[3] = 1;
 		mesh->triangles[0].indices[0] = 0;
 		mesh->triangles[0].indices[1] = 1;
 		mesh->triangles[0].indices[2] = 2;
+		mesh->triangles[1].indices[0] = 0;
+		mesh->triangles[1].indices[1] = 1;
+		mesh->triangles[1].indices[2] = 3;
+		mesh->triangles[2].indices[0] = 0;
+		mesh->triangles[2].indices[1] = 2;
+		mesh->triangles[2].indices[2] = 3;
+		mesh->triangles[3].indices[0] = 1;
+		mesh->triangles[3].indices[1] = 2;
+		mesh->triangles[3].indices[2] = 3;
+
+		glEnable(GL_DEPTH_TEST);
 
 		// Write the mesh changes back to the OpenGL buffer
 		if(!$(bool, opengl, updateOpenGLMesh)(mesh)) {

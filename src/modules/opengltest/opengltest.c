@@ -44,9 +44,9 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 6, 0);
+MODULE_VERSION(0, 7, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 7));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 13));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -55,6 +55,9 @@ static OpenGLCamera *camera = NULL;
 static Matrix *cameraMatrix = NULL;
 static Matrix *perspectiveMatrix = NULL;
 static bool keysPressed[256];
+static int currentWidth = 800;
+static int currentHeight = 600;
+static bool cameraTiltEnabled = false;
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args);
 static void listener_mouseUp(void *subject, const char *event, void *data, va_list args);
@@ -63,6 +66,7 @@ static void listener_keyUp(void *subject, const char *event, void *data, va_list
 static void listener_display(void *subject, const char *event, void *data, va_list args);
 static void listener_update(void *subject, const char *event, void *data, va_list args);
 static void listener_reshape(void *subject, const char *event, void *data, va_list args);
+static void listener_mouseMove(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
@@ -78,14 +82,9 @@ MODULE_INIT
 			break;
 		}
 
-		$(void, event, attachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
-		$(void, event, attachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
-		$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
-		$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
-		$(void, event, attachEventListener)(window, "display", NULL, &listener_display);
-		$(void, event, attachEventListener)(window, "update", NULL, &listener_update);
-		$(void, event, attachEventListener)(window, "reshape", NULL, &listener_reshape);
-
+		glutReshapeWindow(800, 600);
+		glutSetCursor(GLUT_CURSOR_NONE);
+		glutWarpPointer(400, 300);
 
 		// Create geometry
 		if((mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(3, 1, GL_STATIC_DRAW)) == NULL) {
@@ -224,6 +223,16 @@ MODULE_INIT
 		return false;
 	}
 
+	$(void, event, attachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
+	$(void, event, attachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
+	$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
+	$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
+	$(void, event, attachEventListener)(window, "display", NULL, &listener_display);
+	$(void, event, attachEventListener)(window, "update", NULL, &listener_update);
+	$(void, event, attachEventListener)(window, "reshape", NULL, &listener_reshape);
+	$(void, event, attachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
+	$(void, event, attachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
+
 	return true;
 }
 
@@ -239,6 +248,8 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "display", NULL, &listener_display);
 	$(void, event, detachEventListener)(window, "update", NULL, &listener_update);
 	$(void, event, detachEventListener)(window, "reshape", NULL, &listener_reshape);
+	$(void, event, detachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
+	$(void, event, detachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
 	$(void, opengl, freeFreeglutWindow)(window);
 
 	$(void, opengl, freeOpenGLCamera)(camera);
@@ -349,5 +360,52 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	Matrix *newPerspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
 	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
+
+	currentWidth = w;
+	currentHeight = h;
+	glutWarpPointer(w / 2, h / 2);
 }
 
+static void listener_mouseMove(void *subject, const char *event, void *data, va_list args)
+{
+	bool cameraChanged = false;
+
+	int x = va_arg(args, int);
+	int y = va_arg(args, int);
+
+	int cx = currentWidth / 2;
+	int cy = currentHeight / 2;
+
+	if(!cameraTiltEnabled) {
+		if(x == cx && y == cy) {
+			cameraTiltEnabled = true;
+		}
+
+		return;
+	}
+
+	int dx = x - cx;
+	int dy = y - cy;
+
+	if(dx != 0) {
+		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_LEFT, 0.005 * dx);
+		cameraChanged = true;
+	}
+
+	if(dy != 0) {
+		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_UP, 0.005 * dy);
+		cameraChanged = true;
+	}
+
+	// We need to update the camera matrix if some tilting happened
+	if(cameraChanged) {
+		GString *dump = $(GString *, linalg, dumpVector)(camera->up);
+		g_string_free(dump, true);
+
+		Matrix *newCameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
+		$(void, linalg, assignMatrix)(cameraMatrix, newCameraMatrix);
+		$(void, linalg, freeMatrix)(newCameraMatrix);
+		glutPostRedisplay();
+		glutWarpPointer(cx, cy);
+	}
+}

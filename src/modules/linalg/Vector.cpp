@@ -157,7 +157,7 @@ float Vector::operator*(const Vector& other) const
 
 Vector Vector::operator%(const Vector& other) const
 {
-	assert(size == 3 && size == other.getSize());
+	assert(size >= 3 && other.getSize() >= 3);
 
 	Vector result = Vector(3);
 	result[0] = data[1] * other[2] - data[2] * other[1];

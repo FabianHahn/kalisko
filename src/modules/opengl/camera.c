@@ -124,9 +124,9 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 	// Rotate camera direction
 	Matrix *rotation = $(Matrix *, linalg, createRotationMatrix)(axis, angle);
 	Matrix *normalRotation = $(Matrix *, linalg, transposeMatrix)(rotation);
-	Vector *newDirection = $(Vector *, linalg, multiplyMatrixWithVector)(normalRotation, camera->direction);
+	Vector *newDirection = $(Vector *, linalg, multiplyMatrixVector)(normalRotation, camera->direction);
 	$(void, linalg, homogenizeVector)(newDirection);
-	Vector *newRightDirection = $(Vector *, linalg, multiplyMatrixWithVector)(normalRotation, rightDirection);
+	Vector *newRightDirection = $(Vector *, linalg, multiplyMatrixVector)(normalRotation, rightDirection);
 	$(void, linalg, homogenizeVector)(newRightDirection);
 
 	// Enforce no camera roll

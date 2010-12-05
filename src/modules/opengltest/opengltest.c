@@ -32,21 +32,21 @@
 #include "modules/opengl/material.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/mesh.h"
-#include "modules/opengl/transform.h"
 #include "modules/opengl/camera.h"
 #include "modules/module_util/module_util.h"
 #include "modules/event/event.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
+#include "modules/linalg/transform.h"
 
 #include "api.h"
 
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 8, 0);
+MODULE_VERSION(0, 8, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 13));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 0));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -208,7 +208,7 @@ MODULE_INIT
 
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
 		cameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
-		perspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
+		perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
 		
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(cameraMatrix);
 		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
@@ -447,7 +447,7 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	int h = va_arg(args, int);
 
 	glViewport(0, 0, w, h);
-	Matrix *newPerspectiveMatrix = $(Matrix *, opengl, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
+	Matrix *newPerspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
 	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 

@@ -72,6 +72,14 @@ API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double am
 			step = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
 			$(void, linalg, multiplyVectorScalar)(step, amount);
 		break;
+		case OPENGL_CAMERA_MOVE_UP:
+			step = $(Vector *, linalg, copyVector)(camera->up);
+			$(void, linalg, multiplyVectorScalar)(step, amount);
+		break;
+		case OPENGL_CAMERA_MOVE_DOWN:
+			step = $(Vector *, linalg, copyVector)(camera->up);
+			$(void, linalg, multiplyVectorScalar)(step, -amount);
+		break;
 		default:
 			LOG_ERROR("Trying to move OpenGL camera into unspecified direction %d", move);
 		break;

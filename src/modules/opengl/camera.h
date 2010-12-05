@@ -36,7 +36,11 @@ typedef enum {
 	/** Move the camera to the left */
 	OPENGL_CAMERA_MOVE_LEFT,
 	/** Move the camera to the right */
-	OPENGL_CAMERA_MOVE_RIGHT
+	OPENGL_CAMERA_MOVE_RIGHT,
+	/** Move the camera upwards */
+	OPENGL_CAMERA_MOVE_UP,
+	/** Move the camera downwards */
+	OPENGL_CAMERA_MOVE_DOWN
 } OpenGLCameraMove;
 
 /**

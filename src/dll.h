@@ -41,4 +41,17 @@
 #define API
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "module.h"
+#include "log.h"
+#include "memory_alloc.h"
+#include "timer.h"
+#include "types.h"
+#include "util.h"
+#include "version.h"
+#ifdef __cplusplus
+}
+#endif
+

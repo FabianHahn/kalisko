@@ -36,30 +36,247 @@ extern "C" {
 class Matrix
 {
 	public:
-		Matrix(unsigned int r, unsigned int c);
-		Matrix(const Matrix& other);
-		virtual ~Matrix();
+		Matrix(unsigned int r, unsigned int c) :
+			rows(r), cols(c)
+		{
+			assert(rows > 0 && cols > 0);
+			data = new float[rows * cols];
+		}
 
-		Matrix& operator=(const Matrix& from);
+		Matrix(const Matrix& other) :
+			rows(other.getRows()), cols(other.getCols())
+		{
+			data = new float[rows * cols];
 
-		Matrix& clear();
-		Matrix& identity();
-		Matrix transpose() const;
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) = other(i, j);
+				}
+			}
+		}
 
-		Matrix operator+(const Matrix& other) const;
-		Matrix& operator+=(const Matrix& other);
-		Matrix operator-(const Matrix& other) const;
-		Matrix& operator-=(const Matrix& other);
+		~Matrix()
+		{
+			delete[] data;
+		}
 
-		Matrix operator*(const Matrix& other) const;
-		Vector operator*(Vector vector) const;
+		Matrix& operator=(const Matrix& from)
+		{
+			if(this == &from) {
+				return *this;
+			}
 
-		Matrix operator*(float factor) const;
-		Matrix& operator*=(float factor);
-		Matrix operator/(float factor) const;
-		Matrix& operator/=(float factor);
+			assert(rows == from.getRows() && cols == from.getCols());
 
-		bool operator==(const Matrix& other) const;
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) = from(i, j);
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix& clear()
+		{
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) = 0.0f;
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix& identity()
+		{
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					if(i == j) {
+						(*this)(i, j) = 1.0f;
+					} else {
+						(*this)(i, j) = 0.0f;
+					}
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix transpose() const
+		{
+			Matrix result(cols, rows);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					result(j, i) = (*this)(i, j);
+				}
+			}
+
+			return result;
+		}
+
+		Matrix operator+(const Matrix& other) const
+		{
+			assert(rows == other.getRows() && cols == other.getCols());
+
+			Matrix result(cols, rows);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					result(i, j) = (*this)(i, j) + other(i, j);
+				}
+			}
+
+			return result;
+		}
+
+		Matrix& operator+=(const Matrix& other)
+		{
+			assert(rows == other.getRows() && cols == other.getCols());
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) += other(i, j);
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix operator-(const Matrix& other) const
+		{
+			assert(rows == other.getRows() && cols == other.getCols());
+
+			Matrix result(cols, rows);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					result(i, j) = (*this)(i, j) - other(i, j);
+				}
+			}
+
+			return result;
+		}
+
+		Matrix& operator-=(const Matrix& other)
+		{
+			assert(rows == other.getRows() && cols == other.getCols());
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) -= other(i, j);
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix operator*(const Matrix& other) const
+		{
+			assert(cols == other.getRows());
+
+			Matrix result(rows, other.getCols());
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < other.getCols(); j++) {
+					float sum = 0.0;
+					for(unsigned int k = 0; k < cols; k++) {
+						sum += (*this)(i, k) * other(k, j);
+					}
+					result(i, j) = sum;
+				}
+			}
+
+			return result;
+		}
+
+		Vector operator*(Vector vector) const
+		{
+			assert(cols >= vector.getSize());
+
+			Vector result(rows);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				result[i] = 0.0;
+
+				for(unsigned int j = 0; j < vector.getSize(); j++) {
+					result[i] += (*this)(i, j) * vector[j];
+				}
+
+				// Assume all other vector dimensions are 1
+				for(unsigned int j = vector.getSize(); j < cols; j++) {
+					result[i] += (*this)(i, j);
+				}
+			}
+
+			return result;
+		}
+
+		Matrix operator*(float factor) const
+		{
+			Matrix result(rows, cols);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					result(i, j) = factor * (*this)(i, j);
+				}
+			}
+
+			return result;
+		}
+
+		Matrix& operator*=(float factor)
+		{
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) *= factor;
+				}
+			}
+
+			return *this;
+		}
+
+		Matrix operator/(float factor) const
+		{
+			assert(factor != 0.0);
+
+			Matrix result(rows, cols);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					result(i, j) = (*this)(i, j) / factor;
+				}
+			}
+
+			return result;
+		}
+
+		Matrix& operator/=(float factor)
+		{
+			assert(factor != 0.0);
+
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					(*this)(i, j) /= factor;
+				}
+			}
+
+			return *this;
+		}
+
+		bool operator==(const Matrix& other) const
+		{
+			for(unsigned int i = 0; i < rows; i++) {
+				for(unsigned int j = 0; j < cols; j++) {
+					if((*this)(i, j) != other(i, j)) {
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
 
 		float& operator()(unsigned int i, unsigned int j)
 		{
@@ -99,7 +316,30 @@ inline Matrix operator*(float factor, const Matrix& matrix)
 	return matrix * factor;
 }
 
-std::ostream& operator<<(std::ostream& stream, const Matrix& matrix);
+inline std::ostream& operator<<(std::ostream& stream, const Matrix& matrix)
+{
+	stream << "[";
+
+	for(unsigned int i = 0; i < matrix.getRows(); i++) {
+		if(i != 0) {
+			stream << " ";
+		}
+
+		for(unsigned int j = 0; j < matrix.getCols(); j++) {
+			if(j != 0) {
+				stream << "\t";
+			}
+
+			stream << matrix(i, j);
+		}
+
+		if(i != matrix.getRows() - 1) {
+			stream << std::endl;
+		}
+	}
+
+	return stream << "]" << std::endl;
+}
 
 #else
 typedef struct Matrix Matrix;

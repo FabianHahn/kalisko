@@ -33,7 +33,7 @@
 #endif
 
 static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData);
-static void defaultLogHandler(const char *name, LogType type, char *message);
+static void defaultLogHandler(const char *name, LogType type, const char *message);
 
 static LogHandler *logHandler = &defaultLogHandler;
 
@@ -66,7 +66,7 @@ API void setLogHandler(LogHandler *handler)
  * @param type		the type of the log message
  * @param message	printf-like message to log
  */
-API void logMessage(const char *module, LogType type, char *message, ...)
+API void logMessage(const char *module, LogType type, const char *message, ...)
 {
 	va_list va;
 	char buffer[LOG_MSG_MAXLEN];
@@ -113,7 +113,7 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 	}
 }
 
-static void defaultLogHandler(const char *name, LogType type, char *message)
+static void defaultLogHandler(const char *name, LogType type, const char *message)
 {
 	GTimeVal now;
 	g_get_current_time(&now);

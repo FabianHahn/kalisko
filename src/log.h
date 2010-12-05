@@ -46,11 +46,11 @@ typedef enum
 /**
  * Log handler function pointer type
  */
-typedef void (LogHandler)(const char *module, LogType type, char *message);
+typedef void (LogHandler)(const char *module, LogType type, const char *message);
 
 API void initLog();
 API void setLogHandler(LogHandler *handler);
-API void logMessage(const char *module, LogType type, char *message, ...) G_GNUC_PRINTF(3, 4);
+API void logMessage(const char *module, LogType type, const char *message, ...) G_GNUC_PRINTF(3, 4);
 
 #ifdef DLL_API_IMPORT
 

@@ -30,12 +30,13 @@ extern "C" {
 }
 #endif
 
+#include "Vector.h"
+
 #ifdef __cplusplus
 #include <string>
 #include <sstream>
 #include <cassert>
 #include <cmath>
-#include "Vector.h"
 
 class Matrix
 {

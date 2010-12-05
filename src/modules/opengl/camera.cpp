@@ -24,16 +24,9 @@ extern "C" {
 }
 
 #include "dll.h"
-
-extern "C" {
-#include "log.h"
-#include "memory_alloc.h"
-}
-
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
-
 #include "api.h"
 #include "camera.h"
 

@@ -33,8 +33,8 @@
 MODULE_NAME("linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic linear algebra module providing matrix and vector classes");
-MODULE_VERSION(0, 2, 2);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 3);
+MODULE_BCVERSION(0, 2, 3);
 MODULE_NODEPS;
 
 MODULE_INIT

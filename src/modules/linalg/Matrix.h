@@ -361,7 +361,7 @@ API Matrix *sumMatrices(Matrix *matrix1, Matrix *matrix2);
 API void subtractMatrix(Matrix *matrix, Matrix *other);
 API Matrix *diffMatrices(Matrix *matrix1, Matrix *matrix2);
 API Matrix *multiplyMatrices(Matrix *matrix1, Matrix *matrix2);
-API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector);
+API Vector *multiplyMatrixVector(Matrix *matrix, Vector *vector);
 API void multiplyMatrixScalar(Matrix *matrix, double scalar);
 API void divideMatrixScalar(Matrix *matrix, double scalar);
 API bool matrixEquals(Matrix *matrix1, Matrix *matrix2);

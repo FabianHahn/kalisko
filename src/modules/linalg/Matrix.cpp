@@ -170,7 +170,7 @@ API Matrix *multiplyMatrices(Matrix *matrix1, Matrix *matrix2)
  * @param vector		the vector that should be multiplied with the matrix
  * @result				the matrix-vector product of the input values
  */
-API Vector *multiplyMatrixWithVector(Matrix *matrix, Vector *vector)
+API Vector *multiplyMatrixVector(Matrix *matrix, Vector *vector)
 {
 	return new Vector(*matrix * *vector);
 }

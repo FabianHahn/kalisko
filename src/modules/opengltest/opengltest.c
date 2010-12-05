@@ -44,7 +44,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 7, 3);
+MODULE_VERSION(0, 7, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 1, 13));
 
@@ -328,6 +328,7 @@ static void listener_keyUp(void *subject, const char *event, void *data, va_list
 
 static void listener_display(void *subject, const char *event, void *data, va_list args)
 {
+	glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	$(bool, opengl, useOpenGLMaterial)("opengltest");
 	$(bool, opengl, drawOpenGLMesh)(mesh);
@@ -355,6 +356,16 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 
 	if(keysPressed['d']) {
 		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_RIGHT, dt);
+		cameraChanged = true;
+	}
+
+	if(keysPressed[' ']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_UP, dt);
+		cameraChanged = true;
+	}
+
+	if(keysPressed['c']) {
+		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_DOWN, dt);
 		cameraChanged = true;
 	}
 

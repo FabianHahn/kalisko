@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,17 +18,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <math.h>
-#include <assert.h>
-#include <glib.h>
-#include <GL/glew.h>
+#include <cmath>
+#include <cassert>
 #include "dll.h"
+
+extern "C" {
 #include "log.h"
 #include "memory_alloc.h"
-#include "modules/linalg/Vector.h"
-#include "modules/linalg/Matrix.h"
 #include "api.h"
+}
+
 #include "transform.h"
+#include "Vector.h"
+#include "Matrix.h"
 
 /**
  * Creates a look-at matrix which transforms the world into a coordinate system as seen from a camera at position eye looking at focus with specified up vector
@@ -40,15 +42,12 @@
  */
 API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
 {
-	assert($(unsigned int, linalg, getVectorSize)(eye) == 3);
-	assert($(unsigned int, linalg, getVectorSize)(focus) == 3);
-	assert($(unsigned int, linalg, getVectorSize)(up) == 3);
+	assert(eye->getSize() == 3);
+	assert(focus->getSize() == 3);
+	assert(up->getSize() == 3);
 
-	Vector *f = $(Vector *, linalg, diffVectors)(focus, eye);
-	Matrix *lookAt = createLookIntoDirectionMatrix(eye, f, up);
-	$(void, linalg, freeVector)(f);
-
-	return lookAt;
+	Vector f = *focus - *eye;
+	return createLookIntoDirectionMatrix(eye, &f, up);
 }
 
 /**
@@ -61,56 +60,41 @@ API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
  */
 API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
 {
-	assert($(unsigned int, linalg, getVectorSize)(eye) == 3);
-	assert($(unsigned int, linalg, getVectorSize)(f) == 3);
-	assert($(unsigned int, linalg, getVectorSize)(up) == 3);
+	assert(eye->getSize() == 3);
+	assert(f->getSize() == 3);
+	assert(up->getSize() == 3);
 
 	// Construct camera coordinate system basis
-	$(void, linalg, normalizeVector)(f);
-	$(void, linalg, normalizeVector)(up);
+	f->normalize();
+	up->normalize();
 
-	Vector *s = $(Vector *, linalg, crossVectors)(f, up);
-	Vector *u = $(Vector *, linalg, crossVectors)(s, f);
-
-	float *eyeData = $(float *, linalg, getVectorData)(eye);
-	float *sData = $(float *, linalg, getVectorData)(s);
-	float *uData = $(float *, linalg, getVectorData)(u);
-	float *fData = $(float *, linalg, getVectorData)(f);
+	Vector s = *f % *up;
+	Vector u = s % *f;
 
 	// Construct shift matrix to camera position
-	Matrix *shift = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(shift);
-	float *shiftData = $(float *, linalg, getMatrixData)(shift);
+	Matrix shift(4, 4);
+	shift.identity();
 
-	shiftData[0*4+3] = -eyeData[0];
-	shiftData[1*4+3] = -eyeData[1];
-	shiftData[2*4+3] = -eyeData[2];
+	shift(0, 3) = -(*eye)[0];
+	shift(1, 3) = -(*eye)[1];
+	shift(2, 3) = -(*eye)[2];
 
 	// Construct basis transform to camera coordinates
-	Matrix *transform = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(transform);
-	float *transformData = $(float *, linalg, getMatrixData)(transform);
+	Matrix transform(4, 4);
+	transform.identity();
 
-	transformData[0*4+0] = sData[0];
-	transformData[0*4+1] = sData[1];
-	transformData[0*4+2] = sData[2];
-	transformData[1*4+0] = uData[0];
-	transformData[1*4+1] = uData[1];
-	transformData[1*4+2] = uData[2];
-	transformData[2*4+0] = -fData[0];
-	transformData[2*4+1] = -fData[1];
-	transformData[2*4+2] = -fData[2];
+	transform(0, 0) = s[0];
+	transform(0, 1) = s[1];
+	transform(0, 2) = s[2];
+	transform(1, 0) = u[0];
+	transform(1, 1) = u[1];
+	transform(1, 2) = u[2];
+	transform(2, 0) = -(*f)[0];
+	transform(2, 1) = -(*f)[1];
+	transform(2, 2) = -(*f)[2];
 
 	// Create look at matrix
-	Matrix *lookAt = $(Matrix *, linalg, multiplyMatrices)(transform, shift);
-
-	// Clean up
-	$(void, linalg, freeVector)(s);
-	$(void, linalg, freeVector)(u);
-	$(void, linalg, freeMatrix)(shift);
-	$(void, linalg, freeMatrix)(transform);
-
-	return lookAt;
+	return new Matrix(transform * shift);
 }
 
 /**
@@ -123,17 +107,16 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
  */
 API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double zfar)
 {
-	Matrix *perspective = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, clearMatrix)(perspective);
-	float *perspectiveData = $(float *, linalg, getMatrixData)(perspective);
+	Matrix *perspective = new Matrix(4, 4);
+	perspective->clear();
 
-	float f = 1.0f / tan(fovy / 2.0f);
+	float f = 1.0f / std::tan(fovy / 2.0f);
 
-	perspectiveData[0*4+0] = f / ar;
-	perspectiveData[1*4+1] = f;
-	perspectiveData[2*4+2] = (zfar + znear) / (znear - zfar);
-	perspectiveData[2*4+3] = (2.0f * zfar * znear) / (znear - zfar);
-	perspectiveData[3*4+2] = -1.0f;
+	(*perspective)(0, 0) = f / ar;
+	(*perspective)(1, 1) = f;
+	(*perspective)(2, 2) = (zfar + znear) / (znear - zfar);
+	(*perspective)(2, 3) = (2.0f * zfar * znear) / (znear - zfar);
+	(*perspective)(3, 2) = -1.0f;
 
 	return perspective;
 }
@@ -146,17 +129,16 @@ API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double
  */
 API Matrix *createRotationMatrixX(double angle)
 {
-	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(rotation);
-	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+	Matrix *rotation = new Matrix(4, 4);
+	rotation->identity();
 
-	float c = cos(angle);
-	float s = sin(angle);
+	float c = std::cos(angle);
+	float s = std::sin(angle);
 
-	rotationData[1*4+1] = c;
-	rotationData[1*4+2] = s;
-	rotationData[2*4+1] = -s;
-	rotationData[2*4+2] = c;
+	(*rotation)(1, 1) = c;
+	(*rotation)(1, 2) = s;
+	(*rotation)(2, 1) = -s;
+	(*rotation)(2, 2) = c;
 
 	return rotation;
 }
@@ -169,17 +151,16 @@ API Matrix *createRotationMatrixX(double angle)
  */
 API Matrix *createRotationMatrixY(double angle)
 {
-	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(rotation);
-	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+	Matrix *rotation = new Matrix(4, 4);
+	rotation->identity();
 
-	float c = cos(angle);
-	float s = sin(angle);
+	float c = std::cos(angle);
+	float s = std::sin(angle);
 
-	rotationData[0*4+0] = c;
-	rotationData[0*4+2] = -s;
-	rotationData[2*4+0] = s;
-	rotationData[2*4+2] = c;
+	(*rotation)(0, 0) = c;
+	(*rotation)(0, 2) = -s;
+	(*rotation)(2, 0) = s;
+	(*rotation)(2, 2) = c;
 
 	return rotation;
 }
@@ -192,17 +173,16 @@ API Matrix *createRotationMatrixY(double angle)
  */
 API Matrix *createRotationMatrixZ(double angle)
 {
-	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(rotation);
-	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+	Matrix *rotation = new Matrix(4, 4);
+	rotation->identity();
 
-	float c = cos(angle);
-	float s = sin(angle);
+	float c = std::cos(angle);
+	float s = std::sin(angle);
 
-	rotationData[0*4+0] = c;
-	rotationData[0*4+1] = s;
-	rotationData[1*4+0] = -s;
-	rotationData[1*4+1] = c;
+	(*rotation)(0, 0) = c;
+	(*rotation)(0, 1) = s;
+	(*rotation)(1, 0) = -s;
+	(*rotation)(1, 1) = c;
 
 	return rotation;
 }
@@ -216,17 +196,15 @@ API Matrix *createRotationMatrixZ(double angle)
  */
 API Matrix *createRotationMatrix(Vector *axis, double angle)
 {
-	assert($(unsigned int, linalg, getVectorSize)(axis) == 3);
+	assert(axis->getSize() == 3);
+	axis->normalize();
 
-	$(void, linalg, normalizeVector)(axis);
-	float *axisData = $(float *, linalg, getVectorData)(axis);
-
-	float c = cos(angle);
-	float s = sin(angle);
+	float c = std::cos(angle);
+	float s = std::sin(angle);
 	float C = 1 - c;
-	float x = axisData[0];
-	float y = axisData[1];
-	float z = axisData[2];
+	float x = (*axis)[0];
+	float y = (*axis)[1];
+	float z = (*axis)[2];
 	float xs = x * s;
 	float ys = y * s;
 	float zs = z * s;
@@ -237,19 +215,18 @@ API Matrix *createRotationMatrix(Vector *axis, double angle)
 	float yzC = y * zC;
 	float zxC = z * xC;
 
-	Matrix *rotation = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(rotation);
-	float *rotationData = $(float *, linalg, getMatrixData)(rotation);
+	Matrix *rotation = new Matrix(4, 4);
+	rotation->identity();
 
-	rotationData[0*4+0] = x * xC + c;
-	rotationData[0*4+1] = xyC - zs;
-	rotationData[0*4+2] = zxC + ys;
-	rotationData[1*4+0] = xyC + zs;
-	rotationData[1*4+1] = y * yC + c;
-	rotationData[1*4+2] = yzC - xs;
-	rotationData[2*4+0] = zxC - ys;
-	rotationData[2*4+1] = yzC + xs;
-	rotationData[2*4+2] = z * zC + c;
+	(*rotation)(0, 1) = xyC - zs;
+	(*rotation)(0, 0) = x * xC + c;
+	(*rotation)(0, 2) = zxC + ys;
+	(*rotation)(1, 0) = xyC + zs;
+	(*rotation)(1, 1) = y * yC + c;
+	(*rotation)(1, 2) = yzC - xs;
+	(*rotation)(2, 0) = zxC - ys;
+	(*rotation)(2, 1) = yzC + xs;
+	(*rotation)(2, 2) = z * zC + c;
 
 	return rotation;
 }

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,10 +18,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPENGL_TRANSFORM_H
-#define OPENGL_TRANSFORM_H
+#ifndef LINALG_TRANSFORM_H
+#define LINALG_TRANSFORM_H
 
-#include <GL/glew.h>
+#include "Vector.h"
+#include "Matrix.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up);
 API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up);
@@ -30,5 +35,9 @@ API Matrix *createRotationMatrixX(double angle);
 API Matrix *createRotationMatrixY(double angle);
 API Matrix *createRotationMatrixZ(double angle);
 API Matrix *createRotationMatrix(Vector *axis, double angle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,7 @@
 MODULE_NAME("linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic linear algebra module providing matrix and vector classes");
-MODULE_VERSION(0, 1, 13);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 

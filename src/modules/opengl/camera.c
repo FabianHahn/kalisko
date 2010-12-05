@@ -25,8 +25,8 @@
 #include "memory_alloc.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
+#include "modules/linalg/transform.h"
 #include "api.h"
-#include "transform.h"
 #include "camera.h"
 
 /**
@@ -122,7 +122,7 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 	}
 
 	// Rotate camera direction
-	Matrix *rotation = createRotationMatrix(axis, angle);
+	Matrix *rotation = $(Matrix *, linalg, createRotationMatrix)(axis, angle);
 	Matrix *normalRotation = $(Matrix *, linalg, transposeMatrix)(rotation);
 	Vector *newDirection = $(Vector *, linalg, multiplyMatrixWithVector)(normalRotation, camera->direction);
 	$(void, linalg, homogenizeVector)(newDirection);
@@ -164,7 +164,7 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
  */
 API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
 {
-	return createLookIntoDirectionMatrix(camera->position, camera->direction, camera->up);
+	return $(Matrix *, linalg, createLookIntoDirectionMatrix)(camera->position, camera->direction, camera->up);
 }
 
 /**

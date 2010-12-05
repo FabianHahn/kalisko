@@ -163,9 +163,9 @@ API OpenGLUniform *createOpenGLUniformFloat(double value)
  */
 API OpenGLUniform *createOpenGLUniformVector(Vector *value)
 {
-	unsigned int size;
-	if((size = $(unsigned int, linalg, getVectorSize)(value)) != 4) {
-		LOG_ERROR("Failed to create vector uniform with size %u instead of 4", size);
+	unsigned int size = $(unsigned int, linalg, getVectorSize)(value);
+	if(!(size == 3 || size == 4)) {
+		LOG_ERROR("Failed to create vector uniform with size %u instead of 3 or 4", size);
 		return NULL;
 	}
 
@@ -221,7 +221,11 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 			glUniform1f(uniform->location, uniform->content.float_value);
 		break;
 		case OPENGL_UNIFORM_VECTOR:
-			glUniform4fv(uniform->location, 1, $(float *, linalg, getVectorData)(uniform->content.vector_value));
+			if($(unsigned int, linalg, getVectorSize)(uniform->content.vector_value) == 3) {
+				glUniform3fv(uniform->location, 1, $(float *, linalg, getVectorData)(uniform->content.vector_value));
+			} else {
+				glUniform4fv(uniform->location, 1, $(float *, linalg, getVectorData)(uniform->content.vector_value));
+			}
 		break;
 		case OPENGL_UNIFORM_MATRIX:
 			glUniformMatrix4fv(uniform->location, 1, GL_TRUE, $(float *, linalg, getMatrixData)(uniform->content.matrix_value));

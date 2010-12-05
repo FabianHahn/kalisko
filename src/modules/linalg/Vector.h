@@ -30,8 +30,11 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus
+#include <string>
+#include <sstream>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
+#include <cmath>
 
 class Vector
 {

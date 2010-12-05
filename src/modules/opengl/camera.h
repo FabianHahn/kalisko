@@ -21,7 +21,12 @@
 #ifndef OPENGL_CAMERA_H
 #define OPENGL_CAMERA_H
 
+#ifdef __cplusplus
+extern "C" {
 #include <GL/glew.h>
+}
+#endif
+
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 
@@ -66,10 +71,18 @@ typedef struct {
 	Vector *position;
 } OpenGLCamera;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 API OpenGLCamera *createOpenGLCamera();
 API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double amount);
 API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double angle);
 API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera);
 API void freeOpenGLCamera(OpenGLCamera *camera);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

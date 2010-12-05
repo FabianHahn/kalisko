@@ -18,14 +18,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+extern "C" {
 #include <glib.h>
 #include <GL/glew.h>
+}
+
 #include "dll.h"
+
+extern "C" {
 #include "log.h"
 #include "memory_alloc.h"
+}
+
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
+
 #include "api.h"
 #include "camera.h"
 

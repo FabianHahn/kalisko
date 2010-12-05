@@ -17,6 +17,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
+def merge(*args):
+    r = []
+    for a in args: r += a
+    return r
+
 if not module.GetOption('clean'):
 	conf = Configure(module)
 	
@@ -47,4 +52,4 @@ if not module.GetOption('clean'):
 				
 	module = conf.Finish()
 
-module.SharedLibrary('../kalisko_opengl', Glob('*.c'))
+module.SharedLibrary('../kalisko_opengl', merge(Glob('*.cpp'), Glob('*.c')))

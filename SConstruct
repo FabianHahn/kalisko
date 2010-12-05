@@ -66,10 +66,10 @@ env.Append(CPPDEFINES = cppdefines)
 
 if not env['verbose']:
 	env.Replace(CCCOMSTR = 'Compiling object: $TARGET')
-	env.Replace(CXXCOMSTR = 'Compiling class: $TARGET')
+	env.Replace(CXXCOMSTR = 'Compiling C++ object: $TARGET')
 	env.Replace(LINKCOMSTR = 'Linking executable: $TARGET')
 	env.Replace(SHCCCOMSTR = 'Compiling shared object: $TARGET')
-	env.Replace(SHCXXCOMSTR = 'Compiling shared class: $TARGET')
+	env.Replace(SHCXXCOMSTR = 'Compiling shared C++ object: $TARGET')
 	env.Replace(SHLINKCOMSTR = 'Linking library: $TARGET')
 	env.Replace(YACCCOMSTR = 'Generating parser: $TARGET')
 

@@ -44,7 +44,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 8, 3);
+MODULE_VERSION(0, 8, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 3));
 
@@ -69,6 +69,7 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 static void listener_update(void *subject, const char *event, void *data, va_list args);
 static void listener_reshape(void *subject, const char *event, void *data, va_list args);
 static void listener_mouseMove(void *subject, const char *event, void *data, va_list args);
+static void listener_close(void *subject, const char *event, void *data, va_list args);
 
 static void addTriangle(OpenGLMesh *mesh, int i, OpenGLVertex vertex1, OpenGLVertex vertex2, OpenGLVertex vertex3)
 {
@@ -309,6 +310,7 @@ MODULE_INIT
 	$(void, event, attachEventListener)(window, "reshape", NULL, &listener_reshape);
 	$(void, event, attachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
 	$(void, event, attachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
+	$(void, event, attachEventListener)(window, "close", NULL, &listener_close);
 
 	return true;
 }
@@ -327,6 +329,7 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "reshape", NULL, &listener_reshape);
 	$(void, event, detachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
 	$(void, event, detachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
+	$(void, event, detachEventListener)(window, "close", NULL, &listener_close);
 	$(void, freeglut, freeFreeglutWindow)(window);
 
 	$(void, opengl, freeOpenGLCamera)(camera);
@@ -498,4 +501,9 @@ static void listener_mouseMove(void *subject, const char *event, void *data, va_
 		glutPostRedisplay();
 		glutWarpPointer(cx, cy);
 	}
+}
+
+static void listener_close(void *subject, const char *event, void *data, va_list args)
+{
+	$(void, module_util, safeRevokeModule)("opengltest");
 }

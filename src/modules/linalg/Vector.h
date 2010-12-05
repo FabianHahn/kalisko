@@ -36,33 +36,235 @@ extern "C" {
 class Vector
 {
 	public:
-		Vector(unsigned int n);
-		Vector(const Vector& other);
-		virtual ~Vector();
+		Vector(unsigned int n) :
+			size(n)
+		{
+			assert(size > 0);
+			data = new float[size];
+		}
 
-		Vector& operator=(const Vector& from);
+		Vector(const Vector& other) :
+			size(other.getSize())
+		{
+			data = new float[size];
 
-		Vector& clear();
-		Vector& normalize();
-		Vector& homogenize();
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] = other[i];
+			}
+		}
 
-		float getLength() const;
-		float getLength2() const;
+		~Vector()
+		{
+			delete[] data;
+		}
 
-		Vector operator+(const Vector& other) const;
-		Vector& operator+=(const Vector& other);
-		Vector operator-(const Vector& other) const;
-		Vector& operator-=(const Vector& other);
-		float operator*(const Vector& other) const;
-		Vector operator%(const Vector& other) const;
-		Vector& operator%=(const Vector& other);
+		Vector& operator=(const Vector& from)
+		{
+			if(this == &from) {
+				return *this;
+			}
 
-		Vector operator*(float factor) const;
-		Vector& operator*=(float factor);
-		Vector operator/(float factor) const;
-		Vector& operator/=(float factor);
+			assert(size <= from.getSize());
 
-		bool operator==(const Vector& other) const;
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] = from[i];
+			}
+
+			return *this;
+		}
+
+		Vector& clear()
+		{
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] = 0.0f;
+			}
+
+			return *this;
+		}
+
+		Vector& normalize()
+		{
+			float length = getLength();
+
+			// assert(length > 0.0);
+
+			if(length == 0) {
+				return *this;
+			}
+
+			return (*this) /= length;
+		}
+
+		Vector& homogenize()
+		{
+			if(data[size - 1] == 0.0f) {
+				return *this;
+			}
+
+			return (*this) /= data[size - 1];
+		}
+
+		float getLength2() const
+		{
+			float ss = 0.0f;
+
+			for(unsigned int i = 0; i < size; i++) {
+				ss += data[i] * data[i];
+			}
+
+			return ss;
+		}
+
+		float getLength() const
+		{
+			return std::sqrt(getLength2());
+		}
+
+		Vector operator+(const Vector& other) const
+		{
+			assert(size == other.getSize());
+
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				result[i] = data[i] + other[i];
+			}
+
+			return result;
+		}
+
+		Vector& operator+=(const Vector& other)
+		{
+			assert(size == other.getSize());
+
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] += other[i];
+			}
+
+			return *this;
+		}
+
+		Vector operator-(const Vector& other) const
+		{
+			assert(size == other.getSize());
+
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				result[i] = data[i] - other[i];
+			}
+
+			return result;
+		}
+
+		Vector& operator-=(const Vector& other)
+		{
+			assert(size == other.getSize());
+
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] -= other[i];
+			}
+
+			return *this;
+		}
+
+		float operator*(const Vector& other) const
+		{
+			unsigned int minsize = std::min(size, other.getSize());
+
+			float dot = 0.0f;
+
+			for(unsigned int i = 0; i < minsize; i++) {
+				dot += data[i] * other[i];
+			}
+
+			return dot;
+		}
+
+		Vector operator%(const Vector& other) const
+		{
+			assert(size >= 3 && other.getSize() >= 3);
+
+			Vector result = Vector(3);
+			result[0] = data[1] * other[2] - data[2] * other[1];
+			result[1] = data[2] * other[0] - data[0] * other[2];
+			result[2] = data[0] * other[1] - data[1] * other[0];
+
+			return result;
+		}
+
+		Vector& operator%=(const Vector& other)
+		{
+			assert(size == 3 && size == other.getSize());
+
+			Vector result = *this % other;
+			data[0] = result[0];
+			data[1] = result[1];
+			data[2] = result[2];
+
+			return *this;
+		}
+
+		Vector operator*(float factor) const
+		{
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				result[i] = factor * data[i];
+			}
+
+			return result;
+		}
+
+		Vector& operator*=(float factor)
+		{
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] *= factor;
+			}
+
+			return *this;
+		}
+
+		Vector operator/(float factor) const
+		{
+			assert(factor != 0.0);
+
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				result[i] = data[i] / factor;
+			}
+
+			return result;
+		}
+
+		Vector& operator/=(float factor)
+		{
+			assert(factor != 0.0);
+
+			Vector result = Vector(size);
+
+			for(unsigned int i = 0; i < size; i++) {
+				data[i] /= factor;
+			}
+
+			return *this;
+		}
+
+		bool operator==(const Vector& other) const
+		{
+			assert(size == 3 && size == other.getSize());
+
+			for(unsigned int i = 0; i < size; i++) {
+				if(data[i] != other[i]) {
+					return false;
+				}
+			}
+
+			return true;
+		}
 
 		float& operator[](unsigned int i)
 		{
@@ -96,11 +298,53 @@ inline Vector operator*(float factor, const Vector& vector)
 	return vector * factor;
 }
 
-std::ostream& operator<<(std::ostream& stream, const Vector& vector);
+inline std::ostream& operator<<(std::ostream& stream, const Vector& vector)
+{
+	stream << "[";
 
-Vector Vector2(float x, float y);
-Vector Vector3(float x, float y, float z);
-Vector Vector4(float x, float y, float z, float w);
+	for(unsigned int i = 0; i < vector.getSize(); i++) {
+		if(i != 0) {
+			stream << "\t";
+		}
+
+		stream << vector[i];
+	}
+
+	return stream << "]" << std::endl;
+}
+
+inline Vector Vector2(float x, float y)
+{
+	Vector result(2);
+
+	result[0] = x;
+	result[1] = y;
+
+	return result;
+}
+
+inline Vector Vector3(float x, float y, float z)
+{
+	Vector result(3);
+
+	result[0] = x;
+	result[1] = y;
+	result[2] = z;
+
+	return result;
+}
+
+inline Vector Vector4(float x, float y, float z, float w)
+{
+	Vector result(4);
+
+	result[0] = x;
+	result[1] = y;
+	result[2] = z;
+	result[3] = w;
+
+	return result;
+}
 
 #else
 typedef struct Vector Vector;

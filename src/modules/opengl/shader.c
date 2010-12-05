@@ -145,7 +145,7 @@ API OpenGLUniform *createOpenGLUniformInt(int value)
  * @param value			the value of the uniform
  * @result				the created uniform
  */
-API OpenGLUniform *createOpenGLUniformFloat(float value)
+API OpenGLUniform *createOpenGLUniformFloat(double value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_FLOAT;

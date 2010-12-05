@@ -34,9 +34,9 @@ TEST_CASE(matrix_vector_multiplication);
 MODULE_NAME("test_linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the linalg module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 1, 8));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 2, 3));
 
 TEST_SUITE_BEGIN(linalg)
 	TEST_CASE_ADD(matrix_matrix_multiplication);
@@ -84,7 +84,7 @@ TEST_CASE(matrix_vector_multiplication)
 	$(void, linalg, setVector)(testVector, 1, 3.14);
 	$(void, linalg, setVector)(testVector, 2, 0.5);
 
-	Vector *result = $(Vector *, linalg, multiplyMatrixWithVector)(testMatrix, testVector);
+	Vector *result = $(Vector *, linalg, multiplyMatrixVector)(testMatrix, testVector);
 	Vector *solution = $(Vector *, linalg, createVector)(3);
 	$(void, linalg, setVector)(solution, 0, 6.78);
 	$(void, linalg, setVector)(solution, 1, -3.14);

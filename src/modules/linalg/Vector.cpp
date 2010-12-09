@@ -229,7 +229,7 @@ API void divideVectorScalar(Vector *vector, double scalar)
  */
 API bool vectorEquals(Vector *vector1, Vector *vector2)
 {
-	return vector1 == vector2;
+	return *vector1 == *vector2;
 }
 
 

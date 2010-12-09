@@ -206,7 +206,7 @@ API void divideMatrixScalar(Matrix *matrix, double scalar)
  */
 API bool matrixEquals(Matrix *matrix1, Matrix *matrix2)
 {
-	return matrix1 == matrix2;
+	return *matrix1 == *matrix2;
 }
 
 /**

@@ -30,17 +30,19 @@
 
 TEST_CASE(matrix_matrix_multiplication);
 TEST_CASE(matrix_vector_multiplication);
+TEST_CASE(vector_vector_multiplication);
 
 MODULE_NAME("test_linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the linalg module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 2, 3));
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 2, 6));
 
 TEST_SUITE_BEGIN(linalg)
 	TEST_CASE_ADD(matrix_matrix_multiplication);
 	TEST_CASE_ADD(matrix_vector_multiplication);
+	TEST_CASE_ADD(vector_vector_multiplication);
 TEST_SUITE_END
 
 static Matrix *getTestMatrix();
@@ -95,6 +97,36 @@ TEST_CASE(matrix_vector_multiplication)
 	$(void, linalg, freeVector)(testVector);
 	$(void, linalg, freeVector)(result);
 	$(void, linalg, freeVector)(solution);
+
+	TEST_PASS;
+}
+
+TEST_CASE(vector_vector_multiplication)
+{
+	Vector *testVector1 = $(Vector *, linalg, createVector)(3);
+	$(void, linalg, setVector)(testVector1, 0, -1);
+	$(void, linalg, setVector)(testVector1, 1, 27);
+	$(void, linalg, setVector)(testVector1, 2, 0.5);
+
+	Vector *testVector2 = $(Vector *, linalg, createVector)(3);
+	$(void, linalg, setVector)(testVector2, 0, 5.0);
+	$(void, linalg, setVector)(testVector2, 1, 0.0);
+	$(void, linalg, setVector)(testVector2, 2, 1.0);
+
+	float dotResult = $(Vector *, linalg, dotVectors)(testVector1, testVector2);
+	TEST_ASSERT(dotResult == -4.5);
+
+	Vector *crossVector = $(Vector *, linalg, crossVectors)(testVector1, testVector2);
+	Vector *crossVectorSolution = $(Vector *, linalg, createVector)(3);
+	$(void, linalg, setVector)(crossVectorSolution, 0, 27.0);
+	$(void, linalg, setVector)(crossVectorSolution, 1, 3.5);
+	$(void, linalg, setVector)(crossVectorSolution, 2, -135.0);
+	TEST_ASSERT($(bool, linalg, vectorEquals)(crossVector, crossVectorSolution));
+
+	$(void, linalg, freeVector)(testVector1);
+	$(void, linalg, freeVector)(testVector2);
+	$(void, linalg, freeVector)(crossVector);
+	$(void, linalg, freeVector)(crossVectorSolution);
 
 	TEST_PASS;
 }

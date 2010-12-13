@@ -230,6 +230,11 @@ class Vector
 			return *this;
 		}
 
+		Vector& operator-()
+		{
+			return *this *= -1;
+		}
+
 		Vector operator/(float factor) const
 		{
 			assert(factor != 0.0);

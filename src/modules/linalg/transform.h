@@ -30,6 +30,7 @@ extern "C" {
 
 API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up);
 API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up);
+API void updateLookIntoDirectionMatrix(Matrix *target, Vector *eye, Vector *f, Vector *up);
 API Matrix *createPerspectiveMatrix(double fovy, double ar, double znear, double zfar);
 API Matrix *createRotationMatrixX(double angle);
 API Matrix *createRotationMatrixY(double angle);

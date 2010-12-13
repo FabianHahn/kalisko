@@ -60,6 +60,22 @@ API Matrix *createLookAtMatrix(Vector *eye, Vector *focus, Vector *up)
  */
 API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
 {
+	Matrix *look = new Matrix(4, 4);
+	updateLookIntoDirectionMatrix(look, eye, f, up);
+	return look;
+}
+
+/**
+ * Updates an existing 4x4 matrix to a look-at matrix which transforms the world into a coordinate system as seen from a camera at position eye looking into a direction with specified up vector
+ *
+ * @param target	the matrix to update
+ * @param eye		the position of the camera ("the eye")
+ * @param f			the direction into which the camera is looking - as a side-effect, this vector is normalized
+ * @param up		the up vector for the camera coordinate system - as a side-effect, this vector is normalized
+ */
+API void updateLookIntoDirectionMatrix(Matrix *target, Vector *eye, Vector *f, Vector *up)
+{
+	assert(target->getCols() == 4 && target->getRows() == 4);
 	assert(eye->getSize() == 3);
 	assert(f->getSize() == 3);
 	assert(up->getSize() == 3);
@@ -94,7 +110,7 @@ API Matrix *createLookIntoDirectionMatrix(Vector *eye, Vector *f, Vector *up)
 	transform(2, 2) = -(*f)[2];
 
 	// Create look at matrix
-	return new Matrix(transform * shift);
+	*target = transform * shift;
 }
 
 /**

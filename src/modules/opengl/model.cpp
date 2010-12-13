@@ -238,9 +238,11 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	Matrix translationMatrix = Matrix(4, 4).identity();
 	translationMatrix(0, 3) = (*model->translation)[0];
 	translationMatrix(1, 3) = (*model->translation)[1];
-	translationMatrix(1, 3) = (*model->translation)[2];
+	translationMatrix(2, 3) = (*model->translation)[2];
 
 	*model->transform *= translationMatrix;
+
+	std::cout << *model->transform << std::endl;
 }
 
 /**

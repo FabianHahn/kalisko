@@ -235,7 +235,7 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 
 	*model->transform = *model->base_transform;
 
-	Matrix translationMatrix(4, 4);
+	Matrix translationMatrix = Matrix(4, 4).identity();
 	translationMatrix(0, 3) = (*model->translation)[0];
 	translationMatrix(1, 3) = (*model->translation)[1];
 	translationMatrix(1, 3) = (*model->translation)[2];

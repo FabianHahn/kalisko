@@ -80,7 +80,7 @@ API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double am
 		break;
 	}
 
-	(*camera->position) += step;
+	*camera->position += step;
 }
 
 /**
@@ -92,23 +92,21 @@ API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double am
  */
 API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double angle)
 {
-	Vector *rightDirection = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
-	Vector *axis;
+	Vector rightDirection = *camera->direction % *camera->up;
+	Vector axis(3);
 
 	switch(tilt) {
 		case OPENGL_CAMERA_TILT_UP:
-			axis = $(Vector *, linalg, copyVector)(rightDirection);
+			axis = rightDirection;
 		break;
 		case OPENGL_CAMERA_TILT_DOWN:
-			axis = $(Vector *, linalg, copyVector)(rightDirection);
-			$(void, linalg, multiplyVectorScalar)(axis, -1);
+			axis = -rightDirection;
 		break;
 		case OPENGL_CAMERA_TILT_LEFT:
-			axis = $(Vector *, linalg, copyVector)(camera->up);
+			axis = *camera->up;
 		break;
 		case OPENGL_CAMERA_TILT_RIGHT:
-			axis = $(Vector *, linalg, copyVector)(camera->up);
-			$(void, linalg, multiplyVectorScalar)(axis, -1);
+			axis = -*camera->up;
 		break;
 		default:
 			LOG_ERROR("Trying to tilt OpenGL camera into unspecified direction %d", tilt);
@@ -116,38 +114,28 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 	}
 
 	// Rotate camera direction
-	Matrix *rotation = $(Matrix *, linalg, createRotationMatrix)(axis, angle);
-	Matrix *normalRotation = $(Matrix *, linalg, transposeMatrix)(rotation);
-	Vector *newDirection = $(Vector *, linalg, multiplyMatrixVector)(normalRotation, camera->direction);
-	$(void, linalg, homogenizeVector)(newDirection);
-	Vector *newRightDirection = $(Vector *, linalg, multiplyMatrixVector)(normalRotation, rightDirection);
-	$(void, linalg, homogenizeVector)(newRightDirection);
+	Matrix *rotation = $(Matrix *, linalg, createRotationMatrix)(&axis, angle);
+	Matrix normalRotation = rotation->transpose();
+	Vector newDirection = (normalRotation * *camera->direction).homogenize();
+	Vector newRightDirection = (normalRotation * rightDirection).homogenize();
 
 	// Enforce no camera roll
-	$(void, linalg, setVector)(newRightDirection, 1, 0.0);
-	Vector *newUp = $(Vector *, linalg, crossVectors)(newRightDirection, newDirection);
+	newRightDirection[1] = 0.0;
+	Vector newUp = newRightDirection % newDirection;
 
 	// Set new camera vectors
-	$(void, linalg, assignVector)(camera->direction, newDirection);
-	$(void, linalg, normalizeVector)(camera->direction);
-	$(void, linalg, assignVector)(camera->up, newUp);
-	$(void, linalg, normalizeVector)(camera->up);
+	*camera->direction = newDirection.normalize();
+	*camera->up = newUp.normalize();
 
 	// Check if we're still correctly turned
-	Vector *check = $(Vector *, linalg, crossVectors)(camera->direction, camera->up);
-	if($(float, linalg, dotVectors)(check, newRightDirection) < 0.0f) {
+	Vector check = newDirection % newUp;
+	if(check * newRightDirection < 0.0f) {
 		// Correct orientation
-		$(void, linalg, multiplyVectorScalar)(camera->up, -1);
+		*camera->up *= -1;
 	}
 
 	// Clean up
 	$(void, linalg, freeMatrix)(rotation);
-	$(void, linalg, freeMatrix)(normalRotation);
-	$(void, linalg, freeVector)(rightDirection);
-	$(void, linalg, freeVector)(axis);
-	$(void, linalg, freeVector)(newDirection);
-	$(void, linalg, freeVector)(newRightDirection);
-	$(void, linalg, freeVector)(newUp);
 }
 
 /**

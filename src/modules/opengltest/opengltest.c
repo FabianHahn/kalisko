@@ -45,9 +45,9 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 9, 2);
+MODULE_VERSION(0, 9, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 10), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 11), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -55,6 +55,7 @@ static GLuint program = 0;
 static OpenGLCamera *camera = NULL;
 static Matrix *perspectiveMatrix = NULL;
 static Matrix *modelMatrix = NULL;
+static Matrix *modelInverseMatrix = NULL;
 static Vector *lightPositionVector = NULL;
 static Vector *lightColorVector = NULL;
 static bool keysPressed[256];
@@ -212,10 +213,12 @@ MODULE_INIT
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
 		perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
 		modelMatrix = $(Matrix *, linalg, createMatrix)(4, 4);
+		modelInverseMatrix = $(Matrix *, linalg, createMatrix)(4, 4);
 		
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
 		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 		OpenGLUniform *modelUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(modelMatrix);
+		OpenGLUniform *modelInverseUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(modelInverseMatrix);
 
 		if(!$(bool, opengl, attachOpenGLMaterialShaderProgram)("opengltest", program)) {
 			break;
@@ -230,6 +233,10 @@ MODULE_INIT
 		}
 
 		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "model", modelUniform)) {
+			break;
+		}
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "modelInverse", modelInverseUniform)) {
 			break;
 		}
 
@@ -289,8 +296,12 @@ MODULE_INIT
 			$(void, linalg, freeMatrix)(perspectiveMatrix);
 		}
 
-		if(perspectiveMatrix != NULL) {
+		if(modelMatrix != NULL) {
 			$(void, linalg, freeMatrix)(modelMatrix);
+		}
+
+		if(modelInverseMatrix != NULL) {
+			$(void, linalg, freeMatrix)(modelInverseMatrix);
 		}
 
 		if(lightPositionVector != NULL) {
@@ -358,6 +369,7 @@ MODULE_FINALIZE
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
 	$(void, linalg, freeMatrix)(modelMatrix);
+	$(void, linalg, freeMatrix)(modelInverseMatrix);
 	$(void, linalg, freeVector)(lightPositionVector);
 	$(void, linalg, freeVector)(lightColorVector);
 }

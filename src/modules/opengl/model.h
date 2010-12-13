@@ -21,6 +21,10 @@
 #ifndef OPENGL_MODEL_H
 #define OPENGL_MODEL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "mesh.h"
 
 API void initOpenGLModels();
@@ -28,5 +32,11 @@ API void freeOpenGLModels();
 API bool createOpenGLModel(char *name);
 API bool deleteOpenGLModel(char *name);
 API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh);
+API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
+API void drawOpenGLModels();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

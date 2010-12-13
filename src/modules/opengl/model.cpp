@@ -18,15 +18,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
+#include <cassert>
+extern "C" {
 #include <glib.h>
 #include <GL/glew.h>
+}
+
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
+
+extern "C" {
 #include "mesh.h"
 #include "material.h"
+}
+
 #include "model.h"
 
 /**
@@ -43,6 +50,8 @@ typedef struct {
 	char *material;
 	/** The base model transformation to which all further modifications are applied */
 	Matrix *base_transform;
+	/** The current model transformation */
+	Matrix *transform;
 } OpenGLModel;
 
 /**
@@ -50,6 +59,7 @@ typedef struct {
  */
 static GHashTable *models;
 
+static void updateOpenGLModelTransform(OpenGLModel *model);
 static void freeOpenGLModel(void *model_p);
 
 /**
@@ -117,7 +127,7 @@ API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh)
 {
 	OpenGLModel *model;
 
-	if((model = g_hash_table_lookup(models, name)) == NULL) {
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
 		LOG_ERROR("Failed to attach a mesh to non existing model '%s'", name);
 		return false;
 	}
@@ -135,16 +145,25 @@ API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh)
  * @param material_name		the name of the material that should be set for the OpenGL model, or NULL if no material should be used
  * @result					true if successful
  */
-API bool setOpenGLModelMaterial(char *model_name, char *material_name)
+API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 {
 	OpenGLModel *model;
 
-	if((model = g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set material for non existing model '%s'", model_name);
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to attach material to non existing model '%s'", model_name);
+		return false;
+	}
+
+	OpenGLUniform *uniform;
+	if((uniform = (OpenGLUniform *) getOpenGLMaterialUniform(material_name, "model")) == NULL || uniform->type != OPENGL_UNIFORM_MATRIX) {
+		LOG_ERROR("Tried to attach material '%s' without a matrix 'model' uniform to model '%s'", material_name, model_name);
 		return false;
 	}
 
 	model->material = material_name;
+	model->transform = uniform->content.matrix_value;
+
+	updateOpenGLModelTransform(model);
 
 	return true;
 }
@@ -158,7 +177,7 @@ API void drawOpenGLModels()
 	char *name;
 	OpenGLModel *model;
 	g_hash_table_iter_init(&iter, models);
-	while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &model)) {
+	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) {
 		if(!model->visible) {
 			continue;
 		}
@@ -177,13 +196,28 @@ API void drawOpenGLModels()
 }
 
 /**
+ * Updated the transformation matrix for an OpenGL model
+ *
+ * @param model		the model for which to update the transformation matrix
+ */
+static void updateOpenGLModelTransform(OpenGLModel *model)
+{
+	// Don't try to update the transformation if we have no material attached
+	if(model->transform == NULL) {
+		return;
+	}
+
+	*model->transform = *model->base_transform;
+}
+
+/**
  * A GDestroyNotify function to free an OpenGL model
  *
  * @param model_p		a pointer to the model to be freed
  */
 static void freeOpenGLModel(void *model_p)
 {
-	OpenGLModel *model = model_p;
+	OpenGLModel *model = (OpenGLModel *) model_p;
 	$(void, linalg, freeMatrix)(model->base_transform);
 	free(model);
 }

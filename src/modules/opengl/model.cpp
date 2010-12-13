@@ -311,6 +311,13 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 
 	*model->transform = *model->base_transform;
 
+	Matrix translationMatrix = Matrix(4, 4).identity();
+	translationMatrix(0, 3) = (*model->translation)[0];
+	translationMatrix(1, 3) = (*model->translation)[1];
+	translationMatrix(2, 3) = (*model->translation)[2];
+
+	*model->transform *= translationMatrix;
+
 	// Apply x rotation
 	if(model->rotationX != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixX)(model->rotationX);
@@ -331,13 +338,6 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 		*model->transform *= *rotation;
 		$(void, linalg, freeMatrix)(rotation);
 	}
-
-	Matrix translationMatrix = Matrix(4, 4).identity();
-	translationMatrix(0, 3) = (*model->translation)[0];
-	translationMatrix(1, 3) = (*model->translation)[1];
-	translationMatrix(2, 3) = (*model->translation)[2];
-
-	*model->transform *= translationMatrix;
 }
 
 /**

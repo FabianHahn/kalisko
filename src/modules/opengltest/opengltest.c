@@ -45,9 +45,9 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 9, 0);
+MODULE_VERSION(0, 9, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 4), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -129,7 +129,7 @@ MODULE_INIT
 		OpenGLVertex v1;
 		v1.position[0] = -0.5;
 		v1.position[1] = -0.25;
-		v1.position[2] = 1.5;
+		v1.position[2] = -0.272;
 		v1.color[0] = 1;
 		v1.color[1] = 0;
 		v1.color[2] = 0;
@@ -138,7 +138,7 @@ MODULE_INIT
 		OpenGLVertex v2;
 		v2.position[0] = 0.5;
 		v2.position[1] = -0.25;
-		v2.position[2] = 1.5;
+		v2.position[2] = -0.272;
 		v2.color[0] = 0;
 		v2.color[1] = 1;
 		v2.color[2] = 0;
@@ -147,7 +147,7 @@ MODULE_INIT
 		OpenGLVertex v3;
 		v3.position[0] = 0;
 		v3.position[1] = 0.566;
-		v3.position[2] = 1.772;
+		v3.position[2] = 0;
 		v3.color[0] = 0;
 		v3.color[1] = 0;
 		v3.color[2] = 1;
@@ -156,7 +156,7 @@ MODULE_INIT
 		OpenGLVertex v4;
 		v4.position[0] = 0;
 		v4.position[1] = -0.25;
-		v4.position[2] = 2.366;
+		v4.position[2] = 0.594;
 		v4.color[0] = 1;
 		v4.color[1] = 1;
 		v4.color[2] = 0;
@@ -271,6 +271,10 @@ MODULE_INIT
 		if(!$(bool, opengl, attachOpenGLModelMaterial)("tetrahedron", "opengltest")) {
 			break;
 		}
+
+		Vector *trans = $(Vector *, linalg, createVector3)(0.0, 0.0, 1.5);
+		$(bool, opengl, setOpenGLModelTranslation)("tetrahedron", trans);
+		$(void, linalg, freeVector)(trans);
 
 		done = true;
 	} while(false);

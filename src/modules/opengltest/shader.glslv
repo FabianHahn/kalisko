@@ -34,10 +34,12 @@ varying vec4 world_color;
 
 void main()
 {
-	world_position = position;
+	vec4 pos4 = vec4(position.x, position.y, position.z, 1.0);
+	vec4 worldpos4 = model * pos4;
+
+	world_position = worldpos4.xyz / worldpos4.w;
 	world_normal = normal;
 	world_color = color;
-	
-	vec4 pos4 = vec4(position.x, position.y, position.z, 1.0);
-	gl_Position = perspective * camera * model * pos4;
+		
+	gl_Position = perspective * camera * worldpos4;
 }

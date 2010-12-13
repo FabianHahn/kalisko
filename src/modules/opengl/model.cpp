@@ -338,8 +338,6 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	translationMatrix(2, 3) = (*model->translation)[2];
 
 	*model->transform *= translationMatrix;
-
-	std::cout << *model->transform << std::endl;
 }
 
 /**

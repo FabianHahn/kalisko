@@ -22,6 +22,8 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
+#include "modules/linalg/Matrix.h"
+#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "mesh.h"
 #include "material.h"
@@ -39,6 +41,8 @@ typedef struct {
 	bool visible;
 	/** The material to use before drawing the model */
 	char *material;
+	/** The base model transformation to which all further modifications are applied */
+	Matrix *base_transform;
 } OpenGLModel;
 
 /**
@@ -83,6 +87,8 @@ API bool createOpenGLModel(char *name)
 	model->mesh = NULL;
 	model->visible = false;
 	model->material = NULL;
+	model->base_transform = $(Matrix *, linalg, createMatrix)(4, 4);
+	$(void, linalg, eyeMatrix)(model->base_transform);
 
 	g_hash_table_insert(models, model->name, model);
 
@@ -178,6 +184,7 @@ API void drawOpenGLModels()
 static void freeOpenGLModel(void *model_p)
 {
 	OpenGLModel *model = model_p;
+	$(void, linalg, freeMatrix)(model->base_transform);
 	free(model);
 }
 

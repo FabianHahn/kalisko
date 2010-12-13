@@ -21,6 +21,9 @@
 #ifndef OPENGL_MODEL_H
 #define OPENGL_MODEL_H
 
+#include "modules/linalg/Matrix.h"
+#include "modules/linalg/Vector.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,6 +36,7 @@ API bool createOpenGLModel(char *name);
 API bool deleteOpenGLModel(char *name);
 API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh);
 API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
+API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
 API void drawOpenGLModels();
 
 #ifdef __cplusplus

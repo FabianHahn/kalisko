@@ -68,7 +68,7 @@ API void freeOpenGLMaterials()
  * @param name		the name of the OpenGL material to create
  * @result			true if successful
  */
-API bool createOpenGLMaterial(char *name)
+API bool createOpenGLMaterial(const char *name)
 {
 	if(g_hash_table_lookup(materials, name) != NULL) {
 		LOG_ERROR("Failed to create material '%s', a material with that name already exists!", name);
@@ -91,7 +91,7 @@ API bool createOpenGLMaterial(char *name)
  * @param name		the name of the OpenGL material to delete
  * @result			true if successful
  */
-API bool deleteOpenGLMaterial(char *name)
+API bool deleteOpenGLMaterial(const char *name)
 {
 	return g_hash_table_remove(materials, name);
 }
@@ -103,7 +103,7 @@ API bool deleteOpenGLMaterial(char *name)
  * @param program	the identifier of the OpenGL shader program that should be attached to the material
  * @result			true if successful
  */
-API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program)
+API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 {
 	OpenGLMaterial *material;
 
@@ -125,7 +125,7 @@ API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program)
  * @param uniform			the uniform to be added
  * @result					true if successful
  */
-API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, OpenGLUniform *uniform)
+API bool attachOpenGLMaterialUniform(const char *material_name, const char *uniform_name, OpenGLUniform *uniform)
 {
 	OpenGLMaterial *material;
 
@@ -165,7 +165,7 @@ API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, Op
  * @param uniform_name		the name of the uniform to be removed
  * @result					true if successful
  */
-API bool detachOpenGLMaterialUniform(char *material_name, char *uniform_name)
+API bool detachOpenGLMaterialUniform(const char *material_name, const char *uniform_name)
 {
 	OpenGLMaterial *material;
 
@@ -178,11 +178,30 @@ API bool detachOpenGLMaterialUniform(char *material_name, char *uniform_name)
 }
 
 /**
+ * Retrieves a uniform from an OpenGL material
+ *
+ * @param material_name		the name of the OpenGL material for which to retrieve the uniform
+ * @param uniform_name		the name of the uniform to be retrieved
+ * @result					the retrieved uniform, or NULL if the uniform doesn't exist
+ */
+API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const char *uniform_name)
+{
+	OpenGLMaterial *material;
+
+	if((material = g_hash_table_lookup(materials, material_name)) == NULL) {
+		LOG_ERROR("Failed to detach a uniform from non existing material '%s'", material_name);
+		return false;
+	}
+
+	return g_hash_table_lookup(material->uniforms, uniform_name);
+}
+
+/**
  * Uses an OpenGL material for rendering
  *
  * @param		the name of the material to use
  */
-API bool useOpenGLMaterial(char *name)
+API bool useOpenGLMaterial(const char *name)
 {
 	OpenGLMaterial *material;
 

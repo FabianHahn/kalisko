@@ -26,11 +26,12 @@
 
 API void initOpenGLMaterials();
 API void freeOpenGLMaterials();
-API bool createOpenGLMaterial(char *name);
-API bool deleteOpenGLMaterial(char *name);
-API bool attachOpenGLMaterialShaderProgram(char *name, GLuint program);
-API bool attachOpenGLMaterialUniform(char *material_name, char *uniform_name, OpenGLUniform *uniform);
-API bool detachOpenGLMaterialUniform(char *material_name, char *uniform_name);
-API bool useOpenGLMaterial(char *name);
+API bool createOpenGLMaterial(const char *name);
+API bool deleteOpenGLMaterial(const char *name);
+API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program);
+API bool attachOpenGLMaterialUniform(const char *material_name, const char *uniform_name, OpenGLUniform *uniform);
+API bool detachOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
+API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
+API bool useOpenGLMaterial(const char *name);
 
 #endif

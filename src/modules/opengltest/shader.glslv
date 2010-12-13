@@ -21,7 +21,7 @@
 #version 120
 
 uniform mat4 model;
-uniform mat4 modelInverse;
+uniform mat4 modelNormal;
 uniform mat4 camera;
 uniform mat4 perspective;
 
@@ -38,7 +38,7 @@ void main()
 	vec4 pos4 = vec4(position.x, position.y, position.z, 1.0);
 	vec4 norm4 = vec4(normal.x, normal.y, normal.z, 1.0);
 	vec4 worldpos4 = model * pos4;
-	vec4 worldnorm4 = modelInverse * norm4;
+	vec4 worldnorm4 = modelNormal * norm4;
 
 	world_position = worldpos4.xyz / worldpos4.w;
 	world_normal = worldnorm4.xyz / worldnorm4.w;

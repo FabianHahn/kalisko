@@ -51,8 +51,12 @@ typedef struct {
 	char *material;
 	/** The base model transformation to which all further modifications are applied */
 	Matrix *base_transform;
+	/** The inverse base model transformation to which all further modifications are applied */
+	Matrix *inverse_base_transform;
 	/** The current model transformation */
 	Matrix *transform;
+	/** The current inverse model transformation */
+	Matrix *inverse_transform;
 	/** The translation of the model */
 	Vector *translation;
 	/** The x rotation to apply to the model */
@@ -108,11 +112,15 @@ API bool createOpenGLModel(char *name)
 	model->material = NULL;
 	model->base_transform = new Matrix(4, 4);
 	model->base_transform->identity();
+	model->inverse_base_transform = new Matrix(4, 4);
+	model->inverse_base_transform->identity();
 	model->translation = new Vector(3);
 	model->translation->clear();
 	model->rotationX = 0.0f;
 	model->rotationY = 0.0f;
 	model->rotationZ = 0.0f;
+	model->transform = NULL;
+	model->inverse_transform = NULL;
 
 	g_hash_table_insert(models, model->name, model);
 
@@ -174,8 +182,15 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 		return false;
 	}
 
+	OpenGLUniform *uniformInverse;
+	if((uniformInverse = (OpenGLUniform *) getOpenGLMaterialUniform(material_name, "modelInverse")) == NULL || uniformInverse->type != OPENGL_UNIFORM_MATRIX) {
+		LOG_ERROR("Tried to attach material '%s' without a matrix 'modelInverse' uniform to model '%s'", material_name, model_name);
+		return false;
+	}
+
 	model->material = material_name;
 	model->transform = uniform->content.matrix_value;
+	model->inverse_transform = uniformInverse->content.matrix_value;
 
 	updateOpenGLModelTransform(model);
 
@@ -309,19 +324,25 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 		return;
 	}
 
-	*model->transform = *model->base_transform;
+	*model->transform = Matrix(4, 4).identity();
+	*model->inverse_transform = *model->inverse_base_transform;
 
 	Matrix translationMatrix = Matrix(4, 4).identity();
 	translationMatrix(0, 3) = (*model->translation)[0];
 	translationMatrix(1, 3) = (*model->translation)[1];
 	translationMatrix(2, 3) = (*model->translation)[2];
-
 	*model->transform *= translationMatrix;
+
+	translationMatrix(0, 3) = -(*model->translation)[0];
+	translationMatrix(1, 3) = -(*model->translation)[1];
+	translationMatrix(2, 3) = -(*model->translation)[2];
+	*model->inverse_transform = translationMatrix * *model->inverse_transform;
 
 	// Apply x rotation
 	if(model->rotationX != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixX)(model->rotationX);
 		*model->transform *= *rotation;
+		*model->inverse_transform = rotation->transpose() * *model->inverse_transform;
 		$(void, linalg, freeMatrix)(rotation);
 	}
 
@@ -329,6 +350,7 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	if(model->rotationY != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixY)(model->rotationY);
 		*model->transform *= *rotation;
+		*model->inverse_transform = rotation->transpose() * *model->inverse_transform;
 		$(void, linalg, freeMatrix)(rotation);
 	}
 
@@ -336,8 +358,11 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	if(model->rotationZ != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixZ)(model->rotationZ);
 		*model->transform *= *rotation;
+		*model->inverse_transform = rotation->transpose() * *model->inverse_transform;
 		$(void, linalg, freeMatrix)(rotation);
 	}
+
+	*model->transform *= *model->base_transform;
 }
 
 /**
@@ -350,6 +375,7 @@ static void freeOpenGLModel(void *model_p)
 	OpenGLModel *model = (OpenGLModel *) model_p;
 
 	delete model->base_transform;
+	delete model->inverse_base_transform;
 	delete model->translation;
 	free(model);
 }

@@ -18,62 +18,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef OPENGL_MODEL_H
+#define OPENGL_MODEL_H
 
-#include <glib.h>
-#include <GL/glew.h>
+#include "mesh.h"
 
-#include "dll.h"
-#include "log.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "memory_alloc.h"
-#include "modules/event/event.h"
+API void initOpenGLModels();
+API void freeOpenGLModels();
+API bool createOpenGLModel(char *name);
+API bool deleteOpenGLModel(char *name);
+API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh);
 
-#include "api.h"
-#include "opengl.h"
-#include "material.h"
-#include "model.h"
-
-
-MODULE_NAME("opengl");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 10, 0);
-MODULE_BCVERSION(0, 9, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3));
-
-MODULE_INIT
-{
-	initOpenGLMaterials();
-	initOpenGLModels();
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	freeOpenGLMaterials();
-	freeOpenGLModels();
-}
-
-/**
- * Checks whether an OpenGL error has occurred
- *
- * @result		true if an error occurred
- */
-API bool checkOpenGLError()
-{
-	GLenum err = glGetError();
-
-	if(err != GL_NO_ERROR) {
-		const GLubyte *errstr = gluErrorString(err);
-		if(errstr != NULL) {
-			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
-		}
-
-		return true;
-	}
-
-	return false;
-}
+#endif

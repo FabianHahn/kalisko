@@ -37,6 +37,9 @@ API bool deleteOpenGLModel(char *name);
 API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh);
 API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
 API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
+API bool setOpenGLModelRotationX(char *model_name, double rotation);
+API bool setOpenGLModelRotationY(char *model_name, double rotation);
+API bool setOpenGLModelRotationZ(char *model_name, double rotation);
 API void drawOpenGLModels();
 
 #ifdef __cplusplus

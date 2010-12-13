@@ -27,6 +27,7 @@ extern "C" {
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"
+#include "modules/linalg/transform.h"
 #include "api.h"
 
 extern "C" {
@@ -54,6 +55,12 @@ typedef struct {
 	Matrix *transform;
 	/** The translation of the model */
 	Vector *translation;
+	/** The x rotation to apply to the model */
+	float rotationX;
+	/** The y rotation to apply to the model */
+	float rotationY;
+	/** The z rotation to apply to the model */
+	float rotationZ;
 } OpenGLModel;
 
 /**
@@ -103,6 +110,9 @@ API bool createOpenGLModel(char *name)
 	model->base_transform->identity();
 	model->translation = new Vector(3);
 	model->translation->clear();
+	model->rotationX = 0.0f;
+	model->rotationY = 0.0f;
+	model->rotationZ = 0.0f;
 
 	g_hash_table_insert(models, model->name, model);
 
@@ -195,6 +205,72 @@ API bool setOpenGLModelTranslation(char *model_name, Vector *translation)
 }
 
 /**
+ * Sets the x axis rotation for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param rotation			the rotation in radians to set the model to
+ * @result					true if successful
+ */
+API bool setOpenGLModelRotationX(char *model_name, double rotation)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->rotationX = rotation;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
+ * Sets the y axis rotation for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param rotation			the rotation in radians to set the model to
+ * @result					true if successful
+ */
+API bool setOpenGLModelRotationY(char *model_name, double rotation)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->rotationY = rotation;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
+ * Sets the z axis rotation for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param rotation			the rotation in radians to set the model to
+ * @result					true if successful
+ */
+API bool setOpenGLModelRotationZ(char *model_name, double rotation)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->rotationZ = rotation;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
  * Draws all visible OpenGL models to the currently active context
  */
 API void drawOpenGLModels()
@@ -234,6 +310,27 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	}
 
 	*model->transform = *model->base_transform;
+
+	// Apply x rotation
+	if(model->rotationX != 0.0f) {
+		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixX)(model->rotationX);
+		*model->transform *= *rotation;
+		$(void, linalg, freeMatrix)(rotation);
+	}
+
+	// Apply y rotation
+	if(model->rotationY != 0.0f) {
+		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixY)(model->rotationY);
+		*model->transform *= *rotation;
+		$(void, linalg, freeMatrix)(rotation);
+	}
+
+	// Apply z rotation
+	if(model->rotationZ != 0.0f) {
+		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixZ)(model->rotationZ);
+		*model->transform *= *rotation;
+		$(void, linalg, freeMatrix)(rotation);
+	}
 
 	Matrix translationMatrix = Matrix(4, 4).identity();
 	translationMatrix(0, 3) = (*model->translation)[0];

@@ -196,6 +196,13 @@ class Matrix
 			return result;
 		}
 
+		Matrix& operator*=(const Matrix& other)
+		{
+			assert(cols == other.getRows());
+
+			return (*this) = (*this) * other;
+		}
+
 		Vector operator*(Vector vector) const
 		{
 			assert(cols >= vector.getSize());

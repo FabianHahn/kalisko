@@ -52,6 +52,8 @@ typedef struct {
 	Matrix *base_transform;
 	/** The current model transformation */
 	Matrix *transform;
+	/** The translation of the model */
+	Vector *translation;
 } OpenGLModel;
 
 /**
@@ -97,8 +99,10 @@ API bool createOpenGLModel(char *name)
 	model->mesh = NULL;
 	model->visible = false;
 	model->material = NULL;
-	model->base_transform = $(Matrix *, linalg, createMatrix)(4, 4);
-	$(void, linalg, eyeMatrix)(model->base_transform);
+	model->base_transform = new Matrix(4, 4);
+	model->base_transform->identity();
+	model->translation = new Vector(3);
+	model->translation->clear();
 
 	g_hash_table_insert(models, model->name, model);
 
@@ -169,6 +173,28 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 }
 
 /**
+ * Sets the translation for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the translation for
+ * @param translation		the translation to set for the OpenGL model
+ * @result					true if successful
+ */
+API bool setOpenGLModelTranslation(char *model_name, Vector *translation)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set translation for non existing model '%s'", model_name);
+		return false;
+	}
+
+	*model->translation = *translation;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
  * Draws all visible OpenGL models to the currently active context
  */
 API void drawOpenGLModels()
@@ -208,6 +234,13 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	}
 
 	*model->transform = *model->base_transform;
+
+	Matrix translationMatrix(4, 4);
+	translationMatrix(0, 3) = (*model->translation)[0];
+	translationMatrix(1, 3) = (*model->translation)[1];
+	translationMatrix(1, 3) = (*model->translation)[2];
+
+	*model->transform *= translationMatrix;
 }
 
 /**
@@ -218,7 +251,9 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 static void freeOpenGLModel(void *model_p)
 {
 	OpenGLModel *model = (OpenGLModel *) model_p;
-	$(void, linalg, freeMatrix)(model->base_transform);
+
+	delete model->base_transform;
+	delete model->translation;
 	free(model);
 }
 

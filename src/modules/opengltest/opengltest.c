@@ -44,15 +44,14 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 8, 4);
+MODULE_VERSION(0, 8, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 8, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 9, 2), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 3));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
 static GLuint program = 0;
 static OpenGLCamera *camera = NULL;
-static Matrix *cameraMatrix = NULL;
 static Matrix *perspectiveMatrix = NULL;
 static Vector *lightPositionVector = NULL;
 static Vector *lightColorVector = NULL;
@@ -208,10 +207,9 @@ MODULE_INIT
 		}
 
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
-		cameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
 		perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
 		
-		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(cameraMatrix);
+		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
 		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 
 		if(!$(bool, opengl, attachOpenGLMaterialShaderProgram)("opengltest", program)) {
@@ -260,10 +258,6 @@ MODULE_INIT
 	if(!done) {
 		if(camera != NULL) {
 			$(void, linalg, freeOpenGLCamera)(camera);
-		}
-
-		if(cameraMatrix != NULL) {
-			$(void, linalg, freeMatrix)(cameraMatrix);
 		}
 
 		if(perspectiveMatrix != NULL) {
@@ -333,7 +327,6 @@ MODULE_FINALIZE
 	$(void, freeglut, freeFreeglutWindow)(window);
 
 	$(void, opengl, freeOpenGLCamera)(camera);
-	$(void, linalg, freeMatrix)(cameraMatrix);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
 	$(void, linalg, freeVector)(lightPositionVector);
 	$(void, linalg, freeVector)(lightColorVector);
@@ -437,9 +430,7 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 
 	// We need to update the camera matrix if some movement happened
 	if(cameraChanged) {
-		Matrix *newCameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
-		$(void, linalg, assignMatrix)(cameraMatrix, newCameraMatrix);
-		$(void, linalg, freeMatrix)(newCameraMatrix);
+		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
 		glutPostRedisplay();
 	}
 }
@@ -495,9 +486,7 @@ static void listener_mouseMove(void *subject, const char *event, void *data, va_
 		GString *dump = $(GString *, linalg, dumpVector)(camera->up);
 		g_string_free(dump, true);
 
-		Matrix *newCameraMatrix = $(Matrix *, opengl, getOpenGLCameraLookAtMatrix)(camera);
-		$(void, linalg, assignMatrix)(cameraMatrix, newCameraMatrix);
-		$(void, linalg, freeMatrix)(newCameraMatrix);
+		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
 		glutPostRedisplay();
 		glutWarpPointer(cx, cy);
 	}

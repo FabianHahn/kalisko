@@ -69,6 +69,9 @@ typedef struct {
 	Vector *direction;
 	/** The position of the camera */
 	Vector *position;
+	/** The look-at matrix for this camera */
+	Matrix *lookAt;
+
 } OpenGLCamera;
 
 #ifdef __cplusplus
@@ -78,7 +81,7 @@ extern "C" {
 API OpenGLCamera *createOpenGLCamera();
 API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double amount);
 API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double angle);
-API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera);
+API void updateOpenGLCameraLookAtMatrix(OpenGLCamera *camera);
 API void freeOpenGLCamera(OpenGLCamera *camera);
 
 #ifdef __cplusplus

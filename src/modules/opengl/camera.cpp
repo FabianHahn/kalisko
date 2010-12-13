@@ -38,9 +38,11 @@ extern "C" {
 API OpenGLCamera *createOpenGLCamera()
 {
 	OpenGLCamera *camera = ALLOCATE_OBJECT(OpenGLCamera);
+	camera->lookAt = $(Matrix *, linalg, createMatrix)(4, 4);
 	camera->direction = $(Vector *, linalg, createVector3)(0.0, 0.0, 1.0);
 	camera->position = $(Vector *, linalg, createVector3)(0.0, 0.0, 0.0);
 	camera->up = $(Vector *, linalg, createVector3)(0.0, 1.0, 0.0);
+	updateOpenGLCameraLookAtMatrix(camera);
 
 	return camera;
 }
@@ -135,14 +137,13 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 }
 
 /**
- * Generates a look-at matrix for an OpenGL camera
+ * Updates the look-at matrix for an OpenGL camera
  *
- * @param camera		the camera for which to generate a look-at matrix
- * @result				the created look-at matrix
+ * @param camera		the camera for which to update the look-at matrix
  */
-API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
+API void updateOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
 {
-	return $(Matrix *, linalg, createLookIntoDirectionMatrix)(camera->position, camera->direction, camera->up);
+	$(void, linalg, updateLookIntoDirectionMatrix)(camera->lookAt, camera->position, camera->direction, camera->up);
 }
 
 /**
@@ -152,6 +153,7 @@ API Matrix *getOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
  */
 API void freeOpenGLCamera(OpenGLCamera *camera)
 {
+	$(void, linalg, freeMatrix)(camera->lookAt);
 	$(void, linalg, freeVector)(camera->direction);
 	$(void, linalg, freeVector)(camera->position);
 	$(void, linalg, freeVector)(camera->up);

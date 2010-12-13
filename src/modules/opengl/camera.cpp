@@ -123,15 +123,11 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 	newRightDirection[1] = 0.0;
 	Vector newUp = newRightDirection % newDirection;
 
-	// Set new camera vectors
-	*camera->direction = newDirection.normalize();
-	*camera->up = newUp.normalize();
-
-	// Check if we're still correctly turned
-	Vector check = newDirection % newUp;
-	if(check * newRightDirection < 0.0f) {
-		// Correct orientation
-		*camera->up *= -1;
+	// Enforce now upside down
+	if(newUp[1] >= 0.0f) {
+		// Set new camera vectors
+		*camera->direction = newDirection.normalize();
+		*camera->up = newUp.normalize();
 	}
 
 	// Clean up

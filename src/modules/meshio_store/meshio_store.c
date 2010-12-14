@@ -33,7 +33,7 @@
 MODULE_NAME("meshio_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -202,8 +202,8 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		float *vData = $(float *, linalg, getVectorData)(v);
 
 		mesh->vertices[i].normal[0] = vData[0];
-		mesh->vertices[i].normal[0] = vData[1];
-		mesh->vertices[i].normal[0] = vData[2];
+		mesh->vertices[i].normal[1] = vData[1];
+		mesh->vertices[i].normal[2] = vData[2];
 
 		$(void, linalg, freeVector)(v);
 	}

@@ -39,15 +39,16 @@
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
+#include "modules/meshio/meshio.h"
 
 #include "api.h"
 
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 9, 4);
+MODULE_VERSION(0, 10, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("meshio_store", 0, 1, 0));
 
 static FreeglutWindow *window = NULL;
 static OpenGLMesh *mesh = NULL;
@@ -74,43 +75,13 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 static void listener_mouseMove(void *subject, const char *event, void *data, va_list args);
 static void listener_close(void *subject, const char *event, void *data, va_list args);
 
-static void addTriangle(OpenGLMesh *mesh, int i, OpenGLVertex vertex1, OpenGLVertex vertex2, OpenGLVertex vertex3)
-{
-	mesh->vertices[i*3+0] = vertex1;
-	mesh->vertices[i*3+1] = vertex2;
-	mesh->vertices[i*3+2] = vertex3;
-	mesh->triangles[i].indices[0] = i*3+0;
-	mesh->triangles[i].indices[1] = i*3+1;
-	mesh->triangles[i].indices[2] = i*3+2;
-
-	Vector *v1 = $(Vector *, linalg, createVector3)(vertex1.position[0], vertex1.position[1], vertex1.position[2]);
-	Vector *v2 = $(Vector *, linalg, createVector3)(vertex2.position[0], vertex2.position[1], vertex2.position[2]);
-	Vector *v3 = $(Vector *, linalg, createVector3)(vertex3.position[0], vertex3.position[1], vertex3.position[2]);
-	Vector *e1 = $(Vector *, linalg, diffVectors)(v2, v1);
-	Vector *e2 = $(Vector *, linalg, diffVectors)(v3, v1);
-	Vector *normal = $(Vector *, linalg, crossVectors)(e1, e2);
-	$(void, linalg, normalizeVector)(normal);
-	float *normalData = $(float *, linalg, getVectorData)(normal);
-
-	for(int j = i*3; j < (i+1)*3; j++) {
-		mesh->vertices[j].normal[0] = normalData[0];
-		mesh->vertices[j].normal[1] = normalData[1];
-		mesh->vertices[j].normal[2] = normalData[2];
-	}
-
-	$(void, linalg, freeVector)(v1);
-	$(void, linalg, freeVector)(v2);
-	$(void, linalg, freeVector)(v3);
-	$(void, linalg, freeVector)(e1);
-	$(void, linalg, freeVector)(e2);
-	$(void, linalg, freeVector)(normal);
-}
-
 MODULE_INIT
 {
 	bool done = false;
 	GLuint vertexShader = 0;
 	GLuint fragmentShader = 0;
+	char *execpath = NULL;
+	GString *file = NULL;
 
 	do { // use do-while branch out to simplify error handling
 		// Create window and add listeners
@@ -122,52 +93,18 @@ MODULE_INIT
 		glutSetCursor(GLUT_CURSOR_NONE);
 		glutWarpPointer(400, 300);
 
+		execpath = $$(char *, getExecutablePath)();
+
 		// Create geometry
-		if((mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(12, 4, GL_STATIC_DRAW)) == NULL) {
+		file = g_string_new(execpath);
+		g_string_append(file, "/modules/opengltest/tetrahedron.store");
+
+		if((mesh = $(OpenGLMesh *, meshio, readMeshFromFile)(file->str)) == NULL) {
 			break;
 		}
 
-		// Draw a simple tri colored triangle
-		OpenGLVertex v1;
-		v1.position[0] = -0.5;
-		v1.position[1] = -0.25;
-		v1.position[2] = -0.272;
-		v1.color[0] = 1;
-		v1.color[1] = 0;
-		v1.color[2] = 0;
-		v1.color[3] = 1;
-
-		OpenGLVertex v2;
-		v2.position[0] = 0.5;
-		v2.position[1] = -0.25;
-		v2.position[2] = -0.272;
-		v2.color[0] = 0;
-		v2.color[1] = 1;
-		v2.color[2] = 0;
-		v2.color[3] = 1;
-
-		OpenGLVertex v3;
-		v3.position[0] = 0;
-		v3.position[1] = 0.566;
-		v3.position[2] = 0;
-		v3.color[0] = 0;
-		v3.color[1] = 0;
-		v3.color[2] = 1;
-		v3.color[3] = 1;
-
-		OpenGLVertex v4;
-		v4.position[0] = 0;
-		v4.position[1] = -0.25;
-		v4.position[2] = 0.594;
-		v4.color[0] = 1;
-		v4.color[1] = 1;
-		v4.color[2] = 0;
-		v4.color[3] = 1;
-
-		addTriangle(mesh, 0, v1, v2, v3);
-		addTriangle(mesh, 1, v1, v2, v4);
-		addTriangle(mesh, 2, v2, v3, v4);
-		addTriangle(mesh, 3, v1, v3, v4);
+		g_string_free(file, true);
+		file = NULL;
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -177,21 +114,21 @@ MODULE_INIT
 		}
 
 		// Read and compile vertex shader source
-		char *execpath = $$(char *, getExecutablePath)();
-		GString *vertexShaderFile = g_string_new(execpath);
-		g_string_append(vertexShaderFile, "/modules/opengltest/shader.glslv");
+		file = g_string_new(execpath);
+		g_string_append(file, "/modules/opengltest/shader.glslv");
 
-		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile->str, GL_VERTEX_SHADER)) == 0) {
+		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(file->str, GL_VERTEX_SHADER)) == 0) {
 			break;
 		}
 
-		g_string_free(vertexShaderFile, true);
+		g_string_free(file, true);
+		file = NULL;
 
 		// Read and compile fragment shader source
-		GString *fragmentShaderFile = g_string_new(execpath);
-		g_string_append(fragmentShaderFile, "/modules/opengltest/shader.glslf");
+		file = g_string_new(execpath);
+		g_string_append(file, "/modules/opengltest/shader.glslf");
 
-		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile->str, GL_FRAGMENT_SHADER)) == 0) {
+		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(file->str, GL_FRAGMENT_SHADER)) == 0) {
 			break;
 		}
 
@@ -199,8 +136,8 @@ MODULE_INIT
 			break;
 		}
 
-		g_string_free(fragmentShaderFile, true);
-		free(execpath);
+		g_string_free(file, true);
+		file = NULL;
 
 		vertexShader = 0;
 		fragmentShader = 0;
@@ -330,6 +267,14 @@ MODULE_INIT
 
 		if(window != NULL) {
 			$(void, freeglut, freeFreeglutWindow)(window);
+		}
+
+		if(execpath != NULL) {
+			free(execpath);
+		}
+
+		if(file != NULL) {
+			g_string_free(file, true);
 		}
 
 		return false;

@@ -27,7 +27,7 @@
 MODULE_NAME("meshio");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("I/O library for OpenGL meshes");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12));
 
@@ -85,5 +85,26 @@ API bool deleteMeshIOHandler(const char *extension)
  */
 API OpenGLMesh *readMeshFromFile(const char *filename)
 {
+	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
+		LOG_ERROR("Trying to read mesh from non existing file '%s'", filename);
+		return NULL;
+	}
 
+	char *ext;
+
+	if((ext = g_strrstr(filename, ".")) == NULL) {
+		LOG_ERROR("Trying to read mesh from extensionless file '%s'", filename);
+		return NULL;
+	}
+
+	ext++; // move past the dot
+
+	MeshIOHandler *handler;
+	if((handler = g_hash_table_lookup(handlers, ext)) == NULL) {
+		LOG_ERROR("Tried to read mesh file '%s', but no handler was found for the extension '%s'", filename, ext);
+		return NULL;
+	}
+
+	// We found a handler for this extension, so let it handle the reading
+	return handler(filename);
 }

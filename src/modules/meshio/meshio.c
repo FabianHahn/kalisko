@@ -27,7 +27,7 @@
 MODULE_NAME("meshio");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("I/O library for OpenGL meshes");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12));
 
@@ -57,7 +57,13 @@ MODULE_FINALIZE
  */
 API bool addMeshIOHandler(const char *extension, MeshIOHandler *handler)
 {
+	if(g_hash_table_lookup(handlers, extension) != NULL) {
+		LOG_ERROR("Trying to add mesh IO handler for already handled extension '%s'", extension);
+		return false;
+	}
 
+	g_hash_table_insert(handlers, strdup(extension), handler);
+	return true;
 }
 
 /**
@@ -68,7 +74,7 @@ API bool addMeshIOHandler(const char *extension, MeshIOHandler *handler)
  */
 API bool deleteMeshIOHandler(const char *extension)
 {
-
+	return g_hash_table_remove(handlers, extension);
 }
 
 /**

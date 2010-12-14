@@ -27,54 +27,61 @@
 MODULE_NAME("meshio");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("I/O library for OpenGL meshes");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12));
 
 /**
- * A hash table associating strings with MeshIOHandlers
+ * A hash table associating strings with MeshIOReadHandlers
  */
-static GHashTable *handlers;
+static GHashTable *readHandlers;
+
+/**
+ * A hash table associating strings with MeshIOWriteHandlers
+ */
+static GHashTable *writeHandlers;
 
 MODULE_INIT
 {
-	handlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	writeHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	g_hash_table_destroy(handlers);
+	g_hash_table_destroy(readHandlers);
+	g_hash_table_destroy(writeHandlers);
 }
 
 /**
- * Adds a mesh IO handler for a specific file extension
+ * Adds a mesh IO reading handler for a specific file extension
  *
  * @param extension			the file extension to which this handler should be registered
  * @param handler			the handler to register
  * @result					true if successful
  */
-API bool addMeshIOHandler(const char *extension, MeshIOHandler *handler)
+API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler)
 {
-	if(g_hash_table_lookup(handlers, extension) != NULL) {
-		LOG_ERROR("Trying to add mesh IO handler for already handled extension '%s'", extension);
+	if(g_hash_table_lookup(readHandlers, extension) != NULL) {
+		LOG_ERROR("Trying to add mesh IO reading handler for already handled extension '%s'", extension);
 		return false;
 	}
 
-	g_hash_table_insert(handlers, strdup(extension), handler);
+	g_hash_table_insert(readHandlers, strdup(extension), handler);
 	return true;
 }
 
 /**
- * Removes a mesh IO handler from a specific file extension
+ * Removes a mesh IO reading handler from a specific file extension
  *
  * @param extension			the file extension for which the handler should be unregistered
  * @result					true if successful
  */
-API bool deleteMeshIOHandler(const char *extension)
+API bool deleteMeshIOReadHandler(const char *extension)
 {
-	return g_hash_table_remove(handlers, extension);
+	return g_hash_table_remove(readHandlers, extension);
 }
 
 /**
@@ -99,12 +106,70 @@ API OpenGLMesh *readMeshFromFile(const char *filename)
 
 	ext++; // move past the dot
 
-	MeshIOHandler *handler;
-	if((handler = g_hash_table_lookup(handlers, ext)) == NULL) {
+	MeshIOReadHandler *handler;
+	if((handler = g_hash_table_lookup(readHandlers, ext)) == NULL) {
 		LOG_ERROR("Tried to read mesh file '%s', but no handler was found for the extension '%s'", filename, ext);
 		return NULL;
 	}
 
 	// We found a handler for this extension, so let it handle the reading
 	return handler(filename);
+}
+
+
+/**
+ * Adds a mesh IO writing handler for a specific file extension
+ *
+ * @param extension			the file extension to which this handler should be registered
+ * @param handler			the handler to register
+ * @result					true if successful
+ */
+API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler)
+{
+	if(g_hash_table_lookup(writeHandlers, extension) != NULL) {
+		LOG_ERROR("Trying to add mesh IO writing handler for already handled extension '%s'", extension);
+		return false;
+	}
+
+	g_hash_table_insert(writeHandlers, strdup(extension), handler);
+	return true;
+}
+
+/**
+ * Removes a mesh IO writing handler from a specific file extension
+ *
+ * @param extension			the file extension for which the handler should be unregistered
+ * @result					true if successful
+ */
+API bool deleteMeshIOWriteHandler(const char *extension)
+{
+	return g_hash_table_remove(writeHandlers, extension);
+}
+
+/**
+ * Writes an OpenGL mesh to a file by using the appropriate handler
+ *
+ * @param filename			the file into which the mesh should be written
+ * @param mesh				the OpenGL mesh to be written
+ * @result					true if successful
+ */
+API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh)
+{
+	char *ext;
+
+	if((ext = g_strrstr(filename, ".")) == NULL) {
+		LOG_ERROR("Trying to write mesh to extensionless file '%s'", filename);
+		return false;
+	}
+
+	ext++; // move past the dot
+
+	MeshIOWriteHandler *handler;
+	if((handler = g_hash_table_lookup(writeHandlers, ext)) == NULL) {
+		LOG_ERROR("Tried to write mesh to file '%s', but no handler was found for the extension '%s'", filename, ext);
+		return false;
+	}
+
+	// We found a handler for this extension, so let it handle the reading
+	return handler(filename, mesh);
 }

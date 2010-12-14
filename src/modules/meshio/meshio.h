@@ -23,10 +23,14 @@
 
 #include "modules/opengl/mesh.h"
 
-typedef OpenGLMesh *(MeshIOHandler)(const char *filename);
+typedef OpenGLMesh *(MeshIOReadHandler)(const char *filename);
+typedef bool (MeshIOWriteHandler)(const char *filename, OpenGLMesh *mesh);
 
-API bool addMeshIOHandler(const char *extension, MeshIOHandler *handler);
-API bool deleteMeshIOHandler(const char *extension);
+API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler);
+API bool deleteMeshIOReadHandler(const char *extension);
 API OpenGLMesh *readMeshFromFile(const char *filename);
+API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler);
+API bool deleteMeshIOWriteHandler(const char *extension);
+API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh);
 
 #endif

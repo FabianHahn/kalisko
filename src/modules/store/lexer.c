@@ -195,7 +195,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 
 			if(IS_DELIMITER(c)) { // whitespace
 				continue; // just ignore it
-			} else if(isdigit(c)) { // reading an int or a float number
+			} else if(isdigit(c) || c == '-') { // reading an int or a float number
 				reading_numeric = true;
 			} else { // reading a string
 				reading_string = true;

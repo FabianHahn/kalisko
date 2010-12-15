@@ -23,13 +23,15 @@
 #include "modules/opengl/mesh.h"
 #include "modules/meshio/meshio.h"
 #include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/write.h"
 #include "modules/mesh_store/mesh_store.h"
 #include "api.h"
 
 MODULE_NAME("meshio_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("mesh_store", 0, 1, 0));
 

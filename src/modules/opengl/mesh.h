@@ -21,40 +21,15 @@
 #ifndef OPENGL_MESH_H
 #define OPENGL_MESH_H
 
+#include "modules/mesh/mesh.h"
 #include <GL/glew.h>
-
-/**
- * Struct representing an OpenGL vertex
- */
-typedef struct {
-	/** The position of the vertex */
-	float position[3];
-	/** The normal vector of the vertex */
-	float normal[3];
-	/** The color of the vertex */
-	float color[4];
-} OpenGLVertex;
-
-/**
- * Struct representing an OpenGL triangle
- */
-typedef struct {
-	/** The vertex indices of the triangle */
-	unsigned short indices[3];
-} OpenGLTriangle;
 
 /**
  * Struct representing an OpenGL triangle mesh
  */
 typedef struct {
-	/** An array of OpenGLVertex objects for this mesh */
-	OpenGLVertex *vertices;
-	/** The number of vertices in this mesh */
-	int num_vertices;
-	/** An array of OpenGLTriangle objects for this mesh */
-	OpenGLTriangle *triangles;
-	/** The number of triangles in this mesh */
-	int num_triangles;
+	/** The actual mesh geometry to render */
+	Mesh *mesh;
 	/** The OpenGL vertex buffer associated with this mesh */
 	GLuint vertexBuffer;
 	/** The OpenGL index buffer associated with this mesh */
@@ -63,9 +38,9 @@ typedef struct {
 	GLenum usage;
 } OpenGLMesh;
 
-OpenGLMesh *createOpenGLMesh(int num_vertices, int num_triangles, GLenum usage);
-bool updateOpenGLMesh(OpenGLMesh *mesh);
-bool drawOpenGLMesh(OpenGLMesh *mesh);
-void freeOpenGLMesh(OpenGLMesh *mesh);
+OpenGLMesh *createOpenGLMesh(Mesh *mesh, GLenum usage);
+bool updateOpenGLMesh(OpenGLMesh *openglmesh);
+bool drawOpenGLMesh(OpenGLMesh *openglmesh);
+void freeOpenGLMesh(OpenGLMesh *openglmesh);
 
 #endif

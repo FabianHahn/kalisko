@@ -18,62 +18,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#include <glib.h>
-#include <GL/glew.h>
-
-#include "dll.h"
-#include "log.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "memory_alloc.h"
-#include "modules/event/event.h"
-
-#include "api.h"
-#include "opengl.h"
-#include "material.h"
-#include "model.h"
-
-
-MODULE_NAME("opengl");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 11, 1);
-MODULE_BCVERSION(0, 11, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0));
-
-MODULE_INIT
-{
-	initOpenGLMaterials();
-	initOpenGLModels();
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	freeOpenGLMaterials();
-	freeOpenGLModels();
-}
+#ifndef MESH_MESH_H
+#define MESH_MESH_H
 
 /**
- * Checks whether an OpenGL error has occurred
- *
- * @result		true if an error occurred
+ * Struct representing a vertex
  */
-API bool checkOpenGLError()
-{
-	GLenum err = glGetError();
+typedef struct {
+	/** The position of the vertex */
+	float position[3];
+	/** The normal vector of the vertex */
+	float normal[3];
+	/** The color of the vertex */
+	float color[4];
+} MeshVertex;
 
-	if(err != GL_NO_ERROR) {
-		const GLubyte *errstr = gluErrorString(err);
-		if(errstr != NULL) {
-			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
-		}
+/**
+ * Struct representing a triangle
+ */
+typedef struct {
+	/** The vertex indices of the triangle */
+	unsigned short indices[3];
+} MeshTriangle;
 
-		return true;
-	}
+/**
+ * Struct representing an OpenGL triangle mesh
+ */
+typedef struct {
+	/** An array of MeshVertex objects for this mesh */
+	MeshVertex *vertices;
+	/** The number of vertices in this mesh */
+	int num_vertices;
+	/** An array of MeshTriangle objects for this mesh */
+	MeshTriangle *triangles;
+	/** The number of triangles in this mesh */
+	int num_triangles;
+} Mesh;
 
-	return false;
-}
+Mesh *createMesh(int num_vertices, int num_triangles);
+void freeMesh(Mesh *mesh);
+
+#endif

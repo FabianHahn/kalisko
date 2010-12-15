@@ -22,8 +22,7 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
-#include "log.h"
-#include "memory_alloc.h"
+#include "modules/mesh/mesh.h"
 #include "api.h"
 #include "opengl.h"
 #include "shader.h"
@@ -33,50 +32,40 @@
 /**
  * Creates a new mesh by allocating space for a number of vertices and triangles. Also allocates needed OpenGL buffer objects
  *
- * @param num_vertices			the number of vertices the mesh should have
- * @param num_triangles			the number of triangles the mesh should have
- * @param usage					specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
- * @result						the created OpenGLMesh object or NULL on failure
+ * @param mesh			the actual mesh geometry to use
+ * @param usage			specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
+ * @result				the created OpenGLMesh object or NULL on failure
  */
-OpenGLMesh *createOpenGLMesh(int num_vertices, int num_triangles, GLenum usage)
+OpenGLMesh *createOpenGLMesh(Mesh *mesh, GLenum usage)
 {
-	assert(num_vertices > 0);
-	assert(num_triangles > 0);
+	OpenGLMesh *openglmesh = ALLOCATE_OBJECT(OpenGLMesh);
+	openglmesh->mesh = mesh;
+	openglmesh->usage = usage;
 
-	OpenGLMesh *mesh = ALLOCATE_OBJECT(OpenGLMesh);
-	mesh->vertices = ALLOCATE_OBJECTS(OpenGLVertex, num_vertices);
-	mesh->num_vertices = num_vertices;
-	mesh->triangles = ALLOCATE_OBJECTS(OpenGLTriangle, num_triangles);
-	mesh->num_triangles = num_triangles;
-	mesh->usage = usage;
-
-	glGenBuffers(1, &mesh->vertexBuffer);
-	glGenBuffers(1, &mesh->indexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(OpenGLVertex) * num_vertices, NULL, usage);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * num_triangles, NULL, usage);
+	glGenBuffers(1, &openglmesh->vertexBuffer);
+	glGenBuffers(1, &openglmesh->indexBuffer);
+	updateOpenGLMesh(openglmesh);
 
 	if(checkOpenGLError()) {
-		freeOpenGLMesh(mesh);
+		freeOpenGLMesh(openglmesh);
 		return NULL;
 	}
 
-	return mesh;
+	return openglmesh;
 }
 
 /**
  * Updates a mesh by synchronizing it with its associated OpenGL buffer objects
  *
- * @param mesh			the mesh to be updated
- * @result				true if successful
+ * @param openglmesh			the mesh to be updated
+ * @result						true if successful
  */
-bool updateOpenGLMesh(OpenGLMesh *mesh)
+bool updateOpenGLMesh(OpenGLMesh *openglmesh)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(OpenGLVertex) * mesh->num_vertices, mesh->vertices, mesh->usage);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(OpenGLTriangle) * mesh->num_triangles, mesh->triangles, mesh->usage);
+	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(MeshVertex) * openglmesh->mesh->num_vertices, openglmesh->mesh->vertices, openglmesh->usage);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(MeshTriangle) * openglmesh->mesh->num_triangles, openglmesh->mesh->triangles, openglmesh->usage);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -88,24 +77,24 @@ bool updateOpenGLMesh(OpenGLMesh *mesh)
 /**
  * Draws a mesh to OpenGL
  *
- * @param mesh			the mesh to draw
+ * @param openglmesh			the mesh to draw
  */
-bool drawOpenGLMesh(OpenGLMesh *mesh)
+bool drawOpenGLMesh(OpenGLMesh *openglmesh)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, mesh->vertexBuffer);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, position));
+	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, position));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, normal));
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, normal));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(OpenGLVertex), NULL + offsetof(OpenGLVertex, color));
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, color));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_COLOR);
 
 	if(checkOpenGLError()) {
 		return false;
 	}
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->indexBuffer);
-	glDrawElements(GL_TRIANGLES, mesh->num_triangles * 3, GL_UNSIGNED_SHORT, NULL);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
+	glDrawElements(GL_TRIANGLES, openglmesh->mesh->num_triangles * 3, GL_UNSIGNED_SHORT, NULL);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -117,15 +106,14 @@ bool drawOpenGLMesh(OpenGLMesh *mesh)
 /**
  * Frees an OpenGL mesh
  *
- * @param mesh			the mesh to free
+ * @param openglmesh			the mesh to free
  */
-void freeOpenGLMesh(OpenGLMesh *mesh)
+void freeOpenGLMesh(OpenGLMesh *openglmesh)
 {
-	assert(mesh != NULL);
+	assert(openglmesh != NULL);
 
-	glDeleteBuffers(1, &mesh->vertexBuffer);
-	glDeleteBuffers(1, &mesh->indexBuffer);
-	free(mesh->vertices);
-	free(mesh->triangles);
-	free(mesh);
+	glDeleteBuffers(1, &openglmesh->vertexBuffer);
+	glDeleteBuffers(1, &openglmesh->indexBuffer);
+	$(void, mesh, freeMesh)(openglmesh->mesh);
+	free(openglmesh);
 }

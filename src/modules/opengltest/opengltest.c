@@ -39,19 +39,19 @@
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
-#include "modules/meshio/meshio.h"
+#include "modules/mesh/io.h"
 
 #include "api.h"
 
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 10, 2);
+MODULE_VERSION(0, 10, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("meshio_store", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("mesh", 0, 4, 0));
 
 static FreeglutWindow *window = NULL;
-static OpenGLMesh *mesh = NULL;
+static OpenGLMesh *openglmesh = NULL;
 static GLuint program = 0;
 static OpenGLCamera *camera = NULL;
 static Matrix *perspectiveMatrix = NULL;
@@ -98,20 +98,18 @@ MODULE_INIT
 		// Create geometry
 		file = g_string_new(execpath);
 		g_string_append(file, "/modules/opengltest/tetrahedron.store");
+		Mesh *mesh;
 
-		if((mesh = $(OpenGLMesh *, meshio, readMeshFromFile)(file->str)) == NULL) {
+		if((mesh = $(Mesh *, mesh, readMeshFromFile)(file->str)) == NULL) {
 			break;
 		}
+
+		openglmesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(mesh, GL_STATIC_DRAW);
 
 		g_string_free(file, true);
 		file = NULL;
 
 		glEnable(GL_DEPTH_TEST);
-
-		// Write the mesh changes back to the OpenGL buffer
-		if(!$(bool, opengl, updateOpenGLMesh)(mesh)) {
-			break;
-		}
 
 		// Read and compile vertex shader source
 		file = g_string_new(execpath);
@@ -209,7 +207,7 @@ MODULE_INIT
 			break;
 		}
 
-		if(!$(bool, opengl, attachOpenGLModelMesh)("tetrahedron", mesh)) {
+		if(!$(bool, opengl, attachOpenGLModelMesh)("tetrahedron", openglmesh)) {
 			break;
 		}
 
@@ -261,8 +259,8 @@ MODULE_INIT
 			glDeleteProgram(program);
 		}
 
-		if(mesh != NULL) {
-			$(void, opengl, freeOpenGLMesh)(mesh);
+		if(openglmesh != NULL) {
+			$(void, opengl, freeOpenGLMesh)(openglmesh);
 		}
 
 		if(window != NULL) {
@@ -297,7 +295,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(bool, opengl, deleteOpenGLMaterial)("opengltest");
-	$(void, opengl, freeOpenGLMesh)(mesh);
+	$(void, opengl, freeOpenGLMesh)(openglmesh);
 
 	$(void, event, detachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
 	$(void, event, detachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);

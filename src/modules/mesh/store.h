@@ -18,19 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPENGL_MESHIO_H
-#define OPENGL_MESHIO_H
+#ifndef MESH_STORE_H
+#define MESH_STORE_H
 
-#include "modules/opengl/mesh.h"
+#include "modules/store/store.h"
+#include "mesh.h"
 
-typedef OpenGLMesh *(MeshIOReadHandler)(const char *filename);
-typedef bool (MeshIOWriteHandler)(const char *filename, OpenGLMesh *mesh);
-
-API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler);
-API bool deleteMeshIOReadHandler(const char *extension);
-API OpenGLMesh *readMeshFromFile(const char *filename);
-API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler);
-API bool deleteMeshIOWriteHandler(const char *extension);
-API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh);
+API Mesh *createMeshFromStore(Store *store);
+API Store *convertMeshToStore(Mesh *mesh);
 
 #endif

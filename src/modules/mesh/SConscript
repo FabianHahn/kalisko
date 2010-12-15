@@ -22,4 +22,4 @@ def merge(*args):
     for a in args: r += a
     return r
 
-module.SharedLibrary('../kalisko_meshio_store', merge(Glob('*.cpp'), Glob('*.c')))
+module.SharedLibrary('../kalisko_mesh', merge(Glob('*.cpp'), Glob('*.c')))

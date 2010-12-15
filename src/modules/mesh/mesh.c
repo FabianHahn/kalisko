@@ -18,62 +18,63 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <assert.h>
 #include <glib.h>
-#include <GL/glew.h>
-
 #include "dll.h"
-#include "log.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "memory_alloc.h"
-#include "modules/event/event.h"
-
 #include "api.h"
-#include "opengl.h"
-#include "material.h"
-#include "model.h"
+#include "mesh.h"
+#include "io.h"
 
-
-MODULE_NAME("opengl");
+MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 11, 1);
-MODULE_BCVERSION(0, 11, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0));
+MODULE_DESCRIPTION("Module providing a general mesh data type");
+MODULE_VERSION(0, 4, 1);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 MODULE_INIT
 {
-	initOpenGLMaterials();
-	initOpenGLModels();
+	initMeshIO();
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	freeOpenGLMaterials();
-	freeOpenGLModels();
+	freeMeshIO();
 }
 
 /**
- * Checks whether an OpenGL error has occurred
+ * Creates a new mesh by allocating space for a number of vertices and triangles
  *
- * @result		true if an error occurred
+ * @param num_vertices			the number of vertices the mesh should have
+ * @param num_triangles			the number of triangles the mesh should have
+ * @result						the created mesh object or NULL on failure
  */
-API bool checkOpenGLError()
+Mesh *createMesh(int num_vertices, int num_triangles)
 {
-	GLenum err = glGetError();
+	assert(num_vertices > 0);
+	assert(num_triangles > 0);
 
-	if(err != GL_NO_ERROR) {
-		const GLubyte *errstr = gluErrorString(err);
-		if(errstr != NULL) {
-			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
-		}
+	Mesh *mesh = ALLOCATE_OBJECT(Mesh);
+	mesh->vertices = ALLOCATE_OBJECTS(MeshVertex, num_vertices);
+	mesh->num_vertices = num_vertices;
+	mesh->triangles = ALLOCATE_OBJECTS(MeshTriangle, num_triangles);
+	mesh->num_triangles = num_triangles;
 
-		return true;
-	}
+	return mesh;
+}
 
-	return false;
+/**
+ * Frees a mesh
+ *
+ * @param mesh			the mesh to free
+ */
+void freeMesh(Mesh *mesh)
+{
+	assert(mesh != NULL);
+
+	free(mesh->vertices);
+	free(mesh->triangles);
+	free(mesh);
 }

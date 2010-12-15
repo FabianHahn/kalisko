@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,62 +18,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef MESH_IO_H
+#define MESH_IO_H
 
-#include <glib.h>
-#include <GL/glew.h>
+#include "mesh.h"
 
-#include "dll.h"
-#include "log.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "memory_alloc.h"
-#include "modules/event/event.h"
+typedef Mesh *(MeshIOReadHandler)(const char *filename);
+typedef bool (MeshIOWriteHandler)(const char *filename, Mesh *mesh);
 
-#include "api.h"
-#include "opengl.h"
-#include "material.h"
-#include "model.h"
+API void initMeshIO();
+API void freeMeshIO();
+API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler);
+API bool deleteMeshIOReadHandler(const char *extension);
+API Mesh *readMeshFromFile(const char *filename);
+API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler);
+API bool deleteMeshIOWriteHandler(const char *extension);
+API bool writeMeshToFile(const char *filename, Mesh *mesh);
 
-
-MODULE_NAME("opengl");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 11, 1);
-MODULE_BCVERSION(0, 11, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0));
-
-MODULE_INIT
-{
-	initOpenGLMaterials();
-	initOpenGLModels();
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	freeOpenGLMaterials();
-	freeOpenGLModels();
-}
-
-/**
- * Checks whether an OpenGL error has occurred
- *
- * @result		true if an error occurred
- */
-API bool checkOpenGLError()
-{
-	GLenum err = glGetError();
-
-	if(err != GL_NO_ERROR) {
-		const GLubyte *errstr = gluErrorString(err);
-		if(errstr != NULL) {
-			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
-		}
-
-		return true;
-	}
-
-	return false;
-}
+#endif

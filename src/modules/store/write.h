@@ -21,7 +21,7 @@
 #ifndef STORE_WRITE_H
 #define STORE_WRITE_H
 
-API void writeStoreFile(char *filename, Store *store);
+API bool writeStoreFile(const char *filename, Store *store);
 API GString *writeStoreGString(Store *store) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

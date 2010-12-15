@@ -20,16 +20,16 @@
 
 #include <glib.h>
 #include "dll.h"
-#include "modules/opengl/mesh.h"
+#include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/write.h"
 #include "api.h"
-#include "meshio.h"
+#include "mesh.h"
+#include "io.h"
+#include "store.h"
 
-MODULE_NAME("meshio");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("I/O library for OpenGL meshes");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12));
+static Mesh *readMeshStore(const char *filename);
+static bool writeMeshStore(const char *filename, Mesh *mesh);
 
 /**
  * A hash table associating strings with MeshIOReadHandlers
@@ -41,15 +41,22 @@ static GHashTable *readHandlers;
  */
 static GHashTable *writeHandlers;
 
-MODULE_INIT
+/**
+ * Initializes the mesh IO system
+ */
+API void initMeshIO()
 {
 	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	writeHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 
-	return true;
+	addMeshIOReadHandler("store", &readMeshStore);
+	addMeshIOWriteHandler("store", &writeMeshStore);
 }
 
-MODULE_FINALIZE
+/**
+ * Frees the mesh IO system
+ */
+API void freeMeshIO()
 {
 	g_hash_table_destroy(readHandlers);
 	g_hash_table_destroy(writeHandlers);
@@ -85,12 +92,12 @@ API bool deleteMeshIOReadHandler(const char *extension)
 }
 
 /**
- * Reads an OpenGL mesh from a file by using the appropriate handler
+ * Reads a mesh from a file by using the appropriate handler
  *
  * @param filename			the mesh file that should be loaded
  * @result					the loaded mesh or NULL on error
  */
-API OpenGLMesh *readMeshFromFile(const char *filename)
+API Mesh *readMeshFromFile(const char *filename)
 {
 	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
 		LOG_ERROR("Trying to read mesh from non existing file '%s'", filename);
@@ -150,10 +157,10 @@ API bool deleteMeshIOWriteHandler(const char *extension)
  * Writes an OpenGL mesh to a file by using the appropriate handler
  *
  * @param filename			the file into which the mesh should be written
- * @param mesh				the OpenGL mesh to be written
+ * @param mesh				the mesh to be written
  * @result					true if successful
  */
-API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh)
+API bool writeMeshToFile(const char *filename, Mesh *mesh)
 {
 	char *ext;
 
@@ -173,3 +180,42 @@ API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh)
 	// We found a handler for this extension, so let it handle the reading
 	return handler(filename, mesh);
 }
+
+
+/**
+ * Reads a mesh from a store file
+ *
+ * @param filename			the store file to read from
+ * @result					the parsed mesh of NULL on failure
+ */
+static Mesh *readMeshStore(const char *filename)
+{
+	Store *store;
+	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
+		LOG_ERROR("Failed to parse mesh store file '%s'", filename);
+		return NULL;
+	}
+
+	Mesh *mesh = createMeshFromStore(store);
+
+	$(void, store, freeStore)(store);
+
+	return mesh;
+}
+
+/**
+ * Writes an OpenGL mesh to a store file
+ *
+ * @param filename			the file name of the mesh store file to be saved
+ * @param mesh				the OpenGL mesh to be written
+ * @result					true if successful
+ */
+static bool writeMeshStore(const char *filename, Mesh *mesh)
+{
+	Store *store = convertMeshToStore(mesh);
+	bool result = $(bool, store, writeStoreFile)(filename, store);
+	$(void, store, freeStore)(store);
+
+	return result;
+}
+

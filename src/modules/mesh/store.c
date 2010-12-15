@@ -18,73 +18,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <GL/glew.h>
 #include <glib.h>
 #include "dll.h"
-#include "modules/opengl/mesh.h"
-#include "modules/meshio/meshio.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "modules/store/parse.h"
-#include "modules/store/write.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
-
-MODULE_NAME("meshio_store");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("linalg", 0, 2, 9));
-
-static OpenGLMesh *readOpenGLMeshStore(const char *filename);
-
-MODULE_INIT
-{
-	if(!$(bool, meshio, addMeshIOReadHandler("store", &readOpenGLMeshStore))) {
-		return false;
-	}
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	$(bool, meshio, deleteMeshIOReadHandler)("store");
-}
+#include "mesh.h"
+#include "store.h"
 
 /**
- * Reads an OpenGL mesh from a store file
+ * Creates a mesh from a store
  *
- * @param filename			the store file to read from
- * @result					the parsed OpenGL mesh of NULL on failure
+ * @param store			the store to parse
+ * @result				the parsed mesh of NULL on failure
  */
-static OpenGLMesh *readOpenGLMeshStore(const char *filename)
+API Mesh *createMeshFromStore(Store *store)
 {
-	Store *store;
-	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
-		LOG_ERROR("Failed to parse mesh store file '%s'", filename);
-		return NULL;
-	}
-
 	Store *positions;
 	if((positions = $(Store *, store, getStorePath)(store, "mesh/vertices/positions")) == NULL || positions->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/vertices/positions'", filename);
-		$(void, store, freeStore)(store);
+		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/positions'");
 		return NULL;
 	}
 
 	Store *colors;
 	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/vertices/colors'", filename);
-		$(void, store, freeStore)(store);
+		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/colors'");
 		return NULL;
 	}
 
 	Store *triangles;
 	if((triangles = $(Store *, store, getStorePath)(store, "mesh/triangles")) == NULL || triangles->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/triangles'", filename);
-		$(void, store, freeStore)(store);
+		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/triangles'");
 		return NULL;
 	}
 
@@ -92,7 +57,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 	GQueue *cList = colors->content.list;
 	GQueue *tList = triangles->content.list;
 
-	OpenGLMesh *mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(g_queue_get_length(pList), g_queue_get_length(tList), GL_STATIC_DRAW);
+	Mesh *mesh = createMesh(g_queue_get_length(pList), g_queue_get_length(tList));
 
 	// Read vertex positions
 	int i = 0;
@@ -100,7 +65,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		Store *position = iter->data;
 
 		if(position->type != STORE_LIST || g_queue_get_length(position->content.list) != 3) {
-			LOG_WARNING("Invalid vertex position for vertex %d in mesh store file '%s', replacing by 0/0/0", i, filename);
+			LOG_WARNING("Invalid vertex position for vertex %d in mesh store, replacing by 0/0/0", i);
 			mesh->vertices[i].position[0] = 0.0f;
 			mesh->vertices[i].position[1] = 0.0f;
 			mesh->vertices[i].position[2] = 0.0f;
@@ -109,11 +74,17 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 			for(GList *piter = position->content.list->head; piter != NULL; piter = piter->next, j++) {
 				Store *pval = piter->data;
 
-				if(pval->type != STORE_FLOAT_NUMBER) {
-					LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store file '%s', replacing by 0", j, i, filename);
-					mesh->vertices[i].position[j] = 0;
-				} else {
-					mesh->vertices[i].position[j] = pval->content.float_number;
+				switch(pval->type) {
+					case STORE_FLOAT_NUMBER:
+						mesh->vertices[i].position[j] = pval->content.float_number;
+					break;
+					case STORE_INTEGER:
+						mesh->vertices[i].position[j] = pval->content.integer;
+					break;
+					default:
+						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+						mesh->vertices[i].position[j] = 0;
+					break;
 				}
 			}
 		}
@@ -129,7 +100,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 	for(GList *iter = cList->head; iter != NULL; iter = iter->next, i++) {
 		Store *color = iter->data;
 		if(color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
-			LOG_WARNING("Invalid vertex color for vertex %d in mesh store file '%s', replacing by 0/0/0/0", i, filename);
+			LOG_WARNING("Invalid vertex color for vertex %d in mesh store, replacing by 0/0/0/0", i);
 			mesh->vertices[i].color[0] = 0.0f;
 			mesh->vertices[i].color[1] = 0.0f;
 			mesh->vertices[i].color[2] = 0.0f;
@@ -139,11 +110,17 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 			for(GList *citer = color->content.list->head; citer != NULL; citer = citer->next, j++) {
 				Store *cval = citer->data;
 
-				if(cval->type != STORE_FLOAT_NUMBER) {
-					LOG_WARNING("Invalid vertex color value in component %d of vertex %d in mesh store file '%s', replacing by 0", j, i, filename);
-					mesh->vertices[i].color[j] = 0;
-				} else {
-					mesh->vertices[i].color[j] = cval->content.float_number;
+				switch(cval->type) {
+					case STORE_FLOAT_NUMBER:
+						mesh->vertices[i].color[j] = cval->content.float_number;
+					break;
+					case STORE_INTEGER:
+						mesh->vertices[i].color[j] = cval->content.integer;
+					break;
+					default:
+						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+						mesh->vertices[i].color[j] = 0;
+					break;
 				}
 			}
 		}
@@ -155,7 +132,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		Store *triangle = iter->data;
 
 		if(triangle->type != STORE_LIST) {
-			LOG_WARNING("Invalid triangle %d in mesh store file '%s', replacing by 0/0/0", i, filename);
+			LOG_WARNING("Invalid triangle %d in mesh store, replacing by 0/0/0", i);
 			mesh->triangles[i].indices[0] = 0;
 			mesh->triangles[i].indices[1] = 0;
 			mesh->triangles[i].indices[2] = 0;
@@ -165,7 +142,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 				Store *ival = iiter->data;
 
 				if(ival->type != STORE_INTEGER || ival->content.integer < 0 || ival->content.integer >= mesh->num_vertices) {
-					LOG_WARNING("Invalid index value in component %d of triangle %d in mesh store file '%s', replacing by 0", j, i, filename);
+					LOG_WARNING("Invalid index value in component %d of triangle %d in mesh store, replacing by 0", j, i);
 					mesh->triangles[i].indices[j] = 0;
 				} else {
 					mesh->triangles[i].indices[j] = ival->content.integer;
@@ -176,9 +153,9 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 
 	// Compute normals
 	for(i = 0; i < mesh->num_triangles; i++) {
-		OpenGLVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
-		OpenGLVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
-		OpenGLVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
+		MeshVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
+		MeshVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
+		MeshVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
 
 		Vector *v1 = $(Vector *, linalg, createVector3)(vertex1.position[0], vertex1.position[1], vertex1.position[2]);
 		Vector *v2 = $(Vector *, linalg, createVector3)(vertex2.position[0], vertex2.position[1], vertex2.position[2]);
@@ -205,7 +182,7 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 
 	// Normalize normals
 	for(i = 0; i < mesh->num_vertices; i++) {
-		OpenGLVertex vertex = mesh->vertices[i];
+		MeshVertex vertex = mesh->vertices[i];
 		Vector *v = $(Vector *, linalg, createVector3)(vertex.normal[0], vertex.normal[1], vertex.normal[2]);
 		$(void, linalg, normalizeVector)(v);
 		float *vData = $(float *, linalg, getVectorData)(v);
@@ -217,7 +194,54 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		$(void, linalg, freeVector)(v);
 	}
 
-	$(void, store, freeStore)(store);
-
 	return mesh;
+}
+
+/**
+ * Creates a store from a mesh
+ *
+ * @param mesh		the mesh to convert to a store
+ * @result			the converted store or NULL on failure
+ */
+API Store *convertMeshToStore(Mesh *mesh)
+{
+	Store *store = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(store, "mesh", $(Store *, store, createStore)());
+	$(bool, store, setStorePath)(store, "mesh/vertices", $(Store *, store, createStore)());
+
+	Store *positions = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/vertices/positions", positions);
+	Store *colors = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/vertices/colors", colors);
+	Store *triangles = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/triangles", triangles);
+
+	// Write vertices
+	for(int i = 0; i < mesh->num_vertices; i++) {
+		Store *position = $(Store *, store, createStoreListValue)(NULL);
+		Store *color = $(Store *, store, createStoreListValue)(NULL);
+
+		for(int j = 0; j < 4; j++) {
+			if(j < 3) {
+				g_queue_push_tail(position->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].position[j]));
+			}
+			g_queue_push_tail(color->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].color[j]));
+		}
+
+		g_queue_push_tail(positions->content.list, position);
+		g_queue_push_tail(colors->content.list, color);
+	}
+
+	// Write triangles
+	for(int i = 0; i < mesh->num_triangles; i++) {
+		Store *triangle = $(Store *, store, createStoreListValue)(NULL);
+
+		for(int j = 0; j < 3; j++) {
+			g_queue_push_tail(triangle->content.list, $(Store *, store, createStoreIntegerValue)(mesh->triangles[i].indices[j]));
+		}
+
+		g_queue_push_tail(triangles->content.list, triangle);
+	}
+
+	return store;
 }

@@ -18,13 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MESH_STORE_MESH_STORE_H
-#define MESH_STORE_MESH_STORE_H
+#ifndef MESH_STORE_H
+#define MESH_STORE_H
 
-#include "modules/opengl/mesh.h"
 #include "modules/store/store.h"
+#include "mesh.h"
 
-API OpenGLMesh *createOpenGLMeshFromStore(Store *store);
-API Store *convertOpenGLMeshToStore(OpenGLMesh *mesh);
+API Mesh *createOpenGLMeshFromStore(Store *store);
+API Store *convertOpenGLMeshToStore(Mesh *mesh);
 
 #endif

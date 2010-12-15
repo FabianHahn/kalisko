@@ -18,40 +18,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <GL/glew.h>
 #include <glib.h>
 #include "dll.h"
-#include "modules/opengl/mesh.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
-#include "mesh_store.h"
-
-MODULE_NAME("mesh_store");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
-
-MODULE_INIT
-{
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
-}
+#include "mesh.h"
+#include "store.h"
 
 /**
- * Creates an OpenGL mesh from a store
+ * Creates a mesh from a store
  *
  * @param store			the store to parse
- * @result				the parsed OpenGL mesh of NULL on failure
+ * @result				the parsed mesh of NULL on failure
  */
-API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
+API Mesh *createMeshFromStore(Store *store)
 {
 	Store *positions;
 	if((positions = $(Store *, store, getStorePath)(store, "mesh/vertices/positions")) == NULL || positions->type != STORE_LIST) {
@@ -75,7 +57,7 @@ API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
 	GQueue *cList = colors->content.list;
 	GQueue *tList = triangles->content.list;
 
-	OpenGLMesh *mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(g_queue_get_length(pList), g_queue_get_length(tList), GL_STATIC_DRAW);
+	Mesh *mesh = createMesh(g_queue_get_length(pList), g_queue_get_length(tList));
 
 	// Read vertex positions
 	int i = 0;
@@ -159,9 +141,9 @@ API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
 
 	// Compute normals
 	for(i = 0; i < mesh->num_triangles; i++) {
-		OpenGLVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
-		OpenGLVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
-		OpenGLVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
+		MeshVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
+		MeshVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
+		MeshVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
 
 		Vector *v1 = $(Vector *, linalg, createVector3)(vertex1.position[0], vertex1.position[1], vertex1.position[2]);
 		Vector *v2 = $(Vector *, linalg, createVector3)(vertex2.position[0], vertex2.position[1], vertex2.position[2]);
@@ -188,7 +170,7 @@ API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
 
 	// Normalize normals
 	for(i = 0; i < mesh->num_vertices; i++) {
-		OpenGLVertex vertex = mesh->vertices[i];
+		MeshVertex vertex = mesh->vertices[i];
 		Vector *v = $(Vector *, linalg, createVector3)(vertex.normal[0], vertex.normal[1], vertex.normal[2]);
 		$(void, linalg, normalizeVector)(v);
 		float *vData = $(float *, linalg, getVectorData)(v);
@@ -204,12 +186,12 @@ API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
 }
 
 /**
- * Creates a store from an OpenGL mesh
+ * Creates a store from a mesh
  *
- * @param mesh		the OpenGL mesh to convert to a store
+ * @param mesh		the mesh to convert to a store
  * @result			the converted store or NULL on failure
  */
-API Store *convertOpenGLMeshToStore(OpenGLMesh *mesh)
+API Store *convertMeshToStore(Mesh *mesh)
 {
 	Store *store = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(store, "mesh", $(Store *, store, createStore)());

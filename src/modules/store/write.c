@@ -67,17 +67,24 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data);
  *
  * @param filename		the filename to write to
  * @param store			the store to write
+ * @result				true if successful
  */
-API void writeStoreFile(const char *filename, Store *store)
+API bool writeStoreFile(const char *filename, Store *store)
 {
 	StoreDumpContext context;
-	context.resource = fopen(filename, "w");
+	if((context.resource = fopen(filename, "w")) == NULL) {
+		LOG_SYSTEM_ERROR("Failed to open file '%s' to write store", filename);
+		return false;
+	}
+
 	context.writer = &storeFileWrite;
 	context.level = -1;
 
 	dumpStore(store, &context);
 
 	fclose(context.resource);
+
+	return true;
 }
 
 /**

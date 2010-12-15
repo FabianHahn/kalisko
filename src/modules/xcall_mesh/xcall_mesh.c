@@ -29,13 +29,13 @@
 #include "modules/mesh/store.h"
 #include "api.h"
 
-static Store *xcall_readOpenGLMeshFile(Store *xcall);
-static Store *xcall_writeOpenGLMeshFile(Store *xcall);
+static Store *xcall_readMeshFile(Store *xcall);
+static Store *xcall_writeMeshFile(Store *xcall);
 
 MODULE_NAME("xcall_mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for meshes");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("xcall", 0, 2, 6));
 
@@ -44,11 +44,11 @@ MODULE_INIT
 	bool fail = true;
 
 	do {
-		if(!$(bool, xcall, addXCallFunction)("readOpenGLMeshFile", &xcall_readOpenGLMeshFile)) {
+		if(!$(bool, xcall, addXCallFunction)("readMeshFile", &xcall_readMeshFile)) {
 			break;
 		}
 
-		if(!$(bool, xcall, addXCallFunction)("writeOpenGLMeshFile", &xcall_writeOpenGLMeshFile)) {
+		if(!$(bool, xcall, addXCallFunction)("writeMeshFile", &xcall_writeMeshFile)) {
 			break;
 		}
 
@@ -57,8 +57,8 @@ MODULE_INIT
 	while(false);
 
 	if(fail) {
-		$(bool, xcall, delXCallFunction)("readOpenGLMeshFile");
-		$(bool, xcall, delXCallFunction)("writeOpenGLMeshFile");
+		$(bool, xcall, delXCallFunction)("readMeshFile");
+		$(bool, xcall, delXCallFunction)("writeMeshFile");
 	}
 
 	return true;
@@ -66,12 +66,12 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(bool, xcall, delXCallFunction)("readOpenGLMeshFile");
-	$(bool, xcall, delXCallFunction)("writeOpenGLMeshFile");
+	$(bool, xcall, delXCallFunction)("readMeshFile");
+	$(bool, xcall, delXCallFunction)("writeMeshFile");
 }
 
 /**
- * XCallFunction to read an OpenGL mesh from a file
+ * XCallFunction to read a  mesh from a file
  * XCall parameters:
  *  * string file			the filename of the mesh to read
  * XCall result:
@@ -80,7 +80,7 @@ MODULE_FINALIZE
  * @param xcall		the xcall as store
  * @result			a return value as store
  */
-static Store *xcall_readOpenGLMeshFile(Store *xcall)
+static Store *xcall_readMeshFile(Store *xcall)
 {
 	Store *ret = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStore)());
@@ -92,15 +92,15 @@ static Store *xcall_readOpenGLMeshFile(Store *xcall)
 	}
 
 	Mesh *mesh;
-	if((mesh = $(OpenGLMesh *, meshio, readMeshFromFile)(file->content.string)) == NULL) {
-		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read OpenGL mesh from specified file"));
+	if((mesh = $(Mesh *, meshio, readMeshFromFile)(file->content.string)) == NULL) {
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mesh from specified file"));
 		return ret;
 	}
 
 	Store *meshstore;
 	if((meshstore = $(Store *, mesh_store, convertMeshToStore)(mesh)) == NULL) {
 		$(void, opengl, freeMesh)(mesh);
-		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to convert OpenGL mesh to store"));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to convert mesh to store"));
 		return ret;
 	}
 
@@ -111,7 +111,7 @@ static Store *xcall_readOpenGLMeshFile(Store *xcall)
 }
 
 /**
- * XCallFunction to write an OpenGL mesh to a file
+ * XCallFunction to write a mesh to a file
  * XCall parameters:
  *  * string file 		the filename of the mesh to write
  *  * array mesh		the mesh to write to the file
@@ -121,7 +121,7 @@ static Store *xcall_readOpenGLMeshFile(Store *xcall)
  * @param xcall		the xcall as store
  * @result			a return value as store
  */
-static Store *xcall_writeOpenGLMeshFile(Store *xcall)
+static Store *xcall_writeMeshFile(Store *xcall)
 {
 	Store *ret = $(Store *, store, createStore)();
 	$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStore)());
@@ -140,7 +140,7 @@ static Store *xcall_writeOpenGLMeshFile(Store *xcall)
 
 	Mesh *mesh;
 	if((mesh = $(Mesh *, mesh_store, createMeshFromStore)(xcall)) == NULL) {
-		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to create OpenGL mesh from store"));
+		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to create mesh from store"));
 		return ret;
 	}
 

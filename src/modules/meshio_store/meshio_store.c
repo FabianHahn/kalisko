@@ -33,8 +33,8 @@
 MODULE_NAME("meshio_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 static OpenGLMesh *readOpenGLMeshStore(const char *filename);
@@ -67,9 +67,16 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		return NULL;
 	}
 
-	Store *vertices;
-	if((vertices = $(Store *, store, getStorePath)(store, "mesh/vertices")) == NULL || vertices->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/vertices'", filename);
+	Store *positions;
+	if((positions = $(Store *, store, getStorePath)(store, "mesh/vertices/positions")) == NULL || positions->type != STORE_LIST) {
+		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/vertices/positions'", filename);
+		$(void, store, freeStore)(store);
+		return NULL;
+	}
+
+	Store *colors;
+	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
+		LOG_ERROR("Failed to parse mesh store file '%s': Could not find store list path 'mesh/vertices/colors'", filename);
 		$(void, store, freeStore)(store);
 		return NULL;
 	}
@@ -81,19 +88,18 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 		return NULL;
 	}
 
-	GQueue *vList = vertices->content.list;
+	GQueue *pList = positions->content.list;
+	GQueue *cList = colors->content.list;
 	GQueue *tList = triangles->content.list;
 
-	OpenGLMesh *mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(g_queue_get_length(vList), g_queue_get_length(tList), GL_STATIC_DRAW);
+	OpenGLMesh *mesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(g_queue_get_length(pList), g_queue_get_length(tList), GL_STATIC_DRAW);
 
-	// Read vertices
+	// Read vertex positions
 	int i = 0;
-	for(GList *iter = vList->head; iter != NULL; iter = iter->next, i++) {
-		Store *vertex = iter->data;
+	for(GList *iter = pList->head; iter != NULL; iter = iter->next, i++) {
+		Store *position = iter->data;
 
-		// Read vertex position
-		Store *position;
-		if(vertex->type != STORE_ARRAY || (position = $(Store *, store, getStorePath)(vertex, "position")) == NULL || position->type != STORE_LIST || g_queue_get_length(position->content.list) != 3) {
+		if(position->type != STORE_LIST || g_queue_get_length(position->content.list) != 3) {
 			LOG_WARNING("Invalid vertex position for vertex %d in mesh store file '%s', replacing by 0/0/0", i, filename);
 			mesh->vertices[i].position[0] = 0.0f;
 			mesh->vertices[i].position[1] = 0.0f;
@@ -112,9 +118,17 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 			}
 		}
 
-		// Read vertex color
-		Store *color;
-		if(vertex->type != STORE_ARRAY || (color = $(Store *, store, getStorePath)(vertex, "color")) == NULL || color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
+		// Reset normal vector
+		mesh->vertices[i].normal[0] = 0.0f;
+		mesh->vertices[i].normal[1] = 0.0f;
+		mesh->vertices[i].normal[2] = 0.0f;
+	}
+
+	// Read vertex colors
+	i = 0;
+	for(GList *iter = cList->head; iter != NULL; iter = iter->next, i++) {
+		Store *color = iter->data;
+		if(color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
 			LOG_WARNING("Invalid vertex color for vertex %d in mesh store file '%s', replacing by 0/0/0/0", i, filename);
 			mesh->vertices[i].color[0] = 0.0f;
 			mesh->vertices[i].color[1] = 0.0f;
@@ -133,11 +147,6 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 				}
 			}
 		}
-
-		// Reset normal vector
-		mesh->vertices[i].normal[0] = 0.0f;
-		mesh->vertices[i].normal[1] = 0.0f;
-		mesh->vertices[i].normal[2] = 0.0f;
 	}
 
 	// Read triangles

@@ -20,9 +20,16 @@
 
 #include <glib.h>
 #include "dll.h"
+#include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/write.h"
 #include "api.h"
 #include "mesh.h"
 #include "io.h"
+#include "store.h"
+
+static Mesh *readMeshStore(const char *filename);
+static bool writeMeshStore(const char *filename, Mesh *mesh);
 
 /**
  * A hash table associating strings with MeshIOReadHandlers
@@ -41,6 +48,9 @@ API void initMeshIO()
 {
 	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	writeHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+
+	addMeshIOReadHandler("store", &readMeshStore);
+	addMeshIOWriteHandler("store", &writeMeshStore);
 }
 
 /**
@@ -170,3 +180,42 @@ API bool writeMeshToFile(const char *filename, Mesh *mesh)
 	// We found a handler for this extension, so let it handle the reading
 	return handler(filename, mesh);
 }
+
+
+/**
+ * Reads a mesh from a store file
+ *
+ * @param filename			the store file to read from
+ * @result					the parsed mesh of NULL on failure
+ */
+static Mesh *readMeshStore(const char *filename)
+{
+	Store *store;
+	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
+		LOG_ERROR("Failed to parse mesh store file '%s'", filename);
+		return NULL;
+	}
+
+	Mesh *mesh = createMeshFromStore(store);
+
+	$(void, store, freeStore)(store);
+
+	return mesh;
+}
+
+/**
+ * Writes an OpenGL mesh to a store file
+ *
+ * @param filename			the file name of the mesh store file to be saved
+ * @param mesh				the OpenGL mesh to be written
+ * @result					true if successful
+ */
+static bool writeMeshStore(const char *filename, Mesh *mesh)
+{
+	Store *store = convertMeshToStore(mesh);
+	bool result = $(bool, store, writeStoreFile)(filename, store);
+	$(void, store, freeStore)(store);
+
+	return result;
+}
+

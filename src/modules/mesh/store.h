@@ -24,7 +24,7 @@
 #include "modules/store/store.h"
 #include "mesh.h"
 
-API Mesh *createOpenGLMeshFromStore(Store *store);
-API Store *convertOpenGLMeshToStore(Mesh *mesh);
+API Mesh *createMeshFromStore(Store *store);
+API Store *convertMeshToStore(Mesh *mesh);
 
 #endif

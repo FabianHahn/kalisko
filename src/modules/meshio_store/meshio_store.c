@@ -33,7 +33,7 @@
 MODULE_NAME("meshio_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -263,7 +263,7 @@ static bool writeOpenGLMeshStore(const char *filename, OpenGLMesh *mesh)
 		}
 
 		g_queue_push_tail(positions->content.list, position);
-		g_queue_push_tail(color->content.list, color);
+		g_queue_push_tail(colors->content.list, color);
 	}
 
 	// Write triangles

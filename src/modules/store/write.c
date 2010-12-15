@@ -68,7 +68,7 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data);
  * @param filename		the filename to write to
  * @param store			the store to write
  */
-API void writeStoreFile(char *filename, Store *store)
+API void writeStoreFile(const char *filename, Store *store)
 {
 	StoreDumpContext context;
 	context.resource = fopen(filename, "w");

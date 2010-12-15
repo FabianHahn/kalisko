@@ -20,16 +20,9 @@
 
 #include <glib.h>
 #include "dll.h"
-#include "modules/opengl/mesh.h"
 #include "api.h"
-#include "meshio.h"
-
-MODULE_NAME("meshio");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("I/O library for OpenGL meshes");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12));
+#include "mesh.h"
+#include "io.h"
 
 /**
  * A hash table associating strings with MeshIOReadHandlers
@@ -41,15 +34,19 @@ static GHashTable *readHandlers;
  */
 static GHashTable *writeHandlers;
 
-MODULE_INIT
+/**
+ * Initializes the mesh IO system
+ */
+API void initMeshIO()
 {
 	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	writeHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
-
-	return true;
 }
 
-MODULE_FINALIZE
+/**
+ * Frees the mesh IO system
+ */
+API void freeMeshIO()
 {
 	g_hash_table_destroy(readHandlers);
 	g_hash_table_destroy(writeHandlers);
@@ -85,12 +82,12 @@ API bool deleteMeshIOReadHandler(const char *extension)
 }
 
 /**
- * Reads an OpenGL mesh from a file by using the appropriate handler
+ * Reads a mesh from a file by using the appropriate handler
  *
  * @param filename			the mesh file that should be loaded
  * @result					the loaded mesh or NULL on error
  */
-API OpenGLMesh *readMeshFromFile(const char *filename)
+API Mesh *readMeshFromFile(const char *filename)
 {
 	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
 		LOG_ERROR("Trying to read mesh from non existing file '%s'", filename);
@@ -150,10 +147,10 @@ API bool deleteMeshIOWriteHandler(const char *extension)
  * Writes an OpenGL mesh to a file by using the appropriate handler
  *
  * @param filename			the file into which the mesh should be written
- * @param mesh				the OpenGL mesh to be written
+ * @param mesh				the mesh to be written
  * @result					true if successful
  */
-API bool writeMeshToFile(const char *filename, OpenGLMesh *mesh)
+API bool writeMeshToFile(const char *filename, Mesh *mesh)
 {
 	char *ext;
 

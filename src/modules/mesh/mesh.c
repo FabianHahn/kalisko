@@ -23,22 +23,25 @@
 #include "dll.h"
 #include "api.h"
 #include "mesh.h"
+#include "io.h"
 
 MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general mesh data type");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 MODULE_INIT
 {
+	initMeshIO();
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
-
+	freeMeshIO();
 }
 
 /**

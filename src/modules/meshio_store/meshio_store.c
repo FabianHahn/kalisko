@@ -33,15 +33,22 @@
 MODULE_NAME("meshio_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("meshio", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 6, 7), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
 static OpenGLMesh *readOpenGLMeshStore(const char *filename);
+static bool writeOpenGLMeshStore(const char *filename, OpenGLMesh *mesh);
 
 MODULE_INIT
 {
 	if(!$(bool, meshio, addMeshIOReadHandler("store", &readOpenGLMeshStore))) {
+		return false;
+	}
+
+	if(!$(bool, meshio, addMeshIOWriteHandler("store", &writeOpenGLMeshStore))) {
+		// Delete read handler because it was already registered
+		$(bool, meshio, deleteMeshIOReadHandler)("store");
 		return false;
 	}
 
@@ -51,6 +58,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(bool, meshio, deleteMeshIOReadHandler)("store");
+	$(bool, meshio, deleteMeshIOWriteHandler)("store");
 }
 
 /**
@@ -220,4 +228,58 @@ static OpenGLMesh *readOpenGLMeshStore(const char *filename)
 	$(void, store, freeStore)(store);
 
 	return mesh;
+}
+
+/**
+ * Writes an OpenGL mesh to a store file
+ *
+ * @param filename			the file name of the mesh store file to be saved
+ * @param mesh				the OpenGL mesh to be written
+ * @result					true if successful
+ */
+static bool writeOpenGLMeshStore(const char *filename, OpenGLMesh *mesh)
+{
+	Store *store = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(store, "mesh", $(Store *, store, createStore)());
+	$(bool, store, setStorePath)(store, "mesh/vertices", $(Store *, store, createStore)());
+
+	Store *positions = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/vertices/positions", positions);
+	Store *colors = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/vertices/colors", colors);
+	Store *triangles = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/triangles", triangles);
+
+	// Write vertices
+	for(int i = 0; i < mesh->num_vertices; i++) {
+		Store *position = $(Store *, store, createStoreListValue)(NULL);
+		Store *color = $(Store *, store, createStoreListValue)(NULL);
+
+		for(int j = 0; j < 4; j++) {
+			if(j < 3) {
+				g_queue_push_tail(position->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].position[j]));
+			}
+			g_queue_push_tail(color->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].color[j]));
+		}
+
+		g_queue_push_tail(positions->content.list, position);
+		g_queue_push_tail(color->content.list, color);
+	}
+
+	// Write triangles
+	for(int i = 0; i < mesh->num_triangles; i++) {
+		Store *triangle = $(Store *, store, createStoreListValue)(NULL);
+
+		for(int j = 0; j < 3; j++) {
+			g_queue_push_tail(triangle->content.list, $(Store *, store, createStoreIntegerValue)(mesh->triangles[i].indices[j]));
+		}
+
+		g_queue_push_tail(triangles->content.list, triangle);
+	}
+
+	bool result = $(bool, store, writeStoreFile)(filename, store);
+
+	$(void, store, freeStore)(store);
+
+	return result;
 }

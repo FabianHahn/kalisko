@@ -31,7 +31,7 @@
 MODULE_NAME("mesh_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -56,21 +56,18 @@ API OpenGLMesh *createOpenGLMeshFromStore(Store *store)
 	Store *positions;
 	if((positions = $(Store *, store, getStorePath)(store, "mesh/vertices/positions")) == NULL || positions->type != STORE_LIST) {
 		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/positions'");
-		$(void, store, freeStore)(store);
 		return NULL;
 	}
 
 	Store *colors;
 	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
 		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/colors'");
-		$(void, store, freeStore)(store);
 		return NULL;
 	}
 
 	Store *triangles;
 	if((triangles = $(Store *, store, getStorePath)(store, "mesh/triangles")) == NULL || triangles->type != STORE_LIST) {
 		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/triangles'");
-		$(void, store, freeStore)(store);
 		return NULL;
 	}
 

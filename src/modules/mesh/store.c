@@ -74,11 +74,17 @@ API Mesh *createMeshFromStore(Store *store)
 			for(GList *piter = position->content.list->head; piter != NULL; piter = piter->next, j++) {
 				Store *pval = piter->data;
 
-				if(pval->type != STORE_FLOAT_NUMBER) {
-					LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
-					mesh->vertices[i].position[j] = 0;
-				} else {
-					mesh->vertices[i].position[j] = pval->content.float_number;
+				switch(pval->type) {
+					case STORE_FLOAT_NUMBER:
+						mesh->vertices[i].position[j] = pval->content.float_number;
+					break;
+					case STORE_INTEGER:
+						mesh->vertices[i].position[j] = pval->content.integer;
+					break;
+					default:
+						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+						mesh->vertices[i].position[j] = 0;
+					break;
 				}
 			}
 		}
@@ -104,11 +110,17 @@ API Mesh *createMeshFromStore(Store *store)
 			for(GList *citer = color->content.list->head; citer != NULL; citer = citer->next, j++) {
 				Store *cval = citer->data;
 
-				if(cval->type != STORE_FLOAT_NUMBER) {
-					LOG_WARNING("Invalid vertex color value in component %d of vertex %d in mesh store, replacing by 0", j, i);
-					mesh->vertices[i].color[j] = 0;
-				} else {
-					mesh->vertices[i].color[j] = cval->content.float_number;
+				switch(cval->type) {
+					case STORE_FLOAT_NUMBER:
+						mesh->vertices[i].color[j] = cval->content.float_number;
+					break;
+					case STORE_INTEGER:
+						mesh->vertices[i].color[j] = cval->content.integer;
+					break;
+					default:
+						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+						mesh->vertices[i].color[j] = 0;
+					break;
 				}
 			}
 		}

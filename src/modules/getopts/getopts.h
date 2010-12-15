@@ -23,6 +23,9 @@
 
 API char *getOpt(char *opt);
 API char *getOptValue(char *opt, ...) G_GNUC_NULL_TERMINATED;
+API char *dumpOpts();
+API void setOptsParsed(bool v);
+
 
 #ifdef DLL_API_IMPORT
 

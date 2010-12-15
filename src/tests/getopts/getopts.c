@@ -31,7 +31,7 @@
 MODULE_NAME("test_getopts");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the getopts module");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 1));
 
@@ -63,6 +63,7 @@ TEST_CASE(getopts)
 
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(sizeof(argv) / sizeof(argv[0]));
+	$(void, getopts, setOptsParsed)(false);
 
 	char *opt;
 	// Short option without argument, should have an empty value (!= NULL)

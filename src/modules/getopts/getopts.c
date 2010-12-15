@@ -34,7 +34,7 @@
 MODULE_NAME("getopts");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module parses command line arguments and stores them for later use.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -152,4 +152,44 @@ API char *getOptValue(char *opt, ...)
 	}
 
 	return NULL;
+}
+
+/**
+ * Dumps a string representations of all Opts and returns this string.
+ *
+ * Attention: Use this only for debugging.
+ *
+ * @return A string representing the parsed Opts. This string must be freed.
+ */
+API char *dumpOpts()
+{
+	if(!parsed) {
+		parseArgv();
+	}
+
+	GHashTableIter iter;
+	void *key = NULL;
+	void *value = NULL;
+	GString *str = g_string_new("");
+
+	g_hash_table_iter_init(&iter, opts);
+
+	while(g_hash_table_iter_next(&iter, &key, &value)) {
+		g_string_append_printf(str, "key = '%s' => value = '%s'\n", (char *)key, (char *)value);
+	}
+
+	char *ret = str->str;
+	g_string_free(str, false);
+
+	return ret;
+}
+
+/**
+ * Sets the internal "parsed" variable to the given value.
+ *
+ * Attention: Use this only for debugging / testing.
+ */
+API void setOptsParsed(bool v)
+{
+	parsed = v;
 }

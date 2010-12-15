@@ -21,5 +21,28 @@ def merge(*args):
     r = []
     for a in args: r += a
     return r
+    
+
+if not module.GetOption('clean'):
+	conf = Configure(module)
+		
+	if module['PLATFORM'] != 'win32':
+		if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):
+			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
+			Exit(1)	
+	else:
+		if not conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'C'):
+			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
+			Exit(1)
+			
+		if not conf.CheckLib('opengl32'):
+			print('Error: Could not find the opengl32 library!')
+			Exit(1)
+			
+		if not conf.CheckLib('glu32'):
+			print('Error: Could not find the glu32 library!')
+			Exit(1)
+				
+	module = conf.Finish()
 
 module.SharedLibrary('../kalisko_mesh_store', merge(Glob('*.cpp'), Glob('*.c')))

@@ -24,8 +24,6 @@
 #include "modules/opengl/mesh.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "modules/store/parse.h"
-#include "modules/store/write.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
 #include "mesh_store.h"
@@ -33,7 +31,7 @@
 MODULE_NAME("mesh_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A module providing handlers for writing and reading OpenGL meshes in the store format");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 10, 12), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 

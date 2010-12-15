@@ -44,10 +44,7 @@ OpenGLMesh *createOpenGLMesh(Mesh *mesh, GLenum usage)
 
 	glGenBuffers(1, &openglmesh->vertexBuffer);
 	glGenBuffers(1, &openglmesh->indexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(MeshVertex) * mesh->num_vertices, NULL, usage);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(MeshTriangle) * mesh->num_triangles, NULL, usage);
+	updateOpenGLMesh(openglmesh);
 
 	if(checkOpenGLError()) {
 		freeOpenGLMesh(openglmesh);

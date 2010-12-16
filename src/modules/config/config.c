@@ -81,6 +81,7 @@ MODULE_INIT
 
 	// If no store was found we just use an empty store
 	if(config == NULL) {
+		LOG_INFO("No configuration files provided. Using empty config.");
 		config = $(void, store, createStore)();
 	}
 

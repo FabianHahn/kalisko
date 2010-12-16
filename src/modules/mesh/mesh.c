@@ -29,7 +29,7 @@
 MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general mesh data type");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -96,10 +96,10 @@ API void generateMeshNormals(Mesh *mesh)
 		$(void, linalg, normalizeVector)(normal);
 		float *normalData = $(float *, linalg, getVectorData)(normal);
 
-		for(int j = i*3; j < (i+1)*3; j++) {
-			mesh->vertices[j].normal[0] += normalData[0];
-			mesh->vertices[j].normal[1] += normalData[1];
-			mesh->vertices[j].normal[2] += normalData[2];
+		for(int j = 0; j < 3; j++) {
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[0] += normalData[0];
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[1] += normalData[1];
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[2] += normalData[2];
 		}
 
 		$(void, linalg, freeVector)(v1);

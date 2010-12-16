@@ -18,8 +18,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+extern "C" {
+#include <glib.h>
+}
 #include <fstream>
+#include <sstream>
 #include <string>
+#include <limits>
+#include <vector>
 #include "dll.h"
 #include "api.h"
 #include "obj.h"
@@ -32,5 +38,62 @@
  */
 API Mesh *readMeshFileObj(const char *filename)
 {
-	return NULL;
+	std::ifstream file(filename);
+
+	if(!file) {
+		LOG_ERROR("Failed to open mesh obj file '%s'", filename);
+		return NULL;
+	}
+
+	std::vector<float> positions;
+	std::vector<MeshVertex> vertices;
+	std::vector<MeshTriangle> triangles;
+
+	while(file) {
+		std::string type;
+		file >> type;
+
+		if(type == std::string("v")) {
+			MeshVertex vertex;
+			for(int i = 0; i < 3; i++) {
+				file >> vertex.position[i];
+			}
+
+			for(int j = 0; j < 4; j++) { // obj meshes don't have vertex colors, so just set them all to red
+				vertex.color[j] = j == 0 ? 1.0f : 0.0f;
+			}
+
+			vertices.push_back(vertex);
+		} else if(type == std::string("f")) {
+			MeshTriangle triangle;
+			for(int i = 0; i < 3; i++) {
+				std::string indices;
+				file >> indices;
+
+				char **parts = g_strsplit(indices.c_str(), "/", 0);
+				int index = atoi(parts[0]);
+				g_strfreev(parts);
+
+				triangle.indices[i] = index;
+			}
+			triangles.push_back(triangle);
+		}
+
+		// Jump to next line
+		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	}
+
+	Mesh *mesh = $(Mesh *, mesh, createMesh)(vertices.size(), triangles.size());
+
+	for(unsigned int i = 0; i < vertices.size(); i++) {
+		mesh->vertices[i] = vertices[i];
+	}
+
+	for(unsigned int i = 0; i < triangles.size(); i++) {
+		mesh->triangles[i] = triangles[i];
+	}
+
+	$(void, mesh, generateMeshNormals)(mesh);
+
+	return mesh;
 }

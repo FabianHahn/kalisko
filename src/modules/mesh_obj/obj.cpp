@@ -71,8 +71,13 @@ API Mesh *readMeshFileObj(const char *filename)
 				file >> indices;
 
 				char **parts = g_strsplit(indices.c_str(), "/", 0);
-				int index = atoi(parts[0]);
+				int index = atoi(parts[0]) - 1;
 				g_strfreev(parts);
+
+				if(index < 0 || index >= (int) vertices.size()) {
+					LOG_WARNING("Trying to assign invalid vertex index %d to triangle (mesh has %d vertices), replacing by 0", index, (int) vertices.size());
+					index = 0;
+				}
 
 				triangle.indices[i] = index;
 			}

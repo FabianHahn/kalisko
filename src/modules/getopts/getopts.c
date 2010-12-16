@@ -41,6 +41,8 @@ MODULE_NODEPS;
 static GHashTable *opts;
 static bool parsed;
 
+static void parseArgv();
+
 MODULE_INIT
 {
 	opts = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
@@ -53,7 +55,7 @@ MODULE_FINALIZE
 	g_hash_table_destroy(opts);
 }
 
-void parseArgv()
+static void parseArgv()
 {
 	char **argv = $$(char **, getArgv)();
 	int argc = $$(int, getArgc)();
@@ -101,7 +103,7 @@ void parseArgv()
 }
 
 /**
- * Looks up an option and returns its supplied value if any or an empty string if the option was supplied without value.
+ * Looks up an option and returns its supplied value if any was given or an empty string if the option was supplied without value.
  * Returns NULL if the option was not supplied at all.
  *
  * @param opt	The option to look up
@@ -122,8 +124,8 @@ API char *getOpt(char *opt)
 }
 
 /**
- * Looks up a list of options to check if they exist with a value. The first match of an option and a value
- * is used to return the given value. All other options are ignored.
+ * Looks up a list of options to check if they exist with a value. The first match of an option
+ * is used to return the corresponding value. All other options are ignored.
  *
  * @param opt	A list of options to look up.
  * @return		The value for the first matched option or NULL

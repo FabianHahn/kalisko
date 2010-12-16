@@ -55,7 +55,8 @@ typedef struct {
 	int num_triangles;
 } Mesh;
 
-Mesh *createMesh(int num_vertices, int num_triangles);
-void freeMesh(Mesh *mesh);
+API Mesh *createMesh(int num_vertices, int num_triangles);
+API void generateMeshNormals(Mesh *mesh);
+API void freeMesh(Mesh *mesh);
 
 #endif

@@ -234,7 +234,7 @@ static void reconnectRemoteConnection(IrcProxy *proxy)
  * Initializes the plugin
  *
  * @param proxy		the IRC proxy to initialize the plugin for
- * @param name		the name of the IRC proxy plugin to finalize
+ * @param name		the name of the IRC proxy plugin to initialize
  * @result			true if successful
  */
 static bool initPlugin(IrcProxy *proxy, char *name)

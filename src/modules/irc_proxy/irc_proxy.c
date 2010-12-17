@@ -419,7 +419,7 @@ API bool hasIrcProxyRelayException(IrcProxy *proxy, char *exception)
  * Sends a message to an IRC client socket
  *
  * @param client		the socket of the IRC client
- * @param message		frintf-style message to send to the socket
+ * @param message		printf-style message to send to the socket
  * @result				true if successful, false on error
  */
 API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...)

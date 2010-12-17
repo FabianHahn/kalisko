@@ -18,45 +18,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MESH_MESH_H
-#define MESH_MESH_H
+#include "dll.h"
+#include "modules/mesh/io.h"
+#include "api.h"
+#include "obj.h"
 
-/**
- * Struct representing a vertex
- */
-typedef struct {
-	/** The position of the vertex */
-	float position[3];
-	/** The normal vector of the vertex */
-	float normal[3];
-	/** The color of the vertex */
-	float color[4];
-} MeshVertex;
+MODULE_NAME("mesh_obj");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Module providing support for the OBJ mesh data type");
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("mesh", 0, 4, 2));
 
-/**
- * Struct representing a triangle
- */
-typedef struct {
-	/** The vertex indices of the triangle */
-	unsigned short indices[3];
-} MeshTriangle;
+MODULE_INIT
+{
+	if(!$(bool, mesh, addMeshIOReadHandler)("obj", &readMeshFileObj)) {
+		return false;
+	}
 
-/**
- * Struct representing an OpenGL triangle mesh
- */
-typedef struct {
-	/** An array of MeshVertex objects for this mesh */
-	MeshVertex *vertices;
-	/** The number of vertices in this mesh */
-	int num_vertices;
-	/** An array of MeshTriangle objects for this mesh */
-	MeshTriangle *triangles;
-	/** The number of triangles in this mesh */
-	int num_triangles;
-} Mesh;
+	return true;
+}
 
-API Mesh *createMesh(int num_vertices, int num_triangles);
-API void generateMeshNormals(Mesh *mesh);
-API void freeMesh(Mesh *mesh);
+MODULE_FINALIZE
+{
+	$(bool, mesh, deleteMeshIOReadHandler)("obj");
+}
 
-#endif

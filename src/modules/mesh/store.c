@@ -22,7 +22,6 @@
 #include "dll.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "mesh.h"
 #include "store.h"
@@ -88,11 +87,6 @@ API Mesh *createMeshFromStore(Store *store)
 				}
 			}
 		}
-
-		// Reset normal vector
-		mesh->vertices[i].normal[0] = 0.0f;
-		mesh->vertices[i].normal[1] = 0.0f;
-		mesh->vertices[i].normal[2] = 0.0f;
 	}
 
 	// Read vertex colors
@@ -151,48 +145,7 @@ API Mesh *createMeshFromStore(Store *store)
 		}
 	}
 
-	// Compute normals
-	for(i = 0; i < mesh->num_triangles; i++) {
-		MeshVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
-		MeshVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
-		MeshVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
-
-		Vector *v1 = $(Vector *, linalg, createVector3)(vertex1.position[0], vertex1.position[1], vertex1.position[2]);
-		Vector *v2 = $(Vector *, linalg, createVector3)(vertex2.position[0], vertex2.position[1], vertex2.position[2]);
-		Vector *v3 = $(Vector *, linalg, createVector3)(vertex3.position[0], vertex3.position[1], vertex3.position[2]);
-		Vector *e1 = $(Vector *, linalg, diffVectors)(v2, v1);
-		Vector *e2 = $(Vector *, linalg, diffVectors)(v3, v1);
-		Vector *normal = $(Vector *, linalg, crossVectors)(e1, e2);
-		$(void, linalg, normalizeVector)(normal);
-		float *normalData = $(float *, linalg, getVectorData)(normal);
-
-		for(int j = i*3; j < (i+1)*3; j++) {
-			mesh->vertices[j].normal[0] += normalData[0];
-			mesh->vertices[j].normal[1] += normalData[1];
-			mesh->vertices[j].normal[2] += normalData[2];
-		}
-
-		$(void, linalg, freeVector)(v1);
-		$(void, linalg, freeVector)(v2);
-		$(void, linalg, freeVector)(v3);
-		$(void, linalg, freeVector)(e1);
-		$(void, linalg, freeVector)(e2);
-		$(void, linalg, freeVector)(normal);
-	}
-
-	// Normalize normals
-	for(i = 0; i < mesh->num_vertices; i++) {
-		MeshVertex vertex = mesh->vertices[i];
-		Vector *v = $(Vector *, linalg, createVector3)(vertex.normal[0], vertex.normal[1], vertex.normal[2]);
-		$(void, linalg, normalizeVector)(v);
-		float *vData = $(float *, linalg, getVectorData)(v);
-
-		mesh->vertices[i].normal[0] = vData[0];
-		mesh->vertices[i].normal[1] = vData[1];
-		mesh->vertices[i].normal[2] = vData[2];
-
-		$(void, linalg, freeVector)(v);
-	}
+	generateMeshNormals(mesh);
 
 	return mesh;
 }

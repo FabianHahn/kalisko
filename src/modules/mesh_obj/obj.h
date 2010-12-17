@@ -18,45 +18,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MESH_MESH_H
-#define MESH_MESH_H
+#ifndef MESH_OBJ_OBJ_H
+#define MESH_OBJ_OBJ_H
 
-/**
- * Struct representing a vertex
- */
-typedef struct {
-	/** The position of the vertex */
-	float position[3];
-	/** The normal vector of the vertex */
-	float normal[3];
-	/** The color of the vertex */
-	float color[4];
-} MeshVertex;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/**
- * Struct representing a triangle
- */
-typedef struct {
-	/** The vertex indices of the triangle */
-	unsigned short indices[3];
-} MeshTriangle;
+#include "modules/mesh/mesh.h"
 
-/**
- * Struct representing an OpenGL triangle mesh
- */
-typedef struct {
-	/** An array of MeshVertex objects for this mesh */
-	MeshVertex *vertices;
-	/** The number of vertices in this mesh */
-	int num_vertices;
-	/** An array of MeshTriangle objects for this mesh */
-	MeshTriangle *triangles;
-	/** The number of triangles in this mesh */
-	int num_triangles;
-} Mesh;
+API Mesh *readMeshFileObj(const char *filename);
 
-API Mesh *createMesh(int num_vertices, int num_triangles);
-API void generateMeshNormals(Mesh *mesh);
-API void freeMesh(Mesh *mesh);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <glib.h>
 #include "dll.h"
+#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "mesh.h"
 #include "io.h"
@@ -28,7 +29,7 @@
 MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general mesh data type");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -63,6 +64,65 @@ Mesh *createMesh(int num_vertices, int num_triangles)
 	mesh->num_triangles = num_triangles;
 
 	return mesh;
+}
+
+/**
+ * Automatically generate normal vectors from triangles for a mesh
+ *
+ * @param mesh			the mesh to create normals for
+ */
+API void generateMeshNormals(Mesh *mesh)
+{
+	// Normalize normals
+	for(int i = 0; i < mesh->num_vertices; i++) {
+		// Reset normal vector
+		mesh->vertices[i].normal[0] = 0.0f;
+		mesh->vertices[i].normal[1] = 0.0f;
+		mesh->vertices[i].normal[2] = 0.0f;
+	}
+
+	// Compute normals
+	for(int i = 0; i < mesh->num_triangles; i++) {
+		MeshVertex vertex1 = mesh->vertices[mesh->triangles[i].indices[0]];
+		MeshVertex vertex2 = mesh->vertices[mesh->triangles[i].indices[1]];
+		MeshVertex vertex3 = mesh->vertices[mesh->triangles[i].indices[2]];
+
+		Vector *v1 = $(Vector *, linalg, createVector3)(vertex1.position[0], vertex1.position[1], vertex1.position[2]);
+		Vector *v2 = $(Vector *, linalg, createVector3)(vertex2.position[0], vertex2.position[1], vertex2.position[2]);
+		Vector *v3 = $(Vector *, linalg, createVector3)(vertex3.position[0], vertex3.position[1], vertex3.position[2]);
+		Vector *e1 = $(Vector *, linalg, diffVectors)(v2, v1);
+		Vector *e2 = $(Vector *, linalg, diffVectors)(v3, v1);
+		Vector *normal = $(Vector *, linalg, crossVectors)(e1, e2);
+		$(void, linalg, normalizeVector)(normal);
+		float *normalData = $(float *, linalg, getVectorData)(normal);
+
+		for(int j = 0; j < 3; j++) {
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[0] += normalData[0];
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[1] += normalData[1];
+			mesh->vertices[mesh->triangles[i].indices[j]].normal[2] += normalData[2];
+		}
+
+		$(void, linalg, freeVector)(v1);
+		$(void, linalg, freeVector)(v2);
+		$(void, linalg, freeVector)(v3);
+		$(void, linalg, freeVector)(e1);
+		$(void, linalg, freeVector)(e2);
+		$(void, linalg, freeVector)(normal);
+	}
+
+	// Normalize normals
+	for(int i = 0; i < mesh->num_vertices; i++) {
+		MeshVertex vertex = mesh->vertices[i];
+		Vector *v = $(Vector *, linalg, createVector3)(vertex.normal[0], vertex.normal[1], vertex.normal[2]);
+		$(void, linalg, normalizeVector)(v);
+		float *vData = $(float *, linalg, getVectorData)(v);
+
+		mesh->vertices[i].normal[0] = vData[0];
+		mesh->vertices[i].normal[1] = vData[1];
+		mesh->vertices[i].normal[2] = vData[2];
+
+		$(void, linalg, freeVector)(v);
+	}
 }
 
 /**

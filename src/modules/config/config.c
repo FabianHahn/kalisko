@@ -46,6 +46,7 @@ static char *profilePath;
 
 static Store *config;
 static Store *writableConfig;
+static bool loadedCliConfig;
 
 static void loadDefaultConfigs();
 static void finalize();
@@ -55,7 +56,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 6);
+MODULE_VERSION(0, 3, 7);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
 
@@ -68,6 +69,7 @@ MODULE_INIT
 
 	if(configFilePath == NULL) {
 		loadDefaultConfigs();
+		loadedCliConfig = false;
 	} else {
 		Store *cmdConfig = $(Store *, store, parseStoreFile)(configFilePath);
 		if(cmdConfig == NULL) {
@@ -77,6 +79,7 @@ MODULE_INIT
 		}
 
 		config = cmdConfig;
+		loadedCliConfig = true;
 	}
 
 	// If no store was found we just use an empty store
@@ -104,21 +107,23 @@ MODULE_INIT
 	checkFilesMerge(config); // ... and once with the applied profile
 
 	// Load global configuration after processing the profile path
-	char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
-	LOG_DEBUG("Expecting global config at '%s'", globalConfigFilePath);
+	if(!loadedCliConfig) {
+		char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+		LOG_DEBUG("Expecting global config at '%s'", globalConfigFilePath);
 
-	if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
-		Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
+		if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
+			Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
 
-		if(!$(bool, store, mergeStore)(globalConfig, config)) {
-			LOG_WARNING("Could not merge global config store into selected profile store.");
+			if(!$(bool, store, mergeStore)(globalConfig, config)) {
+				LOG_WARNING("Could not merge global config store into selected profile store.");
+			}
+
+			$(void, store, freeStore)(config);
+			config = globalConfig;
 		}
 
-		$(void, store, freeStore)(config);
-		config = globalConfig;
+		free(globalConfigFilePath);
 	}
-
-	free(globalConfigFilePath);
 
 	return true;
 }

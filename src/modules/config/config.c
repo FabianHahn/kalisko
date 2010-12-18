@@ -27,6 +27,7 @@
 #include "modules/store/parse.h"
 #include "modules/store/merge.h"
 #include "modules/getopts/getopts.h"
+#include "modules/event/event.h"
 #include "log.h"
 #include "types.h"
 #include "module.h"
@@ -43,22 +44,23 @@
 
 static char *writableConfigFilePath;
 static char *profilePath;
+static char *cliConfigFilePath;
 
 static Store *config;
 static Store *writableConfig;
-static bool loadedCliConfig;
 
-static void loadDefaultConfigs();
 static void finalize();
 static void checkFilesMerge(Store *store);
 static void mergeStoreIntoConfig(Store *storeToMerge);
+static bool loadConfigs(bool event);
+static bool applyProfile();
 
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 7);
-MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_VERSION(0, 3, 8);
+MODULE_BCVERSION(0, 3, 8);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
 MODULE_INIT
 {
@@ -68,61 +70,31 @@ MODULE_INIT
 	char *configFilePath = $(char *, getopts, getOptValue)("config", "c", NULL);
 
 	if(configFilePath == NULL) {
-		loadDefaultConfigs();
-		loadedCliConfig = false;
+		cliConfigFilePath = NULL;
 	} else {
-		Store *cmdConfig = $(Store *, store, parseStoreFile)(configFilePath);
-		if(cmdConfig == NULL) {
-			LOG_ERROR("Given file path could not be read and used as configuration file: %s", configFilePath);
-			finalize();
-			return false;
-		}
-
-		config = cmdConfig;
-		loadedCliConfig = true;
+		cliConfigFilePath = configFilePath;
 	}
 
-	// If no store was found we just use an empty store
-	if(config == NULL) {
-		LOG_INFO("No configuration files provided. Using empty config.");
-		config = $(void, store, createStore)();
+	if(!loadConfigs(false)) {
+		finalize();
+		return false;
 	}
 
-	checkFilesMerge(config); // once check without the profile ...
+	writableConfigFilePath = g_build_path("/", getUserKaliskoConfigPath(), USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	LOG_DEBUG("Expecting writable config at '%s'", writableConfigFilePath);
 
-	profilePath = $(char *, getopts, getOptValue)("profile", "p", NULL);
-
-	if(profilePath) {
-		LOG_DEBUG("Using profile '%s'", profilePath);
-		config = $(Store *, store, getStorePath)(config, profilePath);
+	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
+		Store *writableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
 
 		if(config == NULL) {
-			LOG_ERROR("Given profile path cannot be found: '%s'", profilePath);
-			finalize();
-
-			return false;
-		}
-	}
-
-	checkFilesMerge(config); // ... and once with the applied profile
-
-	// Load global configuration after processing the profile path
-	if(!loadedCliConfig) {
-		char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
-		LOG_DEBUG("Expecting global config at '%s'", globalConfigFilePath);
-
-		if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
-			Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
-
-			if(!$(bool, store, mergeStore)(globalConfig, config)) {
-				LOG_WARNING("Could not merge global config store into selected profile store.");
+			config = writableConfig;
+		} else {
+			if(!$(bool, store, mergeStore)(config, writableConfig)) {
+				LOG_WARNING("Could not merge writable store into existing config store.");
 			}
 
-			$(void, store, freeStore)(config);
-			config = globalConfig;
+			$(void, store, freeStore)(writableConfig);
 		}
-
-		free(globalConfigFilePath);
 	}
 
 	return true;
@@ -214,54 +186,16 @@ API char *getProfilePath()
 	return profilePath;
 }
 
-static void loadDefaultConfigs()
+/**
+ * Reloads the user managed configuration files and triggers at the end
+ * the 'reloadedConfig' event to notify modules about the change.
+ *
+ * The writable one is a special case. This one is just loaded once as it is managed by
+ * the application and there is no point to reload it.
+ */
+API void reloadConfig()
 {
-	// prepare paths
-	char *userDir = getUserKaliskoConfigPath();
-	char *userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
-	writableConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	char *profilesConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), PROFILES_CONFIG_FILE_NAME, NULL);
-
-	LOG_DEBUG("Expecting user config at '%s'", userConfigFilePath);
-	LOG_DEBUG("Expecting writable config at '%s'", writableConfigFilePath);
-	LOG_DEBUG("Expecting profiles config at '%s'", profilesConfigFilePath);
-
-	if(g_file_test(profilesConfigFilePath, G_FILE_TEST_EXISTS)) {
-		config = $(Store *, store, parseStoreFile)(profilesConfigFilePath);
-	}
-
-	if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
-		Store *userConfig = $(Store *, store, parseStoreFile)(userConfigFilePath);
-
-		if(config == NULL) {
-			config = userConfig;
-		} else {
-			if(!$(bool, store, mergeStore)(config, userConfig)) {
-				LOG_WARNING("Could not merge profiles config store with user config store.");
-			}
-
-			$(void, store, freeStore)(userConfig);
-		}
-	}
-
-	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
-		Store *writableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
-
-		if(config == NULL) {
-			config = writableConfig;
-		} else {
-			if(!$(bool, store, mergeStore)(config, writableConfig)) {
-				LOG_WARNING("Could not merge writable store into existing config store.");
-			}
-
-			$(void, store, freeStore)(writableConfig);
-		}
-	}
-
-	// free locally used paths
-	free(profilesConfigFilePath);
-	free(userConfigFilePath);
-	free(userDir);
+	loadConfigs(true);
 }
 
 static void checkFilesMerge(Store *store)
@@ -328,6 +262,125 @@ static void mergeStoreIntoConfig(Store *storeToMerge)
 			LOG_WARNING("Could not merge Store additional into config store");
 		}
 	}
+}
+
+/**
+ * Loads the read-only config files.
+ *
+ * @param event Indicates if the event "reloadedConfig" should be triggered
+ */
+static bool loadConfigs(bool event)
+{
+	Store *oldConfig = config;
+
+	if(cliConfigFilePath != NULL) {
+		Store *cmdConfig = $(Store *, store, parseStoreFile)(cliConfigFilePath);
+
+		if(cmdConfig == NULL) {
+			LOG_ERROR("Given file path could not be read and used as configuration file: %s", cliConfigFilePath);
+			return false;
+		}
+
+		config = cmdConfig;
+	} else {
+		// prepare paths
+		char *userDir = getUserKaliskoConfigPath();
+		char *userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
+		char *profilesConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), PROFILES_CONFIG_FILE_NAME, NULL);
+
+		LOG_DEBUG("Expecting user config at '%s'", userConfigFilePath);
+		LOG_DEBUG("Expecting profiles config at '%s'", profilesConfigFilePath);
+
+		if(g_file_test(profilesConfigFilePath, G_FILE_TEST_EXISTS)) {
+			config = $(Store *, store, parseStoreFile)(profilesConfigFilePath);
+		}
+
+		if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
+			Store *userConfig = $(Store *, store, parseStoreFile)(userConfigFilePath);
+
+			if(config == NULL) {
+				config = userConfig;
+			} else {
+				if(!$(bool, store, mergeStore)(config, userConfig)) {
+					LOG_WARNING("Could not merge profiles config store with user config store.");
+				}
+
+				$(void, store, freeStore)(userConfig);
+			}
+		}
+
+		// If no default config was found we just use an empty store
+		if(config == NULL) {
+			LOG_INFO("No configuration files provided. Using empty config.");
+			config = $(void, store, createStore)();
+		}
+
+		checkFilesMerge(config); // once check without the profile ...
+
+		if(!applyProfile()) {
+			return false;
+		}
+
+		checkFilesMerge(config); // ... and once with the applied profile
+
+		// Load global configuration after processing the profile path and after applying
+		// the profile. This config is a special case because of that.
+		if(cliConfigFilePath != NULL) {
+			char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+			LOG_DEBUG("Expecting global config at '%s'", globalConfigFilePath);
+
+			if(g_file_test(globalConfigFilePath, G_FILE_TEST_EXISTS)) {
+				Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
+
+				if(!$(bool, store, mergeStore)(globalConfig, config)) {
+					LOG_WARNING("Could not merge global config store into selected profile store.");
+				}
+
+				$(void, store, freeStore)(config);
+				config = globalConfig;
+			}
+
+			free(globalConfigFilePath);
+		}
+
+		// free locally used paths
+		free(profilesConfigFilePath);
+		free(userConfigFilePath);
+		free(userDir);
+	}
+
+	if(event) {
+		$(int, event, triggerEvent)(NULL, "reloadedConfig", oldConfig);
+	}
+
+	if(oldConfig) {
+		$(void, store, freeStore)(oldConfig);
+	}
+
+	return true;
+}
+
+/**
+ * Applies the given profile to the config.
+ *
+ * @return False if the profile could not be applied.
+ */
+static bool applyProfile()
+{
+	profilePath = $(char *, getopts, getOptValue)("profile", "p", NULL);
+
+	if(profilePath) {
+		LOG_DEBUG("Using profile '%s'", profilePath);
+		config = $(Store *, store, getStorePath)(config, profilePath);
+
+		if(config == NULL) {
+			LOG_ERROR("Given profile path cannot be found: '%s'", profilePath);
+
+			return false;
+		}
+	}
+
+	return true;
 }
 
 static void finalize()

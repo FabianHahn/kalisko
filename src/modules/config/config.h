@@ -28,5 +28,6 @@ API Store *getWritableConfig();
 API Store *getConfigPath(char *path);
 API void saveWritableConfig();
 API char *getProfilePath();
+API void reloadConfig();
 
 #endif

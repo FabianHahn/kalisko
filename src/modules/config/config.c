@@ -101,7 +101,7 @@ MODULE_INIT
 		}
 	}
 
-	checkFilesMerge(config); // ... and once in the profile itself
+	checkFilesMerge(config); // ... and once with the applied profile
 
 	// Load global configuration after processing the profile path
 	char *globalConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);

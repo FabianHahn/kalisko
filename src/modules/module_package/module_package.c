@@ -29,6 +29,7 @@
 #include "modules/config/util.h"
 #include "modules/getopts/getopts.h"
 #include "modules/store/store.h"
+#include "modules/module_util/module_util.h"
 
 #include "api.h"
 
@@ -36,9 +37,9 @@
 MODULE_NAME("module_package");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Loads modules of a given package from standard configurations");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("module_util", 0, 1, 0));
 
 static void loadPackage(char *package);
 
@@ -81,9 +82,11 @@ MODULE_INIT
 
 		} else {
 			LOG_INFO("No package given to load.");
-			return true;
 		}
 	}
+
+	// there is no reason to keep this module loaded
+	$(void, module_util, safeRevokeModule)("module_package");
 
 	return true;
 }

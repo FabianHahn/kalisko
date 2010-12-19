@@ -58,7 +58,7 @@ static bool applyProfile();
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 8);
+MODULE_VERSION(0, 3, 9);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -195,6 +195,7 @@ API char *getProfilePath()
  */
 API void reloadConfig()
 {
+	LOG_DEBUG("Reloading config files");
 	loadConfigs(true);
 }
 
@@ -272,6 +273,7 @@ static void mergeStoreIntoConfig(Store *storeToMerge)
 static bool loadConfigs(bool event)
 {
 	Store *oldConfig = config;
+	config = NULL;
 
 	if(cliConfigFilePath != NULL) {
 		Store *cmdConfig = $(Store *, store, parseStoreFile)(cliConfigFilePath);

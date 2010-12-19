@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,11 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GTK_GTK_H
-#define GTK_GTK_H
 
-API void runGtkLoop();
-API void stopGtkLoop();
-API bool isGtkLoopRunning();
+#ifndef POSIX_SIGNAL_POSIX_SIGNAL_H
+#define POSIX_SIGNAL_POSIX_SIGNAL_H
+
+
+#include "types.h"
+
+API void handlePosixSignal(int signal);
 
 #endif

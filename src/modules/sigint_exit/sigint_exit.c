@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,11 +18,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GTK_GTK_H
-#define GTK_GTK_H
+#include <glib.h>
+#include <stdlib.h>
+#include <signal.h>
+#include "dll.h"
+#include "modules/event/event.h"
+#include "modules/posix_signal/posix_signal.h"
+#include "log.h"
+#include "types.h"
+#include "module.h"
 
-API void runGtkLoop();
-API void stopGtkLoop();
-API bool isGtkLoopRunning();
+#include "api.h"
 
-#endif
+MODULE_NAME("sigint_exit");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Handles the SIGINT POSIX signal and exits gracefully");
+MODULE_VERSION(0, 0, 1);
+MODULE_BCVERSION(0, 0, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 1, 1), MODULE_DEPENDENCY("posix_signal", 0, 0, 1));
+
+static void handleSigint(void *subject, const char *event, void *custom_data, va_list args);
+
+MODULE_INIT
+{
+	$(void, event, attachEventListener)(NULL, "posixSignal", NULL, handleSigint);
+	handlePosixSignal(SIGINT);
+
+	return true;
+}
+
+MODULE_FINALIZE
+{
+	$(void, event, detachEventListener)(NULL, "posixSignal", NULL, handleSigint);
+}
+
+static void handleSigint(void *subject, const char *event, void *custom_data, va_list args)
+{
+	LOG_DEBUG("Got SIGINT. Starts exiting gracefully.");
+	$$(void, exitGracefully)();
+}

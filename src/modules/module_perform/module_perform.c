@@ -28,6 +28,7 @@
 #include "modules/getopts/getopts.h"
 #include "modules/store/store.h"
 #include "modules/event/event.h"
+#include "modules/module_util/module_util.h"
 
 #include "api.h"
 
@@ -36,9 +37,9 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("module_util", 0, 1, 0));
 
 MODULE_INIT
 {
@@ -107,6 +108,9 @@ MODULE_INIT
 	}
 
 	$(int, event, triggerEvent)(NULL, "module_perform_finished");
+
+	// there is no reason to keep this module loaded
+	$(void, module_util, safeRevokeModule)("module_perform");
 
 	return true;
 }

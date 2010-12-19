@@ -37,17 +37,20 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 3, 5);
+MODULE_VERSION(0, 3, 6);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
 static void listener_remoteLine(void *subject, const char *event, void *data, va_list args);
 static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args);
+static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args);
 static void reconnectRemoteConnection(IrcProxy *proxy);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
+static void loadConfig();
+
 static IrcProxyPlugin plugin;
 
 /**
@@ -73,20 +76,8 @@ static unsigned int keepaliveTimeout = 5 * G_USEC_PER_SEC;
 
 MODULE_INIT
 {
-	// Check if config values are set
-	Store *configKeepaliveInterval = $(Store *, config, getConfigPath)("irc/keepalive/interval");
-	if(configKeepaliveInterval != NULL && configKeepaliveInterval->type == STORE_INTEGER) {
-		keepaliveInterval = configKeepaliveInterval->content.integer;
-	} else {
-		LOG_INFO("Could not determine config value irc/keepalive/interval, using default value of %d", keepaliveInterval);
-	}
-
-	Store *configKeepaliveTimeout = $(Store *, config, getConfigPath)("irc/keepalive/timeout");
-	if(configKeepaliveTimeout != NULL && configKeepaliveTimeout->type == STORE_INTEGER) {
-		keepaliveTimeout = configKeepaliveTimeout->content.integer;
-	} else {
-		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", keepaliveTimeout);
-	}
+	loadConfig();
+	$(void, event, attachEventListener)(NULL, "reloadedConfig", NULL, listener_reloadedConfig);
 
 	challenges = g_hash_table_new(NULL, NULL);
 	challengeTimeouts = g_hash_table_new(NULL, NULL);
@@ -105,6 +96,8 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(void, event, detachEventListener)(NULL, "reloadedConfig", NULL, listener_reloadedConfig);
+
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
 
 	// Since all plugins and their timeouts are already freed, we don't need to remove the contents
@@ -147,6 +140,28 @@ static void listener_remoteDisconnect(void *subject, const char *event, void *da
 			LOG_INFO("Remote IRC connection for IRC proxy '%s' disconnected", proxy->name);
 			reconnectRemoteConnection(proxy);
 		}
+	}
+}
+
+static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args)
+{
+	loadConfig();
+}
+
+static void loadConfig()
+{
+	Store *configKeepaliveInterval = $(Store *, config, getConfigPath)("irc/keepalive/interval");
+	if(configKeepaliveInterval != NULL && configKeepaliveInterval->type == STORE_INTEGER) {
+		keepaliveInterval = configKeepaliveInterval->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value irc/keepalive/interval, using default value of %d", keepaliveInterval);
+	}
+
+	Store *configKeepaliveTimeout = $(Store *, config, getConfigPath)("irc/keepalive/timeout");
+	if(configKeepaliveTimeout != NULL && configKeepaliveTimeout->type == STORE_INTEGER) {
+		keepaliveTimeout = configKeepaliveTimeout->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", keepaliveTimeout);
 	}
 }
 

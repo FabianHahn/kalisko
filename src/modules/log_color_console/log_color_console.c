@@ -40,9 +40,10 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
 MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 static void listener_log(void *subject, const char *event, void *data, va_list args);
+static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args);
 
 static void updateConfig();
 
@@ -92,6 +93,7 @@ static void updateConfig();
 MODULE_INIT
 {
 	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
+	$(void, event, attachEventListener)(NULL, "reloadedConfig", NULL, &listener_reloadedConfig);
 
 	updateConfig(); // we initialize the colors after attaching the log hook so we can see possible problems on the console.
 
@@ -101,6 +103,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
+	$(void, event, detachEventListener)(NULL, "reloadedConfig", NULL, &listener_reloadedConfig);
 }
 
 /**
@@ -153,6 +156,11 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	free(now);
 	free(dateTime);
 	fflush(stderr);
+}
+
+static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args)
+{
+	updateConfig();
 }
 
 /**

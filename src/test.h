@@ -67,7 +67,7 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  *
  * @param EXPR		an expression to check
  */
-#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Assertion failed: " #EXPR); } else { $$(void, incTestCount)(); }
+#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Line %d: Assertion failed: " #EXPR, __LINE__); } else { $$(void, incTestCount)(); }
 
 /**
  * Passes a test case

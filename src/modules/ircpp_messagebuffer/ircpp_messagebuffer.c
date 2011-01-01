@@ -38,7 +38,7 @@
 MODULE_NAME("ircpp_messagebuffer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that sends the last few lines to new connected clients");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 5), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("string_util", 0, 1, 3), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -134,7 +134,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 		int maxLines = buffer->defaultMaxLines;
 		int *specificMaxLines = NULL;
 		if((specificMaxLines = g_hash_table_lookup(buffer->chanMaxLines, msgTarget)) != NULL) {
-			maxLines = *specificMaxLines;
+			maxLines = GPOINTER_TO_INT(specificMaxLines);
 		}
 
 		// check if we can ignore the target
@@ -223,7 +223,7 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 			int maxLines = buffer->defaultMaxLines;
 			int *specificMaxLines = NULL;
 			if((specificMaxLines = g_hash_table_lookup(buffer->chanMaxLines, msgTarget)) != NULL) {
-				maxLines = *specificMaxLines;
+				maxLines = GPOINTER_TO_INT(specificMaxLines);
 			}
 
 			// check if we can ignore the target
@@ -365,10 +365,7 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 					g_hash_table_iter_init(&specificIter, specificLinesConfig->content.array);
 					while(g_hash_table_iter_next(&specificIter, (void *)&key, (void *)&value)) {
 						if(value->type == STORE_INTEGER) {
-							int *valuePtr = ALLOCATE_OBJECT(int);
-							*valuePtr = value->content.integer;
-
-							g_hash_table_insert(buffer->chanMaxLines, strdup(key), valuePtr);
+							g_hash_table_insert(buffer->chanMaxLines, strdup(key), GINT_TO_POINTER(value->content.integer));
 						} else {
 							LOG_INFO("Found setting for '%s' but the value is not an Integer. Ignoring.", key);
 						}
@@ -433,7 +430,6 @@ static void finiPlugin(IrcProxy *proxy, char *name)
 		g_hash_table_iter_init(&iter, buffer->chanMaxLines);
 		while(g_hash_table_iter_next(&iter, &key, &value)) {
 			free(key);
-			free(value);
 		}
 
 		g_hash_table_destroy(buffer->chanMaxLines);

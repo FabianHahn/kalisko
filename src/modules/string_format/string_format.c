@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -37,13 +37,15 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
-/* delim_start and delim_end specify how the tokens shall be recognized, i.e. how
+/**
+ * delim_start and delim_end specify how the tokens shall be recognized, i.e. how
  * they start and end. start="{" and end="}" means tokens will have the form {name}
  */
 static const char *delim_start = "{";
 static const char *delim_end = "}";
 
-/* It suffices to compute the length of the delimiters once and for all.
+/**
+ * It suffices to compute the length of the delimiters once and for all.
  */
 static size_t delim_start_len;
 static size_t delim_end_len;
@@ -69,8 +71,22 @@ MODULE_FINALIZE
 /**
  * Formats a string with a set of tokens by the specified replacement strings.
  *
+ * The parameter list after 'format' consists of key-value pairs of strings. This list
+ * is terminated by 'NULL'. The first one is always the key which is searched in
+ * 'format' and will be replaced by the value (second parameter). If in 'format'
+ * a key exists that was not given by the parameter list, it will be removed in
+ * the returned string.
+ *
+ * @code
+ * 	format_string("{foo} {bar} {PI}", "foo", "Hello", "bar", "World", NULL);
+ * @endcode
+ * would return
+ * @code
+ * 	"Hello World "
+ * @endcode
+ *
  * @param format	A string with tokens to be replaced.
- * @param store		A store where each key corresponds to a token and each value to what the token shall be replaced with.
+ * @param ...		List of key-value pairs of parameters terminated by NULL.
  */
 API char *format_string(char *format, ...)
 {

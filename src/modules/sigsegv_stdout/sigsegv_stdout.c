@@ -36,7 +36,7 @@
 
 MODULE_NAME("sigsegv_stdout");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Handles the SIGSEGV Ansi signal, writes the backtrace and extis gracefully");
+MODULE_DESCRIPTION("Handles the SIGSEGV Ansi signal, writes the backtrace and exits gracefully");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 1, 1), MODULE_DEPENDENCY("posix_signal", 0, 0, 1));

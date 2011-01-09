@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2009, 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -54,7 +54,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
 MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 MODULE_INIT
 {

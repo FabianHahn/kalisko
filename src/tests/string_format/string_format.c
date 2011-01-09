@@ -30,9 +30,9 @@
 MODULE_NAME("test_string_format");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the string_format module");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("string_format", 0, 0, 1));
+MODULE_VERSION(0, 0, 2);
+MODULE_BCVERSION(0, 0, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("string_format", 0, 0, 2));
 
 TEST_CASE(empty);
 TEST_CASE(no_replacements);
@@ -44,7 +44,7 @@ TEST_SUITE_BEGIN(string_format)
 	TEST_CASE_ADD(formatting);
 TEST_SUITE_END
 
-#define string_format $(char*, string_format, format_string)
+#define string_format $(char*, string_format, formatString)
 
 TEST_CASE(empty)
 {

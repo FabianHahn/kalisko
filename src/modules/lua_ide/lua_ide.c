@@ -33,7 +33,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -136,7 +136,7 @@ API void lua_ide_menu_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 	$(void, module_util, safeRevokeModule)("lua_ide");
 }
 
-API void lua_ide_menu_run_active(GtkMenuItem *menuitem, gpointer user_data)
+API void lua_ide_menu_run_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	runScript();
 }
@@ -144,6 +144,30 @@ API void lua_ide_menu_run_active(GtkMenuItem *menuitem, gpointer user_data)
 API void lua_ide_run_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
 {
 	runScript();
+}
+
+API void lua_ide_undo_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+	gtk_source_buffer_undo(sbuffer);
+}
+
+API void lua_ide_redo_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+	gtk_source_buffer_redo(sbuffer);
+}
+
+API void lua_ide_menu_undo_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+	gtk_source_buffer_undo(sbuffer);
+}
+
+API void lua_ide_menu_redo_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+	gtk_source_buffer_redo(sbuffer);
 }
 
 API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)

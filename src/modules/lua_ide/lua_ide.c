@@ -30,7 +30,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -88,6 +88,15 @@ MODULE_INIT
 	gtk_widget_modify_style(console_output, style);
 
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+
+	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
+	g_string_prepend(welcome, "Welcome to the Kalisko Lua IDE ");
+	g_string_append(welcome, "!");
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
+	gtk_text_buffer_set_text(buffer, welcome->str, -1);
+	g_string_free(welcome, true);
+
+	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

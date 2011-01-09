@@ -33,8 +33,10 @@
 API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget)
 {
     GtkBuilder *builder = gtk_builder_new();
-    if(gtk_builder_add_from_file(builder, "tutorial.xml", NULL) == 0) {
-    	LOG_ERROR("Failed to load GTK+ Builder GUI from '%s'", filename);
+    GError *err = NULL;
+    if(gtk_builder_add_from_file(builder, filename, &err) == 0) {
+    	LOG_ERROR("Failed to load GTK+ Builder GUI from '%s': %s", filename, err->message);
+    	g_error_free(err);
     	return NULL;
     }
 

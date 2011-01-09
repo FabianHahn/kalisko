@@ -27,10 +27,9 @@
  * Loads a GTK+ Builder GUI (usually created with Glade)
  *
  * @param filename		the filename of the GUI xml to load
- * @param root_widget	the name of the root widget to be returned
- * @result				the created root widget or NULL on failure
+ * @result				the created builder or NULL on failure, must be freed with g_object_unref
  */
-API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget)
+API GtkBuilder *loadGtkBuilderGui(const char *filename)
 {
     GtkBuilder *builder = gtk_builder_new();
     GError *err = NULL;
@@ -39,10 +38,7 @@ API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget)
     	g_error_free(err);
     	return NULL;
     }
-
-    GtkWidget *widget = GTK_WIDGET(gtk_builder_get_object(builder, root_widget));
     gtk_builder_connect_signals(builder, NULL);
-    g_object_unref(G_OBJECT(builder));
 
-    return widget;
+    return builder;
 }

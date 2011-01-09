@@ -21,6 +21,6 @@
 #ifndef GTK_BUILDER_H
 #define GTK_BUILDER_H
 
-API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget);
+API GtkWidget *loadGtkBuilderGui(const char *filename);
 
 #endif

@@ -66,7 +66,7 @@ MODULE_FINALIZE
 }
 
 /**
- * Log message listener to write them colored into stderr.
+ * Log message listener to delegate the log message to syslogd.
  */
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {

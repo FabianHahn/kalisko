@@ -30,7 +30,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -76,6 +76,18 @@ MODULE_INIT
 	window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
 	script_input = GTK_WIDGET(gtk_builder_get_object(builder, "script_input"));
 	console_output = GTK_WIDGET(gtk_builder_get_object(builder, "console_output"));
+
+	GtkRcStyle *style = gtk_widget_get_modifier_style(script_input);
+	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(script_input, style);
+
+	style = gtk_widget_get_modifier_style(console_output);
+	font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(console_output, style);
+
+	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

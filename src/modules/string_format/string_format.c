@@ -33,8 +33,8 @@
 MODULE_NAME("string_format");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Implements a comfortable string formatter.");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
+MODULE_BCVERSION(0, 0, 2);
 MODULE_NODEPS;
 
 /**
@@ -88,7 +88,7 @@ MODULE_FINALIZE
  * @param format	A string with tokens to be replaced.
  * @param ...		List of key-value pairs of parameters terminated by NULL.
  */
-API char *format_string(char *format, ...)
+API char *formatString(char *format, ...)
 {
 	va_list vl;
 	va_start(vl, format);

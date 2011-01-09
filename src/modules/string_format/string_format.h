@@ -22,6 +22,6 @@
 #ifndef STRING_FORMAT_STRING_FORMAT_H
 #define STRING_FORMAT_STRING_FORMAT_H
 
-API char *format_string(char *format, ...) G_GNUC_NULL_TERMINATED;
+API char *formatString(char *format, ...) G_GNUC_NULL_TERMINATED;
 
 #endif

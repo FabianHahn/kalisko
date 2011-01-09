@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2009, 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -39,7 +39,7 @@
 MODULE_NAME("cli_help");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to show a command line help.");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("plaintext_table", 0, 1, 2), MODULE_DEPENDENCY("table", 0, 1, 5), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -270,12 +270,14 @@ static void printOptionsHelp(Table *table)
 
 		// Add shortOpt & longOpt
 		if(option->shortOpt && option->longOpt) {
-			table->table[row][0]->content = g_strjoin("", option->shortOpt, ", ", option->longOpt, NULL);
+			table->table[row][0]->content = g_strjoin("", SHORT_OPT_PREFIX, option->shortOpt, ", ", LONG_OPT_PREFIX, option->longOpt, NULL);
 			table->table[row][0]->freeContent = true;
 		} else if (option->shortOpt && !option->longOpt) {
-			table->table[row][0]->content = option->shortOpt;
+			table->table[row][0]->content = g_strjoin("", SHORT_OPT_PREFIX, option->shortOpt, NULL);
+			table->table[row][0]->freeContent = true;
 		} else if (!option->shortOpt && option->longOpt) {
-			table->table[row][0]->content = option->longOpt;
+			table->table[row][0]->content = g_strjoin("", LONG_OPT_PREFIX, option->longOpt, NULL);
+			table->table[row][0]->freeContent = true;
 		}
 
 		// Add brief help

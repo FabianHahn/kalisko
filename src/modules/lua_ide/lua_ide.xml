@@ -3,6 +3,7 @@
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkWindow" id="window">
+    <signal name="delete_event" handler="lua_ide_window_delete_event"/>
     <child>
       <placeholder/>
     </child>

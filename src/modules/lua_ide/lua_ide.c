@@ -29,7 +29,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
 
@@ -66,4 +66,10 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	gtk_widget_destroy(GTK_WIDGET(window));
+}
+
+API gboolean lua_ide_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	$$(void, exitGracefully)();
+	return true;
 }

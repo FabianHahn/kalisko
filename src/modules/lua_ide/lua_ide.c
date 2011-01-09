@@ -19,6 +19,9 @@
  */
 
 #include <gtk/gtk.h>
+#include <gtksourceview/gtksourceview.h>
+#include <gtksourceview/gtksourcelanguage.h>
+#include <gtksourceview/gtksourcelanguagemanager.h>
 
 #include "dll.h"
 #include "modules/gtk+/gtk+.h"
@@ -30,7 +33,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -97,6 +100,16 @@ MODULE_INIT
 	g_string_free(welcome, true);
 
 	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
+
+	GtkSourceLanguageManager *manager = gtk_source_language_manager_get_default();
+	GtkSourceLanguage *language = gtk_source_language_manager_get_language(manager, "lua");
+
+	if(language != NULL) {
+		GtkSourceBuffer *sbuffer = gtk_source_buffer_new_with_language(language);
+		gtk_text_view_set_buffer(GTK_TEXT_VIEW(script_input), GTK_TEXT_BUFFER(sbuffer));
+	} else {
+		LOG_WARNING("Failed to set IDE editor language to lua");
+	}
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

@@ -17,7 +17,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0')
+module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0 gtksourceview-2.0')
 
 module.SharedLibrary('../kalisko_lua_ide', Glob('*.c'))
 module.Command("lua_ide.xml", File("lua_ide.xml").srcnode(), Copy("$TARGET", "$SOURCE"))

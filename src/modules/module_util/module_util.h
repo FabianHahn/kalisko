@@ -24,5 +24,6 @@
 
 API void safeRevokeModule(char *name);
 API void safeForceUnloadModule(char *name);
+API void safeForceReloadModule(char *name);
 
 #endif

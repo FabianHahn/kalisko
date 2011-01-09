@@ -32,13 +32,14 @@
 MODULE_NAME("module_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Utility module offering functions to handle Kalisko modules");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
 TIMER_CALLBACK(REQUEST_SELF);
 TIMER_CALLBACK(SAFE_REMOVE_MODULE);
 TIMER_CALLBACK(SAFE_FORCE_UNLOAD_MODULE);
+TIMER_CALLBACK(SAFE_FORCE_RELOAD_MODULE);
 
 MODULE_INIT
 {
@@ -81,6 +82,8 @@ TIMER_CALLBACK(SAFE_REMOVE_MODULE)
 	} else {
 		LOG_WARNING("Safe revoking of module %s failed", module);
 	}
+
+	free(module);
 }
 
 /**
@@ -104,4 +107,35 @@ TIMER_CALLBACK(SAFE_FORCE_UNLOAD_MODULE)
 	} else {
 		LOG_WARNING("Safe force unloading of module %s failed", module);
 	}
+
+	free(module);
+}
+
+/**
+ * Safely force reloads a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
+ * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic forceUnloadModule function to remove this module, but do it in a safe environment!
+ *
+ * @param name			the name of the module to reload
+ */
+API void safeForceReloadModule(char *name)
+{
+	char *module = strdup(name);
+	TIMER_ADD_TIMEOUT_EX(0, SAFE_FORCE_RELOAD_MODULE, module);
+}
+
+TIMER_CALLBACK(SAFE_FORCE_RELOAD_MODULE)
+{
+	char *module = (char *) custom_data;
+
+	if(g_strcmp0(module, "module_util") != 0 && $$(bool, forceUnloadModule)(module)) {
+		if($$(bool, requestModule)(module)) {
+			LOG_INFO("Safely force reloaded module %s", module);
+		} else {
+			LOG_WARNING("Safe force reloading of module %s failed", module);
+		}
+	} else {
+		LOG_WARNING("Safe force unloading of module %s failed", module);
+	}
+
+	free(module);
 }

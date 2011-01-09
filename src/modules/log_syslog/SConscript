@@ -17,4 +17,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.SharedLibrary('../kalisko_log_syslogd', Glob('*.c'))
+if module['PLATFORM'] != 'win32':
+	module.SharedLibrary('../kalisko_log_syslogd', Glob('*.c'))

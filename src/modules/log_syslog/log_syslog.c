@@ -39,11 +39,11 @@
 #include "api.h"
 #include "log.h"
 
-MODULE_NAME("log_syslogd");
+MODULE_NAME("log_syslog");
 MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Kalisko log provider for syslogd on POSIX.1-2001 systems.");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_DESCRIPTION("Kalisko log provider for syslog on POSIX.1-2001 systems.");
+MODULE_VERSION(0, 0, 2);
+MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
 static void listener_log(void *subject, const char *event, void *data, va_list args);

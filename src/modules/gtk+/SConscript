@@ -17,6 +17,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.ParseConfig('pkg-config --libs --cflags gtk+-2.0')
+module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0')
 
 module.SharedLibrary('../kalisko_gtk+', Glob('*.c'))

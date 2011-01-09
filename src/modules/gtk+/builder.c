@@ -19,76 +19,28 @@
  */
 
 #include <gtk/gtk.h>
-
 #include "dll.h"
-#include "log.h"
-#include "timer.h"
-#include "module.h"
-#include "util.h"
-
 #include "api.h"
-#include "gtk+.h"
+#include "builder.h"
 
-MODULE_NAME("gtk+");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_NODEPS;
-
-#ifndef GTK_MAIN_TIMEOUT
-#define GTK_MAIN_TIMEOUT 5000
-#endif
-
-TIMER_CALLBACK(GTK_MAIN_LOOP);
-
-static bool isLoopRunning;
-
-MODULE_INIT
+/**
+ * Loads a GTK+ Builder GUI (usually created with Glade)
+ *
+ * @param filename		the filename of the GUI xml to load
+ * @param root_widget	the name of the root widget to be returned
+ * @result				the created root widget or NULL on failure
+ */
+API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget)
 {
-	char **argv = $$(char **, getArgv)();
-	int argc = $$(int, getArgc)();
+    GtkBuilder *builder = gtk_builder_new();
+    if(gtk_builder_add_from_file(builder, "tutorial.xml", NULL) == 0) {
+    	LOG_ERROR("Failed to load GTK+ Builder GUI from '%s'", filename);
+    	return NULL;
+    }
 
-	gtk_init(&argc, &argv);
+    GtkWidget *widget = GTK_WIDGET(gtk_builder_get_object(builder, root_widget));
+    gtk_builder_connect_signals(builder, NULL);
+    g_object_unref(G_OBJECT(builder));
 
-	$$(void, setArgv)(argv);
-	$$(void, setArgc)(argc);
-
-	isLoopRunning = false;
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	// Continue until there are no more pending events to make sure all remaining windows are properly closed. Otherwise, they just become orphans that cannot be closed anymore
-	while(gtk_events_pending()) {
-		gtk_main_iteration();
-	}
-}
-
-TIMER_CALLBACK(GTK_MAIN_LOOP)
-{
-	gtk_main_iteration_do(false);
-	TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-}
-
-API void runGtkLoop()
-{
-	if(!isLoopRunning) {
-		isLoopRunning = true;
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-	}
-}
-
-API void stopGtkLoop()
-{
-	if(isLoopRunning) {
-		TIMERS_CLEAR;
-		isLoopRunning = false;
-	}
-}
-
-API bool isGtkLoopRunning()
-{
-	return isLoopRunning;
+    return widget;
 }

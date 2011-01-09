@@ -18,77 +18,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtk/gtk.h>
+#ifndef GTK_BUILDER_H
+#define GTK_BUILDER_H
 
-#include "dll.h"
-#include "log.h"
-#include "timer.h"
-#include "module.h"
-#include "util.h"
+API GtkWidget *loadGtkBuilderGui(const char *filename, const char *root_widget);
 
-#include "api.h"
-#include "gtk+.h"
-
-MODULE_NAME("gtk+");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_NODEPS;
-
-#ifndef GTK_MAIN_TIMEOUT
-#define GTK_MAIN_TIMEOUT 5000
 #endif
-
-TIMER_CALLBACK(GTK_MAIN_LOOP);
-
-static bool isLoopRunning;
-
-MODULE_INIT
-{
-	char **argv = $$(char **, getArgv)();
-	int argc = $$(int, getArgc)();
-
-	gtk_init(&argc, &argv);
-
-	$$(void, setArgv)(argv);
-	$$(void, setArgc)(argc);
-
-	isLoopRunning = false;
-	return true;
-}
-
-MODULE_FINALIZE
-{
-	// Continue until there are no more pending events to make sure all remaining windows are properly closed. Otherwise, they just become orphans that cannot be closed anymore
-	while(gtk_events_pending()) {
-		gtk_main_iteration();
-	}
-}
-
-TIMER_CALLBACK(GTK_MAIN_LOOP)
-{
-	gtk_main_iteration_do(false);
-	TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-}
-
-API void runGtkLoop()
-{
-	if(!isLoopRunning) {
-		isLoopRunning = true;
-		TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
-	}
-}
-
-API void stopGtkLoop()
-{
-	if(isLoopRunning) {
-		TIMERS_CLEAR;
-		isLoopRunning = false;
-	}
-}
-
-API bool isGtkLoopRunning()
-{
-	return isLoopRunning;
-}

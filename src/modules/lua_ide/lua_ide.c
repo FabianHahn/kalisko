@@ -24,14 +24,15 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/gtk+/builder.h"
 #include "modules/lang_lua/lang_lua.h"
+#include "modules/module_util/module_util.h"
 #include "api.h"
 
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
 /**
  * The GTK root widget for the IDE
@@ -70,6 +71,11 @@ MODULE_FINALIZE
 
 API gboolean lua_ide_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	$$(void, exitGracefully)();
+	$(void, module_util, safeRevokeModule)("lua_ide");
 	return true;
+}
+
+API void lua_ide_menu_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	$(void, module_util, safeRevokeModule)("lua_ide");
 }

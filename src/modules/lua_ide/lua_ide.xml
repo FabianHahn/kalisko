@@ -95,12 +95,21 @@
           </packing>
         </child>
         <child>
-          <object class="GtkTextView" id="console_output">
+          <object class="GtkScrolledWindow" id="console_scroll">
             <property name="width_request">200</property>
             <property name="height_request">100</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="editable">False</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <child>
+              <object class="GtkTextView" id="console_output">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="editable">False</property>
+                <signal name="size_allocate" handler="lua_ide_console_output_size_allocate"/>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="position">4</property>

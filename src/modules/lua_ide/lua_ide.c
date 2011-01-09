@@ -30,7 +30,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -39,6 +39,24 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua",
  */
 GtkWidget *window;
 
+/**
+ * The script input widget for the IDE
+ */
+GtkWidget *script_input;
+
+/**
+ * The console output widget for the IDE
+ */
+GtkWidget *console_output;
+
+typedef enum {
+	MESSAGE_ERR,
+	MESSAGE_OUT
+} MessageType;
+
+static void runScript();
+static void appendConsole(const char *message, MessageType type);
+
 MODULE_INIT
 {
 	GString *path;
@@ -46,14 +64,18 @@ MODULE_INIT
 	path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_ide/lua_ide.xml");
 
-	window = $(GtkWidget *, gtk+, loadGtkBuilderGui)(path->str, "window");
+	GtkBuilder *builder = $(GtkBuilder *, gtk+, loadGtkBuilderGui)(path->str);
 
 	g_string_free(path, true);
 
-	if(window == NULL) {
+	if(builder == NULL) {
 		LOG_ERROR("Failed to load Lua IDE GUI");
 		return false;
 	}
+
+	window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
+	script_input = GTK_WIDGET(gtk_builder_get_object(builder, "script_input"));
+	console_output = GTK_WIDGET(gtk_builder_get_object(builder, "console_output"));
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
@@ -78,4 +100,62 @@ API gboolean lua_ide_window_delete_event(GtkWidget *widget, GdkEvent *event, gpo
 API void lua_ide_menu_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	$(void, module_util, safeRevokeModule)("lua_ide");
+}
+
+API void lua_ide_menu_run_active(GtkMenuItem *menuitem, gpointer user_data)
+{
+	runScript();
+}
+
+API void lua_ide_run_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
+{
+	runScript();
+}
+
+static void runScript()
+{
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
+
+	GtkTextIter start;
+	gtk_text_buffer_get_start_iter(buffer, &start);
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+
+	char *script = gtk_text_buffer_get_text(buffer, &start, &end, false);
+
+	if(!$(bool, lang_lua, evaluateLua)(script)) {
+		GString *err = g_string_new("Lua error: ");
+		char *ret = $(char *, lang_lua, popLuaString)();
+		g_string_append(err, ret);
+		appendConsole(err->str, MESSAGE_ERR);
+		free(ret);
+		g_string_free(err, true);
+	} else {
+		char *ret = $(char *, lang_lua, popLuaString)();
+
+		if(ret != NULL) {
+			appendConsole(ret, MESSAGE_OUT);
+			free(ret);
+		}
+	}
+
+	free(script);
+}
+
+static void appendConsole(const char *message, MessageType type)
+{
+	// deactivate text view as long as we're writing
+	gtk_widget_set_sensitive(console_output, FALSE);
+
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
+
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+
+	GString *msg = g_string_new(message);
+	g_string_prepend(msg, "\n");
+	gtk_text_buffer_insert(buffer, &end, msg->str, -1);
+	g_string_free(msg, true);
+
+	gtk_widget_set_sensitive(console_output, TRUE);
 }

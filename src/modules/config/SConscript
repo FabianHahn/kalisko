@@ -18,3 +18,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Import('module')
 
 module.SharedLibrary('../kalisko_config', Glob('*.c'))
+module.Command("meta.cfg", File("meta.cfg").srcnode(), Copy("$TARGET", "$SOURCE"))

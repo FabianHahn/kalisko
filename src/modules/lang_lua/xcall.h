@@ -28,10 +28,10 @@
 #include "types.h"
 #include "lang_lua.h"
 
-API void luaInitXCall();
-API void luaFreeXCall();
+API void initLuaXCall();
+API void freeLuaXCall();
 
-API bool luaInitStateXCall(lua_State *state);
-API bool luaFreeStateXCall(lua_State *state);
+API bool initLuaStateXCall(lua_State *state);
+API bool freeLuaStateXCall(lua_State *state);
 
 #endif

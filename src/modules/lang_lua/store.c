@@ -42,13 +42,25 @@ static void parseLuaStoreArrayNode(void *key_p, void *value_p, void *state_p);
  * Registers the lua store C functions for an interpreter
  *
  * @param state		the lua interpreter state to register the store functions with
- * @result			true if successful
  */
-API void luaInitStateStore(lua_State *state)
+API void initLuaStateStore(lua_State *state)
 {
 	lua_pushcfunction(state, &lua_dumpStore);
 	lua_setglobal(state, "dumpStore");
 	lua_pushcfunction(state, &lua_parseStore);
+	lua_setglobal(state, "parseStore");
+}
+
+/**
+ * Frees the lua store C functions for an interpreter
+ *
+ * @param state		the lua interpreter state to free the store functions for
+ */
+API void freeLuaStateStore(lua_State *state)
+{
+	lua_pushnil(state);
+	lua_setglobal(state, "dumpStore");
+	lua_pushnil(state);
 	lua_setglobal(state, "parseStore");
 }
 

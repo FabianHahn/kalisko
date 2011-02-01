@@ -27,7 +27,8 @@
 #include <lauxlib.h>
 #include "modules/store/store.h"
 
-API void luaInitStateStore(lua_State *state);
+API void initLuaStateStore(lua_State *state);
+API void freeLuaStateStore(lua_State *state);
 API void parseStoreToLua(lua_State *state, Store *store);
 API Store *parseLuaToStore(lua_State *state);
 

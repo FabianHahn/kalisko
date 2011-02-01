@@ -59,7 +59,7 @@ static GHashTable *functionState;
 /**
  * Initializes the Lua XCall interface
  */
-API void luaInitXCall()
+API void initLuaXCall()
 {
 	// Register global xcall functions
 	$(bool, xcall, addXCallFunction)("evaluateLua", &xcall_evaluateLua);
@@ -72,7 +72,7 @@ API void luaInitXCall()
 /**
  * Frees the Lua XCall interface
  */
-API void luaFreeXCall()
+API void freeLuaXCall()
 {
 	// Unregister global xcall functions
 	$(bool, xcall, delXCallFunction)("evaluateLua");
@@ -89,7 +89,7 @@ API void luaFreeXCall()
  * @param state		the lua interpreter state to register the xcall functions with
  * @result			true if successful
  */
-API bool luaInitStateXCall(lua_State *state)
+API bool initLuaStateXCall(lua_State *state)
 {
 	GHashTable *functionRefs;
 
@@ -123,7 +123,7 @@ API bool luaInitStateXCall(lua_State *state)
  * @param state		the lua interpreter state to register the xcall functions with
  * @result			true if successful
  */
-API bool luaFreeStateXCall(lua_State *state)
+API bool freeLuaStateXCall(lua_State *state)
 {
 	GHashTable *functionRefs;
 	if((functionRefs = g_hash_table_lookup(stateFunctions, state)) == NULL) {
@@ -135,6 +135,16 @@ API bool luaFreeStateXCall(lua_State *state)
 
 	g_hash_table_remove(stateFunctions, state); // also remove the functionRefs table from the stateFunctions
 	g_hash_table_destroy(functionRefs); // destroy the table
+
+	lua_pushnil(state);
+	lua_setglobal(state, "invokeXCall");
+	lua_pushnil(state);
+	lua_setglobal(state, "addXCallFunction");
+	lua_pushnil(state);
+	lua_setglobal(state, "delXCallFunction");
+
+	lua_newtable(state);
+	lua_setmetatable(state, LUA_GLOBALSINDEX);
 
 	return true;
 }

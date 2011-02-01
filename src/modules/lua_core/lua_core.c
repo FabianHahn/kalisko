@@ -24,15 +24,15 @@
 #include "types.h"
 #include "log.h"
 #include "util.h"
-#include "modules/lang_lua/lang_lua.h"
+#include "modules/lua/module_lua.h"
 #include "api.h"
 
 MODULE_NAME("lua_core");
 MODULE_AUTHOR("The Kalisko Team");
 MODULE_DESCRIPTION("The lua_core module provides a Lua API to the Kalisko core");
-MODULE_VERSION(0, 1, 13);
+MODULE_VERSION(0, 1, 14);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 4, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 4, 0), MODULE_DEPENDENCY("lua", 0, 8, 0));
 
 MODULE_INIT
 {
@@ -41,8 +41,8 @@ MODULE_INIT
 	path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_core/KaliskoModule.lua");
 
-	if(!$(bool, lang_lua, evaluateLuaScript)(path->str)) {
-		char *error = $(char *, lang_lua, popLuaString)();
+	if(!$(bool, lua, evaluateLuaScript)(path->str)) {
+		char *error = $(char *, lua, popLuaString)();
 		LOG_ERROR("Failed to run KaliskoModule.lua script: %s", error);
 		free(error);
 		g_string_free(path, true);
@@ -54,8 +54,8 @@ MODULE_INIT
 	path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_core/KaliskoLog.lua");
 
-	if(!$(bool, lang_lua, evaluateLuaScript)(path->str)) {
-		char *error = $(char *, lang_lua, popLuaString)();
+	if(!$(bool, lua, evaluateLuaScript)(path->str)) {
+		char *error = $(char *, lua, popLuaString)();
 		LOG_ERROR("Failed to run KaliskoLog.lua script: %s", error);
 		free(error);
 		g_string_free(path, true);

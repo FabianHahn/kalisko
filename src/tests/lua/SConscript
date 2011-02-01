@@ -33,4 +33,4 @@ if not test.GetOption('clean'):
 			
 	test = conf.Finish()
 
-test.SharedLibrary('../../modules/kalisko_test_lang_lua', Glob('*.c'))
+test.SharedLibrary('../../modules/kalisko_test_lua', Glob('*.c'))

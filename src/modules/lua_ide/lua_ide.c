@@ -33,24 +33,24 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
 /**
  * The GTK root widget for the IDE
  */
-GtkWidget *window;
+static GtkWidget *window;
 
 /**
  * The script input widget for the IDE
  */
-GtkWidget *script_input;
+static GtkWidget *script_input;
 
 /**
  * The console output widget for the IDE
  */
-GtkWidget *console_output;
+static GtkWidget *console_output;
 
 typedef enum {
 	MESSAGE_ERR,
@@ -98,6 +98,8 @@ MODULE_INIT
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
 	gtk_text_buffer_set_text(buffer, welcome->str, -1);
 	g_string_free(welcome, true);
+	gtk_text_buffer_create_tag(buffer, "lua_error", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(buffer, "lua_out", "foreground", "blue", NULL);
 
 	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
 
@@ -220,7 +222,16 @@ static void appendConsole(const char *message, MessageType type)
 
 	GString *msg = g_string_new(message);
 	g_string_prepend(msg, "\n");
-	gtk_text_buffer_insert(buffer, &end, msg->str, -1);
+
+	switch(type) {
+		case MESSAGE_ERR:
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_error", NULL);
+		break;
+		case MESSAGE_OUT:
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_out", NULL);
+		break;
+	}
+
 	g_string_free(msg, true);
 
 	gtk_widget_set_sensitive(console_output, TRUE);

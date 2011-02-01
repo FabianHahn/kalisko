@@ -17,4 +17,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
-module.SharedLibrary('../kalisko_cli_help_module_perform', Glob('*.c'))
+module.SharedLibrary('../kalisko_cli_help_meta', Glob('*.c'))

@@ -18,32 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dll.h"
-#include "types.h"
-#include "modules/cli_help/cli_help.h"
-#include "modules/module_util/module_util.h"
 
-#include "api.h"
+#ifndef CLI_HELP_META_CLI_HELP_META_H
+#define CLI_HELP_META_CLI_HELP_META_H
 
+API bool loadCliHelpMetaFile(char *filePath);
 
-MODULE_NAME("cli_help_module_package");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("CLI Help for the module_package module.");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("cli_help", 0, 1, 0), MODULE_DEPENDENCY("module_util", 0, 1, 0));
-
-MODULE_INIT
-{
-	$(bool, cli_help, addCLOptionHelp)("module_package", "l", "load-package", "Comma separated list of package names to load. Config will be ignored.");
-
-	$(void, module_util, safeRevokeModule)("cli_help_module_package");
-
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
-}
+#endif

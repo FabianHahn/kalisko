@@ -22,6 +22,9 @@
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcelanguage.h>
 #include <gtksourceview/gtksourcelanguagemanager.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 
 #include "dll.h"
 #include "modules/gtk+/gtk+.h"
@@ -33,7 +36,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -53,12 +56,14 @@ static GtkWidget *script_input;
 static GtkWidget *console_output;
 
 typedef enum {
-	MESSAGE_ERR,
+	MESSAGE_LUA_ERR,
+	MESSAGE_LUA_OUT,
 	MESSAGE_OUT
 } MessageType;
 
 static void runScript();
 static void appendConsole(const char *message, MessageType type);
+static int lua_output(lua_State *state);
 
 MODULE_INIT
 {
@@ -119,11 +124,19 @@ MODULE_INIT
 	// run
 	$(void, gtk+, runGtkLoop)();
 
+	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
+	lua_pushcfunction(state, &lua_output);
+	lua_setglobal(state, "output");
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
+	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
+	lua_pushnil(state);
+	lua_setglobal(state, "output");
+
 	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
@@ -195,14 +208,14 @@ static void runScript()
 		GString *err = g_string_new("Lua error: ");
 		char *ret = $(char *, lua, popLuaString)();
 		g_string_append(err, ret);
-		appendConsole(err->str, MESSAGE_ERR);
+		appendConsole(err->str, MESSAGE_LUA_ERR);
 		free(ret);
 		g_string_free(err, true);
 	} else {
 		char *ret = $(char *, lua, popLuaString)();
 
 		if(ret != NULL) {
-			appendConsole(ret, MESSAGE_OUT);
+			appendConsole(ret, MESSAGE_LUA_OUT);
 			free(ret);
 		}
 	}
@@ -224,15 +237,27 @@ static void appendConsole(const char *message, MessageType type)
 	g_string_prepend(msg, "\n");
 
 	switch(type) {
-		case MESSAGE_ERR:
+		case MESSAGE_LUA_ERR:
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_error", NULL);
 		break;
-		case MESSAGE_OUT:
+		case MESSAGE_LUA_OUT:
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_out", NULL);
+		break;
+		case MESSAGE_OUT:
+			gtk_text_buffer_insert(buffer, &end, msg->str, -1);
 		break;
 	}
 
 	g_string_free(msg, true);
 
 	gtk_widget_set_sensitive(console_output, TRUE);
+}
+
+static int lua_output(lua_State *state)
+{
+	const char *string = luaL_checkstring(state, 1);
+
+	appendConsole(string, MESSAGE_OUT);
+
+	return 0;
 }

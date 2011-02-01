@@ -27,15 +27,15 @@
 #include "modules/xcall/xcall.h"
 #include "modules/store/store.h"
 #include "api.h"
-#include "lang_lua.h"
+#include "module_lua.h"
 #include "xcall.h"
 #include "store.h"
 
-MODULE_NAME("lang_lua");
+MODULE_NAME("lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 7, 13);
-MODULE_BCVERSION(0, 7, 13);
+MODULE_VERSION(0, 8, 0);
+MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 7), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 /**

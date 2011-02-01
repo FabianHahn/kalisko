@@ -33,4 +33,4 @@ if not module.GetOption('clean'):
 			
 	module = conf.Finish()
 
-module.SharedLibrary('../kalisko_lang_lua', Glob('*.c'))
+module.SharedLibrary('../kalisko_lua', Glob('*.c'))

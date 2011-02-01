@@ -34,10 +34,13 @@
 MODULE_NAME("lang_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module provides access to the Lua scripting language");
-MODULE_VERSION(0, 7, 10);
+MODULE_VERSION(0, 7, 11);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 7), MODULE_DEPENDENCY("store", 0, 5, 3));
 
+/**
+ * The global Lua state. All functions related to this state are NOT thread-safe!
+ */
 static lua_State *state;
 
 MODULE_INIT
@@ -119,4 +122,14 @@ API Store *popLuaStore()
 	lua_pop(state, 1);
 
 	return ret;
+}
+
+/**
+ * Returns the currently active global Lua state
+ *
+ * @result		the currently active global Lua state - changes will effect all scripts in this context immediately
+ */
+API lua_State *getGlobalLuaState()
+{
+	return state;
 }

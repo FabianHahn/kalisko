@@ -26,16 +26,16 @@
 #include "dll.h"
 #include "modules/gtk+/gtk+.h"
 #include "modules/gtk+/builder.h"
-#include "modules/lang_lua/lang_lua.h"
+#include "modules/lua/module_lua.h"
 #include "modules/module_util/module_util.h"
 #include "api.h"
 
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("module_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
 /**
  * The GTK root widget for the IDE
@@ -191,15 +191,15 @@ static void runScript()
 
 	char *script = gtk_text_buffer_get_text(buffer, &start, &end, false);
 
-	if(!$(bool, lang_lua, evaluateLua)(script)) {
+	if(!$(bool, lua, evaluateLua)(script)) {
 		GString *err = g_string_new("Lua error: ");
-		char *ret = $(char *, lang_lua, popLuaString)();
+		char *ret = $(char *, lua, popLuaString)();
 		g_string_append(err, ret);
 		appendConsole(err->str, MESSAGE_ERR);
 		free(ret);
 		g_string_free(err, true);
 	} else {
-		char *ret = $(char *, lang_lua, popLuaString)();
+		char *ret = $(char *, lua, popLuaString)();
 
 		if(ret != NULL) {
 			appendConsole(ret, MESSAGE_OUT);

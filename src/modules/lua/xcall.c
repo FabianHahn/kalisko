@@ -32,7 +32,7 @@
 #include "modules/store/write.h"
 #include "modules/xcall/xcall.h"
 #include "api.h"
-#include "lang_lua.h"
+#include "module_lua.h"
 #include "xcall.h"
 #include "store.h"
 

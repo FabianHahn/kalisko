@@ -26,7 +26,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include "types.h"
-#include "lang_lua.h"
+#include "module_lua.h"
 
 API void initLuaXCall();
 API void freeLuaXCall();

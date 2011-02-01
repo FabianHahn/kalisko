@@ -30,7 +30,7 @@
 #include "modules/store/path.h"
 #include "modules/store/write.h"
 #include "api.h"
-#include "lang_lua.h"
+#include "module_lua.h"
 #include "store.h"
 
 static Store *parseLuaToStoreRec(lua_State *state, bool allow_list);

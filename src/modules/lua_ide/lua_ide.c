@@ -36,7 +36,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -66,6 +66,7 @@ static void appendConsole(const char *message, MessageType type);
 static int lua_output(lua_State *state);
 static void undo();
 static void redo();
+static void clearOutput();
 
 MODULE_INIT
 {
@@ -183,6 +184,16 @@ API void lua_ide_menu_redo_activate(GtkMenuItem *menuitem, gpointer user_data)
 	redo();
 }
 
+API void lua_ide_clear_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
+{
+	clearOutput();
+}
+
+API void lua_ide_menu_clear_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	clearOutput();
+}
+
 API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
 {
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
@@ -276,4 +287,16 @@ static void redo()
 	if(gtk_source_buffer_can_redo(sbuffer)) {
 		gtk_source_buffer_redo(sbuffer);
 	}
+}
+
+static void clearOutput()
+{
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
+
+	GtkTextIter start;
+	gtk_text_buffer_get_start_iter(buffer, &start);
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+
+	gtk_text_buffer_delete(buffer, &start, &end);
 }

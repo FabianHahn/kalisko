@@ -26,7 +26,7 @@
 #include "types.h"
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
-#include "modules/lang_lua/lang_lua.h"
+#include "modules/lua/module_lua.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/string_util/string_util.h"
 #include "modules/event/event.h"
@@ -35,9 +35,9 @@
 MODULE_NAME("ircpp_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows proxy clients to evaluate Lua code by sending private messages to a virtual *lua bot");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 7), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("lang_lua", 0, 5, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 7), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("string_util", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static void listener_clientLine(void *subject, const char *event, void *data, va_list args);
 static void listener_clientAuthenticated(void *subject, const char *event, void *data, va_list args);

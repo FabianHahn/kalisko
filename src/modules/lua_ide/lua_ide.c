@@ -36,7 +36,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -64,6 +64,8 @@ typedef enum {
 static void runScript();
 static void appendConsole(const char *message, MessageType type);
 static int lua_output(lua_State *state);
+static void undo();
+static void redo();
 
 MODULE_INIT
 {
@@ -163,26 +165,22 @@ API void lua_ide_run_button_clicked(GtkToolButton *toolbutton, gpointer user_dat
 
 API void lua_ide_undo_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
 {
-	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
-	gtk_source_buffer_undo(sbuffer);
+	undo();
 }
 
 API void lua_ide_redo_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
 {
-	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
-	gtk_source_buffer_redo(sbuffer);
+	redo();
 }
 
 API void lua_ide_menu_undo_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
-	gtk_source_buffer_undo(sbuffer);
+	undo();
 }
 
 API void lua_ide_menu_redo_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
-	gtk_source_buffer_redo(sbuffer);
+	redo();
 }
 
 API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
@@ -260,4 +258,22 @@ static int lua_output(lua_State *state)
 	appendConsole(string, MESSAGE_OUT);
 
 	return 0;
+}
+
+static void undo()
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+
+	if(gtk_source_buffer_can_undo(sbuffer)) {
+		gtk_source_buffer_undo(sbuffer);
+	}
+}
+
+static void redo()
+{
+	GtkSourceBuffer *sbuffer = GTK_SOURCE_BUFFER(gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input)));
+
+	if(gtk_source_buffer_can_redo(sbuffer)) {
+		gtk_source_buffer_redo(sbuffer);
+	}
 }

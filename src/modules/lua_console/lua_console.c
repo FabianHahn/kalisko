@@ -31,7 +31,7 @@
 MODULE_NAME("lua_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua console using GTK+");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lua", 0, 8, 0));
 
@@ -140,15 +140,15 @@ static gboolean inputActivate(GtkWidget *widget, GdkEvent *event, gpointer data)
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(input));
 	appendMessage(command, MESSAGE_IN);
 
-	if(!$(bool, lang_lua, evaluateLua)(command)) {
+	if(!$(bool, lua, evaluateLua)(command)) {
 		GString *err = g_string_new("Lua error: ");
-		char *ret = $(char *, lang_lua, popLuaString)();
+		char *ret = $(char *, lua, popLuaString)();
 		g_string_append(err, ret);
 		appendMessage(err->str, MESSAGE_LOG);
 		free(ret);
 		g_string_free(err, true);
 	} else {
-		char *ret = $(char *, lang_lua, popLuaString)();
+		char *ret = $(char *, lua, popLuaString)();
 
 		if(ret != NULL) {
 			appendMessage(ret, MESSAGE_OUT);

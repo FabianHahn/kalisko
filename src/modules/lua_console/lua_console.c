@@ -24,16 +24,16 @@
 #include "log.h"
 #include "module.h"
 #include "modules/gtk+/gtk+.h"
-#include "modules/lang_lua/lang_lua.h"
+#include "modules/lua/module_lua.h"
 #include "timer.h"
 #include "api.h"
 
 MODULE_NAME("lua_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua console using GTK+");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lang_lua", 0, 5, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("lua", 0, 8, 0));
 
 // Columns
 typedef enum {

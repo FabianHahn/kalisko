@@ -36,7 +36,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 6);
+MODULE_VERSION(0, 4, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -242,22 +242,24 @@ static void appendConsole(const char *message, MessageType type)
 	GtkTextIter end;
 	gtk_text_buffer_get_end_iter(buffer, &end);
 
-	GString *msg = g_string_new(message);
-	g_string_prepend(msg, "\n");
+	GDateTime *now = g_date_time_new_now_local();
+	GString *prefix = g_string_new("\n");
+	g_string_append_printf(prefix, "[%02d:%02d:%02d] ", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now));
+	g_date_time_unref(now);
+	gtk_text_buffer_insert(buffer, &end, prefix->str, -1);
+	g_string_free(prefix, true);
 
 	switch(type) {
 		case MESSAGE_LUA_ERR:
-			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_error", NULL);
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "lua_error", NULL);
 		break;
 		case MESSAGE_LUA_OUT:
-			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, msg->str, -1, "lua_out", NULL);
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "lua_out", NULL);
 		break;
 		case MESSAGE_OUT:
-			gtk_text_buffer_insert(buffer, &end, msg->str, -1);
+			gtk_text_buffer_insert(buffer, &end, message, -1);
 		break;
 	}
-
-	g_string_free(msg, true);
 
 	gtk_widget_set_sensitive(console_output, TRUE);
 }

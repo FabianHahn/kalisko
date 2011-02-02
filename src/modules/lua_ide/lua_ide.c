@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <gtk/gtk.h>
 #include <gtksourceview/gtksourceview.h>
 #include <gtksourceview/gtksourcelanguage.h>
@@ -31,14 +32,17 @@
 #include "modules/gtk+/builder.h"
 #include "modules/lua/module_lua.h"
 #include "modules/module_util/module_util.h"
+#include "modules/config/config.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #include "api.h"
 
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 8);
+MODULE_VERSION(0, 5, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
 /**
  * The GTK root widget for the IDE
@@ -66,12 +70,19 @@ typedef enum {
 	MESSAGE_OUT
 } MessageType;
 
+typedef enum {
+   SCRIPT_TREE_NAME_COLUMN,
+   SCRIPT_TREE_TYPE_COLUMN,
+   SCRIPT_TREE_PATH_COLUMN
+} ScriptTreeColumns;
+
 static void runScript();
 static void appendConsole(const char *message, MessageType type);
 static int lua_output(lua_State *state);
 static void undo();
 static void redo();
 static void clearOutput();
+static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *files);
 
 MODULE_INIT
 {
@@ -93,6 +104,31 @@ MODULE_INIT
 	script_input = GTK_WIDGET(gtk_builder_get_object(builder, "script_input"));
 	console_output = GTK_WIDGET(gtk_builder_get_object(builder, "console_output"));
 	script_tree = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree"));
+
+	// script tree
+	Store *config = $(Store *, config, getWritableConfig)();
+	Store *ide_config;
+	if((ide_config = $(Store *, store, getStorePath)(config, "lua_ide")) == NULL) {
+		LOG_INFO("Writable config path 'lua_ide' doesn't exist yet, creating...");
+		ide_config = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(config, "lua_ide", ide_config);
+	}
+
+	Store *files;
+	if((files = $(Store *, store, getStorePath)(config, "lua_ide/files")) == NULL) {
+		LOG_INFO("Writable config path 'lua_ide/files' doesn't exist yet, creating...");
+		files = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(config, "lua_ide/files", files);
+	}
+
+	GtkTreeStore *treestore = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree)));
+	path = g_string_new("lua_ide/files");
+	fillScriptTreeStore(treestore, NULL, path, files);
+	g_string_free(path, true);
+
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", SCRIPT_TREE_NAME_COLUMN, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(script_tree), column);
 
 	// script input
 	GtkRcStyle *style = gtk_widget_get_modifier_style(script_input);
@@ -310,4 +346,38 @@ static void clearOutput()
 	gtk_text_buffer_get_end_iter(buffer, &end);
 
 	gtk_text_buffer_delete(buffer, &start, &end);
+}
+
+static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *files)
+{
+	assert(files->type == STORE_ARRAY);
+
+	GHashTableIter iter;
+	char *key;
+	Store *value;
+
+	g_hash_table_iter_init(&iter, files->content.array);
+	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		GtkTreeIter child;
+		gtk_tree_store_append(treestore, &child, parent);
+
+		switch(value->type) {
+			case STORE_ARRAY:
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, path->str, NULL);
+
+				do {
+					GString *subpath = g_string_new(path->str);
+					g_string_append_printf(subpath, "/%s", key);
+					fillScriptTreeStore(treestore, &child, subpath, value);
+					g_string_free(subpath, true);
+				} while(false);
+			break;
+			case STORE_STRING:
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, path->str, NULL);
+			break;
+			default:
+				LOG_WARNING("Config store value in '%s' has unsupported type when filling Lua IDE script tree, expected array or string - skipping...", path->str);
+			break;
+		}
+	}
 }

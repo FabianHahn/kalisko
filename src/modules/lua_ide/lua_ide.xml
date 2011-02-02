@@ -195,6 +195,7 @@
                 <property name="width_request">200</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="model">script_tree_store</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -299,5 +300,15 @@
   <object class="GtkImage" id="image4">
     <property name="visible">True</property>
     <property name="stock">gtk-clear</property>
+  </object>
+  <object class="GtkTreeStore" id="script_tree_store">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name type -->
+      <column type="gint"/>
+      <!-- column-name path -->
+      <column type="gchararray"/>
+    </columns>
   </object>
 </interface>

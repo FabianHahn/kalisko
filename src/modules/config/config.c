@@ -58,7 +58,7 @@ static bool applyProfile();
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 9);
+MODULE_VERSION(0, 3, 10);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -84,16 +84,18 @@ MODULE_INIT
 	LOG_DEBUG("Expecting writable config at '%s'", writableConfigFilePath);
 
 	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
-		Store *writableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
+		writableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
+	}
 
-		if(config == NULL) {
-			config = writableConfig;
-		} else {
-			if(!$(bool, store, mergeStore)(config, writableConfig)) {
-				LOG_WARNING("Could not merge writable store into existing config store.");
-			}
+	if(writableConfig == NULL) {
+		writableConfig = $(Store *, store, createStore)();
+	}
 
-			$(void, store, freeStore)(writableConfig);
+	if(config == NULL) {
+		config = writableConfig;
+	} else {
+		if(!$(bool, store, mergeStore)(config, writableConfig)) {
+			LOG_WARNING("Could not merge writable store into existing config store.");
 		}
 	}
 

@@ -36,7 +36,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 4, 7);
+MODULE_VERSION(0, 4, 8);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2));
 
@@ -54,6 +54,11 @@ static GtkWidget *script_input;
  * The console output widget for the IDE
  */
 static GtkWidget *console_output;
+
+/**
+ * The script tree widget for the IDE
+ */
+static GtkWidget *script_tree;
 
 typedef enum {
 	MESSAGE_LUA_ERR,
@@ -87,29 +92,13 @@ MODULE_INIT
 	window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
 	script_input = GTK_WIDGET(gtk_builder_get_object(builder, "script_input"));
 	console_output = GTK_WIDGET(gtk_builder_get_object(builder, "console_output"));
+	script_tree = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree"));
 
+	// script input
 	GtkRcStyle *style = gtk_widget_get_modifier_style(script_input);
 	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
 	style->font_desc = font;
 	gtk_widget_modify_style(script_input, style);
-
-	style = gtk_widget_get_modifier_style(console_output);
-	font = pango_font_description_from_string("Monospace Normal");
-	style->font_desc = font;
-	gtk_widget_modify_style(console_output, style);
-
-	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
-
-	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
-	g_string_prepend(welcome, "Welcome to the Kalisko Lua IDE ");
-	g_string_append(welcome, "!");
-	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
-	gtk_text_buffer_set_text(buffer, welcome->str, -1);
-	g_string_free(welcome, true);
-	gtk_text_buffer_create_tag(buffer, "lua_error", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
-	gtk_text_buffer_create_tag(buffer, "lua_out", "foreground", "blue", NULL);
-
-	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
 
 	GtkSourceLanguageManager *manager = gtk_source_language_manager_get_default();
 	GtkSourceLanguage *language = gtk_source_language_manager_get_language(manager, "lua");
@@ -121,12 +110,32 @@ MODULE_INIT
 		LOG_WARNING("Failed to set IDE editor language to lua");
 	}
 
+	// window
+	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
+	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+
+	// console output
+	style = gtk_widget_get_modifier_style(console_output);
+	font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(console_output, style);
+
+	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
+	g_string_prepend(welcome, "Welcome to the Kalisko Lua IDE ");
+	g_string_append(welcome, "!");
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
+	gtk_text_buffer_set_text(buffer, welcome->str, -1);
+	g_string_free(welcome, true);
+	gtk_text_buffer_create_tag(buffer, "lua_error", "foreground", "red", "weight", PANGO_WEIGHT_BOLD, NULL);
+	gtk_text_buffer_create_tag(buffer, "lua_out", "foreground", "blue", NULL);
+
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
 
 	// run
 	$(void, gtk+, runGtkLoop)();
 
+	// Lua C function
 	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
 	lua_pushcfunction(state, &lua_output);
 	lua_setglobal(state, "output");

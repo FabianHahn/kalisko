@@ -115,25 +115,28 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 
 static void defaultLogHandler(const char *name, LogType type, const char *message)
 {
-	GTimeVal now;
-	g_get_current_time(&now);
-	char *dateTime = g_time_val_to_iso8601(&now);
+	GDateTime *now = g_date_time_new_now_local();
 
+	char *typestr = NULL;
 	switch(LOG_DEFAULT_LEVEL) {
 		case LOG_TYPE_DEBUG:
 			if(type == LOG_TYPE_DEBUG)
-				fprintf(stderr, "%s [%s] DEBUG: %s\n", dateTime, name, message);
+				typestr = "debug";
 		case LOG_TYPE_INFO:
 			if(type == LOG_TYPE_INFO)
-				fprintf(stderr, "%s [%s] INFO: %s\n", dateTime, name, message);
+				typestr = "info";
 		case LOG_TYPE_WARNING:
 			if(type == LOG_TYPE_WARNING)
-				fprintf(stderr, "%s [%s] WARNING: %s\n", dateTime, name, message);
+				typestr = "warning";
 		case LOG_TYPE_ERROR:
 			if(type == LOG_TYPE_ERROR)
-				fprintf(stderr, "%s [%s] ERROR: %s\n", dateTime, name, message);
+				typestr = "error";
 	}
 
-	free(dateTime);
+	if(typestr != NULL) {
+		fprintf(stderr, "[%02d:%02d:%02d] [%s:%s] %s\n", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), name, typestr, message);
+	}
+
+	g_date_time_unref(now);
 	fflush(stderr);
 }

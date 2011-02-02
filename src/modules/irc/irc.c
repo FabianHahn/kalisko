@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 5);
+MODULE_VERSION(0, 4, 6);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -373,12 +373,12 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
  */
 API void authenticateIrcConnection(IrcConnection *irc)
 {
-	ircSend(irc, "USER %s 0 0 :%s", irc->user, irc->real);
-	ircSend(irc, "NICK %s", irc->nick);
-
 	if(irc->password != NULL) {
 		ircSend(irc, "PASS %s", irc->password);
 	}
+
+	ircSend(irc, "USER %s 0 0 :%s", irc->user, irc->real);
+	ircSend(irc, "NICK %s", irc->nick);
 }
 
 /**

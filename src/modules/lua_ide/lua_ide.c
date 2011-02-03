@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 5, 2);
+MODULE_VERSION(0, 6, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -103,6 +103,7 @@ static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GS
 static bool openScript(char *path);
 static void refreshScriptTree();
 static void refreshWindowTitle();
+static void saveScript();
 
 MODULE_INIT
 {
@@ -429,6 +430,22 @@ static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GS
 
 static bool openScript(char *path)
 {
+	if(current_script != NULL && script_changed) {
+		GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "The currently opened script '%s' contains unsaved changes.\nDo you want to save it first?", current_script);
+		gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Save", 0, "_Don't save", 1, "_Cancel", 2, NULL);
+		int result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+		if(result == 0) {
+			saveScript();
+		}
+
+		gtk_widget_destroy(dialog);
+
+		if(result == 2) { // Abort selected, don't open new file
+			return false;
+		}
+	}
+
 	Store *script = $(Store *, store, getStorePath)(ide_config, path);
 
 	if(script != NULL) {
@@ -518,4 +535,30 @@ static void refreshWindowTitle()
 	g_string_append(title, current_script);
 	gtk_window_set_title(GTK_WINDOW(window), title->str);
 	g_string_free(title, true);
+}
+
+static void saveScript()
+{
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
+
+	GtkTextIter start;
+	gtk_text_buffer_get_start_iter(buffer, &start);
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+
+	char *script = gtk_text_buffer_get_text(buffer, &start, &end, false);
+
+	Store *store = $(Store *, store, getStorePath)(ide_config, current_script);
+
+	if(store != NULL && store->type == STORE_STRING) {
+		free(store->content.string);
+		store->content.string = script;
+		LOG_INFO("Saved script %s", current_script);
+	} else {
+		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
+		free(script);
+	}
+
+	script_changed = false;
+	refreshWindowTitle();
 }

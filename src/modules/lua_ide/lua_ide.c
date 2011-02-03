@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -64,6 +64,16 @@ static GtkWidget *console_output;
  */
 static GtkWidget *script_tree;
 
+/**
+ * The IDE's config store
+ */
+static Store *ide_config;
+
+/**
+ * The currently opened script
+ */
+static char *current_script = NULL;
+
 typedef enum {
 	MESSAGE_LUA_ERR,
 	MESSAGE_LUA_OUT,
@@ -76,6 +86,7 @@ typedef enum {
    SCRIPT_TREE_PATH_COLUMN
 } ScriptTreeColumns;
 
+static void finalize();
 static void runScript();
 static void appendConsole(const char *message, MessageType type);
 static int lua_output(lua_State *state);
@@ -83,6 +94,9 @@ static void undo();
 static void redo();
 static void clearOutput();
 static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *files);
+static bool openScript(char *path);
+static void refreshScriptTree();
+static void refreshWindowTitle(bool unsaved);
 
 MODULE_INIT
 {
@@ -107,28 +121,20 @@ MODULE_INIT
 
 	// script tree
 	Store *config = $(Store *, config, getWritableConfig)();
-	Store *ide_config;
 	if((ide_config = $(Store *, store, getStorePath)(config, "lua_ide")) == NULL) {
 		LOG_INFO("Writable config path 'lua_ide' doesn't exist yet, creating...");
 		ide_config = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(config, "lua_ide", ide_config);
 	}
 
-	Store *files;
-	if((files = $(Store *, store, getStorePath)(config, "lua_ide/files")) == NULL) {
-		LOG_INFO("Writable config path 'lua_ide/files' doesn't exist yet, creating...");
-		files = $(Store *, store, createStore)();
-		$(bool, store, setStorePath)(config, "lua_ide/files", files);
-	}
-
-	GtkTreeStore *treestore = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree)));
-	path = g_string_new("lua_ide/files");
-	fillScriptTreeStore(treestore, NULL, path, files);
-	g_string_free(path, true);
+	refreshScriptTree();
 
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", SCRIPT_TREE_NAME_COLUMN, NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(script_tree), column);
+
+	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(script_tree));
+	gtk_tree_selection_set_mode(select, GTK_SELECTION_SINGLE);
 
 	// script input
 	GtkRcStyle *style = gtk_widget_get_modifier_style(script_input);
@@ -147,7 +153,6 @@ MODULE_INIT
 	}
 
 	// window
-	gtk_window_set_title(GTK_WINDOW(window), "Kalisko Lua IDE");
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
 
 	// console output
@@ -176,10 +181,20 @@ MODULE_INIT
 	lua_pushcfunction(state, &lua_output);
 	lua_setglobal(state, "output");
 
+	if(!openScript("scripts/default")) {
+		finalize();
+		return false;
+	}
+
 	return true;
 }
 
 MODULE_FINALIZE
+{
+	finalize();
+}
+
+static void finalize()
 {
 	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
 	lua_pushnil(state);
@@ -237,6 +252,23 @@ API void lua_ide_clear_button_clicked(GtkToolButton *toolbutton, gpointer user_d
 API void lua_ide_menu_clear_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	clearOutput();
+}
+
+API void lua_ide_script_tree_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+{
+	GtkTreeSelection *select = gtk_tree_view_get_selection(tree_view);
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+
+    if(gtk_tree_selection_get_selected(select, &model, &iter)) {
+    	int type;
+    	char *path;
+    	gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+
+    	if(type == 1) {
+    		openScript(path);
+    	}
+    }
 }
 
 API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
@@ -348,36 +380,128 @@ static void clearOutput()
 	gtk_text_buffer_delete(buffer, &start, &end);
 }
 
-static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *files)
+static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *scripts)
 {
-	assert(files->type == STORE_ARRAY);
+	assert(scripts->type == STORE_ARRAY);
 
 	GHashTableIter iter;
 	char *key;
 	Store *value;
 
-	g_hash_table_iter_init(&iter, files->content.array);
+	g_hash_table_iter_init(&iter, scripts->content.array);
 	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
 		GtkTreeIter child;
 		gtk_tree_store_append(treestore, &child, parent);
 
+		GString *subpath = g_string_new(path->str);
+		g_string_append_printf(subpath, "/%s", key);
 		switch(value->type) {
 			case STORE_ARRAY:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, path->str, NULL);
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, subpath->str, -1);
 
 				do {
-					GString *subpath = g_string_new(path->str);
-					g_string_append_printf(subpath, "/%s", key);
 					fillScriptTreeStore(treestore, &child, subpath, value);
-					g_string_free(subpath, true);
 				} while(false);
 			break;
 			case STORE_STRING:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, path->str, NULL);
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, subpath->str, -1);
 			break;
 			default:
-				LOG_WARNING("Config store value in '%s' has unsupported type when filling Lua IDE script tree, expected array or string - skipping...", path->str);
+				LOG_WARNING("Config store value in '%s' has unsupported type when filling Lua IDE script tree, expected array or string - skipping...", subpath->str);
 			break;
 		}
+		g_string_free(subpath, true);
 	}
+}
+
+static bool openScript(char *path)
+{
+	Store *script = $(Store *, store, getStorePath)(ide_config, path);
+
+	if(script != NULL) {
+		LOG_INFO("Opening script: %s", path);
+
+		if(script->type == STORE_STRING) {
+			GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
+
+			GtkTextIter start;
+			gtk_text_buffer_get_start_iter(buffer, &start);
+			GtkTextIter end;
+			gtk_text_buffer_get_end_iter(buffer, &end);
+
+			gtk_text_buffer_delete(buffer, &start, &end);
+
+			gtk_text_buffer_insert(buffer, &start, script->content.string, -1);
+		} else {
+			LOG_ERROR("Lua IDE config store path '%s' is not a string, aborting script opening", path);
+			return false;
+		}
+	} else {
+		LOG_INFO("Creating script: %s", path);
+
+		GPtrArray *path_parts = $(GPtrArray *, store, splitStorePath)(path);
+		Store *last = ide_config;
+
+		for(int i = 0; i < path_parts->len; i++) {
+			char *part = path_parts->pdata[i];
+
+			if(i != path_parts->len - 1) {
+				Store *next = $(Store *, store, getStorePath)(last, part);
+
+				if(next == NULL) {
+					next = $(Store *, store, createStore)();
+					$(bool, store, setStorePath)(last, part, next);
+				} else if(next->type != STORE_ARRAY) {
+					LOG_ERROR("Lua IDE config store part '%s' in path '%s' is not an array, aborting script creation", part, path);
+					g_ptr_array_free(path_parts, true);
+					return false;
+				}
+
+				last = next;
+			}
+		}
+
+		$(bool, store, setStorePath)(last, path_parts->pdata[path_parts->len-1], $(Store *, store, createStoreStringValue)(""));
+
+		refreshScriptTree();
+	}
+
+	if(current_script != NULL) {
+		free(current_script);
+	}
+
+	current_script = strdup(path);
+	refreshWindowTitle(false);
+
+	return true;
+}
+
+static void refreshScriptTree()
+{
+	GtkTreeStore *treestore = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree)));
+	gtk_tree_store_clear(treestore);
+
+	Store *scripts;
+	if((scripts = $(Store *, store, getStorePath)(ide_config, "scripts")) == NULL) {
+		LOG_INFO("Lua IDE config store path 'scripts' doesn't exist yet, creating...");
+		scripts = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(ide_config, "scripts", scripts);
+	}
+
+	GString *path = g_string_new("scripts");
+	fillScriptTreeStore(treestore, NULL, path, scripts);
+	g_string_free(path, true);
+}
+
+static void refreshWindowTitle(bool unsaved)
+{
+	GString *title = g_string_new("Kalisko Lua IDE - ");
+
+	if(unsaved) {
+		g_string_append(title, "*");
+	}
+
+	g_string_append(title, current_script);
+	gtk_window_set_title(GTK_WINDOW(window), title->str);
+	g_string_free(title, true);
 }

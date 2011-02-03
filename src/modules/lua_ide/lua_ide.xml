@@ -196,6 +196,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="model">script_tree_store</property>
+                <signal name="row_activated" handler="lua_ide_script_tree_row_activated"/>
               </object>
               <packing>
                 <property name="expand">False</property>

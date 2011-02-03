@@ -35,8 +35,8 @@ TEST_CASE(vector_vector_multiplication);
 MODULE_NAME("test_linalg");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the linalg module");
-MODULE_VERSION(0, 1, 3);
-MODULE_BCVERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
+MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 2, 6));
 
 TEST_SUITE_BEGIN(linalg)
@@ -113,7 +113,7 @@ TEST_CASE(vector_vector_multiplication)
 	$(void, linalg, setVector)(testVector2, 1, 0.0);
 	$(void, linalg, setVector)(testVector2, 2, 1.0);
 
-	float dotResult = $(Vector *, linalg, dotVectors)(testVector1, testVector2);
+	float dotResult = $(float, linalg, dotVectors)(testVector1, testVector2);
 	TEST_ASSERT(dotResult == -4.5);
 
 	Vector *crossVector = $(Vector *, linalg, crossVectors)(testVector1, testVector2);

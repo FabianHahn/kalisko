@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 6, 0);
+MODULE_VERSION(0, 6, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -251,6 +251,16 @@ API void lua_ide_clear_button_clicked(GtkToolButton *toolbutton, gpointer user_d
 API void lua_ide_menu_clear_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	clearOutput();
+}
+
+API void lua_ide_save_button_clicked(GtkToolButton *toolbutton, gpointer user_data)
+{
+	saveScript();
+}
+
+API void lua_ide_menu_save_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	saveScript();
 }
 
 API void lua_ide_script_tree_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
@@ -553,7 +563,7 @@ static void saveScript()
 	if(store != NULL && store->type == STORE_STRING) {
 		free(store->content.string);
 		store->content.string = script;
-		LOG_INFO("Saved script %s", current_script);
+		LOG_INFO("Saved script: %s", current_script);
 	} else {
 		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
 		free(script);

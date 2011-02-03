@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -74,6 +74,11 @@ static Store *ide_config;
  */
 static char *current_script = NULL;
 
+/**
+ * True if the currently opened script has changed since last saving
+ */
+static bool script_changed = false;
+
 typedef enum {
 	MESSAGE_LUA_ERR,
 	MESSAGE_LUA_OUT,
@@ -86,6 +91,7 @@ typedef enum {
    SCRIPT_TREE_PATH_COLUMN
 } ScriptTreeColumns;
 
+static void lua_ide_script_input_buffer_changed(GtkTextBuffer *textbuffer, gpointer user_data);
 static void finalize();
 static void runScript();
 static void appendConsole(const char *message, MessageType type);
@@ -96,7 +102,7 @@ static void clearOutput();
 static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GString *path, Store *files);
 static bool openScript(char *path);
 static void refreshScriptTree();
-static void refreshWindowTitle(bool unsaved);
+static void refreshWindowTitle();
 
 MODULE_INIT
 {
@@ -147,6 +153,7 @@ MODULE_INIT
 
 	if(language != NULL) {
 		GtkSourceBuffer *sbuffer = gtk_source_buffer_new_with_language(language);
+		g_signal_connect(G_OBJECT(sbuffer), "changed", G_CALLBACK(lua_ide_script_input_buffer_changed), NULL);
 		gtk_text_view_set_buffer(GTK_TEXT_VIEW(script_input), GTK_TEXT_BUFFER(sbuffer));
 	} else {
 		LOG_WARNING("Failed to set IDE editor language to lua");
@@ -192,15 +199,6 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	finalize();
-}
-
-static void finalize()
-{
-	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
-	lua_pushnil(state);
-	lua_setglobal(state, "output");
-
-	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
 API gboolean lua_ide_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -277,6 +275,21 @@ API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *
 	GtkTextIter end;
 	gtk_text_buffer_get_end_iter(buffer, &end);
 	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(console_output), &end, 0.0, true, 1.0, 1.0);
+}
+
+static void lua_ide_script_input_buffer_changed(GtkTextBuffer *textbuffer, gpointer user_data)
+{
+	script_changed = true;
+	refreshWindowTitle();
+}
+
+static void finalize()
+{
+	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
+	lua_pushnil(state);
+	lua_setglobal(state, "output");
+
+	gtk_widget_destroy(GTK_WIDGET(window));
 }
 
 static void runScript()
@@ -471,7 +484,8 @@ static bool openScript(char *path)
 	}
 
 	current_script = strdup(path);
-	refreshWindowTitle(false);
+	script_changed = false;
+	refreshWindowTitle();
 
 	return true;
 }
@@ -493,11 +507,11 @@ static void refreshScriptTree()
 	g_string_free(path, true);
 }
 
-static void refreshWindowTitle(bool unsaved)
+static void refreshWindowTitle()
 {
 	GString *title = g_string_new("Kalisko Lua IDE - ");
 
-	if(unsaved) {
+	if(script_changed) {
 		g_string_append(title, "*");
 	}
 

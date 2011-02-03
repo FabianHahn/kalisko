@@ -33,7 +33,7 @@
 MODULE_NAME("string_format");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Implements a comfortable string formatter.");
-MODULE_VERSION(0, 0, 2);
+MODULE_VERSION(0, 0, 3);
 MODULE_BCVERSION(0, 0, 2);
 MODULE_NODEPS;
 
@@ -128,7 +128,9 @@ API char *formatString(char *format, ...)
 			break;
 		}
 		// separate found key
-		char *found_key = strndup(parse_position, token_end - parse_position);
+		char *found_key = ALLOCATE_OBJECTS(char, token_end - parse_position + 1);
+		strncpy(found_key, parse_position, token_end - parse_position);
+		found_key[token_end - parse_position] = '\0';
 		// see if a key with this name has been specified
 		char *replacement = g_hash_table_lookup(table, found_key);
 		if(replacement != NULL) {

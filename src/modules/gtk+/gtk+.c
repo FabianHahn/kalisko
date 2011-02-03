@@ -32,12 +32,12 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
 #ifndef GTK_MAIN_TIMEOUT
-#define GTK_MAIN_TIMEOUT 5000
+#define GTK_MAIN_TIMEOUT 4000
 #endif
 
 TIMER_CALLBACK(GTK_MAIN_LOOP);
@@ -68,7 +68,9 @@ MODULE_FINALIZE
 
 TIMER_CALLBACK(GTK_MAIN_LOOP)
 {
-	gtk_main_iteration_do(false);
+	while(gtk_events_pending()) {
+		gtk_main_iteration();
+	}
 	TIMER_ADD_TIMEOUT(GTK_MAIN_TIMEOUT, GTK_MAIN_LOOP);
 }
 

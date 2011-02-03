@@ -349,6 +349,7 @@
         <property name="use_underline">True</property>
         <property name="image">image5</property>
         <property name="use_stock">False</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_folder_toggle_activate"/>
       </object>
     </child>
     <child>

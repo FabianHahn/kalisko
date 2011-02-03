@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 7, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -296,6 +296,19 @@ API void lua_ide_script_tree_context_menu_script_open_activate(GtkMenuItem *menu
 		char *path;
 		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
 		openScript(path); // open the script
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
+}
+
+API void lua_ide_script_tree_context_menu_folder_toggle_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		if(gtk_tree_view_row_expanded(GTK_TREE_VIEW(script_tree), tree_path)) { // check if expanded or collapsed
+			gtk_tree_view_collapse_row(GTK_TREE_VIEW(script_tree), tree_path);
+		} else {
+			gtk_tree_view_expand_row(GTK_TREE_VIEW(script_tree), tree_path, false);
+		}
 		gtk_tree_path_free(tree_path); // not used anymore
 		tree_path = NULL;
 	}

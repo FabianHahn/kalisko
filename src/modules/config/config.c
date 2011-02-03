@@ -58,7 +58,7 @@ static bool applyProfile();
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 3, 10);
+MODULE_VERSION(0, 3, 11);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -316,7 +316,7 @@ static bool loadConfigs(bool event)
 		// If no default config was found we just use an empty store
 		if(config == NULL) {
 			LOG_INFO("No configuration files provided. Using empty config.");
-			config = $(void, store, createStore)();
+			config = $(Store *, store, createStore)();
 		}
 
 		checkFilesMerge(config); // once check without the profile ...

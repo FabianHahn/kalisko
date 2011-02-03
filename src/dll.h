@@ -32,7 +32,11 @@
 #ifdef WIN32
 #include <stdio.h>
 #include "windows.h"
+#ifdef __cplusplus
+#define $(TYPE, MODULE, FUNC) ((TYPE (*)(...)) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
+#else
 #define $(TYPE, MODULE, FUNC) ((TYPE (*)()) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
+#endif
 #define GET_LIBRARY_HANDLE(MODULE) GetModuleHandle(GET_MODULE_PARAM(MODULE))
 #define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
 #define API __declspec(dllimport)

@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 6, 1);
+MODULE_VERSION(0, 7, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -65,6 +65,21 @@ static GtkWidget *console_output;
 static GtkWidget *script_tree;
 
 /**
+ * The script tree context menu folder widget for the IDE
+ */
+static GtkWidget *script_tree_context_menu_folder;
+
+/**
+ * The script tree context menu script widget for the IDE
+ */
+static GtkWidget *script_tree_context_menu_script;
+
+/**
+ * The script tree context menu blank widget for the IDE
+ */
+static GtkWidget *script_tree_context_menu_blank;
+
+/**
  * The IDE's config store
  */
 static Store *ide_config;
@@ -78,6 +93,11 @@ static char *current_script = NULL;
  * True if the currently opened script has changed since last saving
  */
 static bool script_changed = false;
+
+/**
+ * The path to the currently selected tree element when a context menu is open
+ */
+static GtkTreePath *tree_path = NULL;
 
 typedef enum {
 	MESSAGE_LUA_ERR,
@@ -125,6 +145,9 @@ MODULE_INIT
 	script_input = GTK_WIDGET(gtk_builder_get_object(builder, "script_input"));
 	console_output = GTK_WIDGET(gtk_builder_get_object(builder, "console_output"));
 	script_tree = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree"));
+	script_tree_context_menu_folder = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_folder"));
+	script_tree_context_menu_script = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_script"));
+	script_tree_context_menu_blank = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_blank"));
 
 	// script tree
 	Store *config = $(Store *, config, getWritableConfig)();
@@ -280,6 +303,40 @@ API void lua_ide_script_tree_row_activated(GtkTreeView *tree_view, GtkTreePath *
     }
 }
 
+API bool lua_ide_script_tree_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer user_data)
+{
+	GtkMenu *menu = NULL;
+
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+	gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(script_tree), event->x, event->y, &tree_path, NULL, NULL, NULL);
+
+	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(script_tree));
+	if(tree_path != NULL) {
+		gtk_tree_selection_select_path(select, tree_path); // make sure clicked element is selected visually
+
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, -1);
+
+		if(type == 0) { // show folder menu
+			menu = GTK_MENU(script_tree_context_menu_folder);
+		} else { // show script menu
+			menu = GTK_MENU(script_tree_context_menu_script);
+		}
+	} else { // show blank menu
+		gtk_tree_selection_unselect_all(select);
+		menu = GTK_MENU(script_tree_context_menu_blank);
+	}
+
+	if(event->button == 3) {
+		gtk_menu_popup(menu, NULL, NULL, NULL, NULL, event->button, event->time);
+		return true;
+	}
+
+	return false;
+}
+
 API void lua_ide_console_output_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
 {
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(console_output));
@@ -296,6 +353,14 @@ static void lua_ide_script_input_buffer_changed(GtkTextBuffer *textbuffer, gpoin
 
 static void finalize()
 {
+	if(tree_path != NULL) {
+		gtk_tree_path_free(tree_path);
+	}
+
+	if(current_script != NULL) {
+		free(current_script);
+	}
+
 	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
 	lua_pushnil(state);
 	lua_setglobal(state, "output");

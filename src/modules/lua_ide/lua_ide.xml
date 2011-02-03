@@ -3,6 +3,16 @@
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-requires gtksourceview 0.0 -->
   <!-- interface-naming-policy toplevel-contextual -->
+  <object class="GtkTreeStore" id="script_tree_store">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name type -->
+      <column type="gint"/>
+      <!-- column-name path -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="window">
     <signal name="delete_event" handler="lua_ide_window_delete_event"/>
     <child>
@@ -24,6 +34,7 @@
                       <object class="GtkImageMenuItem" id="menu_save">
                         <property name="label">gtk-save</property>
                         <property name="visible">True</property>
+                        <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="lua_ide_menu_save_activate"/>
                       </object>
@@ -222,6 +233,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="model">script_tree_store</property>
+                <signal name="button_press_event" handler="lua_ide_script_tree_button_press_event"/>
                 <signal name="row_activated" handler="lua_ide_script_tree_row_activated"/>
               </object>
               <packing>
@@ -324,18 +336,95 @@
     <property name="visible">True</property>
     <property name="stock">gtk-clear</property>
   </object>
-  <object class="GtkTreeStore" id="script_tree_store">
-    <columns>
-      <!-- column-name name -->
-      <column type="gchararray"/>
-      <!-- column-name type -->
-      <column type="gint"/>
-      <!-- column-name path -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
   <object class="GtkImage" id="image1">
     <property name="visible">True</property>
     <property name="stock">gtk-yes</property>
+  </object>
+  <object class="GtkMenu" id="script_tree_context_menu_folder">
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_toggle">
+        <property name="label">_Toggle</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="image">image5</property>
+        <property name="use_stock">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="script_tree_context_menu_folder_separator">
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_new_folder">
+        <property name="label" translatable="yes">New _folder</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="image">image6</property>
+        <property name="use_stock">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_new_script">
+        <property name="label" translatable="yes">New _script</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="image">image7</property>
+        <property name="use_stock">False</property>
+      </object>
+    </child>
+  </object>
+  <object class="GtkImage" id="image5">
+    <property name="visible">True</property>
+    <property name="stock">gtk-open</property>
+  </object>
+  <object class="GtkImage" id="image6">
+    <property name="visible">True</property>
+    <property name="stock">gtk-new</property>
+  </object>
+  <object class="GtkImage" id="image7">
+    <property name="visible">True</property>
+    <property name="stock">gtk-new</property>
+  </object>
+  <object class="GtkMenu" id="script_tree_context_menu_blank">
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_blank_new_folder">
+        <property name="label" translatable="yes">New _folder</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="image">image8</property>
+        <property name="use_stock">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_blank_new_script">
+        <property name="label" translatable="yes">New _script</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="image">image9</property>
+        <property name="use_stock">False</property>
+      </object>
+    </child>
+  </object>
+  <object class="GtkImage" id="image8">
+    <property name="visible">True</property>
+    <property name="stock">gtk-new</property>
+  </object>
+  <object class="GtkImage" id="image9">
+    <property name="visible">True</property>
+    <property name="stock">gtk-new</property>
+  </object>
+  <object class="GtkMenu" id="script_tree_context_menu_script">
+    <property name="visible">True</property>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_script_open">
+        <property name="label">gtk-open</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+      </object>
+    </child>
   </object>
 </interface>

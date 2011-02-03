@@ -424,6 +424,7 @@
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_script_open_activate"/>
       </object>
     </child>
   </object>

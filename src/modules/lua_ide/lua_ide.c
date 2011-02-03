@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 7, 0);
+MODULE_VERSION(0, 7, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -286,6 +286,21 @@ API void lua_ide_menu_save_activate(GtkMenuItem *menuitem, gpointer user_data)
 	saveScript();
 }
 
+API void lua_ide_script_tree_context_menu_script_open_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		char *path;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+		openScript(path); // open the script
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
+}
+
 API void lua_ide_script_tree_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
 {
 	GtkTreeSelection *select = gtk_tree_view_get_selection(tree_view);
@@ -308,6 +323,11 @@ API bool lua_ide_script_tree_button_press_event(GtkWidget *widget, GdkEventButto
 	GtkMenu *menu = NULL;
 
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+
+	if(tree_path != NULL) { // if the tree path still exists, free it first to avoid leaks
+		gtk_tree_path_free(tree_path);
+	}
+
 	gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(script_tree), event->x, event->y, &tree_path, NULL, NULL, NULL);
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(script_tree));

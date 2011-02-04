@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 8, 0);
+MODULE_VERSION(0, 8, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -140,6 +140,7 @@ static void refreshScriptTree();
 static void refreshWindowTitle();
 static void saveScript();
 static void createScript(char *parent);
+static void createFolder(char *parent);
 
 MODULE_INIT
 {
@@ -335,7 +336,7 @@ API void lua_ide_script_tree_context_menu_folder_toggle_activate(GtkMenuItem *me
 
 API void lua_ide_script_tree_context_menu_blank_new_folder_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-
+	createFolder("scripts");
 }
 
 API void lua_ide_script_tree_context_menu_blank_new_script_activate(GtkMenuItem *menuitem, gpointer user_data)
@@ -606,8 +607,6 @@ static bool openScript(char *path)
 	Store *script = $(Store *, store, getStorePath)(ide_config, path);
 
 	if(script != NULL) {
-		LOG_INFO("Opening script: %s", path);
-
 		if(script->type == STORE_STRING) {
 			GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
 
@@ -619,13 +618,13 @@ static bool openScript(char *path)
 			gtk_text_buffer_delete(buffer, &start, &end);
 
 			gtk_text_buffer_insert(buffer, &start, script->content.string, -1);
+
+			LOG_INFO("Opened Lua IDE script: %s", path);
 		} else {
 			LOG_ERROR("Lua IDE config store path '%s' is not a string, aborting script opening", path);
 			return false;
 		}
 	} else {
-		LOG_INFO("Creating script: %s", path);
-
 		GPtrArray *path_parts = $(GPtrArray *, store, splitStorePath)(path);
 		Store *last = ide_config;
 
@@ -659,6 +658,8 @@ static bool openScript(char *path)
 		gtk_text_buffer_get_end_iter(buffer, &end);
 
 		gtk_text_buffer_delete(buffer, &start, &end);
+
+		LOG_INFO("Created Lua IDE script: %s", path);
 	}
 
 	if(current_script != NULL) {
@@ -718,7 +719,7 @@ static void saveScript()
 	if(store != NULL && store->type == STORE_STRING) {
 		free(store->content.string);
 		store->content.string = script;
-		LOG_INFO("Saved script: %s", current_script);
+		LOG_INFO("Saved Lua IDE script: %s", current_script);
 	} else {
 		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
 		free(script);
@@ -745,5 +746,34 @@ static void createScript(char *parent)
 			openScript(newpath->str);
 			g_string_free(newpath, true);
 		}
+	}
+}
+
+static void createFolder(char *parent)
+{
+	Store *parentStore = $(Store *, store, getStorePath)(ide_config, parent);
+
+	if(parentStore != NULL && parentStore->type == STORE_ARRAY) {
+		GtkDialog *dialog = GTK_DIALOG(text_input_dialog);
+		gtk_window_set_title(GTK_WINDOW(dialog), "Enter name");
+		gtk_label_set_text(GTK_LABEL(text_input_dialog_label), "Please enter the name of the folder to create:");
+		gtk_entry_set_text(GTK_ENTRY(text_input_dialog_entry), "");
+		int result = gtk_dialog_run(dialog);
+		gtk_widget_hide(GTK_WIDGET(dialog));
+
+		if(result == 1) {
+			const char *entry_name = gtk_entry_get_text(GTK_ENTRY(text_input_dialog_entry));
+			if(entry_name != NULL && strlen(entry_name) > 0) {
+				if($(Store *, store, getStorePath)(parentStore, entry_name) == NULL) { // entry with that name doesn't exist yet
+					LOG_INFO("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
+					g_hash_table_insert(parentStore->content.array, strdup(entry_name), $(Store *, store, createStore()));
+					refreshScriptTree();
+				} else {
+					LOG_ERROR("Tried to create Lua IDE folder with already existing name '%s' in '%s', aborting", entry_name, parent);
+				}
+			}
+		}
+	} else {
+		LOG_ERROR("Failed to create Lua IDE folder in parent config store path '%s': Not a store array", parent);
 	}
 }

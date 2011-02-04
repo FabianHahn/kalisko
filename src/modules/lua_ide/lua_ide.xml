@@ -397,14 +397,17 @@
   <object class="GtkImage" id="image5">
     <property name="visible">True</property>
     <property name="stock">gtk-open</property>
+    <property name="icon-size">1</property>
   </object>
   <object class="GtkImage" id="image6">
     <property name="visible">True</property>
-    <property name="stock">gtk-new</property>
+    <property name="stock">gtk-directory</property>
+    <property name="icon-size">1</property>
   </object>
   <object class="GtkImage" id="image7">
     <property name="visible">True</property>
     <property name="stock">gtk-new</property>
+    <property name="icon-size">1</property>
   </object>
   <object class="GtkMenu" id="script_tree_context_menu_blank">
     <property name="visible">True</property>
@@ -431,11 +434,13 @@
   </object>
   <object class="GtkImage" id="image8">
     <property name="visible">True</property>
-    <property name="stock">gtk-new</property>
+    <property name="stock">gtk-directory</property>
+    <property name="icon-size">1</property>
   </object>
   <object class="GtkImage" id="image9">
     <property name="visible">True</property>
     <property name="stock">gtk-new</property>
+    <property name="icon-size">1</property>
   </object>
   <object class="GtkMenu" id="script_tree_context_menu_script">
     <property name="visible">True</property>

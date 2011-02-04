@@ -11,6 +11,8 @@
       <column type="gint"/>
       <!-- column-name path -->
       <column type="gchararray"/>
+      <!-- column-name icon -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkWindow" id="window">
@@ -364,6 +366,7 @@
         <property name="use_underline">True</property>
         <property name="image">image6</property>
         <property name="use_stock">False</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_folder_new_folder_activate"/>
       </object>
     </child>
     <child>

@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 8, 1);
+MODULE_VERSION(0, 8, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -121,9 +121,10 @@ typedef enum {
 } MessageType;
 
 typedef enum {
-   SCRIPT_TREE_NAME_COLUMN,
-   SCRIPT_TREE_TYPE_COLUMN,
-   SCRIPT_TREE_PATH_COLUMN
+	SCRIPT_TREE_NAME_COLUMN,
+	SCRIPT_TREE_TYPE_COLUMN,
+	SCRIPT_TREE_PATH_COLUMN,
+	SCRIPT_TREE_ICON_COLUMN
 } ScriptTreeColumns;
 
 static void lua_ide_script_input_buffer_changed(GtkTextBuffer *textbuffer, gpointer user_data);
@@ -179,8 +180,13 @@ MODULE_INIT
 
 	refreshScriptTree();
 
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes("Name", renderer, "text", SCRIPT_TREE_NAME_COLUMN, NULL);
+	GtkCellRenderer *rendererPixbuf = gtk_cell_renderer_pixbuf_new();
+	GtkCellRenderer *rendererText = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_start(column, rendererPixbuf, false);
+	gtk_tree_view_column_add_attribute(column, rendererPixbuf, "stock-id", SCRIPT_TREE_ICON_COLUMN);
+	gtk_tree_view_column_pack_start(column, rendererText, true);
+	gtk_tree_view_column_add_attribute(column, rendererText, "text", SCRIPT_TREE_NAME_COLUMN);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(script_tree), column);
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(script_tree));
@@ -342,6 +348,25 @@ API void lua_ide_script_tree_context_menu_blank_new_folder_activate(GtkMenuItem 
 API void lua_ide_script_tree_context_menu_blank_new_script_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
 	createScript("scripts");
+}
+
+API void lua_ide_script_tree_context_menu_folder_new_folder_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		char *path;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+
+		if(type == 0) {
+			createFolder(path);
+		}
+
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
 }
 
 API void lua_ide_script_tree_context_menu_folder_new_script_activate(GtkMenuItem *menuitem, gpointer user_data)
@@ -569,14 +594,14 @@ static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GS
 		g_string_append_printf(subpath, "/%s", key);
 		switch(value->type) {
 			case STORE_ARRAY:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, subpath->str, -1);
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_DIRECTORY, -1);
 
 				do {
 					fillScriptTreeStore(treestore, &child, subpath, value);
 				} while(false);
 			break;
 			case STORE_STRING:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, subpath->str, -1);
+				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_FILE, -1);
 			break;
 			default:
 				LOG_WARNING("Config store value in '%s' has unsupported type when filling Lua IDE script tree, expected array or string - skipping...", subpath->str);

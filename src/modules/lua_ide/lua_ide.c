@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 4);
+MODULE_VERSION(0, 9, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -147,9 +147,7 @@ static void deleteFolder(char *folder);
 
 MODULE_INIT
 {
-	GString *path;
-
-	path = g_string_new($$(char *, getExecutablePath)());
+	GString *path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_ide/lua_ide.xml");
 
 	GtkBuilder *builder = $(GtkBuilder *, gtk+, loadGtkBuilderGui)(path->str);
@@ -798,7 +796,10 @@ static void refreshWindowTitle()
 		g_string_append(title, "*");
 	}
 
-	g_string_append(title, current_script);
+	if(current_script != NULL) {
+		g_string_append(title, current_script);
+	}
+
 	gtk_window_set_title(GTK_WINDOW(window), title->str);
 	g_string_free(title, true);
 }

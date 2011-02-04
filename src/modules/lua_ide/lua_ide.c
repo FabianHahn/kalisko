@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 8, 3);
+MODULE_VERSION(0, 8, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -142,6 +142,7 @@ static void refreshWindowTitle();
 static void saveScript();
 static void createScript(char *parent);
 static void createFolder(char *parent);
+static int strpcmp(const void *p1, const void *p2);
 
 MODULE_INIT
 {
@@ -592,31 +593,53 @@ static void fillScriptTreeStore(GtkTreeStore *treestore, GtkTreeIter *parent, GS
 	GHashTableIter iter;
 	char *key;
 	Store *value;
-
 	g_hash_table_iter_init(&iter, scripts->content.array);
+
+	// create folder and script arrays
+	GPtrArray *folderEntries = g_ptr_array_new();
+	GPtrArray *scriptEntries = g_ptr_array_new();
 	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		if(value->type == STORE_ARRAY) {
+			g_ptr_array_add(folderEntries, key);
+		} else if(value->type == STORE_STRING) {
+			g_ptr_array_add(scriptEntries, key);
+		}
+	}
+
+	// sort them seperately
+	qsort(folderEntries->pdata, folderEntries->len, sizeof(char *), &strpcmp);
+	qsort(scriptEntries->pdata, scriptEntries->len, sizeof(char *), &strpcmp);
+
+	// add sorted folders first
+	for(int i = 0; i < folderEntries->len; i++) {
+		key = folderEntries->pdata[i] ;
+		Store *value = g_hash_table_lookup(scripts->content.array, key);
+
 		GtkTreeIter child;
 		gtk_tree_store_append(treestore, &child, parent);
 
 		GString *subpath = g_string_new(path->str);
 		g_string_append_printf(subpath, "/%s", key);
-		switch(value->type) {
-			case STORE_ARRAY:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_DIRECTORY, -1);
-
-				do {
-					fillScriptTreeStore(treestore, &child, subpath, value);
-				} while(false);
-			break;
-			case STORE_STRING:
-				gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_FILE, -1);
-			break;
-			default:
-				LOG_WARNING("Config store value in '%s' has unsupported type when filling Lua IDE script tree, expected array or string - skipping...", subpath->str);
-			break;
-		}
+		gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 0, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_DIRECTORY, -1);
+		fillScriptTreeStore(treestore, &child, subpath, value);
 		g_string_free(subpath, true);
 	}
+
+	// then add sorted scripts
+	for(int i = 0; i < scriptEntries->len; i++) {
+		key = scriptEntries->pdata[i] ;
+
+		GtkTreeIter child;
+		gtk_tree_store_append(treestore, &child, parent);
+
+		GString *subpath = g_string_new(path->str);
+		g_string_append_printf(subpath, "/%s", key);
+		gtk_tree_store_set(treestore, &child, SCRIPT_TREE_NAME_COLUMN, key, SCRIPT_TREE_TYPE_COLUMN, 1, SCRIPT_TREE_PATH_COLUMN, subpath->str, SCRIPT_TREE_ICON_COLUMN, GTK_STOCK_FILE, -1);
+		g_string_free(subpath, true);
+	}
+
+	g_ptr_array_free(folderEntries, true);
+	g_ptr_array_free(scriptEntries, true);
 }
 
 static bool openScript(char *path)
@@ -752,6 +775,7 @@ static void saveScript()
 	if(store != NULL && store->type == STORE_STRING) {
 		free(store->content.string);
 		store->content.string = script;
+		$(void, config, saveWritableConfig)();
 		LOG_INFO("Saved Lua IDE script: %s", current_script);
 	} else {
 		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
@@ -810,3 +834,9 @@ static void createFolder(char *parent)
 		LOG_ERROR("Failed to create Lua IDE folder in parent config store path '%s': Not a store array", parent);
 	}
 }
+
+static int strpcmp(const void *p1, const void *p2)
+{
+	return strcmp(* (char * const *) p1, * (char * const *) p2);
+}
+

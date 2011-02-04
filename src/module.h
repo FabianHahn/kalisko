@@ -71,6 +71,8 @@ API bool isModuleRequested(const char *name);
 API bool requestModule(char *name);
 API bool revokeModule(char *name);
 API bool forceUnloadModule(char *name);
+API bool addModuleRuntimeDependency(char *source, char *target);
+API bool checkModuleDependency(char *source, char *target);
 
 #define MODULE_NAME_FUNC "module_name"
 #define MODULE_AUTHOR_FUNC "module_author"

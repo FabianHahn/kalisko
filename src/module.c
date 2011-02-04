@@ -51,6 +51,7 @@ static GHashTable *modules;
 static Module *core;
 static char *modpath = NULL;
 
+static bool checkModuleDependencyByModule(Module *source, Module *target);
 static bool needModule(char *name, Version *needver, Module *parent);
 static void unneedModule(void *name_p, void *mod_p, void *parent_p);
 static bool unneedModuleWrapper(void *name_p, void *mod_p, void *parent_p);
@@ -439,6 +440,98 @@ API bool forceUnloadModule(char *name)
 	} else { // We got freed in the process, that's fine too
 		return true;
 	}
+}
+
+/**
+ * Adds a runtime dependency from one module to another. It isn't possible to add circular dependencies, and once a runtime dependency is set, it cannot be removed manually and remains effective until the source module is revoked
+ *
+ * @param source		the name of the module to add the runtime dependency to
+ * @param target		the name of the target dependency module
+ * @result				true if successful
+ */
+API bool addModuleRuntimeDependency(char *source, char *target)
+{
+	Module *srcmod = g_hash_table_lookup(modules, source);
+	if(srcmod == NULL) {
+		logMessage("core", LOG_TYPE_ERROR, "Failed to add runtime dependency to module '%s': No such module loaded", source);
+		return false;
+	}
+
+	Module *destmod = g_hash_table_lookup(modules, target);
+	if(destmod == NULL) {
+		logMessage("core", LOG_TYPE_ERROR, "Failed to add runtime dependency on module '%s': No such module loaded", target);
+		return false;
+	}
+
+	if(checkModuleDependencyByModule(srcmod, destmod)) { // src already depends on dest
+		logMessage("core", LOG_TYPE_WARNING, "Trying to add already existing runtime dependency from module '%s' to '%s', skipping", source, target);
+		return true;
+	}
+
+	if(checkModuleDependencyByModule(destmod, srcmod)) { // dest already depends on src
+		logMessage("core", LOG_TYPE_ERROR, "Trying to add circular runtime dependency from module '%s' to '%s', aborting", source, target);
+		return false;
+	}
+
+	// Add dependency
+	g_hash_table_insert(srcmod->dependencies, destmod->name, destmod);
+	// Add reverse dependency
+	g_hash_table_insert(destmod->rdeps, srcmod->name, srcmod);
+
+	logMessage("core", LOG_TYPE_INFO, "Added runtime dependency from module '%s' to '%s'", source, target);
+	return true;
+}
+
+/**
+ * Checks if a module depends on another module
+ *
+ * @param source		the source module to check for a dependency
+ * @param target		the target module to check for a dependency
+ * @result				true if source depends on target (directly or indirectly)
+ */
+API bool checkModuleDependency(char *source, char *target)
+{
+	Module *srcmod = g_hash_table_lookup(modules, source);
+	if(srcmod == NULL) {
+		logMessage("core", LOG_TYPE_ERROR, "Failed to check dependency for module '%s': No such module loaded", source);
+		return false;
+	}
+
+	Module *destmod = g_hash_table_lookup(modules, target);
+	if(destmod == NULL) {
+		logMessage("core", LOG_TYPE_ERROR, "Failed to check dependency on module '%s': No such module loaded", target);
+		return false;
+	}
+
+	return checkModuleDependencyByModule(srcmod, destmod);
+}
+
+/**
+ * Checks if a module depends on another module by directly specifying the module objects
+ *
+ * @param source		the source module to check for a dependency
+ * @param target		the target module to check for a dependency
+ * @result				true if source depends on target (directly or indirectly)
+ */
+static bool checkModuleDependencyByModule(Module *source, Module *target)
+{
+	GHashTableIter iter;
+	char *name;
+	Module *module;
+	g_hash_table_iter_init(&iter, source->dependencies);
+	while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &module)) {
+		if(module == target) { // one of the listed dependencies is our target module
+			return true;
+		}
+
+		// This isn't the target, but the target could be among these module's dependencies
+		if(checkModuleDependencyByModule(module, target)) { // check recursively
+			return true;
+		}
+	}
+
+	// No dependency found
+	return false;
 }
 
 /**

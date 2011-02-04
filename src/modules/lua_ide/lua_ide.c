@@ -31,7 +31,6 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/gtk+/builder.h"
 #include "modules/lua/module_lua.h"
-#include "modules/module_util/module_util.h"
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
@@ -40,9 +39,9 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 8, 4);
+MODULE_VERSION(0, 8, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
 /**
  * The GTK root widget for the IDE
@@ -254,13 +253,13 @@ MODULE_FINALIZE
 
 API gboolean lua_ide_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-	$(void, module_util, safeRevokeModule)("lua_ide");
+	$$(void, exitGracefully)();
 	return true;
 }
 
 API void lua_ide_menu_quit_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
-	$(void, module_util, safeRevokeModule)("lua_ide");
+	$$(void, exitGracefully)();
 }
 
 API void lua_ide_menu_run_activate(GtkMenuItem *menuitem, gpointer user_data)

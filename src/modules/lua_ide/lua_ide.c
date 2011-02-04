@@ -39,9 +39,9 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 3);
+MODULE_VERSION(0, 9, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
 /**
  * The GTK root widget for the IDE

@@ -120,6 +120,7 @@ for prefix, env, buildtests in targets:
 	if buildtests:
 		# Build tester core
 		core = env.Clone()
+		core.Append(CPPDEFINES = ['DISABLE_LOG_DEFAULT'])
 		corefiles = [x for x in core.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
 		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
 	

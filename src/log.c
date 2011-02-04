@@ -115,6 +115,7 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 
 static void defaultLogHandler(const char *name, LogType type, const char *message)
 {
+#ifndef DISABLE_LOG_DEFAULT
 	GDateTime *now = g_date_time_new_now_local();
 
 	char *typestr = NULL;
@@ -139,4 +140,6 @@ static void defaultLogHandler(const char *name, LogType type, const char *messag
 
 	g_date_time_unref(now);
 	fflush(stderr);
+#endif
 }
+

@@ -30,8 +30,6 @@
 #include "test.h"
 #include "memory_alloc.h"
 
-static void nullLogHandler(const char *module, LogType type, const char *message);
-
 static int test = 0;
 static int passed = 0;
 static int count = 0;
@@ -46,10 +44,6 @@ int main(int argc, char **argv)
 	initTimers();
 	initLog();
 	initModules();
-
-#ifndef TEST_LOG_DEFAULT
-	setLogHandler(&nullLogHandler);
-#endif
 
 	printf("Running test cases...\n");
 
@@ -139,16 +133,4 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 	}
 
 	count++;
-}
-
-/**
- * Log handler that logs does nothing
- *
- * @param module	the module in which the log message occured
- * @param type		the log type of the message
- * @param message	the log message
- */
-static void nullLogHandler(const char *module, LogType type, const char *message)
-{
-	// Do nothing
 }

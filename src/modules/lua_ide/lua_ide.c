@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 8, 5);
+MODULE_VERSION(0, 9, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -142,6 +142,8 @@ static void saveScript();
 static void createScript(char *parent);
 static void createFolder(char *parent);
 static int strpcmp(const void *p1, const void *p2);
+static void deleteScript(char *script);
+static void deleteFolder(char *folder);
 
 MODULE_INIT
 {
@@ -321,7 +323,11 @@ API void lua_ide_script_tree_context_menu_script_open_activate(GtkMenuItem *menu
 		int type;
 		char *path;
 		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
-		openScript(path); // open the script
+
+		if(type == 1) {
+			openScript(path); // open the script
+		}
+
 		gtk_tree_path_free(tree_path); // not used anymore
 		tree_path = NULL;
 	}
@@ -381,6 +387,44 @@ API void lua_ide_script_tree_context_menu_folder_new_script_activate(GtkMenuItem
 
 		if(type == 0) {
 			createScript(path);
+		}
+
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
+}
+
+API void lua_ide_script_tree_context_menu_script_delete_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		char *path;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+
+		if(type == 1) {
+			deleteScript(path); // open the script
+		}
+
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
+}
+
+API void lua_ide_script_tree_context_menu_folder_delete_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		char *path;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+
+		if(type == 0) {
+			deleteFolder(path);
 		}
 
 		gtk_tree_path_free(tree_path); // not used anymore
@@ -832,6 +876,43 @@ static void createFolder(char *parent)
 	} else {
 		LOG_ERROR("Failed to create Lua IDE folder in parent config store path '%s': Not a store array", parent);
 	}
+}
+
+static void deleteScript(char *script)
+{
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "Do you really want to delete the script '%s'?", script);
+	gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Cancel", 0, "_Delete", 1, NULL);
+	int result = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+
+	if(result != 1) { // Abort selected, don't delete
+		return;
+	}
+
+	$(bool, store, deleteStorePath)(ide_config, script);
+	refreshScriptTree();
+	LOG_INFO("Deleted Lua IDE script: %s", script);
+
+	if(g_strcmp0(script, current_script) == 0) {
+		script_changed = false;
+		openScript("scripts/default");
+	}
+}
+
+static void deleteFolder(char *folder)
+{
+	GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "Do you really want to delete the folder '%s' with all its contents?", folder);
+	gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Cancel", 0, "_Delete", 1, NULL);
+	int result = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+
+	if(result != 1) { // Abort selected, don't delete
+		return;
+	}
+
+	$(bool, store, deleteStorePath)(ide_config, folder);
+	refreshScriptTree();
+	LOG_INFO("Deleted Lua IDE folder: %s", folder);
 }
 
 static int strpcmp(const void *p1, const void *p2)

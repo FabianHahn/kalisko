@@ -379,6 +379,20 @@
         <signal name="activate" handler="lua_ide_script_tree_context_menu_folder_new_script_activate"/>
       </object>
     </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="script_tree_context_menu_folder_seperator2">
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_delete">
+        <property name="label">gtk-delete</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_folder_delete_activate"/>
+      </object>
+    </child>
   </object>
   <object class="GtkImage" id="image5">
     <property name="visible">True</property>
@@ -432,6 +446,20 @@
         <property name="use_underline">True</property>
         <property name="use_stock">True</property>
         <signal name="activate" handler="lua_ide_script_tree_context_menu_script_open_activate"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem" id="script_tree_context_menu_script_separator">
+        <property name="visible">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkImageMenuItem" id="script_tree_context_menu_script_delete">
+        <property name="label">gtk-delete</property>
+        <property name="visible">True</property>
+        <property name="use_underline">True</property>
+        <property name="use_stock">True</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_script_delete_activate"/>
       </object>
     </child>
   </object>

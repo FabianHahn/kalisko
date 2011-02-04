@@ -35,7 +35,7 @@ function KaliskoModule:getName()
 end
 
 function KaliskoModule:isLoaded()
-	return isModuleLoaded({module = self.name}).loaded > 0
+	return isModuleLoaded({module = self.name}).loaded ~= 0
 end
 
 function KaliskoModule:getAuthor()
@@ -79,7 +79,7 @@ function KaliskoModule:getReverseDependencies()
 end
 
 function KaliskoModule:request()
-	requestModule({module = self.name})
+	return requestModule({module = self.name}).success ~= 0
 end
 
 function KaliskoModule:revoke()

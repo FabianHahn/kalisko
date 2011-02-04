@@ -38,7 +38,7 @@
 MODULE_NAME("xcall_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module which offers an XCall API to the Kalisko Core");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 4, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("module_util", 0, 2, 0));
 
@@ -212,6 +212,7 @@ static void listener_xcallLog(void *subject, const char *event, void *data, va_l
 
 	logExecuting = true;
 
+	char *module = va_arg(args, char *);
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 	char *listener = data;
@@ -235,6 +236,7 @@ static void listener_xcallLog(void *subject, const char *event, void *data, va_l
 		break;
 	}
 
+	$(bool, store, setStorePath)(xcall, "module", $(Store *, store, createStoreStringValue)(module));
 	$(bool, store, setStorePath)(xcall, "message", $(Store *, store, createStoreStringValue)(message));
 
 	Store *ret = $(Store *, xcall, invokeXCall)(xcall);

@@ -477,8 +477,10 @@ API bool addModuleRuntimeDependency(char *source, char *target)
 	g_hash_table_insert(srcmod->dependencies, destmod->name, destmod);
 	// Add reverse dependency
 	g_hash_table_insert(destmod->rdeps, srcmod->name, srcmod);
+	// Increase reference count
+	destmod->rc++;
 
-	logMessage("core", LOG_TYPE_INFO, "Added runtime dependency from module '%s' to '%s'", source, target);
+	logMessage("core", LOG_TYPE_INFO, "Added runtime dependency from module '%s' to '%s', now needed by %d %s", source, target, destmod->rc, destmod->rc > 1 ? "dependencies" : "dependency");
 	return true;
 }
 

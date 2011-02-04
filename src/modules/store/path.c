@@ -36,7 +36,7 @@
  * @param path		the path to the value without a leading / to search, use integers from base 0 for list elements
  * @result			the store value, or NULL if not found
  */
-API Store *getStorePath(Store *parent, char *path)
+API Store *getStorePath(Store *parent, const char *path)
 {
 	if(strlen(path) == 0) { // empty path means the parent itself
 		return parent;
@@ -44,7 +44,7 @@ API Store *getStorePath(Store *parent, char *path)
 
 	GString *pathnode = g_string_new("");
 	bool escaping = false;
-	char *iter;
+	const char *iter;
 
 	for(iter = path; *iter != '\0'; iter++) { // Read until next unescaped slash or end
 		if(*iter == '/') {

@@ -40,7 +40,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 7, 2);
+MODULE_VERSION(0, 8, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -78,6 +78,21 @@ static GtkWidget *script_tree_context_menu_script;
  * The script tree context menu blank widget for the IDE
  */
 static GtkWidget *script_tree_context_menu_blank;
+
+/**
+ * The text input dialog widget for the IDE
+ */
+static GtkWidget *text_input_dialog;
+
+/**
+ * The text input dialog label widget for the IDE
+ */
+static GtkWidget *text_input_dialog_label;
+
+/**
+ * The text input dialog entry widget for the IDE
+ */
+static GtkWidget *text_input_dialog_entry;
 
 /**
  * The IDE's config store
@@ -124,6 +139,7 @@ static bool openScript(char *path);
 static void refreshScriptTree();
 static void refreshWindowTitle();
 static void saveScript();
+static void createScript(char *parent);
 
 MODULE_INIT
 {
@@ -148,6 +164,9 @@ MODULE_INIT
 	script_tree_context_menu_folder = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_folder"));
 	script_tree_context_menu_script = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_script"));
 	script_tree_context_menu_blank = GTK_WIDGET(gtk_builder_get_object(builder, "script_tree_context_menu_blank"));
+	text_input_dialog = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog"));
+	text_input_dialog_label = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog_label"));
+	text_input_dialog_entry = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog_entry"));
 
 	// script tree
 	Store *config = $(Store *, config, getWritableConfig)();
@@ -314,6 +333,35 @@ API void lua_ide_script_tree_context_menu_folder_toggle_activate(GtkMenuItem *me
 	}
 }
 
+API void lua_ide_script_tree_context_menu_blank_new_folder_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+
+}
+
+API void lua_ide_script_tree_context_menu_blank_new_script_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	createScript("scripts");
+}
+
+API void lua_ide_script_tree_context_menu_folder_new_script_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	if(tree_path != NULL) {
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(script_tree));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, tree_path);
+		int type;
+		char *path;
+		gtk_tree_model_get(model, &iter, SCRIPT_TREE_TYPE_COLUMN, &type, SCRIPT_TREE_PATH_COLUMN, &path, -1);
+
+		if(type == 0) {
+			createScript(path);
+		}
+
+		gtk_tree_path_free(tree_path); // not used anymore
+		tree_path = NULL;
+	}
+}
+
 API void lua_ide_script_tree_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
 {
 	GtkTreeSelection *select = gtk_tree_view_get_selection(tree_view);
@@ -399,6 +447,7 @@ static void finalize()
 	lua_setglobal(state, "output");
 
 	gtk_widget_destroy(GTK_WIDGET(window));
+	gtk_widget_destroy(GTK_WIDGET(text_input_dialog));
 }
 
 static void runScript()
@@ -540,16 +589,16 @@ static bool openScript(char *path)
 {
 	if(current_script != NULL && script_changed) {
 		GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "The currently opened script '%s' contains unsaved changes.\nDo you want to save it first?", current_script);
-		gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Save", 0, "_Don't save", 1, "_Cancel", 2, NULL);
+		gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Cancel", 0, "_Don't save", 1, "_Save", 2, NULL);
 		int result = gtk_dialog_run(GTK_DIALOG(dialog));
 
-		if(result == 0) {
+		if(result == 2) {
 			saveScript();
 		}
 
 		gtk_widget_destroy(dialog);
 
-		if(result == 2) { // Abort selected, don't open new file
+		if(result == 0) { // Abort selected, don't open new file
 			return false;
 		}
 	}
@@ -602,6 +651,14 @@ static bool openScript(char *path)
 		$(bool, store, setStorePath)(last, path_parts->pdata[path_parts->len-1], $(Store *, store, createStoreStringValue)(""));
 
 		refreshScriptTree();
+
+		GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
+		GtkTextIter start;
+		gtk_text_buffer_get_start_iter(buffer, &start);
+		GtkTextIter end;
+		gtk_text_buffer_get_end_iter(buffer, &end);
+
+		gtk_text_buffer_delete(buffer, &start, &end);
 	}
 
 	if(current_script != NULL) {
@@ -669,4 +726,24 @@ static void saveScript()
 
 	script_changed = false;
 	refreshWindowTitle();
+}
+
+static void createScript(char *parent)
+{
+	GtkDialog *dialog = GTK_DIALOG(text_input_dialog);
+	gtk_window_set_title(GTK_WINDOW(dialog), "Enter name");
+	gtk_label_set_text(GTK_LABEL(text_input_dialog_label), "Please enter the name of the script to create:");
+	gtk_entry_set_text(GTK_ENTRY(text_input_dialog_entry), "");
+	int result = gtk_dialog_run(dialog);
+	gtk_widget_hide(GTK_WIDGET(dialog));
+
+	if(result == 1) {
+		const char *entry_name = gtk_entry_get_text(GTK_ENTRY(text_input_dialog_entry));
+		if(entry_name != NULL && strlen(entry_name) > 0) {
+			GString *newpath = g_string_new(parent);
+			g_string_append_printf(newpath, "/%s", entry_name);
+			openScript(newpath->str);
+			g_string_free(newpath, true);
+		}
+	}
 }

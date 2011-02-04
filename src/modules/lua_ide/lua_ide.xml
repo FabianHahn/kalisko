@@ -359,7 +359,7 @@
     </child>
     <child>
       <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_new_folder">
-        <property name="label" translatable="yes">New _folder</property>
+        <property name="label" translatable="yes">New _Folder</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="image">image6</property>
@@ -368,11 +368,12 @@
     </child>
     <child>
       <object class="GtkImageMenuItem" id="script_tree_context_menu_folder_new_script">
-        <property name="label" translatable="yes">New _script</property>
+        <property name="label" translatable="yes">New _Script</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="image">image7</property>
         <property name="use_stock">False</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_folder_new_script_activate"/>
       </object>
     </child>
   </object>
@@ -392,20 +393,22 @@
     <property name="visible">True</property>
     <child>
       <object class="GtkImageMenuItem" id="script_tree_context_menu_blank_new_folder">
-        <property name="label" translatable="yes">New _folder</property>
+        <property name="label" translatable="yes">New _Folder</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="image">image8</property>
         <property name="use_stock">False</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_blank_new_folder_activate"/>
       </object>
     </child>
     <child>
       <object class="GtkImageMenuItem" id="script_tree_context_menu_blank_new_script">
-        <property name="label" translatable="yes">New _script</property>
+        <property name="label" translatable="yes">New _Script</property>
         <property name="visible">True</property>
         <property name="use_underline">True</property>
         <property name="image">image9</property>
         <property name="use_stock">False</property>
+        <signal name="activate" handler="lua_ide_script_tree_context_menu_blank_new_script_activate"/>
       </object>
     </child>
   </object>
@@ -428,5 +431,81 @@
         <signal name="activate" handler="lua_ide_script_tree_context_menu_script_open_activate"/>
       </object>
     </child>
+  </object>
+  <object class="GtkDialog" id="text_input_dialog">
+    <property name="border_width">5</property>
+    <property name="window_position">center</property>
+    <property name="type_hint">normal</property>
+    <child internal-child="vbox">
+      <object class="GtkVBox" id="dialog-vbox1">
+        <property name="visible">True</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkLabel" id="text_input_dialog_label">
+            <property name="visible">True</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="text_input_dialog_entry">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="invisible_char">&#x25CF;</property>
+            <property name="activates_default">True</property>
+          </object>
+          <packing>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child internal-child="action_area">
+          <object class="GtkHButtonBox" id="dialog-action_area1">
+            <property name="visible">True</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="text_input_dialog_cancel_button">
+                <property name="label">gtk-cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="text_input_dialog_ok_button">
+                <property name="label">gtk-ok</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">text_input_dialog_cancel_button</action-widget>
+      <action-widget response="1">text_input_dialog_ok_button</action-widget>
+    </action-widgets>
   </object>
 </interface>

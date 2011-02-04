@@ -32,7 +32,7 @@
 MODULE_NAME("gtk+");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Basic module for GTK+ bases Kalisko modules.");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 

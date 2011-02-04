@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 1);
+MODULE_VERSION(0, 9, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -748,6 +748,7 @@ static bool openScript(char *path)
 
 		$(bool, store, setStorePath)(last, path_parts->pdata[path_parts->len-1], $(Store *, store, createStoreStringValue)(""));
 
+		$(void, config, saveWritableConfig)(); // write back to disk
 		refreshScriptTree();
 
 		GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
@@ -818,7 +819,7 @@ static void saveScript()
 	if(store != NULL && store->type == STORE_STRING) {
 		free(store->content.string);
 		store->content.string = script;
-		$(void, config, saveWritableConfig)();
+		$(void, config, saveWritableConfig)(); // write back to disk
 		LOG_INFO("Saved Lua IDE script: %s", current_script);
 	} else {
 		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
@@ -867,6 +868,7 @@ static void createFolder(char *parent)
 				if($(Store *, store, getStorePath)(parentStore, entry_name) == NULL) { // entry with that name doesn't exist yet
 					LOG_INFO("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
 					g_hash_table_insert(parentStore->content.array, strdup(entry_name), $(Store *, store, createStore()));
+					$(void, config, saveWritableConfig)(); // write back to disk
 					refreshScriptTree();
 				} else {
 					LOG_ERROR("Tried to create Lua IDE folder with already existing name '%s' in '%s', aborting", entry_name, parent);
@@ -890,6 +892,7 @@ static void deleteScript(char *script)
 	}
 
 	$(bool, store, deleteStorePath)(ide_config, script);
+	$(void, config, saveWritableConfig)(); // write back to disk
 	refreshScriptTree();
 	LOG_INFO("Deleted Lua IDE script: %s", script);
 
@@ -911,6 +914,7 @@ static void deleteFolder(char *folder)
 	}
 
 	$(bool, store, deleteStorePath)(ide_config, folder);
+	$(void, config, saveWritableConfig)(); // write back to disk
 	refreshScriptTree();
 	LOG_INFO("Deleted Lua IDE folder: %s", folder);
 }

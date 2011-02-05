@@ -24,4 +24,16 @@
 #include "modules/mesh/mesh.h"
 #include <GL/glew.h>
 
+/**
+ * Struct to represent a scene that can be displayed and interaced with
+ */
+typedef struct{
+	/** The meshes associated with this scene */
+	GHashTable *meshes;
+	/**	The models associated with this scene */
+	GQueue *models;
+} Scene;
+
+API Scene *createSceneByStore(Store *store);
+
 #endif

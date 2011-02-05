@@ -43,12 +43,22 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLMeshByPointer(void *mesh_p);
-static void freeGHashTableByPointer(void *hashtable_p);
+static void freeSceneParameterByPointer(void *parameter_p);
+
+/**
+ * Struct that represents a scene parameter which can then be used in OpenGL uniforms
+ */
+typedef struct {
+	/** The type of the scene parameter */
+	OpenGLUniformType type;
+	/** The content of the scene parameter */
+	OpenGLUniformContent content;
+} SceneParameter;
 
 MODULE_INIT
 {
@@ -69,7 +79,7 @@ MODULE_FINALIZE
 API Scene *createSceneByStore(Store *store)
 {
 	Scene *scene = ALLOCATE_OBJECT(Scene);
-	scene->materials = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeGHashTableByPointer);
+	scene->parameters = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSceneParameterByPointer);
 	scene->meshes = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLMeshByPointer);
 	scene->models = g_queue_new();
 
@@ -101,6 +111,56 @@ API Scene *createSceneByStore(Store *store)
 			} else {
 				LOG_WARNING("Failed to read mesh path for model '%s' when creating scene by store, skipping", key);
 				continue;
+			}
+		}
+	} else {
+		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
+	}
+
+	// read parameters
+	Store *parameters = $(Store *, store, getStorePath)(store, "parameters");
+	if(parameters != NULL && parameters->type == STORE_ARRAY) {
+		GHashTableIter iter;
+		char *key;
+		Store *value;
+		g_hash_table_iter_init(&iter, parameters->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+			SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
+
+			switch(value->type) {
+				case STORE_INTEGER:
+					parameter->type = OPENGL_UNIFORM_INT;
+					parameter->content.int_value = value->content.integer;
+				break;
+				case STORE_FLOAT_NUMBER:
+					parameter->type = OPENGL_UNIFORM_FLOAT;
+					parameter->content.float_value = value->content.float_number;
+				break;
+				case STORE_LIST:
+					if(g_queue_get_length(value->content.list) > 0) {
+						Store *firstelement = value->content.list->head->data;
+						if(firstelement->type == STORE_LIST) { // assume matrix
+							parameter->type = OPENGL_UNIFORM_MATRIX;
+							parameter->content.matrix_value = $(Vector *, linalg, convertStoreToMatrix)(value);
+						} else { // assume vector
+							parameter->type = OPENGL_UNIFORM_VECTOR;
+							parameter->content.vector_value = $(Vector *, linalg, convertStoreToVector)(value);
+						}
+					} else {
+						parameter->type = OPENGL_UNIFORM_VECTOR;
+						parameter->content.vector_value = $(Vector *, linalg, createVector)(0);
+					}
+				break;
+				default:
+					free(parameter);
+					parameter = NULL;
+					LOG_WARNING("Expected integer, float, vector or matrix value as parameter in 'parameters/%s' when creating scene by store, skipping", key);
+				break;
+			}
+
+			if(parameter != NULL) {
+				g_hash_table_insert(scene->parameters, strdup(key), parameter);
+				LOG_DEBUG("Added scene parameter '%s'", key);
 			}
 		}
 	} else {
@@ -284,8 +344,8 @@ API void freeScene(Scene *scene)
 		free(model);
 	}
 
-	// free materials
-	g_hash_table_destroy(scene->materials);
+	// free parameters
+	g_hash_table_destroy(scene->parameters);
 
 	// free meshes
 	g_hash_table_destroy(scene->meshes);
@@ -305,12 +365,24 @@ static void freeOpenGLMeshByPointer(void *mesh_p)
 }
 
 /**
- * Frees an GHashTable
+ * Frees a scene parameter
  *
- * @param hashtable_p		a pointer to the GHashTable to be freed
+ * @param parameter_p		a pointer to the scene parameter to be freed
  */
-static void freeGHashTableByPointer(void *hashtable_p)
+static void freeSceneParameterByPointer(void *parameter_p)
 {
-	GHashTable *hashtable = (GHashTable *) hashtable_p;
-	g_hash_table_destroy(hashtable);
+	SceneParameter *parameter = parameter_p;
+	switch(parameter->type) {
+		case OPENGL_UNIFORM_VECTOR:
+			$(void, linalg, freeVector)(parameter->content.vector_value);
+		break;
+		case OPENGL_UNIFORM_MATRIX:
+			$(void, linalg, freeMatrix)(parameter->content.matrix_value);
+		break;
+		default:
+			// nothing to free
+		break;
+	}
+
+	free(parameter);
 }

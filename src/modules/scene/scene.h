@@ -29,8 +29,8 @@
  * Struct to represent a scene that can be displayed and interaced with
  */
 typedef struct {
-	/** The materials associated with this scene */
-	GHashTable *materials;
+	/** The parameters associated with this scene */
+	GHashTable *parameters;
 	/** The meshes associated with this scene */
 	GHashTable *meshes;
 	/**	The models associated with this scene */

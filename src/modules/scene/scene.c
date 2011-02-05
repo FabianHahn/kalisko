@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -145,6 +145,42 @@ API Scene *createSceneByStore(Store *store)
 				$(void, linalg, freeVector)(translation);
 			} else {
 				LOG_WARNING("Failed to read translation for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set rotationX
+			Store *rotationX = $(Store *, store, getStorePath)(value, "rotationX");
+			if(rotationX != NULL && rotationX->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelRotationX)(key, rotationX->content.float_number)) {
+					LOG_DEBUG("Set X rotation for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set X rotation for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read X rotation for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set rotationY
+			Store *rotationY = $(Store *, store, getStorePath)(value, "rotationY");
+			if(rotationY != NULL && rotationY->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelRotationY)(key, rotationY->content.float_number)) {
+					LOG_DEBUG("Set Y rotation for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set Y rotation for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read Y rotation for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set rotationZ
+			Store *rotationZ = $(Store *, store, getStorePath)(value, "rotationZ");
+			if(rotationZ != NULL && rotationZ->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelRotationZ)(key, rotationZ->content.float_number)) {
+					LOG_DEBUG("Set Z rotation for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set Z rotation for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read Z rotation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// add model name to models list

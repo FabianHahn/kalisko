@@ -33,6 +33,7 @@
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
+#include "modules/linalg/store.h"
 #include "modules/mesh/io.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
@@ -42,9 +43,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLMeshByPointer(void *mesh_p);
 
@@ -112,6 +113,7 @@ API Scene *createSceneByStore(Store *store)
 				continue;
 			}
 
+			// set mesh
 			Store *modelmesh = $(Store *, store, getStorePath)(value, "mesh");
 			if(modelmesh != NULL && modelmesh->type == STORE_STRING) {
 				char *meshname = modelmesh->content.string;
@@ -122,15 +124,27 @@ API Scene *createSceneByStore(Store *store)
 						LOG_DEBUG("Added mesh '%s' to model '%s'", meshname, key);
 					} else {
 						LOG_WARNING("Failed to attach mesh '%s' to model '%s' when creating scene by store, skipping", meshname, key);
-						continue;
 					}
 				} else {
 					LOG_WARNING("Failed to add mesh '%s' to model '%s' when creating scene by store: No such model - skipping", meshname, key);
-					continue;
 				}
 			} else {
 				LOG_WARNING("Failed to read mesh for model '%s' when creating scene by store, skipping", key);
-				continue;
+			}
+
+			// set translation
+			Store *modeltranslation = $(Store *, store, getStorePath)(value, "translation");
+			if(modeltranslation != NULL && modeltranslation->type == STORE_LIST) {
+				Vector *translation = $(Vector *, linalg, convertStoreToVector)(modeltranslation);
+				if($(bool, opengl, setOpenGLModelTranslation)(key, translation)) {
+					LOG_DEBUG("Set translation for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set translation for model '%s' when creating scene by store, skipping", key);
+				}
+
+				$(void, linalg, freeVector)(translation);
+			} else {
+				LOG_WARNING("Failed to read translation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// add model name to models list

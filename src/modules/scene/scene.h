@@ -21,13 +21,16 @@
 #ifndef SCENE_SCENE_H
 #define SCENE_SCENE_H
 
-#include "modules/mesh/mesh.h"
+#include <glib.h>
 #include <GL/glew.h>
+#include "modules/mesh/mesh.h"
 
 /**
  * Struct to represent a scene that can be displayed and interaced with
  */
-typedef struct{
+typedef struct {
+	/** The materials associated with this scene */
+	GHashTable *materials;
 	/** The meshes associated with this scene */
 	GHashTable *meshes;
 	/**	The models associated with this scene */

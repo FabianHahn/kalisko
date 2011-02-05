@@ -43,11 +43,12 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLMeshByPointer(void *mesh_p);
+static void freeGHashTableByPointer(void *hashtable_p);
 
 MODULE_INIT
 {
@@ -68,6 +69,7 @@ MODULE_FINALIZE
 API Scene *createSceneByStore(Store *store)
 {
 	Scene *scene = ALLOCATE_OBJECT(Scene);
+	scene->materials = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeGHashTableByPointer);
 	scene->meshes = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLMeshByPointer);
 	scene->models = g_queue_new();
 
@@ -79,25 +81,95 @@ API Scene *createSceneByStore(Store *store)
 		Store *value;
 		g_hash_table_iter_init(&iter, meshes->content.array);
 		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
-			char *meshpath = value->content.string;
-			Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(meshpath);
-			if(mesh != NULL) {
-				OpenGLMesh *openGLMesh;
+			if(value->type == STORE_STRING) {
+				char *meshpath = value->content.string;
+				Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(meshpath);
+				if(mesh != NULL) {
+					OpenGLMesh *openGLMesh;
 
-				if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh(mesh, GL_STATIC_DRAW))) != NULL) {
-					g_hash_table_insert(scene->meshes, strdup(key), openGLMesh);
-					LOG_DEBUG("Added mesh '%s' to scene", key);
+					if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh(mesh, GL_STATIC_DRAW))) != NULL) {
+						g_hash_table_insert(scene->meshes, strdup(key), openGLMesh);
+						LOG_DEBUG("Added mesh '%s' to scene", key);
+					} else {
+						LOG_WARNING("Failed to create OpenGLMesh from mesh '%s' when creating scene by store, skipping", key);
+						continue;
+					}
 				} else {
-					LOG_WARNING("Failed to create OpenGLMesh from mesh '%s' when creating scene by store, skipping", key);
+					LOG_WARNING("Failed to read mesh from file for model '%s' when creating scene by store, skipping", key);
 					continue;
 				}
 			} else {
-				LOG_WARNING("Failed to read mesh for model '%s' when creating scene by store, skipping", key);
+				LOG_WARNING("Failed to read mesh path for model '%s' when creating scene by store, skipping", key);
 				continue;
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping model loading");
+		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
+	}
+
+	// read materials
+	Store *materials = $(Store *, store, getStorePath)(store, "materials");
+	if(materials != NULL && materials->type == STORE_ARRAY) {
+		GHashTableIter iter;
+		char *key;
+		Store *value;
+		g_hash_table_iter_init(&iter, materials->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+			if(value->type != STORE_ARRAY) {
+				LOG_WARNING("Expected array store value in 'materials/%s' when creating scene by store, skipping", key);
+				continue;
+			}
+
+			if(!$(bool, opengl, createOpenGLMaterial)(key)) {
+				LOG_WARNING("Failed to create OpenGL material '%s' when creatig scene by store, skipping", key);
+				break;
+			}
+
+			// vertex shader
+			Store *vertexShaderFile = $(Store *, store, getStorePath)(value, "vertex_shader");
+			if(vertexShaderFile != NULL && vertexShaderFile->type == STORE_STRING) {
+				GLuint vertexShader;
+
+				if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile->content.string, GL_VERTEX_SHADER)) != 0) {
+					// fragment shader
+					Store *fragmentShaderFile = $(Store *, store, getStorePath)(value, "fragment_shader");
+					if(fragmentShaderFile != NULL && fragmentShaderFile->type == STORE_STRING) {
+						GLuint fragmentShader;
+
+						if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile->content.string, GL_FRAGMENT_SHADER)) != 0) {
+							// shader program
+							GLuint program;
+
+							if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, false)) != 0) {
+								if($(bool, opengl, attachOpenGLMaterialShaderProgram)(key, program)) {
+									LOG_DEBUG("Added shader program to material '%s'", key);
+								} else {
+									LOG_WARNING("Failed to attach shader program to material '%s' when creatig scene by store, skipping", key);
+									glDeleteProgram(program);
+								}
+							} else {
+								LOG_WARNING("Failed to create shader program for material '%s' when creatig scene by store, skipping", key);
+							}
+
+							glDeleteShader(vertexShader);
+							glDeleteShader(fragmentShader);
+						} else {
+							LOG_WARNING("Failed to read fragment shader from '%s', for material '%s' when creatig scene by store, skipping", fragmentShaderFile->content.string, key);
+							glDeleteShader(vertexShader);
+						}
+					} else {
+						LOG_WARNING("Failed to read fragment shader path for material '%s' when creatig scene by store, skipping", key);
+						glDeleteShader(vertexShader);
+					}
+				} else {
+					LOG_WARNING("Failed to read vertex shader from '%s', for material '%s' when creatig scene by store, skipping", vertexShaderFile->content.string, key);
+				}
+			} else {
+				LOG_WARNING("Failed to read vertex shader path for material '%s' when creatig scene by store, skipping", key);
+			}
+		}
+	} else {
+		LOG_WARNING("Expected array store value in 'materials' when creating scene by store, skipping material loading");
 	}
 
 	// read models
@@ -108,6 +180,11 @@ API Scene *createSceneByStore(Store *store)
 		Store *value;
 		g_hash_table_iter_init(&iter, models->content.array);
 		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+			if(value->type != STORE_ARRAY) {
+				LOG_WARNING("Expected array store value in 'meshes/%s' when creating scene by store, skipping", key);
+				continue;
+			}
+
 			if(!$(bool, opengl, createOpenGLModel)(key)) {
 				LOG_WARNING("Failed to create OpenGL model '%s' when creatig scene by store, skipping", key);
 				continue;
@@ -207,6 +284,9 @@ API void freeScene(Scene *scene)
 		free(model);
 	}
 
+	// free materials
+	g_hash_table_destroy(scene->materials);
+
 	// free meshes
 	g_hash_table_destroy(scene->meshes);
 
@@ -222,4 +302,15 @@ static void freeOpenGLMeshByPointer(void *mesh_p)
 {
 	OpenGLMesh *mesh = mesh_p;
 	$(void, opengl, freeOpenGLMesh)(mesh);
+}
+
+/**
+ * Frees an GHashTable
+ *
+ * @param hashtable_p		a pointer to the GHashTable to be freed
+ */
+static void freeGHashTableByPointer(void *hashtable_p)
+{
+	GHashTable *hashtable = (GHashTable *) hashtable_p;
+	g_hash_table_destroy(hashtable);
 }

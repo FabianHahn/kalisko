@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2010, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,31 +18,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <glib.h>
-#include "dll.h"
-#include "log.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "memory_alloc.h"
+#ifndef LINALG_STORE_H
+#define LINALG_STORE_H
 
-#include "api.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "modules/store/store.h"
+#include "modules/store/path.h"
+
+#ifdef __cplusplus
+}
+#endif
+
+#include "Vector.h"
 #include "Matrix.h"
 
+API Store *convertVectorToStore(Vector *vector);
+API Store *convertMatrixToStore(Matrix *matrix);
+API Vector *convertStoreToVector(Store *store);
+API Matrix *convertStoreToMatrix(Store *store);
 
-MODULE_NAME("linalg");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Basic linear algebra module providing matrix and vector classes");
-MODULE_VERSION(0, 3, 0);
-MODULE_BCVERSION(0, 2, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11));
-
-MODULE_INIT
-{
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
-}
+#endif

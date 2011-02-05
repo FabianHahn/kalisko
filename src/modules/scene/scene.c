@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -185,6 +185,8 @@ API Scene *createSceneByStore(Store *store)
 				break;
 			}
 
+			bool hasShader = false;
+
 			// vertex shader
 			Store *vertexShaderFile = $(Store *, store, getStorePath)(value, "vertex_shader");
 			if(vertexShaderFile != NULL && vertexShaderFile->type == STORE_STRING) {
@@ -202,6 +204,7 @@ API Scene *createSceneByStore(Store *store)
 
 							if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, false)) != 0) {
 								if($(bool, opengl, attachOpenGLMaterialShaderProgram)(key, program)) {
+									hasShader = true;
 									LOG_DEBUG("Added shader program to material '%s'", key);
 								} else {
 									LOG_WARNING("Failed to attach shader program to material '%s' when creatig scene by store, skipping", key);
@@ -226,6 +229,43 @@ API Scene *createSceneByStore(Store *store)
 				}
 			} else {
 				LOG_WARNING("Failed to read vertex shader path for material '%s' when creatig scene by store, skipping", key);
+			}
+
+			if(hasShader) {
+				// add uniforms
+				Store *uniforms = $(Store *, store, getStorePath)(value, "uniforms");
+				if(uniforms != NULL && uniforms->type == STORE_ARRAY) {
+					GHashTableIter uniformIter;
+					char *uniformKey;
+					Store *uniformValue;
+					g_hash_table_iter_init(&uniformIter, uniforms->content.array);
+					while(g_hash_table_iter_next(&uniformIter, (void *) &uniformKey, (void *) &uniformValue)) {
+						if(uniformValue->type != STORE_STRING) {
+							LOG_WARNING("Expected string store value in 'materials/%s/uniforms/%s' when creating scene by store, skipping", key, uniformKey);
+							continue;
+						}
+
+						char *parameterName = uniformValue->content.string;
+						SceneParameter *parameter;
+						if((parameter = g_hash_table_lookup(scene->parameters, parameterName)) != NULL) {
+							OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+							uniform->type = parameter->type;
+							uniform->content = parameter->content;
+							uniform->location = -1;
+
+							if($(bool, opengl, attachOpenGLMaterialUniform)(key, uniformKey, uniform)) {
+								LOG_DEBUG("Added parameter '%s' as uniform '%s' to material '%s'", parameterName, uniformKey, key);
+							} else {
+								LOG_WARNING("Failed to attach paramter '%s' as uniform '%s' to material '%s' when creating scene by store, skipping", parameterName, uniformKey, key);
+								free(uniform);
+							}
+						} else {
+							LOG_WARNING("Failed to add parameter '%s' as uniform '%s' to material '%s' when creating scene by store: No such parameter - skipping", parameterName, uniformKey, key);
+						}
+					}
+				} else {
+					LOG_WARNING("Expected array store value in 'materials/%s/uniforms' when creating scene by store, skipping uniform loading", key);
+				}
 			}
 		}
 	} else {

@@ -18,38 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef SCENE_SCENE_H
+#define SCENE_SCENE_H
 
+#include "modules/mesh/mesh.h"
 #include <GL/glew.h>
-#include <glib.h>
 
-#include "dll.h"
-#include "modules/opengl/opengl.h"
-#include "modules/opengl/material.h"
-#include "modules/opengl/shader.h"
-#include "modules/opengl/mesh.h"
-#include "modules/opengl/camera.h"
-#include "modules/opengl/model.h"
-#include "modules/event/event.h"
-#include "modules/linalg/Vector.h"
-#include "modules/linalg/Matrix.h"
-#include "modules/linalg/transform.h"
-#include "modules/mesh/io.h"
-#include "api.h"
-#include "scene.h"
-
-MODULE_NAME("scene");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("mesh", 0, 4, 0));
-
-MODULE_INIT
-{
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
-}
+#endif

@@ -42,7 +42,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -132,12 +132,35 @@ API Scene *createSceneByStore(Store *store)
 				LOG_WARNING("Failed to read mesh for model '%s' when creating scene by store, skipping", key);
 				continue;
 			}
+
+			// add model name to models list
+			g_queue_push_head(scene->models, strdup(key));
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'models' when creating scene by store, skipping model loading");
 	}
 
 	return scene;
+}
+
+/**
+ * Frees a scene
+ *
+ * @param scene			the scene to be freed
+ */
+API void freeScene(Scene *scene)
+{
+	// free models
+	for(GList *iter = scene->models->head; iter != NULL; iter = iter->next) {
+		char *model = iter->data;
+		$(void, opengl, deleteOpenGLModel)(model);
+		free(model);
+	}
+
+	// free meshes
+	g_hash_table_destroy(scene->meshes);
+
+	free(scene);
 }
 
 /**

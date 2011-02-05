@@ -35,5 +35,6 @@ typedef struct{
 } Scene;
 
 API Scene *createSceneByStore(Store *store);
+API void freeScene(Scene *scene);
 
 #endif

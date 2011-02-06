@@ -188,7 +188,7 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 		return false;
 	}
 
-	model->material = material_name;
+	model->material = strdup(material_name);
 	model->transform = uniform->content.matrix_value;
 	model->normal_transform = uniformNormal->content.matrix_value;
 
@@ -375,6 +375,8 @@ static void freeOpenGLModel(void *model_p)
 {
 	OpenGLModel *model = (OpenGLModel *) model_p;
 
+	free(model->name);
+	free(model->material);
 	delete model->base_transform;
 	delete model->base_normal_transform;
 	delete model->translation;

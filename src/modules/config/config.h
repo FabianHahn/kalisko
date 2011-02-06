@@ -34,7 +34,7 @@ API void reloadConfig();
 
 // ATTENTION: following functions are only for testing purposes
 API Store* injectReadOnlyConfig(Store* new);
-API Store* injectWritableConfig(Store* new);
+API Store* injectWritableConfig(Store* new, bool updateConfig);
 API char* injectWritableConfigFilePath(char *filePath);
 API char* injectConfigProfile(char *profilePath);
 

@@ -97,9 +97,6 @@ MODULE_INIT
 		return false;
 	}
 
-	printf("\n\n%s\n\n", writeStoreGString(config)->str);
-
-
 	return true;
 }
 
@@ -177,6 +174,10 @@ API Store *getWritableConfig()
  */
 API void saveWritableConfig()
 {
+	if(writableConfig == NULL) {
+		return;
+	}
+
 	// save to disk
 	$(void, store, writeStoreFile)(writableConfigFilePath, writableConfig);
 
@@ -258,27 +259,30 @@ API Store* injectReadOnlyConfig(Store* new)
  *
  * The new config is merged into a new read-only & writable config.
  *
- * @param new	The Store to inject
+ * @param new				The Store to inject
+ * @param updateConfig		Whether the config should be reloaded
  * @return The old Store. Must be freed
  */
-API Store* injectWritableConfig(Store* new)
+API Store* injectWritableConfig(Store* new, bool updateConfig)
 {
 	Store *old = writableConfig;
 	writableConfig = new;
 
-	Store *oldConfig = config;
-	config = $(Store *, store, cloneStore)(readOnlyConfig);
+	if(updateConfig) {
+		Store *oldConfig = config;
+		config = $(Store *, store, cloneStore)(readOnlyConfig);
 
-	if(!$(Store *, store, mergeStore)(config, writableConfig)) {
-		LOG_ERROR("inject: Could not merge read-only and writable config Stores.");
-		$(void, store, freeStore)(config);
-		config = oldConfig;
-		writableConfig = old;
+		if(!$(Store *, store, mergeStore)(config, writableConfig)) {
+			LOG_ERROR("inject: Could not merge read-only and writable config Stores.");
+			$(void, store, freeStore)(config);
+			config = oldConfig;
+			writableConfig = old;
 
-		return NULL;
+			return NULL;
+		}
+
+		$(void, store, freeStore)(oldConfig);
 	}
-
-	$(void, store, freeStore)(oldConfig);
 
 	return old;
 }

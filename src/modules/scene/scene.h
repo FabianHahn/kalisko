@@ -27,6 +27,16 @@
 #include "modules/mesh/mesh.h"
 
 /**
+ * Struct that represents a scene parameter which can then be used in OpenGL uniforms
+ */
+typedef struct {
+	/** The type of the scene parameter */
+	OpenGLUniformType type;
+	/** The content of the scene parameter */
+	OpenGLUniformContent content;
+} SceneParameter;
+
+/**
  * Struct to represent a scene that can be displayed and interaced with
  */
 typedef struct {

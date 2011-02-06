@@ -44,7 +44,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 7);
+MODULE_VERSION(0, 2, 8);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -368,8 +368,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set rotationX
 			Store *rotationX = $(Store *, store, getStorePath)(value, "rotationX");
-			if(rotationX != NULL && rotationX->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelRotationX)(key, rotationX->content.float_number)) {
+			if(rotationX != NULL) {
+				if((rotationX->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationX)(key, rotationX->content.float_number)) || (rotationX->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationX)(key, rotationX->content.integer))) {
 					LOG_DEBUG("Set X rotation for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set X rotation for model '%s' when creating scene by store, skipping", key);
@@ -380,8 +380,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set rotationY
 			Store *rotationY = $(Store *, store, getStorePath)(value, "rotationY");
-			if(rotationY != NULL && rotationY->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelRotationY)(key, rotationY->content.float_number)) {
+			if(rotationY != NULL) {
+				if((rotationY->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationY)(key, rotationY->content.float_number)) || (rotationY->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationY)(key, rotationY->content.integer))) {
 					LOG_DEBUG("Set Y rotation for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set Y rotation for model '%s' when creating scene by store, skipping", key);
@@ -392,8 +392,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set rotationZ
 			Store *rotationZ = $(Store *, store, getStorePath)(value, "rotationZ");
-			if(rotationZ != NULL && rotationZ->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelRotationZ)(key, rotationZ->content.float_number)) {
+			if(rotationZ != NULL) {
+				if((rotationZ->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationZ)(key, rotationZ->content.float_number)) || (rotationZ->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationZ)(key, rotationZ->content.integer))) {
 					LOG_DEBUG("Set Z rotation for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set Z rotation for model '%s' when creating scene by store, skipping", key);
@@ -404,8 +404,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set scaleX
 			Store *scaleX = $(Store *, store, getStorePath)(value, "scaleX");
-			if(scaleX != NULL && scaleX->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelScaleX)(key, scaleX->content.float_number)) {
+			if(scaleX != NULL) {
+				if((scaleX->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleX)(key, scaleX->content.float_number)) || (scaleX->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleX)(key, scaleX->content.integer))) {
 					LOG_DEBUG("Set X scale for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set X scale for model '%s' when creating scene by store, skipping", key);
@@ -416,8 +416,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set scaleY
 			Store *scaleY = $(Store *, store, getStorePath)(value, "scaleY");
-			if(scaleY != NULL && scaleY->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelScaleY)(key, scaleY->content.float_number)) {
+			if(scaleY != NULL) {
+				if((scaleY->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleY)(key, scaleY->content.float_number)) || (scaleY->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleY)(key, scaleY->content.integer))) {
 					LOG_DEBUG("Set Y scale for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set Y scale for model '%s' when creating scene by store, skipping", key);
@@ -428,8 +428,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 			// set scaleZ
 			Store *scaleZ = $(Store *, store, getStorePath)(value, "scaleZ");
-			if(scaleZ != NULL && scaleZ->type == STORE_FLOAT_NUMBER) {
-				if($(bool, opengl, setOpenGLModelScaleZ)(key, scaleZ->content.float_number)) {
+			if(scaleZ != NULL) {
+				if((scaleZ->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleZ)(key, scaleZ->content.float_number)) || (scaleZ->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleZ)(key, scaleZ->content.integer))) {
 					LOG_DEBUG("Set Z scale for model '%s'", key);
 				} else {
 					LOG_WARNING("Failed to set Z scale for model '%s' when creating scene by store, skipping", key);

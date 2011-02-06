@@ -44,9 +44,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 7), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLMeshByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -400,6 +400,42 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				}
 			} else {
 				LOG_WARNING("Failed to read Z rotation for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set scaleX
+			Store *scaleX = $(Store *, store, getStorePath)(value, "scaleX");
+			if(scaleX != NULL && scaleX->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelScaleX)(key, scaleX->content.float_number)) {
+					LOG_DEBUG("Set X scale for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set X scale for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read X scale for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set scaleY
+			Store *scaleY = $(Store *, store, getStorePath)(value, "scaleY");
+			if(scaleY != NULL && scaleY->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelScaleY)(key, scaleY->content.float_number)) {
+					LOG_DEBUG("Set Y scale for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set Y scale for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read Y scale for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set scaleZ
+			Store *scaleZ = $(Store *, store, getStorePath)(value, "scaleZ");
+			if(scaleZ != NULL && scaleZ->type == STORE_FLOAT_NUMBER) {
+				if($(bool, opengl, setOpenGLModelScaleZ)(key, scaleZ->content.float_number)) {
+					LOG_DEBUG("Set Z scale for model '%s'", key);
+				} else {
+					LOG_WARNING("Failed to set Z scale for model '%s' when creating scene by store, skipping", key);
+				}
+			} else {
+				LOG_WARNING("Failed to read Z scale for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// add model name to models list

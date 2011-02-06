@@ -33,6 +33,8 @@ typedef struct {
 	GHashTable *parameters;
 	/** The meshes associated with this scene */
 	GHashTable *meshes;
+	/**	The materials associated with this scene */
+	GQueue *materials;
 	/**	The models associated with this scene */
 	GQueue *models;
 } Scene;

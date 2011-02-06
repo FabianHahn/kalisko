@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -82,6 +82,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	Scene *scene = ALLOCATE_OBJECT(Scene);
 	scene->parameters = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSceneParameterByPointer);
 	scene->meshes = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLMeshByPointer);
+	scene->materials = g_queue_new();
 	scene->models = g_queue_new();
 
 	// read meshes
@@ -279,6 +280,8 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 					LOG_WARNING("Expected array store value in 'materials/%s/uniforms' when creating scene by store, skipping uniform loading", key);
 				}
 			}
+
+			g_queue_push_head(scene->materials, strdup(key));
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'materials' when creating scene by store, skipping material loading");
@@ -310,7 +313,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 				if((openGLMesh = g_hash_table_lookup(scene->meshes, meshname)) != NULL) {
 					if($(bool, opengl, attachOpenGLModelMesh)(key, openGLMesh)) {
-						LOG_DEBUG("Added mesh '%s' to model '%s'", meshname, key);
+						LOG_DEBUG("Attached mesh '%s' to model '%s'", meshname, key);
 					} else {
 						LOG_WARNING("Failed to attach mesh '%s' to model '%s' when creating scene by store, skipping", meshname, key);
 					}
@@ -319,6 +322,20 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				}
 			} else {
 				LOG_WARNING("Failed to read mesh for model '%s' when creating scene by store, skipping", key);
+			}
+
+			// set material
+			Store *modelmaterial = $(Store *, store, getStorePath)(value, "material");
+			if(modelmaterial != NULL && modelmaterial->type == STORE_STRING) {
+				char *materialname = modelmaterial->content.string;
+
+				if($(bool, opengl, attachOpenGLModelMaterial)(key, materialname)) {
+					LOG_DEBUG("Attached material '%s' to model '%s'", materialname, key);
+				} else {
+					LOG_WARNING("Failed to attach material '%s' to model '%s' when creating scene by store, skipping", materialname, key);
+				}
+			} else {
+				LOG_WARNING("Failed to read material for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set translation
@@ -395,6 +412,15 @@ API void freeScene(Scene *scene)
 		$(void, opengl, deleteOpenGLModel)(model);
 		free(model);
 	}
+	g_queue_free(scene->models);
+
+	// free materials
+	for(GList *iter = scene->materials->head; iter != NULL; iter = iter->next) {
+		char *material = iter->data;
+		$(void, opengl, deleteOpenGLMaterial)(material);
+		free(material);
+	}
+	g_queue_free(scene->materials);
 
 	// free parameters
 	g_hash_table_destroy(scene->parameters);

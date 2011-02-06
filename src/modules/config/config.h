@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -25,9 +25,11 @@
 
 API Store *getConfig();
 API Store *getWritableConfig();
+API char *getProfilePath();
+
 API Store *getConfigPath(char *path);
 API void saveWritableConfig();
-API char *getProfilePath();
+
 API void reloadConfig();
 
 #endif

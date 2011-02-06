@@ -395,7 +395,7 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	if(model->rotationX != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixX)(model->rotationX);
 		*model->transform *= *rotation;
-		*model->normal_transform = *rotation;
+		*model->normal_transform *= *rotation;
 		$(void, linalg, freeMatrix)(rotation);
 	}
 
@@ -403,7 +403,7 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	if(model->rotationY != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixY)(model->rotationY);
 		*model->transform *= *rotation;
-		*model->normal_transform = *rotation;
+		*model->normal_transform *= *rotation;
 		$(void, linalg, freeMatrix)(rotation);
 	}
 
@@ -411,7 +411,7 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	if(model->rotationZ != 0.0f) {
 		Matrix *rotation = $(Matrix *, linalg, createRotationMatrixZ)(model->rotationZ);
 		*model->transform *= *rotation;
-		*model->normal_transform = *rotation;
+		*model->normal_transform *= *rotation;
 		$(void, linalg, freeMatrix)(rotation);
 	}
 

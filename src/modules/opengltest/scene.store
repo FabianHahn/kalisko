@@ -30,6 +30,9 @@ scene = {
 			mesh = tetrahedron
 			material = phong
 			translation = (0.0, 0.0, 1.5)
+			scaleX = 0.75
+			scaleY = 0.75
+			scaleZ = 0.75
 		}
 		
 		tetrahedron2 = {

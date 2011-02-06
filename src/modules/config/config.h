@@ -32,4 +32,10 @@ API void saveWritableConfig();
 
 API void reloadConfig();
 
+// ATTENTION: following functions are only for testing purposes
+API Store* injectReadOnlyConfig(Store* new);
+API Store* injectWritableConfig(Store* new);
+API char* injectWritableConfigFilePath(char *filePath);
+API char* injectConfigProfile(char *profilePath);
+
 #endif

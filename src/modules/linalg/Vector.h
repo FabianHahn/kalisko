@@ -42,7 +42,6 @@ class Vector
 		Vector(unsigned int n) :
 			size(n)
 		{
-			assert(size > 0);
 			data = new float[size];
 		}
 

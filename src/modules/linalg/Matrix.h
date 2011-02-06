@@ -44,7 +44,6 @@ class Matrix
 		Matrix(unsigned int r, unsigned int c) :
 			rows(r), cols(c)
 		{
-			assert(rows > 0 && cols > 0);
 			data = new float[rows * cols];
 		}
 

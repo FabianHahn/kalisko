@@ -40,6 +40,9 @@ API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
 API bool setOpenGLModelRotationX(char *model_name, double rotation);
 API bool setOpenGLModelRotationY(char *model_name, double rotation);
 API bool setOpenGLModelRotationZ(char *model_name, double rotation);
+API bool setOpenGLModelScaleX(char *model_name, double scale);
+API bool setOpenGLModelScaleY(char *model_name, double scale);
+API bool setOpenGLModelScaleZ(char *model_name, double scale);
 API void drawOpenGLModels();
 
 #ifdef __cplusplus

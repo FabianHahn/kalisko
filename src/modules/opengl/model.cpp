@@ -65,6 +65,12 @@ typedef struct {
 	float rotationY;
 	/** The z rotation to apply to the model */
 	float rotationZ;
+	/** The x scale to apply to the model */
+	float scaleX;
+	/** The y scale to apply to the model */
+	float scaleY;
+	/** The z scale to apply to the model */
+	float scaleZ;
 } OpenGLModel;
 
 /**
@@ -119,6 +125,9 @@ API bool createOpenGLModel(char *name)
 	model->rotationX = 0.0f;
 	model->rotationY = 0.0f;
 	model->rotationZ = 0.0f;
+	model->scaleX = 0.0f;
+	model->scaleY = 0.0f;
+	model->scaleZ = 0.0f;
 	model->transform = new Matrix(4, 4);
 	model->normal_transform = new Matrix(4, 4);
 
@@ -272,6 +281,72 @@ API bool setOpenGLModelRotationZ(char *model_name, double rotation)
 }
 
 /**
+ * Sets the x scale for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param scale				the x scale to apply to the model
+ * @result					true if successful
+ */
+API bool setOpenGLModelScaleX(char *model_name, double scale)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->scaleX = scale;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
+ * Sets the y scale for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param scale				the y scale to apply to the model
+ * @result					true if successful
+ */
+API bool setOpenGLModelScaleY(char *model_name, double scale)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->scaleY = scale;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
+ * Sets the z scale for an OpenGL model
+ *
+ * @param model_name		the name of the OpenGL model to set the rotation for
+ * @param scale				the z scale to apply to the model
+ * @result					true if successful
+ */
+API bool setOpenGLModelScaleZ(char *model_name, double scale)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
+		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
+		return false;
+	}
+
+	model->scaleZ = scale;
+	updateOpenGLModelTransform(model);
+
+	return true;
+}
+
+/**
  * Draws all visible OpenGL models to the currently active context
  */
 API void drawOpenGLModels()
@@ -344,6 +419,32 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 		*model->normal_transform = *rotation;
 		$(void, linalg, freeMatrix)(rotation);
 	}
+
+	Matrix scale(4, 4);
+	Matrix scaleInverse(4, 4);
+	scale.identity();
+	scaleInverse.identity();
+
+	// Apply x scale
+	if(model->scaleX != 0.0f) {
+		scale(0, 0) = model->scaleX;
+		scaleInverse(0, 0) = 1.0 / model->scaleX;
+	}
+
+	// Apply y scale
+	if(model->scaleY != 0.0f) {
+		scale(1, 1) = model->scaleY;
+		scaleInverse(1, 1) = 1.0 / model->scaleY;
+	}
+
+	// Apply z scale
+	if(model->scaleZ != 0.0f) {
+		scale(2, 2) = model->scaleZ;
+		scaleInverse(2, 2) = 1.0 / model->scaleZ;
+	}
+
+	*model->transform *= scale;
+	*model->normal_transform *= scaleInverse;
 
 	*model->transform *= *model->base_transform;
 	*model->normal_transform *= *model->base_normal_transform;

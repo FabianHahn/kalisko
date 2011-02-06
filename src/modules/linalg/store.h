@@ -21,6 +21,9 @@
 #ifndef LINALG_STORE_H
 #define LINALG_STORE_H
 
+#include "Vector.h"
+#include "Matrix.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,16 +31,13 @@ extern "C" {
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 
-#ifdef __cplusplus
-}
-#endif
-
-#include "Vector.h"
-#include "Matrix.h"
-
 API Store *convertVectorToStore(Vector *vector);
 API Store *convertMatrixToStore(Matrix *matrix);
 API Vector *convertStoreToVector(Store *store);
 API Matrix *convertStoreToMatrix(Store *store);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -37,13 +37,14 @@
 #include "modules/mesh/io.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
+#include "modules/store/parse.h"
 #include "api.h"
 #include "scene.h"
 
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -68,6 +69,28 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 
+}
+
+/**
+ * Creates a scene from a file
+ *
+ * @param filename		the file name of the store to read the scene description from
+ * @param path_prefix	a prefix to prepend to all file paths in scene
+ * @result				the created scene or NULL on failure
+ */
+API Scene *createScene(char *filename, char *path_prefix)
+{
+	Store *store;
+
+	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
+		LOG_ERROR("Failed to read scene file '%s'", filename);
+		return NULL;
+	}
+
+	Scene *scene = createSceneByStore(store, path_prefix);
+	$(void, store, freeStore)(store);
+
+	return scene;
 }
 
 /**

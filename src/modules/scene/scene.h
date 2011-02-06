@@ -39,6 +39,7 @@ typedef struct {
 	GQueue *models;
 } Scene;
 
+API Scene *createScene(char *filename, char *path_prefix);
 API Scene *createSceneByStore(Store *store, char *path_prefix);
 API void freeScene(Scene *scene);
 

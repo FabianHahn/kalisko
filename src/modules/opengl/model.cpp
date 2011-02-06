@@ -119,8 +119,8 @@ API bool createOpenGLModel(char *name)
 	model->rotationX = 0.0f;
 	model->rotationY = 0.0f;
 	model->rotationZ = 0.0f;
-	model->transform = NULL;
-	model->normal_transform = NULL;
+	model->transform = new Matrix(4, 4);
+	model->normal_transform = new Matrix(4, 4);
 
 	g_hash_table_insert(models, model->name, model);
 
@@ -307,11 +307,6 @@ API void drawOpenGLModels()
  */
 static void updateOpenGLModelTransform(OpenGLModel *model)
 {
-	// Don't try to update the transformation if we have no material attached
-	if(model->transform == NULL) {
-		return;
-	}
-
 	*model->transform = Matrix(4, 4).identity();
 	*model->normal_transform = Matrix(4, 4).identity();
 
@@ -365,6 +360,8 @@ static void freeOpenGLModel(void *model_p)
 
 	free(model->name);
 	free(model->material);
+	delete model->transform;
+	delete model->normal_transform;
 	delete model->base_transform;
 	delete model->base_normal_transform;
 	delete model->translation;

@@ -125,9 +125,9 @@ API bool createOpenGLModel(char *name)
 	model->rotationX = 0.0f;
 	model->rotationY = 0.0f;
 	model->rotationZ = 0.0f;
-	model->scaleX = 0.0f;
-	model->scaleY = 0.0f;
-	model->scaleZ = 0.0f;
+	model->scaleX = 1.0f;
+	model->scaleY = 1.0f;
+	model->scaleZ = 1.0f;
 	model->transform = new Matrix(4, 4);
 	model->normal_transform = new Matrix(4, 4);
 
@@ -426,19 +426,19 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 	scaleInverse.identity();
 
 	// Apply x scale
-	if(model->scaleX != 0.0f) {
+	if(model->scaleX != 1.0f) {
 		scale(0, 0) = model->scaleX;
 		scaleInverse(0, 0) = 1.0 / model->scaleX;
 	}
 
 	// Apply y scale
-	if(model->scaleY != 0.0f) {
+	if(model->scaleY != 1.0f) {
 		scale(1, 1) = model->scaleY;
 		scaleInverse(1, 1) = 1.0 / model->scaleY;
 	}
 
 	// Apply z scale
-	if(model->scaleZ != 0.0f) {
+	if(model->scaleZ != 1.0f) {
 		scale(2, 2) = model->scaleZ;
 		scaleInverse(2, 2) = 1.0 / model->scaleZ;
 	}

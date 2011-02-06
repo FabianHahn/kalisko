@@ -5,8 +5,6 @@ scene = {
 	
 	parameters = {
 		perspective = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
-		model = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
-		modelNormal = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
 		lightPosition = (-10.0, 50.0, -50.0)
 		lightColor = (1.0, 1.0, 1.0, 1.0)
 		ambient = 0.25
@@ -19,8 +17,6 @@ scene = {
 			fragment_shader = "/modules/opengltest/shader.glslf"
 			uniforms = {
 				perspective = perspective
-				model = model
-				modelNormal = modelNormal
 				lightPosition = lightPosition
 				lightColor = lightColor
 				ambient = ambient

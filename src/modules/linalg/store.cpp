@@ -96,8 +96,10 @@ API Vector *convertStoreToVector(Store *store)
 
 		if(element->type == STORE_FLOAT_NUMBER) {
 			(*vector)[i] = element->content.float_number;
+		} else if (element->type == STORE_INTEGER) {
+			(*vector)[i] = element->content.integer;
 		} else {
-			LOG_WARNING("Encountered non-float when converting store to vector, setting element to 0");
+			LOG_WARNING("Encountered non-numeric when converting store to vector, setting element to 0");
 			(*vector)[i] = 0.0f;
 		}
 	}
@@ -144,6 +146,8 @@ API Matrix *convertStoreToMatrix(Store *store)
 				Store *element = (Store *) coliter->data;
 				if(element->type == STORE_FLOAT_NUMBER) {
 					(*matrix)(i, j) = element->content.float_number;
+				} else if (element->type == STORE_INTEGER) {
+					(*matrix)(i, j) = element->content.integer;
 				} else {
 					LOG_WARNING("Encountered non-float when converting store to matrix, setting element to 0");
 					(*matrix)(i, j) = 0.0f;

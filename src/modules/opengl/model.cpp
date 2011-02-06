@@ -176,21 +176,7 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 		return false;
 	}
 
-	OpenGLUniform *uniform;
-	if((uniform = (OpenGLUniform *) getOpenGLMaterialUniform(material_name, "model")) == NULL || uniform->type != OPENGL_UNIFORM_MATRIX) {
-		LOG_ERROR("Tried to attach material '%s' without a matrix 'model' uniform to model '%s'", material_name, model_name);
-		return false;
-	}
-
-	OpenGLUniform *uniformNormal;
-	if((uniformNormal = (OpenGLUniform *) getOpenGLMaterialUniform(material_name, "modelNormal")) == NULL || uniformNormal->type != OPENGL_UNIFORM_MATRIX) {
-		LOG_ERROR("Tried to attach material '%s' without a matrix 'modelNormal' uniform to model '%s'", material_name, model_name);
-		return false;
-	}
-
 	model->material = strdup(material_name);
-	model->transform = uniform->content.matrix_value;
-	model->normal_transform = uniformNormal->content.matrix_value;
 
 	updateOpenGLModelTransform(model);
 
@@ -304,10 +290,12 @@ API void drawOpenGLModels()
 			continue;
 		}
 
-		if(model->material != NULL) {
-			useOpenGLMaterial(model->material, model->transform, model->normal_transform);
+		if(model->material == NULL) {
+			LOG_WARNING("Trying to draw visible model '%s' without a material attached, skipping", name);
+			continue;
 		}
 
+		useOpenGLMaterial(model->material, model->transform, model->normal_transform);
 		drawOpenGLMesh(model->mesh);
 	}
 }

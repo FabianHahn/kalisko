@@ -29,6 +29,7 @@
 
 TEST_CASE(null_subject);
 TEST_CASE(multiple_subjects);
+TEST_CASE(free_not_existing);
 
 MODULE_NAME("test_property_table");
 MODULE_AUTHOR("The Kalisko team");
@@ -40,6 +41,7 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("property_table", 0, 0, 1));
 TEST_SUITE_BEGIN(property_table)
 	TEST_CASE_ADD(null_subject);
 	TEST_CASE_ADD(multiple_subjects);
+	TEST_CASE_ADD(free_not_existing);
 TEST_SUITE_END
 
 TEST_CASE(null_subject)
@@ -82,6 +84,15 @@ TEST_CASE(multiple_subjects)
 	$(void, property_table, freePropertyTable)(b);
 	TEST_ASSERT($(void, property_table, getPropertyTableValue)(a, "test") == NULL);
 	TEST_ASSERT($(void, property_table, getPropertyTableValue)(b, "test") == NULL);
+
+	TEST_PASS;
+}
+
+TEST_CASE(free_not_existing)
+{
+	// just free tables that do not exists
+	$(void, property_table, freePropertyTable)(NULL);
+	$(void, property_table, freePropertyTable)(&"something");
 
 	TEST_PASS;
 }

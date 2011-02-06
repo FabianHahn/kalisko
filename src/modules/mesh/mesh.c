@@ -29,7 +29,7 @@
 MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general mesh data type");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 
@@ -97,9 +97,20 @@ API void generateMeshNormals(Mesh *mesh)
 		float *normalData = $(float *, linalg, getVectorData)(normal);
 
 		for(int j = 0; j < 3; j++) {
-			mesh->vertices[mesh->triangles[i].indices[j]].normal[0] += normalData[0];
-			mesh->vertices[mesh->triangles[i].indices[j]].normal[1] += normalData[1];
-			mesh->vertices[mesh->triangles[i].indices[j]].normal[2] += normalData[2];
+			int vi = mesh->triangles[i].indices[j];
+			Vector *normi = $(Vector *, linalg, createVector3)(mesh->vertices[vi].normal[0], mesh->vertices[vi].normal[1], mesh->vertices[vi].normal[2]);
+
+			if($(float, linalg, dotVectors)(normal, normi) >= 0) { // enforce interpolated normal orientation
+				mesh->vertices[vi].normal[0] += normalData[0];
+				mesh->vertices[vi].normal[1] += normalData[1];
+				mesh->vertices[vi].normal[2] += normalData[2];
+			} else {
+				mesh->vertices[vi].normal[0] -= normalData[0];
+				mesh->vertices[vi].normal[1] -= normalData[1];
+				mesh->vertices[vi].normal[2] -= normalData[2];
+			}
+
+			$(void, linalg, freeVector)(normi);
 		}
 
 		$(void, linalg, freeVector)(v1);

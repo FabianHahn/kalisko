@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -85,7 +85,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	scene->models = g_queue_new();
 
 	// read meshes
-	Store *meshes = $(Store *, store, getStorePath)(store, "meshes");
+	Store *meshes = $(Store *, store, getStorePath)(store, "scene/meshes");
 	if(meshes != NULL && meshes->type == STORE_ARRAY) {
 		GHashTableIter iter;
 		char *key;
@@ -122,7 +122,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	}
 
 	// read parameters
-	Store *parameters = $(Store *, store, getStorePath)(store, "parameters");
+	Store *parameters = $(Store *, store, getStorePath)(store, "scene/parameters");
 	if(parameters != NULL && parameters->type == STORE_ARRAY) {
 		GHashTableIter iter;
 		char *key;
@@ -172,7 +172,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	}
 
 	// read materials
-	Store *materials = $(Store *, store, getStorePath)(store, "materials");
+	Store *materials = $(Store *, store, getStorePath)(store, "scene/materials");
 	if(materials != NULL && materials->type == STORE_ARRAY) {
 		GHashTableIter iter;
 		char *key;
@@ -285,7 +285,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	}
 
 	// read models
-	Store *models = $(Store *, store, getStorePath)(store, "models");
+	Store *models = $(Store *, store, getStorePath)(store, "scene/models");
 	if(models != NULL && models->type == STORE_ARRAY) {
 		GHashTableIter iter;
 		char *key;

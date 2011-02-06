@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 1, 7);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -74,9 +74,10 @@ MODULE_FINALIZE
  * Creates a scene from a store represenation
  *
  * @param store			the store to read the scene description from
+ * @param path_prefix	a prefix to prepend to all file paths in scene
  * @result				the created scene
  */
-API Scene *createSceneByStore(Store *store)
+API Scene *createSceneByStore(Store *store, char *path_prefix)
 {
 	Scene *scene = ALLOCATE_OBJECT(Scene);
 	scene->parameters = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSceneParameterByPointer);
@@ -92,8 +93,11 @@ API Scene *createSceneByStore(Store *store)
 		g_hash_table_iter_init(&iter, meshes->content.array);
 		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
 			if(value->type == STORE_STRING) {
-				char *meshpath = value->content.string;
-				Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(meshpath);
+				GString *meshpath = g_string_new(path_prefix);
+				g_string_append(meshpath, value->content.string);
+				Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(meshpath->str);
+				g_string_free(meshpath, true);
+
 				if(mesh != NULL) {
 					OpenGLMesh *openGLMesh;
 
@@ -192,13 +196,17 @@ API Scene *createSceneByStore(Store *store)
 			if(vertexShaderFile != NULL && vertexShaderFile->type == STORE_STRING) {
 				GLuint vertexShader;
 
-				if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile->content.string, GL_VERTEX_SHADER)) != 0) {
+				GString *vertexShaderPath = g_string_new(path_prefix);
+				g_string_append(vertexShaderPath, vertexShaderFile->content.string);
+				if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderPath->str, GL_VERTEX_SHADER)) != 0) {
 					// fragment shader
 					Store *fragmentShaderFile = $(Store *, store, getStorePath)(value, "fragment_shader");
 					if(fragmentShaderFile != NULL && fragmentShaderFile->type == STORE_STRING) {
 						GLuint fragmentShader;
 
-						if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile->content.string, GL_FRAGMENT_SHADER)) != 0) {
+						GString *fragmentShaderPath = g_string_new(path_prefix);
+						g_string_append(fragmentShaderPath, fragmentShaderFile->content.string);
+						if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderPath->str, GL_FRAGMENT_SHADER)) != 0) {
 							// shader program
 							GLuint program;
 
@@ -220,6 +228,8 @@ API Scene *createSceneByStore(Store *store)
 							LOG_WARNING("Failed to read fragment shader from '%s', for material '%s' when creatig scene by store, skipping", fragmentShaderFile->content.string, key);
 							glDeleteShader(vertexShader);
 						}
+
+						g_string_free(fragmentShaderPath, true);
 					} else {
 						LOG_WARNING("Failed to read fragment shader path for material '%s' when creatig scene by store, skipping", key);
 						glDeleteShader(vertexShader);
@@ -227,6 +237,8 @@ API Scene *createSceneByStore(Store *store)
 				} else {
 					LOG_WARNING("Failed to read vertex shader from '%s', for material '%s' when creatig scene by store, skipping", vertexShaderFile->content.string, key);
 				}
+
+				g_string_free(vertexShaderPath, true);
 			} else {
 				LOG_WARNING("Failed to read vertex shader path for material '%s' when creatig scene by store, skipping", key);
 			}

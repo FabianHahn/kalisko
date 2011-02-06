@@ -21,8 +21,7 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
-#include "log.h"
-#include "memory_alloc.h"
+#include "modules/linalg/Matrix.h"
 #include "api.h"
 #include "shader.h"
 #include "material.h"
@@ -37,6 +36,10 @@ typedef struct {
 	GLuint program;
 	/** A table of uniforms for the material's shader */
 	GHashTable *uniforms;
+	/** The model matrix */
+	Matrix *model;
+	/** The model normal matrix */
+	Matrix *modelNormal;
 } OpenGLMaterial;
 
 /**
@@ -79,6 +82,8 @@ API bool createOpenGLMaterial(const char *name)
 	material->name = strdup(name);
 	material->program = 0;
 	material->uniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
+	material->model = $(Matrix *, linalg, createMatrix)(4, 4);
+	material->modelNormal = $(Matrix *, linalg, createMatrix)(4, 4);
 
 	g_hash_table_insert(materials, material->name, material);
 
@@ -113,6 +118,13 @@ API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 	}
 
 	material->program = program;
+
+	OpenGLUniform *modelUniform = createOpenGLUniformMatrix(material->model);
+	OpenGLUniform *modelNormalUniform = createOpenGLUniformMatrix(material->modelNormal);
+	detachOpenGLMaterialUniform(name, "model"); // remove old uniform if exists
+	attachOpenGLMaterialUniform(name, "model", modelUniform);
+	detachOpenGLMaterialUniform(name, "modelNormal"); // remove old uniform if exists
+	attachOpenGLMaterialUniform(name, "modelNormal", modelNormalUniform);
 
 	return true;
 }
@@ -199,9 +211,11 @@ API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const cha
 /**
  * Uses an OpenGL material for rendering
  *
- * @param		the name of the material to use
+ * @param				the name of the material to use
+ * @param model			the model matrix to use for the material
+ * @param modelNormal	the normal model matrix to use for the material
  */
-API bool useOpenGLMaterial(const char *name)
+API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 {
 	OpenGLMaterial *material;
 
@@ -216,6 +230,10 @@ API bool useOpenGLMaterial(const char *name)
 	}
 
 	glUseProgram(material->program);
+
+	// Assign model matrices
+	$(void, linalg, assignMatrix)(material->model, model);
+	$(void, linalg, assignMatrix)(material->modelNormal, modelNormal);
 
 	// Iterate over all uniforms for this shaders and use them
 	GList *uniforms = g_hash_table_get_values(material->uniforms);
@@ -238,6 +256,8 @@ static void freeOpenGLMaterial(void *material_p)
 {
 	OpenGLMaterial *material = material_p;
 
+	$(void, linalg, freeMatrix)(material->model);
+	$(void, linalg, freeMatrix)(material->modelNormal);
 	free(material->name);
 	glDeleteProgram(material->program);
 	g_hash_table_destroy(material->uniforms);

@@ -305,7 +305,7 @@ API void drawOpenGLModels()
 		}
 
 		if(model->material != NULL) {
-			useOpenGLMaterial(model->material);
+			useOpenGLMaterial(model->material, model->transform, model->normal_transform);
 		}
 
 		drawOpenGLMesh(model->mesh);

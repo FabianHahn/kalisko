@@ -39,8 +39,8 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 11, 2);
-MODULE_BCVERSION(0, 11, 0);
+MODULE_VERSION(0, 11, 3);
+MODULE_BCVERSION(0, 11, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0));
 
 MODULE_INIT

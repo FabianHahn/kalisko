@@ -22,6 +22,7 @@
 #define OPENGL_MATERIAL_H
 
 #include <GL/glew.h>
+#include "modules/linalg/Matrix.h"
 #include "shader.h"
 
 API void initOpenGLMaterials();
@@ -32,6 +33,6 @@ API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program);
 API bool attachOpenGLMaterialUniform(const char *material_name, const char *uniform_name, OpenGLUniform *uniform);
 API bool detachOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
 API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
-API bool useOpenGLMaterial(const char *name);
+API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal);
 
 #endif

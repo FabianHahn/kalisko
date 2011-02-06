@@ -23,6 +23,7 @@
 
 #include <glib.h>
 #include <GL/glew.h>
+#include "modules/store/store.h"
 #include "modules/mesh/mesh.h"
 
 /**

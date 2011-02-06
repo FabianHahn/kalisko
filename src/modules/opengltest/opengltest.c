@@ -40,25 +40,21 @@
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
 #include "modules/mesh/io.h"
+#include "modules/scene/scene.h"
 
 #include "api.h"
 
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 10, 3);
+MODULE_VERSION(0, 11, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 2, 9), MODULE_DEPENDENCY("mesh", 0, 4, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 11, 1), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("scene", 0, 2, 3));
 
+static Scene *scene = NULL;
 static FreeglutWindow *window = NULL;
-static OpenGLMesh *openglmesh = NULL;
-static GLuint program = 0;
 static OpenGLCamera *camera = NULL;
 static Matrix *perspectiveMatrix = NULL;
-static Matrix *modelMatrix = NULL;
-static Matrix *modelNormalMatrix = NULL;
-static Vector *lightPositionVector = NULL;
-static Vector *lightColorVector = NULL;
 static bool keysPressed[256];
 static int currentWidth = 800;
 static int currentHeight = 600;
@@ -78,10 +74,7 @@ static void listener_close(void *subject, const char *event, void *data, va_list
 MODULE_INIT
 {
 	bool done = false;
-	GLuint vertexShader = 0;
-	GLuint fragmentShader = 0;
 	char *execpath = NULL;
-	GString *file = NULL;
 
 	do { // use do-while branch out to simplify error handling
 		// Create window and add listeners
@@ -95,172 +88,52 @@ MODULE_INIT
 
 		execpath = $$(char *, getExecutablePath)();
 
-		// Create geometry
-		file = g_string_new(execpath);
-		g_string_append(file, "/modules/opengltest/tetrahedron.store");
-		Mesh *mesh;
+		GString *scenePath = g_string_new(execpath);
+		g_string_append(scenePath, "/modules/opengltest/scene.store");
+		scene = $(Scene *, scene, createScene)(scenePath->str, execpath);
+		g_string_free(scenePath, true);
 
-		if((mesh = $(Mesh *, mesh, readMeshFromFile)(file->str)) == NULL) {
+		if(scene == NULL) {
 			break;
 		}
-
-		openglmesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(mesh, GL_STATIC_DRAW);
-
-		g_string_free(file, true);
-		file = NULL;
 
 		glEnable(GL_DEPTH_TEST);
 
-		// Read and compile vertex shader source
-		file = g_string_new(execpath);
-		g_string_append(file, "/modules/opengltest/shader.glslv");
-
-		if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(file->str, GL_VERTEX_SHADER)) == 0) {
-			break;
-		}
-
-		g_string_free(file, true);
-		file = NULL;
-
-		// Read and compile fragment shader source
-		file = g_string_new(execpath);
-		g_string_append(file, "/modules/opengltest/shader.glslf");
-
-		if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(file->str, GL_FRAGMENT_SHADER)) == 0) {
-			break;
-		}
-
-		if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, true)) == 0) {
-			break;
-		}
-
-		g_string_free(file, true);
-		file = NULL;
-
-		vertexShader = 0;
-		fragmentShader = 0;
-
-		// Create material and attach shader program
-		if(!$(bool, opengl, createOpenGLMaterial)("opengltest")) {
-			break;
-		}
-
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
-		perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, 1.0, 0.1, 100.0);
-		modelMatrix = $(Matrix *, linalg, createMatrix)(4, 4);
-		modelNormalMatrix = $(Matrix *, linalg, createMatrix)(4, 4);
+
+		SceneParameter *perspectiveParam;
+		if((perspectiveParam = g_hash_table_lookup(scene->parameters, "perspective")) == NULL || perspectiveParam->type != OPENGL_UNIFORM_MATRIX || $(unsigned int, linalg, getMatrixRows)(perspectiveParam->content.matrix_value) != 4  || $(unsigned int, linalg, getMatrixCols)(perspectiveParam->content.matrix_value) != 4) {
+			LOG_ERROR("Failed to read perspective matrix from scene");
+			break;
+		}
+
+		perspectiveMatrix = perspectiveParam->content.matrix_value;
+		Matrix *newPerspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) 800 / 600, 0.1, 100.0);
+		$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
+		$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 		
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
-		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
-		OpenGLUniform *modelUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(modelMatrix);
-		OpenGLUniform *modelNormalUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(modelNormalMatrix);
 
-		if(!$(bool, opengl, attachOpenGLMaterialShaderProgram)("opengltest", program)) {
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong", "camera", cameraUniform)) {
 			break;
 		}
 
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "camera", cameraUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "perspective", perspectiveUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "model", modelUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "modelNormal", modelNormalUniform)) {
-			break;
-		}
-
-		lightPositionVector = $(Vector *, linalg, createVector3)(-10.0, 50.0, -50.0);
-		lightColorVector = $(Vector *, linalg, createVector4)(1.0, 1.0, 1.0, 1.0);
 		OpenGLUniform *cameraPositionUniform = $(OpenGLUniform *, opengl, createOpenGLUniformVector)(camera->position);
-		OpenGLUniform *lightPositionUniform = $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightPositionVector);
-		OpenGLUniform *lightColorUniform = $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightColorVector);
-		OpenGLUniform *ambientUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.25);
-		OpenGLUniform *specularUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.9);
 
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "cameraPosition", cameraPositionUniform)) {
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong", "cameraPosition", cameraPositionUniform)) {
 			break;
 		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "lightPosition", lightPositionUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "lightColor", lightColorUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "ambient", ambientUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("opengltest", "specular", specularUniform)) {
-			break;
-		}
-
-		if(!$(bool, opengl, createOpenGLModel)("tetrahedron")) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLModelMesh)("tetrahedron", openglmesh)) {
-			break;
-		}
-
-		if(!$(bool, opengl, attachOpenGLModelMaterial)("tetrahedron", "opengltest")) {
-			break;
-		}
-
-		Vector *trans = $(Vector *, linalg, createVector3)(0.0, 0.0, 1.5);
-		$(bool, opengl, setOpenGLModelTranslation)("tetrahedron", trans);
-		$(void, linalg, freeVector)(trans);
 
 		done = true;
 	} while(false);
 
 	if(!done) {
+		if(scene != NULL) {
+			$(void, scene, freeScene)(scene);
+		}
+
 		if(camera != NULL) {
 			$(void, linalg, freeOpenGLCamera)(camera);
-		}
-
-		if(perspectiveMatrix != NULL) {
-			$(void, linalg, freeMatrix)(perspectiveMatrix);
-		}
-
-		if(modelMatrix != NULL) {
-			$(void, linalg, freeMatrix)(modelMatrix);
-		}
-
-		if(modelNormalMatrix != NULL) {
-			$(void, linalg, freeMatrix)(modelNormalMatrix);
-		}
-
-		if(lightPositionVector != NULL) {
-			$(void, linalg, freeVector)(lightPositionVector);
-		}
-
-		if(lightColorVector != NULL) {
-			$(void, linalg, freeVector)(lightColorVector);
-		}
-
-		if(vertexShader != 0) {
-			glDeleteShader(vertexShader);
-		}
-
-		if(fragmentShader != 0) {
-			glDeleteShader(fragmentShader);
-		}
-
-		if(program != 0) {
-			glDeleteProgram(program);
-		}
-
-		if(openglmesh != NULL) {
-			$(void, opengl, freeOpenGLMesh)(openglmesh);
 		}
 
 		if(window != NULL) {
@@ -269,10 +142,6 @@ MODULE_INIT
 
 		if(execpath != NULL) {
 			free(execpath);
-		}
-
-		if(file != NULL) {
-			g_string_free(file, true);
 		}
 
 		return false;
@@ -294,9 +163,6 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(bool, opengl, deleteOpenGLMaterial)("opengltest");
-	$(void, opengl, freeOpenGLMesh)(openglmesh);
-
 	$(void, event, detachEventListener)(window, "mouseDown", NULL, &listener_mouseDown);
 	$(void, event, detachEventListener)(window, "mouseUp", NULL, &listener_mouseUp);
 	$(void, event, detachEventListener)(window, "keyDown", NULL, &listener_keyDown);
@@ -309,12 +175,8 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "close", NULL, &listener_close);
 	$(void, freeglut, freeFreeglutWindow)(window);
 
+	$(void, scene, freeScene)(scene);
 	$(void, opengl, freeOpenGLCamera)(camera);
-	$(void, linalg, freeMatrix)(perspectiveMatrix);
-	$(void, linalg, freeMatrix)(modelMatrix);
-	$(void, linalg, freeMatrix)(modelNormalMatrix);
-	$(void, linalg, freeVector)(lightPositionVector);
-	$(void, linalg, freeVector)(lightColorVector);
 }
 
 static void listener_mouseDown(void *subject, const char *event, void *data, va_list args)

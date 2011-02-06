@@ -58,4 +58,5 @@ if not module.GetOption('clean'):
 module.SharedLibrary('../kalisko_opengltest', Glob('*.c'))
 module.Command("shader.glslv", File("shader.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
 module.Command("shader.glslf", File("shader.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
+module.Command("scene.store", File("scene.store").srcnode(), Copy("$TARGET", "$SOURCE"))
 module.Command("tetrahedron.store", File("tetrahedron.store").srcnode(), Copy("$TARGET", "$SOURCE"))

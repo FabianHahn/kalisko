@@ -1,0 +1,39 @@
+scene = {
+	meshes = {
+		tetrahedron = "/modules/opengltest/tetrahedron.store"
+	}
+	
+	parameters = {
+		perspective = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
+		model = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
+		modelNormal = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
+		lightPosition = (-10.0, 50.0, -50.0)
+		lightColor = (1.0, 1.0, 1.0, 1.0)
+		ambient = 0.25
+		specular = 0.9
+	}
+	
+	materials = {
+		phong = {
+			vertex_shader = "/modules/opengltest/shader.glslv"
+			fragment_shader = "/modules/opengltest/shader.glslf"
+			uniforms = {
+				perspective = perspective
+				model = model
+				modelNormal = modelNormal
+				lightPosition = lightPosition
+				lightColor = lightColor
+				ambient = ambient
+				specular = specular
+			}
+		}
+	}
+	
+	models = {
+		tetrahedron = {
+			mesh = tetrahedron
+			material = phong
+			translation = (0.0, 0.0, 1.5)
+		}
+	}
+}

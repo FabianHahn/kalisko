@@ -9,6 +9,9 @@ syntax: glob
 # ignore tmp files
 *~
 
+# ignore original files
+*.orig
+
 # ignore built source code
 bin/*
 3rd_party/*

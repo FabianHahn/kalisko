@@ -18,24 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef CONFIG_CONFIG_H
-#define CONFIG_CONFIG_H
+#ifndef PROPERTY_TABLE_H
+#define PROPERTY_TABLE_H
 
-#include "modules/store/store.h"
+API void *getPropertyTableValue(void *subject, char *key);
+API void setPropertyTableValue(void *subject, char *key, void *value);
+API void freePropertyTable(void *subject);
+API char *dumpPropertyTables();
 
-API Store *getConfig();
-API Store *getWritableConfig();
-API char *getProfilePath();
-
-API Store *getConfigPath(char *path);
-API void saveWritableConfig();
-
-API void reloadConfig();
-
-// ATTENTION: following functions are only for testing purposes
-API Store* injectReadOnlyConfig(Store* new);
-API Store* injectWritableConfig(Store* new, bool updateConfig);
-API char* injectWritableConfigFilePath(char *filePath);
-API char* injectConfigProfile(char *profilePath);
 
 #endif

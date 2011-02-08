@@ -90,6 +90,10 @@ function KaliskoModule:forceUnload()
 	forceUnloadModule({module = self.name})
 end
 
+function KaliskoModule:forceReload()
+	forceReloadModule({module = self.name})
+end
+
 function KaliskoModule:getActiveModules() -- declared as method for convenience, doesn't really need a self
 	ret = {}
 	

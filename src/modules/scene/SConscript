@@ -33,9 +33,7 @@ if not module.GetOption('clean'):
 			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
 			Exit(1)	
 	else:
-		if not conf.CheckLibWithHeader('glew32', 'GL/glew.h', 'C'):
-			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
-			Exit(1)
+		module.ParseConfig('pkg-config --libs --cflags glew')
 			
 		if not conf.CheckLib('opengl32'):
 			print('Error: Could not find the opengl32 library!')

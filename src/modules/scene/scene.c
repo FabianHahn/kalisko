@@ -43,7 +43,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 9);
+MODULE_VERSION(0, 2, 10);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 11, 7), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -114,7 +114,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				if(mesh != NULL) {
 					OpenGLMesh *openGLMesh;
 
-					if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh(mesh, GL_STATIC_DRAW))) != NULL) {
+					if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
 						g_hash_table_insert(scene->meshes, strdup(key), openGLMesh);
 						LOG_DEBUG("Added mesh '%s' to scene", key);
 					} else {
@@ -158,7 +158,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 						Store *firstelement = value->content.list->head->data;
 						if(firstelement->type == STORE_LIST) { // assume matrix
 							parameter->type = OPENGL_UNIFORM_MATRIX;
-							parameter->content.matrix_value = $(Vector *, linalg, convertStoreToMatrix)(value);
+							parameter->content.matrix_value = $(Matrix *, linalg, convertStoreToMatrix)(value);
 						} else { // assume vector
 							parameter->type = OPENGL_UNIFORM_VECTOR;
 							parameter->content.vector_value = $(Vector *, linalg, convertStoreToVector)(value);

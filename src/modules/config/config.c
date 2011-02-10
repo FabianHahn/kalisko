@@ -65,7 +65,7 @@ static bool internalReloadConfig(bool doTriggerEvent);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -388,7 +388,7 @@ static Store *loadReadOnlyConfigs()
 		checkFilesMerge(cmdConfig); // without profile
 
 		if(profilePath != NULL) {
-			Store *cmdConfigWithProfile = $(Store, store, getStorePath)(cmdConfig, profilePath);
+			Store *cmdConfigWithProfile = $(Store *, store, getStorePath)(cmdConfig, profilePath);
 
 			if(cmdConfigWithProfile == NULL) {
 				LOG_ERROR("Given CLI configuration file has not the given profile path in it: %s", cliConfigFilePath);

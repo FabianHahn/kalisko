@@ -70,6 +70,8 @@ int main(int argc, char **argv)
 			if(!requestModule(modname)) {
 				test = 0;
 				reportTestResult(modname, "load", false, "Failed to load module");
+			} else {
+				revokeModule(modname);
 			}
 
 			free(modname);
@@ -131,6 +133,8 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
 
 		printf("[%s] %s: Failed test #%d (%s)\n", testsuite, testcase, test, buffer);
 	}
+
+	fflush(stdout);
 
 	count++;
 }

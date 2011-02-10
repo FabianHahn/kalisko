@@ -34,8 +34,8 @@ TEST_CASE(free_not_existing);
 MODULE_NAME("test_property_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the Kalisko property_table module");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
+MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
 TEST_SUITE_BEGIN(property_table)
@@ -46,13 +46,13 @@ TEST_SUITE_END
 
 TEST_CASE(null_subject)
 {
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(NULL, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(NULL, "test") == NULL);
 
 	$(void, property_table, setPropertyTableValue)(NULL, "test", "value");
-	TEST_ASSERT(strcmp($(void, property_table, getPropertyTableValue)(NULL, "test"), "value") == 0);
+	TEST_ASSERT(strcmp($(void *, property_table, getPropertyTableValue)(NULL, "test"), "value") == 0);
 
 	$(void, property_table, freePropertyTable)(NULL);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(NULL, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(NULL, "test") == NULL);
 
 	TEST_PASS;
 }
@@ -66,24 +66,24 @@ TEST_CASE(multiple_subjects)
 	TestStruct *a = ALLOCATE_OBJECT(TestStruct);
 	TestStruct *b = ALLOCATE_OBJECT(TestStruct);
 
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(a, "test") == NULL);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(b, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(a, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(b, "test") == NULL);
 
 	$(void, property_table, setPropertyTableValue)(a, "test", "valueA");
-	TEST_ASSERT(strcmp($(void, property_table, getPropertyTableValue)(a, "test"), "valueA") == 0);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(b, "test") == NULL);
+	TEST_ASSERT(strcmp($(void *, property_table, getPropertyTableValue)(a, "test"), "valueA") == 0);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(b, "test") == NULL);
 
 	$(void, property_table, setPropertyTableValue)(b, "test", "valueB");
-	TEST_ASSERT(strcmp($(void, property_table, getPropertyTableValue)(a, "test"), "valueA") == 0);
-	TEST_ASSERT(strcmp($(void, property_table, getPropertyTableValue)(b, "test"), "valueB") == 0);
+	TEST_ASSERT(strcmp($(void *, property_table, getPropertyTableValue)(a, "test"), "valueA") == 0);
+	TEST_ASSERT(strcmp($(void *, property_table, getPropertyTableValue)(b, "test"), "valueB") == 0);
 
 	$(void, property_table, freePropertyTable)(a);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(a, "test") == NULL);
-	TEST_ASSERT(strcmp($(void, property_table, getPropertyTableValue)(b, "test"), "valueB") == 0);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(a, "test") == NULL);
+	TEST_ASSERT(strcmp($(void *, property_table, getPropertyTableValue)(b, "test"), "valueB") == 0);
 
 	$(void, property_table, freePropertyTable)(b);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(a, "test") == NULL);
-	TEST_ASSERT($(void, property_table, getPropertyTableValue)(b, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(a, "test") == NULL);
+	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(b, "test") == NULL);
 
 	TEST_PASS;
 }

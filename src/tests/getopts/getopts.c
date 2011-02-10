@@ -31,8 +31,8 @@
 MODULE_NAME("test_getopts");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the getopts module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 1));
 
 TEST_CASE(getopts);
@@ -60,6 +60,9 @@ TEST_CASE(getopts)
 		"--g",
 		NULL
 	};
+
+	char **oldArgv = $$(char **, getArgv)();
+	int oldArgc = $$(int, getArgc)();
 
 	$$(void, setArgv)(argv);
 	$$(void, setArgc)(sizeof(argv) / sizeof(argv[0]));
@@ -100,6 +103,9 @@ TEST_CASE(getopts)
 	TEST_ASSERT(strcmp(opt, "welt") == 0);
 
 	TEST_ASSERT((opt = $(char *, getopts, getOptValue)(NULL, NULL)) == NULL);
+
+	$$(void, setArgv)(oldArgv);
+	$$(void, setArgc)(oldArgc);
 
 	TEST_PASS;
 }

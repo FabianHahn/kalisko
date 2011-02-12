@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 5);
+MODULE_VERSION(0, 9, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -823,7 +823,7 @@ static void saveScript()
 		$(void, config, saveWritableConfig)(); // write back to disk
 		LOG_INFO("Saved Lua IDE script: %s", current_script);
 	} else {
-		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script)
+		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script);
 		free(script);
 	}
 
@@ -868,7 +868,7 @@ static void createFolder(char *parent)
 			if(entry_name != NULL && strlen(entry_name) > 0) {
 				if($(Store *, store, getStorePath)(parentStore, entry_name) == NULL) { // entry with that name doesn't exist yet
 					LOG_INFO("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
-					g_hash_table_insert(parentStore->content.array, strdup(entry_name), $(Store *, store, createStore()));
+					g_hash_table_insert(parentStore->content.array, strdup(entry_name), $(Store *, store, createStore)());
 					$(void, config, saveWritableConfig)(); // write back to disk
 					refreshScriptTree();
 				} else {

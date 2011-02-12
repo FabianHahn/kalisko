@@ -32,7 +32,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -42,6 +42,26 @@ static void finalize();
  * The window widget for the IRC client
  */
 static GtkWidget *window;
+
+/**
+ * The chat output widget for the IRC client
+ */
+static GtkWidget *chat_output;
+
+/**
+ * The chat input widget for the IRC client
+ */
+static GtkWidget *chat_input;
+
+/**
+ * The side tree widget for the IRC client
+ */
+static GtkWidget *side_tree;
+
+/**
+ * The channel list widget for the IRC client
+ */
+static GtkWidget *channel_list;
 
 MODULE_INIT
 {
@@ -58,9 +78,31 @@ MODULE_INIT
 	}
 
 	window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
+	chat_output = GTK_WIDGET(gtk_builder_get_object(builder, "chat_output"));
+	chat_input = GTK_WIDGET(gtk_builder_get_object(builder, "chat_input"));
+	side_tree = GTK_WIDGET(gtk_builder_get_object(builder, "site_tree"));
+	channel_list = GTK_WIDGET(gtk_builder_get_object(builder, "channel_list"));
 
 	// window
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+
+	// chat output
+	GtkRcStyle *style = gtk_widget_get_modifier_style(chat_output);
+	PangoFontDescription *font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(chat_output, style);
+
+	// chat input
+	style = gtk_widget_get_modifier_style(chat_input);
+	font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(chat_input, style);
+
+	// channel list
+	style = gtk_widget_get_modifier_style(channel_list);
+	font = pango_font_description_from_string("Monospace Normal");
+	style->font_desc = font;
+	gtk_widget_modify_style(channel_list, style);
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

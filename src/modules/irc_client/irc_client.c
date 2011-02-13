@@ -27,16 +27,18 @@
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
+#include "modules/irc/irc.h"
 #include "api.h"
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
 static void finalize();
+static void freeIrcClientConnection(void *connection_p);
 
 /**
  * The window widget for the IRC client
@@ -62,6 +64,18 @@ static GtkWidget *side_tree;
  * The channel list widget for the IRC client
  */
 static GtkWidget *channel_list;
+
+/**
+ * A hash table of connections for the IRC client
+ */
+static GHashTable *connections;
+
+typedef struct {
+	/** The name of the IRC client connection */
+	char *name;
+	/** The IRC connection for this connection */
+	IrcConnection *connection;
+} IrcClientConnection;
 
 typedef enum {
 	SIDE_TREE_NAME_COLUMN,
@@ -129,6 +143,8 @@ MODULE_INIT
 	// run
 	$(void, gtk+, runGtkLoop)();
 
+	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
+
 	return true;
 }
 
@@ -140,4 +156,18 @@ MODULE_FINALIZE
 static void finalize()
 {
 	gtk_widget_destroy(GTK_WIDGET(window));
+	g_hash_table_destroy(connections);
+}
+
+/**
+ * A GDestroyNotify function to free an IRC client connection
+ *
+ * @param connection_p			a pointer to the IRC client connection to free
+ */
+static void freeIrcClientConnection(void *connection_p)
+{
+	IrcClientConnection *connection = connection_p;
+	free(connection->name);
+	$(void, irc, freeIrcConnection)(connection->connection);
+	free(connection);
 }

@@ -33,7 +33,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
@@ -73,6 +73,11 @@ static GtkWidget *channel_list;
  */
 static GHashTable *connections;
 
+/**
+ * The IRC client's config store
+ */
+static Store *client_config;
+
 typedef struct {
 	/** The name of the IRC client connection */
 	char *name;
@@ -105,6 +110,13 @@ MODULE_INIT
 	chat_input = GTK_WIDGET(gtk_builder_get_object(builder, "chat_input"));
 	side_tree = GTK_WIDGET(gtk_builder_get_object(builder, "side_tree"));
 	channel_list = GTK_WIDGET(gtk_builder_get_object(builder, "channel_list"));
+
+	Store *config = $(Store *, config, getWritableConfig)();
+	if((client_config = $(Store *, store, getStorePath)(config, "irc_client")) == NULL) {
+		LOG_INFO("Writable config path 'irc_client' doesn't exist yet, creating...");
+		client_config = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(config, "irc_client", client_config);
+	}
 
 	// window
 	gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);

@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 6);
+MODULE_VERSION(0, 9, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -191,6 +191,8 @@ MODULE_INIT
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(script_tree));
 	gtk_tree_selection_set_mode(select, GTK_SELECTION_SINGLE);
+
+	g_object_set(G_OBJECT(script_tree), "headers_visible", false, NULL);
 
 	// script input
 	GtkRcStyle *style = gtk_widget_get_modifier_style(script_input);

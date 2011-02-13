@@ -33,7 +33,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
@@ -112,7 +112,8 @@ MODULE_INIT
 	channel_list = GTK_WIDGET(gtk_builder_get_object(builder, "channel_list"));
 
 	Store *config = $(Store *, config, getWritableConfig)();
-	if((client_config = $(Store *, store, getStorePath)(config, "irc_client")) == NULL) {
+	if((client_config = $(Store *, store, getStorePath)(config, "irc_client")) == NULL || client_config->type != STORE_ARRAY) {
+		$(bool, store, deleteStorePath)(config, "irc_client");
 		LOG_INFO("Writable config path 'irc_client' doesn't exist yet, creating...");
 		client_config = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(config, "irc_client", client_config);
@@ -160,6 +161,24 @@ MODULE_INIT
 	$(void, gtk+, runGtkLoop)();
 
 	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
+
+	// read connections from config
+	Store *configConnections;
+	if((configConnections = $(Store *, store, getStorePath)(client_config, "connections")) == NULL || configConnections->type != STORE_ARRAY) {
+		$(bool, store, deleteStorePath)(client_config, "connections");
+		LOG_INFO("Writable config path 'irc_client/connections' doesn't exist yet, creating...");
+		configConnections = $(Store *, store, createStore)();
+		$(bool, store, setStorePath)(client_config, "connections", configConnections);
+	}
+
+	GHashTableIter iter;
+	g_hash_table_iter_init(&iter, configConnections->content.array);
+	char *key;
+	Store *value;
+	while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
+		addIrcClientConnection(key, value);
+	}
+
 	refreshSideTree();
 
 	return true;
@@ -197,7 +216,7 @@ static void addIrcClientConnection(char *name, Store *config)
 	// Add to connections table
 	g_hash_table_insert(connections, connection->name, connections);
 
-	refreshSideTree();
+	LOG_INFO("Added IRC client connection '%s'", name);
 }
 
 /**

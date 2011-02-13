@@ -42,10 +42,12 @@
 #define PROFILES_CONFIG_FILE_NAME "profiles.cfg"
 #define GLOBAL_CONFIG_FILE_NAME "global.cfg"
 #define MERGE_CONFIG_PATH "merge"
+#define USER_CONFIG_DIR_PERMISSION 0700
 
 static char *writableConfigFilePath;
 static char *profilePath;
 static char *cliConfigFilePath;
+static bool writableConfigPathExists;
 
 // This Store contains the read-only configs and writable one merged together
 static Store *config;
@@ -65,7 +67,7 @@ static bool internalReloadConfig(bool doTriggerEvent);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -78,6 +80,7 @@ MODULE_INIT
 	config = NULL;
 	writableConfig = NULL;
 	readOnlyConfig = NULL;
+	writableConfigPathExists = false;
 
 	// get CLI options
 	char *cliOptConfigFilePath = $(char *, getopts, getOptValue)("config", "c", NULL);
@@ -178,8 +181,12 @@ API void saveWritableConfig()
 		return;
 	}
 
-	// save to disk
-	$(void, store, writeStoreFile)(writableConfigFilePath, writableConfig);
+	if(writableConfigPathExists) {
+		// save to disk
+		$(void, store, writeStoreFile)(writableConfigFilePath, writableConfig);
+	} else {
+		LOG_ERROR("Writable configuration file cannot be saved. Look for previous error messages");
+	}
 
 	// update config
 	Store *oldConfig = config;
@@ -500,6 +507,18 @@ static Store *loadWritableConfig()
 
 	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
 		retWritableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
+		writableConfigPathExists = true;
+	} else {
+		// check if the folder exists at least and if not we create one
+		char *writableConfigDir = g_path_get_dirname(writableConfigFilePath);
+		if(g_mkdir_with_parents(writableConfigDir, USER_CONFIG_DIR_PERMISSION) == -1) {
+			writableConfigPathExists = false;
+			LOG_DEBUG("The directory for the writable configuration file cannot be created. Saving will not work.");
+		} else {
+			LOG_INFO("Created directory for user specific configuration files at: %s", writableConfigDir);
+			writableConfigPathExists = true;
+		}
+		free(writableConfigDir);
 	}
 
 	if(retWritableConfig == NULL) {

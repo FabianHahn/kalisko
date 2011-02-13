@@ -14,6 +14,7 @@
     </columns>
   </object>
   <object class="GtkWindow" id="window">
+    <signal name="delete_event" handler="irc_client_window_delete_event"/>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>

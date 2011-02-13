@@ -33,7 +33,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 7);
+MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
@@ -187,6 +187,12 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	finalize();
+}
+
+API gboolean irc_client_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	$$(void, exitGracefully)();
+	return true;
 }
 
 static void finalize()

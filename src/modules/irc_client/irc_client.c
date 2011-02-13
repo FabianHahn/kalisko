@@ -33,12 +33,15 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
 static void finalize();
+static void addIrcClientConnection(char *name, Store *config);
+static void refreshSideTree();
 static void freeIrcClientConnection(void *connection_p);
+static int strpcmp(const void *p1, const void *p2);
 
 /**
  * The window widget for the IRC client
@@ -100,7 +103,7 @@ MODULE_INIT
 	window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
 	chat_output = GTK_WIDGET(gtk_builder_get_object(builder, "chat_output"));
 	chat_input = GTK_WIDGET(gtk_builder_get_object(builder, "chat_input"));
-	side_tree = GTK_WIDGET(gtk_builder_get_object(builder, "site_tree"));
+	side_tree = GTK_WIDGET(gtk_builder_get_object(builder, "side_tree"));
 	channel_list = GTK_WIDGET(gtk_builder_get_object(builder, "channel_list"));
 
 	// window
@@ -133,6 +136,7 @@ MODULE_INIT
 	gtk_tree_view_column_pack_start(column, rendererText, true);
 	gtk_tree_view_column_add_attribute(column, rendererText, "text", SIDE_TREE_NAME_COLUMN);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(side_tree), column);
+	g_object_set(G_OBJECT(side_tree), "headers_visible", false, NULL);
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
 	gtk_tree_selection_set_mode(select, GTK_SELECTION_SINGLE);
@@ -144,6 +148,7 @@ MODULE_INIT
 	$(void, gtk+, runGtkLoop)();
 
 	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
+	refreshSideTree();
 
 	return true;
 }
@@ -160,6 +165,69 @@ static void finalize()
 }
 
 /**
+ * Adds an IRC client connection to the IRC client
+ *
+ * @param name			the name of the connection to add
+ * @param config		a configuration store for the IRC connection
+ */
+static void addIrcClientConnection(char *name, Store *config)
+{
+	IrcClientConnection *connection = ALLOCATE_OBJECT(IrcClientConnection);
+	connection->name = strdup(name);
+
+	if((connection->connection = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
+		LOG_ERROR("Failed to create IRC client connection '%s', aborting", name);
+		free(connection->name);
+		free(connection);
+		return;
+	}
+
+	// Add to connections table
+	g_hash_table_insert(connections, connection->name, connections);
+
+	refreshSideTree();
+}
+
+/**
+ * Refeshes the side tree of the IRC client
+ */
+static void refreshSideTree()
+{
+	GtkTreeStore *treestore = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(side_tree)));
+	gtk_tree_store_clear(treestore);
+
+	// Add status entry
+	GtkTreeIter child;
+	gtk_tree_store_append(treestore, &child, NULL);
+	gtk_tree_store_set(treestore, &child, SIDE_TREE_NAME_COLUMN, "Status", SIDE_TREE_TYPE_COLUMN, 0, SIDE_TREE_ICON_COLUMN, GTK_STOCK_INFO, -1);
+
+	// Prepare connections
+	GHashTableIter iter;
+	char *key;
+	IrcClientConnection *value;
+	g_hash_table_iter_init(&iter, connections);
+
+	GPtrArray *entries = g_ptr_array_new();
+	while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
+		g_ptr_array_add(entries, key);
+	}
+
+	// Sort connection list
+	qsort(entries->pdata, entries->len, sizeof(char *), &strpcmp);
+
+	// Add connections
+	for(int i = 0; i < entries->len; i++) {
+		key = entries->pdata[i];
+
+		GtkTreeIter child;
+		gtk_tree_store_append(treestore, &child, NULL);
+		gtk_tree_store_set(treestore, &child, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
+	}
+
+	g_ptr_array_free(entries, true);
+}
+
+/**
  * A GDestroyNotify function to free an IRC client connection
  *
  * @param connection_p			a pointer to the IRC client connection to free
@@ -170,4 +238,9 @@ static void freeIrcClientConnection(void *connection_p)
 	free(connection->name);
 	$(void, irc, freeIrcConnection)(connection->connection);
 	free(connection);
+}
+
+static int strpcmp(const void *p1, const void *p2)
+{
+	return strcmp(* (char * const *) p1, * (char * const *) p2);
 }

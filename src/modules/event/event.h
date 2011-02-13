@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -25,6 +25,7 @@
 
 #include <glib.h>
 #include <stdarg.h>
+#include <limits.h>
 #include "types.h"
 
 /**
@@ -33,17 +34,29 @@
 typedef void (EventListener)(void *subject, const char *event, void *custom_data, va_list args);
 
 /**
+ * Predefined set of event listener priorities
+ */
+typedef enum {
+	EVENT_LISTENER_PRIORITY_LOWEST = INT_MIN,
+	EVENT_LISTENER_PRIORITY_NORMAL = 0,
+	EVENT_LISTENER_PRIORITY_HIGHEST = INT_MAX
+} EventListenerPriority;
+
+/**
  * Struct to represent a listener entry
  */
 typedef struct
 {
 	/** The listener function pointer */
 	EventListener *listener;
+	/** The priority of the listener */
+	int priority;
 	/** Custom data to pass to the function when triggered */
 	void *custom;
 } EventListenerEntry;
 
 API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+API void attachEventListenerWithPriority(void *subject, const char *event, int priority, void *custom, EventListener *listener);
 API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
 API int triggerEvent(void *subject, const char *event, ...);
 API int getEventListenerCount(void *subject, const char *event);

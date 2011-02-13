@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -32,12 +32,13 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
 static void freeEventListenerQueue(void *queue_p);
 static void freeEventSubject(void *subject_p);
+static int compareEventListeners(const void *first_p, const void *second_p, void *data);
 
 static GThread *mainthread;
 
@@ -69,6 +70,25 @@ MODULE_FINALIZE
  */
 API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener)
 {
+	attachEventListenerWithPriority(subject, event, EVENT_LISTENER_PRIORITY_NORMAL, custom, listener);
+}
+
+/**
+ * Attaches an event listener to a subject while allowing to specify a priority
+ *
+ * The priority parameter specifies the position in the event listener queue. The
+ * event listener with the lower priority will be called first, while events attached
+ * without priority are classified as EVENT_LISTENER_PRIORITY_NORMAL. Use the
+ * EventListenerPriority enum for a predefined set of priorities.
+ *
+ * @param subject		the subject to attach the event listener to
+ * @param event			the event to attach the event listener to
+ * @param priority		the priority of the event listener
+ * @param custom		custom data passed to the listener when the event is triggered
+ * @param listener		the listener to attach
+ */
+API void attachEventListenerWithPriority(void *subject, const char *event, int priority, void *custom, EventListener *listener)
+{
 	if(g_thread_self() != mainthread) {
 		return;
 	}
@@ -90,8 +110,19 @@ API void attachEventListener(void *subject, const char *event, void *custom, Eve
 	EventListenerEntry *entry = ALLOCATE_OBJECT(EventListenerEntry);
 	entry->listener = listener;
 	entry->custom = custom;
+	entry->priority = priority;
 
-	g_queue_push_tail(queue, entry);
+	switch(priority) {
+		case EVENT_LISTENER_PRIORITY_LOWEST:
+			g_queue_push_head(queue, entry);
+		break;
+		case EVENT_LISTENER_PRIORITY_HIGHEST:
+			g_queue_push_tail(queue, entry);
+		break;
+		default:
+			g_queue_insert_sorted(queue, entry, &compareEventListeners, NULL);
+		break;
+	}
 
 	triggerEvent(subject, "listener_attached", event);
 }
@@ -208,6 +239,21 @@ API int getEventListenerCount(void *subject, const char *event)
 	}
 
 	return g_queue_get_length(queue);
+}
+
+/**
+ * GCompareDataFunc to compare two EventListenerEntry objects by their priority
+ *
+ * @param first_p		the first EventListenerEntry
+ * @param second_p		the second EventListenerEntry
+ * @param data			unused
+ */
+static int compareEventListeners(const void *first_p, const void *second_p, void *data)
+{
+	const EventListenerEntry *first = first_p;
+	const EventListenerEntry *second = second_p;
+
+	return first->priority - second->priority;
 }
 
 /**

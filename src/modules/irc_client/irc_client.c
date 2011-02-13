@@ -32,7 +32,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9));
 
@@ -62,6 +62,12 @@ static GtkWidget *side_tree;
  * The channel list widget for the IRC client
  */
 static GtkWidget *channel_list;
+
+typedef enum {
+	SIDE_TREE_NAME_COLUMN,
+	SIDE_TREE_TYPE_COLUMN,
+	SIDE_TREE_ICON_COLUMN
+} SideTreeColumns;
 
 MODULE_INIT
 {
@@ -103,6 +109,19 @@ MODULE_INIT
 	font = pango_font_description_from_string("Monospace Normal");
 	style->font_desc = font;
 	gtk_widget_modify_style(channel_list, style);
+
+	// side tree
+	GtkCellRenderer *rendererPixbuf = gtk_cell_renderer_pixbuf_new();
+	GtkCellRenderer *rendererText = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_start(column, rendererPixbuf, false);
+	gtk_tree_view_column_add_attribute(column, rendererPixbuf, "stock-id", SIDE_TREE_ICON_COLUMN);
+	gtk_tree_view_column_pack_start(column, rendererText, true);
+	gtk_tree_view_column_add_attribute(column, rendererText, "text", SIDE_TREE_NAME_COLUMN);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(side_tree), column);
+
+	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
+	gtk_tree_selection_set_mode(select, GTK_SELECTION_SINGLE);
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

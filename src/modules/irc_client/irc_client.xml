@@ -3,7 +3,16 @@
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkListStore" id="channel_list_model"/>
-  <object class="GtkTreeStore" id="side_tree_model"/>
+  <object class="GtkTreeStore" id="side_tree_model">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name type -->
+      <column type="gint"/>
+      <!-- column-name icon -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="window">
     <child>
       <object class="GtkVBox" id="vbox1">

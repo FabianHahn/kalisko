@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -278,7 +278,31 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     			active_name = connection->name;
     			LOG_INFO("Switched to connection '%s'", name);
     		} else {
-    			LOG_ERROR("Failed to lookup IRC client conneciction '%s'", name);
+    			LOG_ERROR("Failed to lookup IRC client connection '%s'", name);
+    		}
+    	} else if(type == 2) {
+    		// retrieve parent connection
+    		GtkTreeIter parent;
+    		gtk_tree_model_iter_parent(model, &parent, &iter);
+
+    		char *parentName;
+    		gtk_tree_model_get(model, &parent, SIDE_TREE_NAME_COLUMN, &parentName, -1);
+
+    		IrcClientConnection *connection = g_hash_table_lookup(connections, parentName);
+
+    		if(connection != NULL) {
+    			IrcClientConnectionChannel *channel = g_hash_table_lookup(connection->channels, name);
+
+    			if(channel != NULL) {
+    				gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), channel->buffer);
+    				active_type = CHAT_ELEMENT_CHANNEL;
+    				active_name = channel->name;
+    				LOG_INFO("Switched to channel '%s' in connection '%s'", name, parentName);
+    			} else {
+    				LOG_ERROR("Failed to lookup channel '%s' in IRC client conneciction '%s'", name, parentName);
+    			}
+    		} else {
+    			LOG_ERROR("Failed to lookup IRC client connection '%s'", parentName);
     		}
     	}
     }

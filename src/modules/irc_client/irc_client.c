@@ -28,19 +28,43 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/irc/irc.h"
+#include "modules/event/event.h"
+#include "modules/irc_parser/irc_parser.h"
 #include "api.h"
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 9);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4));
 
+typedef struct {
+	/** The name of the IRC client connection */
+	char *name;
+	/** The text buffer for this connection */
+	GtkTextBuffer *buffer;
+	/** The IRC connection for this connection */
+	IrcConnection *connection;
+} IrcClientConnection;
+
+typedef enum {
+	SIDE_TREE_NAME_COLUMN,
+	SIDE_TREE_TYPE_COLUMN,
+	SIDE_TREE_ICON_COLUMN
+} SideTreeColumns;
+
+typedef enum {
+	CHAT_MESSAGE_CONNECTION_LINE,
+	CHAT_MESSAGE_CONNECTION_SEND
+} ChatMessageType;
+
+static void listener_ircSend(void *subject, const char *event, void *data, va_list args);
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
 static void finalize();
 static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
-static void appendMessage(GtkTextBuffer *buffer, char *message);
+static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType type);
 static void freeIrcClientConnection(void *connection_p);
 static int strpcmp(const void *p1, const void *p2);
 
@@ -86,21 +110,6 @@ static GtkTextBuffer *status_buffer;
 
 /** The IRC client's text tag table */
 static GtkTextTagTable *tags;
-
-typedef struct {
-	/** The name of the IRC client connection */
-	char *name;
-	/** The text buffer for this connection */
-	GtkTextBuffer *buffer;
-	/** The IRC connection for this connection */
-	IrcConnection *connection;
-} IrcClientConnection;
-
-typedef enum {
-	SIDE_TREE_NAME_COLUMN,
-	SIDE_TREE_TYPE_COLUMN,
-	SIDE_TREE_ICON_COLUMN
-} SideTreeColumns;
 
 MODULE_INIT
 {
@@ -176,6 +185,9 @@ MODULE_INIT
 
 	// tag table
 	tags = gtk_text_tag_table_new();
+	GtkTextTag *tag = gtk_text_tag_new("connection_send");
+	g_object_set(tag, "foreground", "blue", NULL);
+	gtk_text_tag_table_add(tags, tag);
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
@@ -253,6 +265,23 @@ API void irc_client_chat_output_scroll_size_allocate(GtkWidget *widget, GtkAlloc
 	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(chat_output), &end, 0.0, true, 1.0, 1.0);
 }
 
+
+static void listener_ircSend(void *subject, const char *event, void *data, va_list args)
+{
+	char *message = va_arg(args, char *);
+
+	IrcClientConnection *clientConnection = data;
+	appendMessage(clientConnection->buffer, message, CHAT_MESSAGE_CONNECTION_SEND);
+}
+
+static void listener_ircLine(void *subject, const char *event, void *data, va_list args)
+{
+	IrcMessage *message = va_arg(args, IrcMessage *);
+
+	IrcClientConnection *clientConnection = data;
+	appendMessage(clientConnection->buffer, message->raw_message, CHAT_MESSAGE_CONNECTION_LINE);
+}
+
 static void finalize()
 {
 	gtk_widget_destroy(GTK_WIDGET(window));
@@ -278,6 +307,10 @@ static void addIrcClientConnection(char *name, Store *config)
 		free(connection);
 		return;
 	}
+
+	// Attach to events
+	$(void, event, attachEventListener)(connection->connection, "line", connection, &listener_ircLine);
+	$(void, event, attachEventListener)(connection->connection, "send", connection, &listener_ircSend);
 
 	// Create text buffer for the connection
 	connection->buffer = gtk_text_buffer_new(tags);
@@ -339,8 +372,9 @@ static void refreshSideTree()
  *
  * @param buffer		the buffer to append the message to
  * @param message		the message to append
+ * @param type			the type of the message to insert
  */
-static void appendMessage(GtkTextBuffer *buffer, char *message)
+static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType type)
 {
 	// deactivate text view as long as we're writing
 	gtk_widget_set_sensitive(chat_output, false);
@@ -355,7 +389,14 @@ static void appendMessage(GtkTextBuffer *buffer, char *message)
 	gtk_text_buffer_insert(buffer, &end, prefix->str, -1);
 	g_string_free(prefix, true);
 
-	gtk_text_buffer_insert(buffer, &end, message, -1);
+	switch(type) {
+		case CHAT_MESSAGE_CONNECTION_SEND:
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "connection_send", NULL);
+		break;
+		default:
+			gtk_text_buffer_insert(buffer, &end, message, -1);
+		break;
+	}
 
 	gtk_widget_set_sensitive(chat_output, true);
 }
@@ -369,6 +410,8 @@ static void freeIrcClientConnection(void *connection_p)
 {
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
+	$(void, event, detachEventListener)(connection->connection, "line", connection, &listener_ircLine);
+	$(void, event, detachEventListener)(connection->connection, "send", connection, &listener_ircSend);
 	$(void, irc, freeIrcConnection)(connection->connection);
 	g_object_unref(connection->buffer);
 	free(connection);

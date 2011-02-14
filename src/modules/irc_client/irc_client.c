@@ -36,7 +36,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8));
 
@@ -165,6 +165,11 @@ MODULE_INIT
 	status_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(chat_output));
 	g_object_ref(status_buffer); // add reference to prevent freeing
 
+	// tag table
+	tags = gtk_text_buffer_get_tag_table(status_buffer);
+	g_object_ref(tags);
+	gtk_text_buffer_create_tag(status_buffer, "connection_send", "foreground", "blue", NULL);
+
 	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
 	g_string_prepend(welcome, "Welcome to the Kalisko IRC client ");
 	g_string_append(welcome, "!");
@@ -196,12 +201,6 @@ MODULE_INIT
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
 	gtk_tree_selection_set_mode(select, GTK_SELECTION_BROWSE);
-
-	// tag table
-	tags = gtk_text_tag_table_new();
-	GtkTextTag *tag = gtk_text_tag_new("connection_send");
-	g_object_set(tag, "foreground", "blue", NULL);
-	gtk_text_tag_table_add(tags, tag);
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));

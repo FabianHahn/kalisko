@@ -66,6 +66,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="model">side_tree_model</property>
+                <signal name="cursor_changed" handler="irc_client_side_tree_cursor_changed"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -90,11 +91,21 @@
                   <object class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
                     <child>
-                      <object class="GtkTextView" id="chat_output">
-                        <property name="width_request">200</property>
-                        <property name="height_request">200</property>
+                      <object class="GtkScrolledWindow" id="chat_output_scroll">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
+                        <property name="hscrollbar_policy">automatic</property>
+                        <property name="vscrollbar_policy">automatic</property>
+                        <signal name="size_allocate" handler="irc_client_chat_output_scroll_size_allocate"/>
+                        <child>
+                          <object class="GtkTextView" id="chat_output">
+                            <property name="width_request">200</property>
+                            <property name="height_request">200</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="wrap_mode">word</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="position">0</property>

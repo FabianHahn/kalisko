@@ -33,13 +33,14 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6));
 
 static void finalize();
 static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
+static void appendMessage(GtkTextBuffer *buffer, char *message);
 static void freeIrcClientConnection(void *connection_p);
 static int strpcmp(const void *p1, const void *p2);
 
@@ -78,9 +79,19 @@ static GHashTable *connections;
  */
 static Store *client_config;
 
+/**
+ * The IRC client's status text buffer
+ */
+static GtkTextBuffer *status_buffer;
+
+/** The IRC client's text tag table */
+static GtkTextTagTable *tags;
+
 typedef struct {
 	/** The name of the IRC client connection */
 	char *name;
+	/** The text buffer for this connection */
+	GtkTextBuffer *buffer;
 	/** The IRC connection for this connection */
 	IrcConnection *connection;
 } IrcClientConnection;
@@ -128,6 +139,15 @@ MODULE_INIT
 	style->font_desc = font;
 	gtk_widget_modify_style(chat_output, style);
 
+	status_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(chat_output));
+	g_object_ref(status_buffer); // add reference to prevent freeing
+
+	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
+	g_string_prepend(welcome, "Welcome to the Kalisko IRC client ");
+	g_string_append(welcome, "!");
+	gtk_text_buffer_set_text(status_buffer, welcome->str, -1);
+	g_string_free(welcome, true);
+
 	// chat input
 	style = gtk_widget_get_modifier_style(chat_input);
 	font = pango_font_description_from_string("Monospace Normal");
@@ -152,7 +172,10 @@ MODULE_INIT
 	g_object_set(G_OBJECT(side_tree), "headers_visible", false, NULL);
 
 	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
-	gtk_tree_selection_set_mode(select, GTK_SELECTION_SINGLE);
+	gtk_tree_selection_set_mode(select, GTK_SELECTION_BROWSE);
+
+	// tag table
+	tags = gtk_text_tag_table_new();
 
 	// show everything
 	gtk_widget_show_all(GTK_WIDGET(window));
@@ -195,9 +218,46 @@ API gboolean irc_client_window_delete_event(GtkWidget *widget, GdkEvent *event, 
 	return true;
 }
 
+void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_data)
+{
+	GtkTreeSelection *select = gtk_tree_view_get_selection(tree_view);
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+
+    if(gtk_tree_selection_get_selected(select, &model, &iter)) {
+    	int type;
+    	char *name;
+    	gtk_tree_model_get(model, &iter, SIDE_TREE_TYPE_COLUMN, &type, SIDE_TREE_NAME_COLUMN, &name, -1);
+
+    	if(type == 0) {
+    		gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
+    		LOG_INFO("Switched to status");
+    	} else if(type == 1) {
+    		IrcClientConnection *connection = g_hash_table_lookup(connections, name);
+
+    		if(connection != NULL) {
+    			gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), connection->buffer);
+    			LOG_INFO("Switched to connection '%s'", name);
+    		} else {
+    			LOG_ERROR("Failed to lookup IRC client conneciction '%s'", name);
+    		}
+    	}
+    }
+}
+
+API void irc_client_chat_output_scroll_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
+{
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(chat_output));
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(chat_output), &end, 0.0, true, 1.0, 1.0);
+}
+
 static void finalize()
 {
 	gtk_widget_destroy(GTK_WIDGET(window));
+	g_object_unref(status_buffer);
+	g_object_unref(tags);
 	g_hash_table_destroy(connections);
 }
 
@@ -219,8 +279,15 @@ static void addIrcClientConnection(char *name, Store *config)
 		return;
 	}
 
+	// Create text buffer for the connection
+	connection->buffer = gtk_text_buffer_new(tags);
+	GString *text = g_string_new("");
+	g_string_append_printf(text, "Created text buffer for connection '%s'", name);
+	gtk_text_buffer_set_text(connection->buffer, text->str, -1);
+	g_string_free(text, true);
+
 	// Add to connections table
-	g_hash_table_insert(connections, connection->name, connections);
+	g_hash_table_insert(connections, connection->name, connection);
 
 	LOG_INFO("Added IRC client connection '%s'", name);
 }
@@ -237,6 +304,9 @@ static void refreshSideTree()
 	GtkTreeIter child;
 	gtk_tree_store_append(treestore, &child, NULL);
 	gtk_tree_store_set(treestore, &child, SIDE_TREE_NAME_COLUMN, "Status", SIDE_TREE_TYPE_COLUMN, 0, SIDE_TREE_ICON_COLUMN, GTK_STOCK_INFO, -1);
+
+	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
+	gtk_tree_selection_select_iter(select, &child); // select status
 
 	// Prepare connections
 	GHashTableIter iter;
@@ -265,6 +335,32 @@ static void refreshSideTree()
 }
 
 /**
+ * Appends a message to a text buffer
+ *
+ * @param buffer		the buffer to append the message to
+ * @param message		the message to append
+ */
+static void appendMessage(GtkTextBuffer *buffer, char *message)
+{
+	// deactivate text view as long as we're writing
+	gtk_widget_set_sensitive(chat_output, false);
+
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+
+	GDateTime *now = g_date_time_new_now_local();
+	GString *prefix = g_string_new("\n");
+	g_string_append_printf(prefix, "[%02d:%02d:%02d] ", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now));
+	g_date_time_unref(now);
+	gtk_text_buffer_insert(buffer, &end, prefix->str, -1);
+	g_string_free(prefix, true);
+
+	gtk_text_buffer_insert(buffer, &end, message, -1);
+
+	gtk_widget_set_sensitive(chat_output, true);
+}
+
+/**
  * A GDestroyNotify function to free an IRC client connection
  *
  * @param connection_p			a pointer to the IRC client connection to free
@@ -274,6 +370,7 @@ static void freeIrcClientConnection(void *connection_p)
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
 	$(void, irc, freeIrcConnection)(connection->connection);
+	g_object_unref(connection->buffer);
 	free(connection);
 }
 

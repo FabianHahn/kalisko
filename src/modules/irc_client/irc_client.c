@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -87,6 +87,7 @@ static void finalize();
 static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
 static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType type);
+static void setWindowTitle(char *connection, char *channel);
 static void freeIrcClientConnection(void *connection_p);
 static void freeIrcClientConnectionChannel(void *channel_p);
 static int strpcmp(const void *p1, const void *p2);
@@ -272,6 +273,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     	if(type == 0) {
     		gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
     		active_type = CHAT_ELEMENT_STATUS;
+    		setWindowTitle(NULL, NULL);
     		LOG_INFO("Switched to status");
     	} else if(type == 1) {
     		IrcClientConnection *connection = g_hash_table_lookup(connections, name);
@@ -280,6 +282,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     			gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), connection->buffer);
     			active_type = CHAT_ELEMENT_CONNECTION;
     			active = connection;
+    			setWindowTitle(name, NULL);
     			LOG_INFO("Switched to connection '%s'", name);
     		} else {
     			LOG_ERROR("Failed to lookup IRC client connection '%s'", name);
@@ -301,6 +304,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     				gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), channel->buffer);
     				active_type = CHAT_ELEMENT_CHANNEL;
     				active = channel;
+    				setWindowTitle(parentName, name);
     				LOG_INFO("Switched to channel '%s' in connection '%s'", name, parentName);
     			} else {
     				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s'", name, parentName);
@@ -526,6 +530,7 @@ static void refreshSideTree()
 	// Switch back to status
 	gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
 	active_type = CHAT_ELEMENT_STATUS;
+	setWindowTitle(NULL, NULL);
 	LOG_INFO("Switched to status");
 }
 
@@ -562,6 +567,28 @@ static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType 
 	}
 
 	gtk_widget_set_sensitive(chat_output, true);
+}
+
+/**
+ * Sets the window title of the IRC client
+ *
+ * @param connection		the name of the currently active connection or NULL
+ * @param channel			the name of the currently active channel or NULL
+ */
+static void setWindowTitle(char *connection, char *channel)
+{
+	GString *title = g_string_new("Kalisko IRC client");
+
+	if(connection != NULL) {
+		g_string_append_printf(title, "- %s", connection);
+	}
+
+	if(channel != NULL) {
+		g_string_append_printf(title, "- %s", channel);
+	}
+
+	gtk_window_set_title(GTK_WINDOW(window), title->str);
+	g_string_free(title, true);
 }
 
 /**

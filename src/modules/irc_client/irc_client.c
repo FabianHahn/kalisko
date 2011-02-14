@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 3, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -50,6 +50,8 @@ typedef struct {
 	IrcConnection *connection;
 	/** A table of channels for this connection */
 	GHashTable *channels;
+	/** An iterator pointing to the connection in the side tree */
+	GtkTreeIter tree_iter;
 } IrcClientConnection;
 
 typedef struct {
@@ -59,6 +61,8 @@ typedef struct {
 	GtkTextBuffer *buffer;
 	/** The parent connection this channel belongs to */
 	IrcClientConnection *connection;
+	/** An iterator pointing to the channel in the side tree */
+	GtkTreeIter tree_iter;
 } IrcClientConnectionChannel;
 
 typedef enum {
@@ -88,6 +92,7 @@ static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
 static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType type);
 static void setWindowTitle(char *connection, char *channel);
+static void setChannelDirty(IrcClientConnectionChannel *channel, bool value);
 static void freeIrcClientConnection(void *connection_p);
 static void freeIrcClientConnectionChannel(void *channel_p);
 static int strpcmp(const void *p1, const void *p2);
@@ -305,6 +310,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     				active_type = CHAT_ELEMENT_CHANNEL;
     				active = channel;
     				setWindowTitle(parentName, name);
+    				setChannelDirty(channel, false);
     				LOG_INFO("Switched to channel '%s' in connection '%s'", name, parentName);
     			} else {
     				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s'", name, parentName);
@@ -358,8 +364,6 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 
 static void listener_channel(void *subject, const char *event, void *data, va_list args)
 {
-	refreshSideTree();
-
 	IrcClientConnection *connection = $(void *, property_table, getPropertyTableValue)(subject, "irc_client_connection");
 	if(connection == NULL) {
 		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
@@ -383,6 +387,8 @@ static void listener_channel(void *subject, const char *event, void *data, va_li
 		char *channel = va_arg(args, char *);
 		g_hash_table_remove(connection->channels, channel);
 	}
+
+	refreshSideTree();
 }
 
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args)
@@ -412,6 +418,10 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 					appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_IN);
 					g_string_free(msg, true);
 					$(void, irc_parser, freeIrcUserMask)(mask);
+
+					if(active_type != CHAT_ELEMENT_CHANNEL || g_strcmp0(((IrcClientConnectionChannel *) active)->name, channel->name) != 0) { // Not posted into the active channel
+						setChannelDirty(channel, true);
+					}
 				}
 			} else {
 				LOG_WARNING("Received channel message for unjoined channel '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
@@ -505,19 +515,23 @@ static void refreshSideTree()
 	// Add connections
 	for(int i = 0; i < entries->len; i++) {
 		key = entries->pdata[i];
-
-		GtkTreeIter connectionIter;
-		gtk_tree_store_append(treestore, &connectionIter, NULL);
-		gtk_tree_store_set(treestore, &connectionIter, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
-
 		IrcClientConnection *connection = g_hash_table_lookup(connections, key);
+
+		gtk_tree_store_append(treestore, &connection->tree_iter, NULL);
+		gtk_tree_store_set(treestore, &connection->tree_iter, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
+
 		GList *channels = $(GList *, irc_channel, getTrackedChannels)(connection->connection);
 
 		for(GList *iter = channels; iter != NULL; iter = iter->next) {
 			IrcChannel *channel = iter->data;
-			GtkTreeIter channelIter;
-			gtk_tree_store_append(treestore, &channelIter, &connectionIter);
-			gtk_tree_store_set(treestore, &channelIter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
+			IrcClientConnectionChannel *connectionChannel = g_hash_table_lookup(connection->channels, channel->name);
+
+			if(connectionChannel != NULL) {
+				gtk_tree_store_append(treestore, &connectionChannel->tree_iter, &connection->tree_iter);
+				gtk_tree_store_set(treestore, &connectionChannel->tree_iter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
+			} else {
+				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", channel->name, connection->name);
+			}
 		}
 
 		g_list_free(channels);
@@ -589,6 +603,20 @@ static void setWindowTitle(char *connection, char *channel)
 
 	gtk_window_set_title(GTK_WINDOW(window), title->str);
 	g_string_free(title, true);
+}
+
+/**
+ * Sets the dirty flag of a channel
+ *
+ * @param channel		the channel to flag as dirty or clean
+ * @param value			whether to flag the channel as dirty (true) or clean (false)
+ */
+static void setChannelDirty(IrcClientConnectionChannel *channel, bool value)
+{
+	GtkTreeStore *store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(side_tree)));
+	const char *icon = value ? GTK_STOCK_YES : GTK_STOCK_NO;
+	gtk_tree_store_set(store, &channel->tree_iter, SIDE_TREE_ICON_COLUMN, icon, -1); // clear dirty state
+	LOG_DEBUG("Flagged channel '%s' as %s", channel->name, value ? "dirty" : "clean");
 }
 
 /**

@@ -62,7 +62,7 @@
             <property name="visible">True</property>
             <child>
               <object class="GtkTreeView" id="side_tree">
-                <property name="width_request">200</property>
+                <property name="width_request">150</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="model">side_tree_model</property>
@@ -124,7 +124,7 @@
                     </child>
                     <child>
                       <object class="GtkTreeView" id="channel_list">
-                        <property name="width_request">200</property>
+                        <property name="width_request">100</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="model">channel_list_model</property>

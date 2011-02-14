@@ -30,14 +30,15 @@
 #include "modules/irc/irc.h"
 #include "modules/event/event.h"
 #include "modules/irc_parser/irc_parser.h"
+#include "modules/irc_channel/irc_channel.h"
 #include "api.h"
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -59,6 +60,13 @@ typedef enum {
 	CHAT_MESSAGE_CONNECTION_SEND
 } ChatMessageType;
 
+typedef enum {
+	CHAT_ELEMENT_STATUS,
+	CHAT_ELEMENT_CONNECTION,
+	CHAT_ELEMENT_CHANNEL
+} ChatElementType;
+
+static void listener_channel(void *subject, const char *event, void *data, va_list args);
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args);
 static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
 static void finalize();
@@ -110,6 +118,12 @@ static GtkTextBuffer *status_buffer;
 
 /** The IRC client's text tag table */
 static GtkTextTagTable *tags;
+
+/** The name of the active element */
+static char *active_name = NULL;
+
+/** The type of the active element */
+static ChatElementType active_type = CHAT_ELEMENT_STATUS;
 
 MODULE_INIT
 {
@@ -243,12 +257,15 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
 
     	if(type == 0) {
     		gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
+    		active_type = CHAT_ELEMENT_STATUS;
     		LOG_INFO("Switched to status");
     	} else if(type == 1) {
     		IrcClientConnection *connection = g_hash_table_lookup(connections, name);
 
     		if(connection != NULL) {
     			gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), connection->buffer);
+    			active_type = CHAT_ELEMENT_CONNECTION;
+    			active_name = connection->name;
     			LOG_INFO("Switched to connection '%s'", name);
     		} else {
     			LOG_ERROR("Failed to lookup IRC client conneciction '%s'", name);
@@ -265,6 +282,31 @@ API void irc_client_chat_output_scroll_size_allocate(GtkWidget *widget, GtkAlloc
 	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(chat_output), &end, 0.0, true, 1.0, 1.0);
 }
 
+API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
+{
+	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(chat_input));
+
+	switch(active_type) {
+		case CHAT_ELEMENT_CONNECTION:
+			do {
+				IrcClientConnection *connection = g_hash_table_lookup(connections, active_name);
+				$(bool, irc, ircSend)(connection->connection, "%s", command);
+			} while(false);
+		break;
+		default:
+			// nothing to do
+		break;
+	}
+
+	gtk_entry_set_text(GTK_ENTRY(widget), "");
+
+	return true;
+}
+
+static void listener_channel(void *subject, const char *event, void *data, va_list args)
+{
+	refreshSideTree();
+}
 
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args)
 {
@@ -308,7 +350,12 @@ static void addIrcClientConnection(char *name, Store *config)
 		return;
 	}
 
+	// Enable channel tracking
+	$(bool, irc_channel, enableChannelTracking)(connection->connection);
+
 	// Attach to events
+	$(void, event, attachEventListener)(connection->connection, "channel_join", connection, &listener_channel);
+	$(void, event, attachEventListener)(connection->connection, "channel_part", connection, &listener_channel);
 	$(void, event, attachEventListener)(connection->connection, "line", connection, &listener_ircLine);
 	$(void, event, attachEventListener)(connection->connection, "send", connection, &listener_ircSend);
 
@@ -359,9 +406,21 @@ static void refreshSideTree()
 	for(int i = 0; i < entries->len; i++) {
 		key = entries->pdata[i];
 
-		GtkTreeIter child;
-		gtk_tree_store_append(treestore, &child, NULL);
-		gtk_tree_store_set(treestore, &child, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
+		GtkTreeIter connectionIter;
+		gtk_tree_store_append(treestore, &connectionIter, NULL);
+		gtk_tree_store_set(treestore, &connectionIter, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
+
+		IrcClientConnection *connection = g_hash_table_lookup(connections, key);
+		GList *channels = $(GList *, irc_channel, getTrackedChannels)(connection->connection);
+
+		for(GList *iter = channels; iter != NULL; iter = iter->next) {
+			IrcChannel *channel = iter->data;
+			GtkTreeIter channelIter;
+			gtk_tree_store_append(treestore, &channelIter, &connectionIter);
+			gtk_tree_store_set(treestore, &channelIter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
+		}
+
+		g_list_free(channels);
 	}
 
 	g_ptr_array_free(entries, true);
@@ -410,6 +469,8 @@ static void freeIrcClientConnection(void *connection_p)
 {
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
+	$(void, event, detachEventListener)(connection->connection, "channel_join", connection, &listener_channel);
+	$(void, event, detachEventListener)(connection->connection, "channel_part", connection, &listener_channel);
 	$(void, event, detachEventListener)(connection->connection, "line", connection, &listener_ircLine);
 	$(void, event, detachEventListener)(connection->connection, "send", connection, &listener_ircSend);
 	$(void, irc, freeIrcConnection)(connection->connection);

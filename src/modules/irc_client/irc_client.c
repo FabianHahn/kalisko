@@ -31,14 +31,15 @@
 #include "modules/event/event.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/irc_channel/irc_channel.h"
+#include "modules/property_table/property_table.h"
 #include "api.h"
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -47,7 +48,16 @@ typedef struct {
 	GtkTextBuffer *buffer;
 	/** The IRC connection for this connection */
 	IrcConnection *connection;
+	/** A table of channels for this connection */
+	GHashTable *channels;
 } IrcClientConnection;
+
+typedef struct {
+	/** The name of the IRC client connection channel */
+	char *name;
+	/** The text buffer for this channel */
+	GtkTextBuffer *buffer;
+} IrcClientConnectionChannel;
 
 typedef enum {
 	SIDE_TREE_NAME_COLUMN,
@@ -74,6 +84,7 @@ static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
 static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType type);
 static void freeIrcClientConnection(void *connection_p);
+static void freeIrcClientConnectionChannel(void *channel_p);
 static int strpcmp(const void *p1, const void *p2);
 
 /**
@@ -305,6 +316,29 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 static void listener_channel(void *subject, const char *event, void *data, va_list args)
 {
 	refreshSideTree();
+
+	IrcClientConnection *connection = $(void *, property_table, getPropertyTableValue)(subject, "irc_client_connection");
+	if(connection == NULL) {
+		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
+		return;
+	}
+
+	if(g_strcmp0(event, "channel_join") == 0) { // join
+		IrcChannel *channel = va_arg(args, IrcChannel *);
+		IrcClientConnectionChannel *connectionChannel = ALLOCATE_OBJECT(IrcClientConnectionChannel);
+		connectionChannel->name = strdup(channel->name);
+		connectionChannel->buffer = gtk_text_buffer_new(tags);
+		GString *text = g_string_new("");
+		g_string_append_printf(text, "Created text buffer for channel '%s' in connection '%s'", connectionChannel->name, connection->name);
+		gtk_text_buffer_set_text(connectionChannel->buffer, text->str, -1);
+		g_string_free(text, true);
+
+		// Add to channels table of connection
+		g_hash_table_insert(connection->channels, connectionChannel->name, connectionChannel);
+	} else { // part
+		char *channel = va_arg(args, char *);
+		g_hash_table_remove(connection->channels, channel);
+	}
 }
 
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args)
@@ -341,6 +375,7 @@ static void addIrcClientConnection(char *name, Store *config)
 {
 	IrcClientConnection *connection = ALLOCATE_OBJECT(IrcClientConnection);
 	connection->name = strdup(name);
+	connection->channels = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnectionChannel);
 
 	if((connection->connection = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
 		LOG_ERROR("Failed to create IRC client connection '%s', aborting", name);
@@ -348,6 +383,9 @@ static void addIrcClientConnection(char *name, Store *config)
 		free(connection);
 		return;
 	}
+
+	// Set reverse property
+	$(bool, property_table, setPropertyTableValue)(connection->connection, "irc_client_connection", connection);
 
 	// Enable channel tracking
 	$(bool, irc_channel, enableChannelTracking)(connection->connection);
@@ -475,13 +513,28 @@ static void freeIrcClientConnection(void *connection_p)
 {
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
+	$(void, property_table, freePropertyTable)(connection->connection);
 	$(void, event, detachEventListener)(connection->connection, "channel_join", connection, &listener_channel);
 	$(void, event, detachEventListener)(connection->connection, "channel_part", connection, &listener_channel);
 	$(void, event, detachEventListener)(connection->connection, "line", connection, &listener_ircLine);
 	$(void, event, detachEventListener)(connection->connection, "send", connection, &listener_ircSend);
 	$(void, irc, freeIrcConnection)(connection->connection);
 	g_object_unref(connection->buffer);
+	g_hash_table_destroy(connection->channels);
 	free(connection);
+}
+
+/**
+ * A GDestroyNotify function to free an IRC client connection channel
+ *
+ * @param connection_p			a pointer to the IRC client connection channel to free
+ */
+static void freeIrcClientConnectionChannel(void *channel_p)
+{
+	IrcClientConnectionChannel *channel = channel_p;
+	free(channel->name);
+	g_object_unref(channel->buffer);
+	free(channel);
 }
 
 static int strpcmp(const void *p1, const void *p2)

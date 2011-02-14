@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 7);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -57,6 +57,8 @@ typedef struct {
 	char *name;
 	/** The text buffer for this channel */
 	GtkTextBuffer *buffer;
+	/** The parent connection this channel belongs to */
+	IrcClientConnection *connection;
 } IrcClientConnectionChannel;
 
 typedef enum {
@@ -67,7 +69,9 @@ typedef enum {
 
 typedef enum {
 	CHAT_MESSAGE_CONNECTION_LINE,
-	CHAT_MESSAGE_CONNECTION_SEND
+	CHAT_MESSAGE_CONNECTION_SEND,
+	CHAT_MESSAGE_CHANNEL_PRIVMSG_IN,
+	CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND
 } ChatMessageType;
 
 typedef enum {
@@ -130,8 +134,8 @@ static GtkTextBuffer *status_buffer;
 /** The IRC client's text tag table */
 static GtkTextTagTable *tags;
 
-/** The name of the active element */
-static char *active_name = NULL;
+/** The active element */
+static void *active = NULL;
 
 /** The type of the active element */
 static ChatElementType active_type = CHAT_ELEMENT_STATUS;
@@ -179,7 +183,7 @@ MODULE_INIT
 	// tag table
 	tags = gtk_text_buffer_get_tag_table(status_buffer);
 	g_object_ref(tags);
-	gtk_text_buffer_create_tag(status_buffer, "connection_send", "foreground", "blue", NULL);
+	gtk_text_buffer_create_tag(status_buffer, "send", "foreground", "blue", NULL);
 
 	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
 	g_string_prepend(welcome, "Welcome to the Kalisko IRC client ");
@@ -275,7 +279,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     		if(connection != NULL) {
     			gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), connection->buffer);
     			active_type = CHAT_ELEMENT_CONNECTION;
-    			active_name = connection->name;
+    			active = connection;
     			LOG_INFO("Switched to connection '%s'", name);
     		} else {
     			LOG_ERROR("Failed to lookup IRC client connection '%s'", name);
@@ -296,10 +300,10 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     			if(channel != NULL) {
     				gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), channel->buffer);
     				active_type = CHAT_ELEMENT_CHANNEL;
-    				active_name = channel->name;
+    				active = channel;
     				LOG_INFO("Switched to channel '%s' in connection '%s'", name, parentName);
     			} else {
-    				LOG_ERROR("Failed to lookup channel '%s' in IRC client conneciction '%s'", name, parentName);
+    				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s'", name, parentName);
     			}
     		} else {
     			LOG_ERROR("Failed to lookup IRC client connection '%s'", parentName);
@@ -323,8 +327,19 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 	switch(active_type) {
 		case CHAT_ELEMENT_CONNECTION:
 			do {
-				IrcClientConnection *connection = g_hash_table_lookup(connections, active_name);
+				IrcClientConnection *connection = active;
 				$(bool, irc, ircSend)(connection->connection, "%s", command);
+			} while(false);
+		break;
+		case CHAT_ELEMENT_CHANNEL:
+			do {
+				IrcClientConnectionChannel *channel = active;
+				$(bool, irc, ircSend)(channel->connection->connection, "PRIVMSG %s :%s", channel->name, command);
+
+				GString *msg = g_string_new("");
+				g_string_append_printf(msg, "<%s> %s", channel->connection->connection->nick, command);
+				appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND);
+				g_string_free(msg, true);
 			} while(false);
 		break;
 		default:
@@ -352,6 +367,7 @@ static void listener_channel(void *subject, const char *event, void *data, va_li
 		IrcClientConnectionChannel *connectionChannel = ALLOCATE_OBJECT(IrcClientConnectionChannel);
 		connectionChannel->name = strdup(channel->name);
 		connectionChannel->buffer = gtk_text_buffer_new(tags);
+		connectionChannel->connection = connection;
 		GString *text = g_string_new("");
 		g_string_append_printf(text, "Created text buffer for channel '%s' in connection '%s'", connectionChannel->name, connection->name);
 		gtk_text_buffer_set_text(connectionChannel->buffer, text->str, -1);
@@ -379,6 +395,25 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 	IrcClientConnection *clientConnection = data;
 	appendMessage(clientConnection->buffer, message->raw_message, CHAT_MESSAGE_CONNECTION_LINE);
+
+	if(g_strcmp0(message->command, "PRIVMSG") == 0) {
+		if(message->params[0] != NULL) {
+			IrcClientConnectionChannel *channel = g_hash_table_lookup(clientConnection->channels, message->params[0]);
+
+			if(channel != NULL) {
+				IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+				if(mask != NULL) {
+					GString *msg = g_string_new("");
+					g_string_append_printf(msg, "<%s> %s", mask->nick, message->trailing);
+					appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_IN);
+					g_string_free(msg, true);
+					$(void, irc_parser, freeIrcUserMask)(mask);
+				}
+			} else {
+				LOG_WARNING("Received channel message for unjoined channl '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
+			}
+		}
+	}
 }
 
 static void finalize()
@@ -518,7 +553,8 @@ static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType 
 
 	switch(type) {
 		case CHAT_MESSAGE_CONNECTION_SEND:
-			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "connection_send", NULL);
+		case CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND:
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "send", NULL);
 		break;
 		default:
 			gtk_text_buffer_insert(buffer, &end, message, -1);

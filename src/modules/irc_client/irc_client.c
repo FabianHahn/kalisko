@@ -36,7 +36,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8));
 
@@ -426,6 +426,11 @@ static void refreshSideTree()
 	g_ptr_array_free(entries, true);
 
 	gtk_tree_view_expand_all(GTK_TREE_VIEW(side_tree));
+
+	// Switch back to status
+	gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
+	active_type = CHAT_ELEMENT_STATUS;
+	LOG_INFO("Switched to status");
 }
 
 /**

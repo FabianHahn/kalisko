@@ -28,7 +28,7 @@
 MODULE_NAME("property_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to have in-memory HashTables based on a subject (void pointer)");
-MODULE_VERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
@@ -73,11 +73,11 @@ API void *getPropertyTableValue(void *subject, char *key)
 }
 
 /**
- * Sets or replaces the given value in the subject specific table using the given key.
+ * Sets, replaces or deletes the given value in the subject specific table using the given key.
  *
  * @param subject	The subject to find the corresponding subject specific table
  * @param key		The key to find the value in the table
- * @param value		The value to set
+ * @param value		The value to set or NULL if the key-value pair should be removed
  */
 API void setPropertyTableValue(void *subject, char *key, void *value)
 {
@@ -89,7 +89,11 @@ API void setPropertyTableValue(void *subject, char *key, void *value)
 		g_hash_table_insert(subjects, subject, table);
 	}
 
-	g_hash_table_insert(table, strdup(key), value);
+	if(value == NULL) { // remove entry
+		g_hash_table_remove(table, key);
+	} else {
+		g_hash_table_insert(table, strdup(key), value);
+	}
 }
 
 /**

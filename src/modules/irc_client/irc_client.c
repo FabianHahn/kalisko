@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 6);
+MODULE_VERSION(0, 3, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -526,21 +526,31 @@ static void refreshSideTree()
 		gtk_tree_store_append(treestore, &connection->tree_iter, NULL);
 		gtk_tree_store_set(treestore, &connection->tree_iter, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
 
+		GPtrArray *channelEntries = g_ptr_array_new();
 		GList *channels = $(GList *, irc_channel, getTrackedChannels)(connection->connection);
 
 		for(GList *iter = channels; iter != NULL; iter = iter->next) {
 			IrcChannel *channel = iter->data;
-			IrcClientConnectionChannel *connectionChannel = g_hash_table_lookup(connection->channels, channel->name);
-
-			if(connectionChannel != NULL) {
-				gtk_tree_store_append(treestore, &connectionChannel->tree_iter, &connection->tree_iter);
-				gtk_tree_store_set(treestore, &connectionChannel->tree_iter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
-			} else {
-				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", channel->name, connection->name);
-			}
+			g_ptr_array_add(channelEntries, channel->name);
 		}
 
 		g_list_free(channels);
+
+		// Sort connection list
+		qsort(channelEntries->pdata, channelEntries->len, sizeof(char *), &strpcmp);
+
+		for(int j = 0; j < channelEntries->len; j++) {
+			IrcClientConnectionChannel *channel = g_hash_table_lookup(connection->channels, channelEntries->pdata[j]);
+
+			if(channel != NULL) {
+				gtk_tree_store_append(treestore, &channel->tree_iter, &connection->tree_iter);
+				gtk_tree_store_set(treestore, &channel->tree_iter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
+			} else {
+				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", (char *) channelEntries->pdata[j], connection->name);
+			}
+		}
+
+		g_ptr_array_free(channelEntries, true);
 	}
 
 	g_ptr_array_free(entries, true);

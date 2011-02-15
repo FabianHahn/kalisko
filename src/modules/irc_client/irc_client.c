@@ -37,9 +37,9 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 8);
+MODULE_VERSION(0, 3, 9);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -75,7 +75,8 @@ typedef enum {
 	CHAT_MESSAGE_CONNECTION_LINE,
 	CHAT_MESSAGE_CONNECTION_SEND,
 	CHAT_MESSAGE_CHANNEL_PRIVMSG_IN,
-	CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND
+	CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND,
+	CHAT_MESSAGE_STATUS_LOG
 } ChatMessageType;
 
 typedef enum {
@@ -87,6 +88,7 @@ typedef enum {
 static void listener_channel(void *subject, const char *event, void *data, va_list args);
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args);
 static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
+static void listener_log(void *subject, const char *event, void *data, va_list args);
 static void finalize();
 static void addIrcClientConnection(char *name, Store *config);
 static void refreshSideTree();
@@ -234,6 +236,9 @@ MODULE_INIT
 
 	// run
 	$(void, gtk+, runGtkLoop)();
+
+	// log handler
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
 
 	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
 
@@ -436,8 +441,42 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	}
 }
 
+static void listener_log(void *subject, const char *event, void *data, va_list args)
+{
+	const char *module = va_arg(args, const char *);
+	LogType type = va_arg(args, LogType);
+	char *message = va_arg(args, char *);
+
+	GDateTime *now = g_date_time_new_now_local();
+
+	const char *typestr;
+	switch(type) {
+		case LOG_TYPE_DEBUG:
+			typestr = "debug";
+		break;
+		case LOG_TYPE_INFO:
+			typestr = "info";
+		break;
+		case LOG_TYPE_WARNING:
+			typestr = "warning";
+		break;
+		case LOG_TYPE_ERROR:
+			typestr = "error";
+		break;
+	}
+
+	GString *msg = g_string_new("");
+	g_string_append_printf(msg, "[%s:%s] %s", module, typestr, message);
+	appendMessage(status_buffer, msg->str, CHAT_MESSAGE_STATUS_LOG);
+	g_string_free(msg, true);
+
+	g_date_time_unref(now);
+}
+
 static void finalize()
 {
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
+
 	gtk_widget_destroy(GTK_WIDGET(window));
 	g_object_unref(status_buffer);
 	g_object_unref(tags);

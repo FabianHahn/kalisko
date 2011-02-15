@@ -28,7 +28,7 @@
 MODULE_NAME("property_table");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Allows to have in-memory HashTables based on a subject (void pointer)");
-MODULE_VERSION(0, 0, 2);
+MODULE_VERSION(0, 0, 3);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
@@ -103,13 +103,7 @@ API void setPropertyTableValue(void *subject, char *key, void *value)
  */
 API void freePropertyTable(void *subject)
 {
-	GHashTable *table;
-
-	// Get the table corresponding to the subject if it exists, else create one
-	if((table = g_hash_table_lookup(subjects, subject)) != NULL) {
-		g_hash_table_destroy(table);
-		g_hash_table_remove(subjects, subject);
-	}
+	g_hash_table_remove(subjects, subject);
 }
 
 /**

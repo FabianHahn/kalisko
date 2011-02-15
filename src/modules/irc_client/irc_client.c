@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 7);
+MODULE_VERSION(0, 3, 8);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
@@ -493,6 +493,9 @@ static void addIrcClientConnection(char *name, Store *config)
  */
 static void refreshSideTree()
 {
+	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
+	bool active_found = false;
+
 	GtkTreeStore *treestore = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(side_tree)));
 	gtk_tree_store_clear(treestore);
 
@@ -501,8 +504,10 @@ static void refreshSideTree()
 	gtk_tree_store_append(treestore, &child, NULL);
 	gtk_tree_store_set(treestore, &child, SIDE_TREE_NAME_COLUMN, "Status", SIDE_TREE_TYPE_COLUMN, 0, SIDE_TREE_ICON_COLUMN, GTK_STOCK_INFO, -1);
 
-	GtkTreeSelection *select = gtk_tree_view_get_selection(GTK_TREE_VIEW(side_tree));
-	gtk_tree_selection_select_iter(select, &child); // select status
+	if(active_type == CHAT_ELEMENT_STATUS) {
+		gtk_tree_selection_select_iter(select, &child); // select status
+		active_found = true;
+	}
 
 	// Prepare connections
 	GHashTableIter iter;
@@ -526,6 +531,11 @@ static void refreshSideTree()
 		gtk_tree_store_append(treestore, &connection->tree_iter, NULL);
 		gtk_tree_store_set(treestore, &connection->tree_iter, SIDE_TREE_NAME_COLUMN, key, SIDE_TREE_TYPE_COLUMN, 1, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NETWORK, -1);
 
+		if(active_type == CHAT_ELEMENT_CONNECTION && active == connection) {
+			gtk_tree_selection_select_iter(select, &connection->tree_iter); // select status
+			active_found = true;
+		}
+
 		GPtrArray *channelEntries = g_ptr_array_new();
 		GList *channels = $(GList *, irc_channel, getTrackedChannels)(connection->connection);
 
@@ -545,6 +555,11 @@ static void refreshSideTree()
 			if(channel != NULL) {
 				gtk_tree_store_append(treestore, &channel->tree_iter, &connection->tree_iter);
 				gtk_tree_store_set(treestore, &channel->tree_iter, SIDE_TREE_NAME_COLUMN, channel->name, SIDE_TREE_TYPE_COLUMN, 2, SIDE_TREE_ICON_COLUMN, GTK_STOCK_NO, -1);
+
+				if(active_type == CHAT_ELEMENT_CHANNEL && active == channel) {
+					gtk_tree_selection_select_iter(select, &channel->tree_iter); // select status
+					active_found = true;
+				}
 			} else {
 				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", (char *) channelEntries->pdata[j], connection->name);
 			}
@@ -557,11 +572,14 @@ static void refreshSideTree()
 
 	gtk_tree_view_expand_all(GTK_TREE_VIEW(side_tree));
 
-	// Switch back to status
-	gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
-	active_type = CHAT_ELEMENT_STATUS;
-	setWindowTitle(NULL, NULL);
-	LOG_INFO("Switched to status");
+	if(!active_found) { // If we couldn't find the active element, go back to status
+		// Switch back to status
+		gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
+		gtk_tree_selection_select_iter(select, &child); // select status
+		active_type = CHAT_ELEMENT_STATUS;
+		setWindowTitle(NULL, NULL);
+		LOG_INFO("Switched to status");
+	}
 }
 
 /**

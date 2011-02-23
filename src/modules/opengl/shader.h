@@ -24,6 +24,7 @@
 #include <GL/glew.h>
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"
+#include "texture.h"
 
 /**
  * Enum for possible OpenGL uniform types
@@ -36,7 +37,9 @@ typedef enum {
 	/** A uniform 4-vector value */
 	OPENGL_UNIFORM_VECTOR,
 	/** A uniform 4x4-matrix value */
-	OPENGL_UNIFORM_MATRIX
+	OPENGL_UNIFORM_MATRIX,
+	/** A texture value */
+	OPENGL_UNIFORM_TEXTURE
 } OpenGLUniformType;
 
 /**
@@ -63,6 +66,8 @@ typedef union {
 	Vector *vector_value;
 	/** A uniform matrix value */
 	Matrix *matrix_value;
+	/** A texture value */
+	OpenGLTexture *texture_value;
 } OpenGLUniformContent;
 
 /**
@@ -84,6 +89,7 @@ API OpenGLUniform *createOpenGLUniformInt(int value);
 API OpenGLUniform *createOpenGLUniformFloat(double value);
 API OpenGLUniform *createOpenGLUniformVector(Vector *value);
 API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
+API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture);
 API bool useOpenGLUniform(OpenGLUniform *uniform);
 
 #endif

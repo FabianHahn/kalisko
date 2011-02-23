@@ -201,6 +201,22 @@ API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value)
 }
 
 /**
+ * Creates a texture valued OpenGL uniform
+ *
+ * @param value			the value of the uniform, must be an OpenGL texture
+ * @result				the created uniform or NULL on failure
+ */
+API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture)
+{
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_TEXTURE;
+	uniform->content.texture_value = texture;
+	uniform->location = -1;
+
+	return uniform;
+}
+
+/**
  * Uses a uniform in the current shader program
  *
  * @param uniform		the uniform to use
@@ -229,6 +245,9 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 		break;
 		case OPENGL_UNIFORM_MATRIX:
 			glUniformMatrix4fv(uniform->location, 1, GL_TRUE, $(float *, linalg, getMatrixData)(uniform->content.matrix_value));
+		break;
+		case OPENGL_UNIFORM_TEXTURE:
+			glUniform1i(uniform->location, uniform->content.texture_value->texture);
 		break;
 	}
 

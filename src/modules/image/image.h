@@ -67,7 +67,7 @@ inline float getImage(Image *image, unsigned int x, unsigned int y, unsigned int
  * @param c				the channel to access
  * @param value			the value to set at the specified location
  */
-inline float setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, float value)
+inline void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, float value)
 {
 	assert(x < image->width);
 	assert(y < image->height);

@@ -31,6 +31,8 @@ typedef struct {
 	float normal[3];
 	/** The color of the vertex */
 	float color[4];
+	/** The uv coordinates of the vertex */
+	float uv[2];
 } MeshVertex;
 
 /**

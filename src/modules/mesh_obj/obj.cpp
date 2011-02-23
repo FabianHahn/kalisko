@@ -99,7 +99,7 @@ API Mesh *readMeshFileObj(const char *filename)
 				g_strfreev(parts);
 			}
 			triangles.push_back(triangle);
-		} else if(type == std::string("tn")) {
+		} else if(type == std::string("vt")) {
 			float u, v;
 			file >> u >> v;
 			uvs.push_back(std::make_pair(u, v));

@@ -248,7 +248,7 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 			glUniformMatrix4fv(uniform->location, 1, GL_TRUE, $(float *, linalg, getMatrixData)(uniform->content.matrix_value));
 		break;
 		case OPENGL_UNIFORM_TEXTURE:
-			glUniform1i(uniform->location, uniform->content.texture_value->texture);
+			glUniform1i(uniform->location, uniform->content.texture_value->unit);
 		break;
 	}
 

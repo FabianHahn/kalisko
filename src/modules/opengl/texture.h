@@ -37,6 +37,8 @@ typedef struct {
 	float *data;
 	/** The OpenGL texture context for this texture */
 	GLuint texture;
+	/** The OpenGL texture unit currently used to render this texture */
+	int unit;
 } OpenGLTexture;
 
 API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height);

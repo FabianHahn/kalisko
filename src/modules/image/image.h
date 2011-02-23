@@ -21,6 +21,8 @@
 #ifndef IMAGE_IMAGE_H
 #define IMAGE_IMAGE_H
 
+#include <assert.h>
+
 /**
  * Struct representing an image
  */
@@ -37,5 +39,41 @@ typedef struct {
 
 API Image *createImage(unsigned int width, unsigned int height, unsigned int channels);
 API void freeImage(Image *image);
+
+/**
+ * Retrieves an image pixel
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @result				the pixel at the requested position
+ */
+inline float getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
+{
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	return image->data[y * image->width * image->channels + x * image->channels + c];
+}
+
+/**
+ * Sets an image pixel
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @param value			the value to set at the specified location
+ */
+inline float setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, float value)
+{
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	image->data[y * image->width * image->channels + x * image->channels + c] = value;
+}
 
 #endif

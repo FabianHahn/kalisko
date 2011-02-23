@@ -20,9 +20,16 @@
 
 #include <glib.h>
 #include "dll.h"
+#include "modules/store/store.h"
+#include "modules/store/parse.h"
+#include "modules/store/write.h"
 #include "api.h"
 #include "image.h"
+#include "store.h"
 #include "io.h"
+
+static Image *readImageStore(const char *filename);
+static bool writeImageStore(const char *filename, Image *image);
 
 /**
  * A hash table associating strings with ImageIOReadHandlers
@@ -41,6 +48,9 @@ API void initImageIO()
 {
 	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	writeHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+
+	addImageIOReadHandler("store", &readImageStore);
+	addImageIOWriteHandler("store", &writeImageStore);
 }
 
 /**
@@ -171,3 +181,39 @@ API bool writeImageToFile(const char *filename, Image *image)
 	return handler(filename, image);
 }
 
+/**
+ * Reads a image from a store file
+ *
+ * @param filename			the store file to read from
+ * @result					the parsed image of NULL on failure
+ */
+static Image *readImageStore(const char *filename)
+{
+	Store *store;
+	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
+		LOG_ERROR("Failed to parse image store file '%s'", filename);
+		return NULL;
+	}
+
+	Image *image = createImageFromStore(store);
+
+	$(void, store, freeStore)(store);
+
+	return image;
+}
+
+/**
+ * Writes an OpenGL image to a store file
+ *
+ * @param filename			the file name of the image store file to be saved
+ * @param image				the OpenGL image to be written
+ * @result					true if successful
+ */
+static bool writeImageStore(const char *filename, Image *image)
+{
+	Store *store = convertImageToStore(image);
+	bool result = $(bool, store, writeStoreFile)(filename, store);
+	$(void, store, freeStore)(store);
+
+	return result;
+}

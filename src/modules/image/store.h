@@ -18,55 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include <glib.h>
-#include "dll.h"
-#include "api.h"
+#ifndef IMAGE_STORE_H
+#define IMAGE_STORE_H
+
+#include "modules/store/store.h"
 #include "image.h"
 
-MODULE_NAME("image");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 3, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
+API Image *createImageFromStore(Store *store);
+API Store *convertImageToStore(Image *image);
 
-MODULE_INIT
-{
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
-}
-
-/**
- * Creates a new image
- *
- * @param width			the width of the image to create
- * @param height		the height of the image to create
- * @param channels		the number of image channels to create
- * @result				the created image
- */
-API Image *createImage(unsigned int width, unsigned int height, unsigned int channels)
-{
-	Image *image = ALLOCATE_OBJECT(Image);
-	image->width = width;
-	image->height = height;
-	image->channels = channels;
-	image->data = ALLOCATE_OBJECTS(float, width * height * channels);
-
-	return image;
-}
-
-/**
- * Frees an image
- *
- * @param image			the image to free
- */
-API void freeImage(Image *image)
-{
-	free(image->data);
-	free(image);
-}
+#endif

@@ -30,6 +30,11 @@ extern "C" {
 #include "api.h"
 #include "obj.h"
 
+typedef struct {
+	unsigned int vertex_indices[3];
+	unsigned int uv_indices[3];
+} ObjTriangle;
+
 /**
  * Reads a mesh from an obj file
  *
@@ -45,9 +50,9 @@ API Mesh *readMeshFileObj(const char *filename)
 		return NULL;
 	}
 
-	std::vector<float> positions;
 	std::vector<MeshVertex> vertices;
-	std::vector<MeshTriangle> triangles;
+	std::vector< std::pair< float, float > > uvs;
+	std::vector<ObjTriangle> triangles;
 
 	while(file) {
 		std::string type;
@@ -65,23 +70,39 @@ API Mesh *readMeshFileObj(const char *filename)
 
 			vertices.push_back(vertex);
 		} else if(type == std::string("f")) {
-			MeshTriangle triangle;
+			ObjTriangle triangle;
 			for(int i = 0; i < 3; i++) {
 				std::string indices;
 				file >> indices;
 
 				char **parts = g_strsplit(indices.c_str(), "/", 0);
 				int index = atoi(parts[0]) - 1;
-				g_strfreev(parts);
 
 				if(index < 0 || index >= (int) vertices.size()) {
 					LOG_WARNING("Trying to assign invalid vertex index %d to triangle (mesh has %d vertices), replacing by 0", index, (int) vertices.size());
 					index = 0;
 				}
 
-				triangle.indices[i] = index;
+				triangle.vertex_indices[i] = index;
+
+				int uvindex = -1;
+				if(parts[1] != NULL) { // UV coordinate index available
+					uvindex = atoi(parts[1]) - 1;
+
+					if(index < 0 || index >= (int) vertices.size()) {
+						LOG_WARNING("Trying to assign invalid UV index %d to triangle (mesh has %d UV coordinates), replacing by 0", uvindex, (int) uvs.size());
+						uvindex = 0;
+					}
+				}
+				triangle.uv_indices[i] = uvindex;
+
+				g_strfreev(parts);
 			}
 			triangles.push_back(triangle);
+		} else if(type == std::string("tn")) {
+			float u, v;
+			file >> u >> v;
+			uvs.push_back(std::make_pair(u, v));
 		}
 
 		// Jump to next line
@@ -95,7 +116,17 @@ API Mesh *readMeshFileObj(const char *filename)
 	}
 
 	for(unsigned int i = 0; i < triangles.size(); i++) {
-		mesh->triangles[i] = triangles[i];
+		for(int j = 0; j < 3; j++) {
+			mesh->triangles[i].indices[j] = triangles[i].vertex_indices[j];
+
+			// Assign UV coords to vertices if available
+			unsigned int uvindex = triangles[i].uv_indices[j];
+			if(uvindex >= 0 && uvindex < uvs.size()) {
+				std::pair< float, float >& uv = uvs[uvindex];
+				mesh->vertices[triangles[i].vertex_indices[j]].uv[0] = uv.first;
+				mesh->vertices[triangles[i].vertex_indices[j]].uv[1] = uv.second;
+			}
+		}
 	}
 
 	$(void, mesh, generateMeshNormals)(mesh);

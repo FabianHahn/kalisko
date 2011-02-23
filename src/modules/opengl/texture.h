@@ -29,13 +29,18 @@
  * Struct representing an OpenGL texture that can be attached to shaders as uniform
  */
 typedef struct {
-	/** The texture data stored from bottom left pixel to top right pixel, rows denotes height, cols denotes width */
-	Matrix *data;
+	/** The width of the texture */
+	unsigned int width;
+	/** The height of the texture */
+	unsigned int height;
+	/** The texture data stored from bottom left pixel to top right pixel */
+	float *data;
 	/** The OpenGL texture context for this texture */
 	GLuint texture;
 } OpenGLTexture;
 
 API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height);
+API bool updateOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);
 
 #endif

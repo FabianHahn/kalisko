@@ -25,6 +25,7 @@
 #include "modules/linalg/Vector.h"
 #include "memory_alloc.h"
 #include "api.h"
+#include "opengl.h"
 #include "texture.h"
 
 /**
@@ -37,19 +38,48 @@
 API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height)
 {
 	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
-	texture->data = $(Matrix *, linalg, createMatrix)(height, width);
+	texture->width = width;
+	texture->height = height;
+	texture->data = ALLOCATE_OBJECTS(float, 3 * width * height);
 
+	// Create texture
 	glGenTextures(1, &texture->texture);
+	glBindTexture(GL_TEXTURE_2D, texture->texture);
+
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	return texture;
 }
 
 /**
+ * Updates an OpenGL texture by synchronizing it's CPU-side buffer with the OpenGL texture context
+ *
+ * @param texture		the texture to update
+ * @result				true if successful
+ */
+API bool updateOpenGLTexture(OpenGLTexture *texture)
+{
+	glBindTexture(GL_TEXTURE_2D, texture->texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->width, texture->height, 0, GL_RGB, GL_FLOAT, texture->data);
+
+	if(checkOpenGLError()) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Frees an existing OpenGL texture including the CPU-side buffer
+ *
+ * @param texture		the texture to free
  */
 API void freeOpenGLTexture(OpenGLTexture *texture)
 {
-	$(void, linalg, freeMatrix)(texture->data);
+	free(texture->data);
 	glDeleteTextures(1, &texture->texture);
 	free(texture);
 }

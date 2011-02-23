@@ -28,7 +28,7 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 3, 0));
 
@@ -148,16 +148,24 @@ static Image *readImageFilePng(const char *filename)
 
 	fclose(file);
 
+	LOG_DEBUG("Read PNG image '%s' has dimension %ux%u, bit depth %d and %u channels", filename, width, height, bit_depth, channels);
+
 	Image *image = $(Image *, image, createImage)(width, height, channels);
 	for(unsigned int y = 0; y < height; y++) {
 		png_byte *row = row_pointers[y];
 		for(unsigned int x = 0; x < width; x++) {
 			unsigned char *ptr = &(row[x * channels]);
 			for(unsigned int c = 0; c < channels; c++) {
-				setImage(image, x, y, c, ptr[c]);
+				setImage(image, x, y, c, (float) ptr[c]);
 			}
 		}
 	}
+
+	// Cleanup
+	for(unsigned int y = 0; y < height; y++) {
+		free(row_pointers[y]);
+	}
+	free(row_pointers);
 
 	return image;
 }

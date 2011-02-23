@@ -19,10 +19,12 @@
  */
 
 #include <glib.h>
+#include <assert.h>
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
 #include "api.h"
+#include "opengl.h"
 #include "shader.h"
 #include "material.h"
 
@@ -40,6 +42,8 @@ typedef struct {
 	Matrix *model;
 	/** The model normal matrix */
 	Matrix *modelNormal;
+	/** A list of textures added to this material. The positions in the list will correspond to the OpenGL texture units used */
+	GQueue *textures;
 } OpenGLMaterial;
 
 /**
@@ -84,6 +88,7 @@ API bool createOpenGLMaterial(const char *name)
 	material->uniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
 	material->model = $(Matrix *, linalg, createMatrix)(4, 4);
 	material->modelNormal = $(Matrix *, linalg, createMatrix)(4, 4);
+	material->textures = g_queue_new();
 
 	g_hash_table_insert(materials, material->name, material);
 
@@ -167,6 +172,10 @@ API bool attachOpenGLMaterialUniform(const char *material_name, const char *unif
 
 	g_hash_table_insert(material->uniforms, strdup(uniform_name), uniform);
 
+	if(uniform->type == OPENGL_UNIFORM_TEXTURE) { // Textures must be added to the texture list as well
+		g_queue_push_tail(material->textures, uniform);
+	}
+
 	return true;
 }
 
@@ -184,6 +193,11 @@ API bool detachOpenGLMaterialUniform(const char *material_name, const char *unif
 	if((material = g_hash_table_lookup(materials, material_name)) == NULL) {
 		LOG_ERROR("Failed to detach a uniform from non existing material '%s'", material_name);
 		return false;
+	}
+
+	OpenGLUniform *uniform;
+	if((uniform = g_hash_table_lookup(material->uniforms, uniform_name)) != NULL && uniform->type == OPENGL_UNIFORM_TEXTURE) { // If the uniform is a texture, remove it from the textures list as well
+		g_queue_remove(material->textures, uniform);
 	}
 
 	return g_hash_table_remove(material->uniforms, uniform_name);
@@ -239,10 +253,27 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 	GList *uniforms = g_hash_table_get_values(material->uniforms);
 	for(GList *iter = uniforms; iter != NULL; iter = iter->next) {
 		OpenGLUniform *uniform = iter->data;
+
+		if(uniform->type != OPENGL_UNIFORM_TEXTURE) { // Texture uniforms are handled seperately
+			useOpenGLUniform(uniform);
+		}
+	}
+	g_list_free(uniforms);
+
+	// Iterate over all texture uniforms and first bind them, then use them
+	int i = 0;
+	for(GList *iter = material->textures->head; iter != NULL; iter = iter->next, i++) {
+		OpenGLUniform *uniform = iter->data;
+		assert(uniform->type == OPENGL_UNIFORM_TEXTURE);
+
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, uniform->content.texture_value->texture);
 		useOpenGLUniform(uniform);
 	}
 
-	g_list_free(uniforms);
+	if(checkOpenGLError()) {
+		return false;
+	}
 
 	return true;
 }
@@ -261,4 +292,5 @@ static void freeOpenGLMaterial(void *material_p)
 	free(material->name);
 	glDeleteProgram(material->program);
 	g_hash_table_destroy(material->uniforms);
+	g_queue_free(material->textures);
 }

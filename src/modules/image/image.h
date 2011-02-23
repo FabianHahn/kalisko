@@ -34,12 +34,12 @@ typedef struct {
 	/** the number of image channels */
 	unsigned int channels;
 	/** the image data */
-	float *data;
+	unsigned char *data;
 } Image;
 
 API Image *createImage(unsigned int width, unsigned int height, unsigned int channels);
-API float getImage(Image *image, unsigned int x, unsigned int y, unsigned int c);
-API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, float value);
+API unsigned char getImage(Image *image, unsigned int x, unsigned int y, unsigned int c);
+API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, unsigned char value);
 API void freeImage(Image *image);
 
 #endif

@@ -28,8 +28,8 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 3, 3);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
 MODULE_INIT
@@ -58,7 +58,7 @@ API Image *createImage(unsigned int width, unsigned int height, unsigned int cha
 	image->width = width;
 	image->height = height;
 	image->channels = channels;
-	image->data = ALLOCATE_OBJECTS(float, width * height * channels);
+	image->data = ALLOCATE_OBJECTS(unsigned char, width * height * channels);
 
 	return image;
 }
@@ -72,7 +72,7 @@ API Image *createImage(unsigned int width, unsigned int height, unsigned int cha
  * @param c				the channel to access
  * @result				the pixel at the requested position
  */
-API float getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
+API unsigned char getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
 {
 	assert(x < image->width);
 	assert(y < image->height);
@@ -90,7 +90,7 @@ API float getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
  * @param c				the channel to access
  * @param value			the value to set at the specified location
  */
-API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, float value)
+API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, unsigned char value)
 {
 	assert(x < image->width);
 	assert(y < image->height);

@@ -70,24 +70,18 @@ API Image *createImageFromStore(Store *store)
 		if(pixel->type != STORE_LIST || g_queue_get_length(pixel->content.list) != image->channels) {
 			LOG_WARNING("Invalid pixel %d in image store, setting to zero", i);
 			for(unsigned int c = 0; c < image->channels; c++) {
-				image->data[i * image->channels + c] = 0.0f;
+				image->data[i * image->channels + c] = 0;
 			}
 		} else {
 			int c = 0;
 			for(GList *piter = pixel->content.list->head; piter != NULL; piter = piter->next, c++) {
 				Store *pval = piter->data;
 
-				switch(pval->type) {
-					case STORE_FLOAT_NUMBER:
-						image->data[i * image->channels + c] = pval->content.float_number;
-					break;
-					case STORE_INTEGER:
-						image->data[i * image->channels + c] = pval->content.integer;
-					break;
-					default:
-						LOG_WARNING("Invalid value in channel %d of pixel %d in image store, replacing by 0", c, i);
-						image->data[i * image->channels + c] = 0.0f;
-					break;
+				if(pval->type == STORE_INTEGER && pval->content.integer >= 0 && pval->content.integer <= 255) {
+					image->data[i * image->channels + c] = pval->content.integer;
+				} else {
+					LOG_WARNING("Invalid value in channel %d of pixel %d in image store, replacing by 0", c, i);
+					image->data[i * image->channels + c] = 0;
 				}
 			}
 		}
@@ -119,7 +113,7 @@ API Store *convertImageToStore(Image *image)
 		Store *pixel = $(Store *, store, createStoreListValue)(NULL);
 
 		for(unsigned int c = 0; c < image->channels; c++) {
-			g_queue_push_tail(pixel->content.list, $(Store *, store, createStoreFloatNumberValue)(image->data[i * image->channels + c]));
+			g_queue_push_tail(pixel->content.list, $(Store *, store, createStoreIntegerValue)(image->data[i * image->channels + c]));
 		}
 
 		g_queue_push_tail(pixels->content.list, pixel);

@@ -40,3 +40,33 @@ MODULE_FINALIZE
 {
 
 }
+
+/**
+ * Creates a new image
+ *
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @result				the created image
+ */
+API Image *createImage(unsigned int width, unsigned int height, unsigned int channels)
+{
+	Image *image = ALLOCATE_OBJECT(Image);
+	image->width = width;
+	image->height = height;
+	image->channels = channels;
+	image->data = ALLOCATE_OBJECTS(float, width * height * channels);
+
+	return image;
+}
+
+/**
+ * Frees an image
+ *
+ * @param image			the image to free
+ */
+API void freeImage(Image *image)
+{
+	free(image->data);
+	free(image);
+}

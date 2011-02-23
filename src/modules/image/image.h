@@ -21,4 +21,21 @@
 #ifndef IMAGE_IMAGE_H
 #define IMAGE_IMAGE_H
 
+/**
+ * Struct representing an image
+ */
+typedef struct {
+	/** the width of the image */
+	unsigned int width;
+	/** the height of the image */
+	unsigned int height;
+	/** the number of image channels */
+	unsigned int channels;
+	/** the image data */
+	float *data;
+} Image;
+
+API Image *createImage(unsigned int width, unsigned int height, unsigned int channels);
+API void freeImage(Image *image);
+
 #endif

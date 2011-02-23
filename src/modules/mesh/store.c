@@ -208,6 +208,8 @@ API Store *convertMeshToStore(Mesh *mesh)
 	$(bool, store, setStorePath)(store, "mesh/vertices/positions", positions);
 	Store *colors = $(Store *, store, createStoreListValue)(NULL);
 	$(bool, store, setStorePath)(store, "mesh/vertices/colors", colors);
+	Store *uvs = $(Store *, store, createStoreListValue)(NULL);
+	$(bool, store, setStorePath)(store, "mesh/vertices/uvs", uvs);
 	Store *triangles = $(Store *, store, createStoreListValue)(NULL);
 	$(bool, store, setStorePath)(store, "mesh/triangles", triangles);
 
@@ -215,8 +217,12 @@ API Store *convertMeshToStore(Mesh *mesh)
 	for(int i = 0; i < mesh->num_vertices; i++) {
 		Store *position = $(Store *, store, createStoreListValue)(NULL);
 		Store *color = $(Store *, store, createStoreListValue)(NULL);
+		Store *uv = $(Store *, store, createStoreListValue)(NULL);
 
 		for(int j = 0; j < 4; j++) {
+			if(j < 2) {
+				g_queue_push_tail(uvs->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].uv[j]));
+			}
 			if(j < 3) {
 				g_queue_push_tail(position->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].position[j]));
 			}
@@ -225,6 +231,7 @@ API Store *convertMeshToStore(Mesh *mesh)
 
 		g_queue_push_tail(positions->content.list, position);
 		g_queue_push_tail(colors->content.list, color);
+		g_queue_push_tail(uvs->content.list, uv);
 	}
 
 	// Write triangles

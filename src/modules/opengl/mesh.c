@@ -88,6 +88,8 @@ bool drawOpenGLMesh(OpenGLMesh *openglmesh)
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, color));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_COLOR);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, uv));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
 
 	if(checkOpenGLError()) {
 		return false;

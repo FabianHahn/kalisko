@@ -51,7 +51,9 @@ typedef enum {
 	/** The normal attribute */
 	OPENGL_ATTRIBUTE_NORMAL,
 	/** The color attribute */
-	OPENGL_ATTRIBUTE_COLOR
+	OPENGL_ATTRIBUTE_COLOR,
+	/** The UV attribute */
+	OPENGL_ATTRIBUTE_UV
 } OpenGLAttributeLocation;
 
 /**

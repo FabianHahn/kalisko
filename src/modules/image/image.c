@@ -22,23 +22,26 @@
 #include <glib.h>
 #include "dll.h"
 #include "api.h"
+#include "io.h"
 #include "image.h"
 
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
 MODULE_INIT
 {
+	initImageIO();
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
-
+	freeImageIO();
 }
 
 /**

@@ -40,20 +40,29 @@ API Mesh *createMeshFromStore(Store *store)
 		return NULL;
 	}
 
-	Store *colors;
-	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/colors'");
-		return NULL;
-	}
-
 	Store *triangles;
 	if((triangles = $(Store *, store, getStorePath)(store, "mesh/triangles")) == NULL || triangles->type != STORE_LIST) {
 		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/triangles'");
 		return NULL;
 	}
 
+	Store *colors;
+	GQueue *cList = NULL;
+	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
+		LOG_WARNING("Parsed mesh store doesn't seem to have color values stored in 'mesh/vertices/colors', skipping");
+	} else {
+		 cList = colors->content.list;
+	}
+
+	Store *uvs;
+	GQueue *uvList = NULL;
+	if((uvs = $(Store *, store, getStorePath)(store, "mesh/vertices/uvs")) == NULL || colors->type != STORE_LIST) {
+		LOG_WARNING("Parsed mesh store doesn't seem to have UV coordinate values stored in 'mesh/vertices/uvs', skipping");
+	} else {
+		uvList = uvs->content.list;
+	}
+
 	GQueue *pList = positions->content.list;
-	GQueue *cList = colors->content.list;
 	GQueue *tList = triangles->content.list;
 
 	Mesh *mesh = createMesh(g_queue_get_length(pList), g_queue_get_length(tList));
@@ -89,32 +98,65 @@ API Mesh *createMeshFromStore(Store *store)
 		}
 	}
 
-	// Read vertex colors
-	i = 0;
-	for(GList *iter = cList->head; iter != NULL; iter = iter->next, i++) {
-		Store *color = iter->data;
-		if(color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
-			LOG_WARNING("Invalid vertex color for vertex %d in mesh store, replacing by 0/0/0/0", i);
-			mesh->vertices[i].color[0] = 0.0f;
-			mesh->vertices[i].color[1] = 0.0f;
-			mesh->vertices[i].color[2] = 0.0f;
-			mesh->vertices[i].color[3] = 0.0f;
-		} else {
-			int j = 0;
-			for(GList *citer = color->content.list->head; citer != NULL; citer = citer->next, j++) {
-				Store *cval = citer->data;
+	if(colors != NULL) {
+		// Read vertex colors
+		i = 0;
+		for(GList *iter = cList->head; iter != NULL; iter = iter->next, i++) {
+			Store *color = iter->data;
+			if(color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
+				LOG_WARNING("Invalid vertex color for vertex %d in mesh store, replacing by 0/0/0/0", i);
+				mesh->vertices[i].color[0] = 0.0f;
+				mesh->vertices[i].color[1] = 0.0f;
+				mesh->vertices[i].color[2] = 0.0f;
+				mesh->vertices[i].color[3] = 0.0f;
+			} else {
+				int j = 0;
+				for(GList *citer = color->content.list->head; citer != NULL; citer = citer->next, j++) {
+					Store *cval = citer->data;
 
-				switch(cval->type) {
-					case STORE_FLOAT_NUMBER:
-						mesh->vertices[i].color[j] = cval->content.float_number;
-					break;
-					case STORE_INTEGER:
-						mesh->vertices[i].color[j] = cval->content.integer;
-					break;
-					default:
-						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
-						mesh->vertices[i].color[j] = 0;
-					break;
+					switch(cval->type) {
+						case STORE_FLOAT_NUMBER:
+							mesh->vertices[i].color[j] = cval->content.float_number;
+						break;
+						case STORE_INTEGER:
+							mesh->vertices[i].color[j] = cval->content.integer;
+						break;
+						default:
+							LOG_WARNING("Invalid vertex color value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+							mesh->vertices[i].color[j] = 0;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if(uvs != NULL) {
+		// Read UV coordinates
+		i = 0;
+		for(GList *iter = uvList->head; iter != NULL; iter = iter->next, i++) {
+			Store *uv = iter->data;
+			if(uv->type != STORE_LIST || g_queue_get_length(uv->content.list) != 2) {
+				LOG_WARNING("Invalid UV coordinates for vertex %d in mesh store, replacing by 0/0", i);
+				mesh->vertices[i].uv[0] = 0.0f;
+				mesh->vertices[i].uv[1] = 0.0f;
+			} else {
+				int j = 0;
+				for(GList *uviter = uv->content.list->head; uviter != NULL; uviter = uviter->next, j++) {
+					Store *uvval = uviter->data;
+
+					switch(uvval->type) {
+						case STORE_FLOAT_NUMBER:
+							mesh->vertices[i].uv[j] = uvval->content.float_number;
+						break;
+						case STORE_INTEGER:
+							mesh->vertices[i].uv[j] = uvval->content.integer;
+						break;
+						default:
+							LOG_WARNING("Invalid vertex UV coordinate value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+							mesh->vertices[i].uv[j] = 0;
+						break;
+					}
 				}
 			}
 		}

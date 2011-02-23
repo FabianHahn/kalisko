@@ -26,3 +26,30 @@
 #include "memory_alloc.h"
 #include "api.h"
 #include "texture.h"
+
+/**
+ * Creates an OpenGL texture including CPU-side buffer that can be filled with texture values
+ *
+ * @param width			the width of the texture to create
+ * @param height		the height of the texture to create
+ * @result				the created texture
+ */
+API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height)
+{
+	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
+	texture->data = $(Matrix *, linalg, createMatrix)(height, width);
+
+	glGenTextures(1, &texture->texture);
+
+	return texture;
+}
+
+/**
+ * Frees an existing OpenGL texture including the CPU-side buffer
+ */
+API void freeOpenGLTexture(OpenGLTexture *texture)
+{
+	$(void, linalg, freeMatrix)(texture->data);
+	glDeleteTextures(1, &texture->texture);
+	free(texture);
+}

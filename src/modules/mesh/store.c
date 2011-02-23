@@ -221,7 +221,7 @@ API Store *convertMeshToStore(Mesh *mesh)
 
 		for(int j = 0; j < 4; j++) {
 			if(j < 2) {
-				g_queue_push_tail(uvs->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].uv[j]));
+				g_queue_push_tail(uv->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].uv[j]));
 			}
 			if(j < 3) {
 				g_queue_push_tail(position->content.list, $(Store *, store, createStoreFloatNumberValue)(mesh->vertices[i].position[j]));

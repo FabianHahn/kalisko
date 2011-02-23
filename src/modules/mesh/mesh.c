@@ -29,7 +29,7 @@
 MODULE_NAME("mesh");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general mesh data type");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("linalg", 0, 2, 9));
 

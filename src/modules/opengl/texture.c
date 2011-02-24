@@ -49,6 +49,11 @@ API OpenGLTexture *createOpenGLTexture(Image *image)
 
 	updateOpenGLTexture(texture);
 
+	if(checkOpenGLError()) {
+		freeOpenGLTexture(texture);
+		return NULL;
+	}
+
 	return texture;
 }
 
@@ -99,6 +104,9 @@ API bool updateOpenGLTexture(OpenGLTexture *texture)
  */
 API void freeOpenGLTexture(OpenGLTexture *texture)
 {
+	assert(texture != NULL);
+
+	$(void, image, freeImage)(texture->image);
 	glDeleteTextures(1, &texture->texture);
 	free(texture);
 }

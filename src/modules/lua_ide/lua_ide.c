@@ -39,7 +39,7 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 8);
+MODULE_VERSION(0, 9, 9);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("xcall_core", 0, 4, 3));
 
@@ -169,6 +169,7 @@ MODULE_INIT
 	text_input_dialog = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog"));
 	text_input_dialog_label = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog_label"));
 	text_input_dialog_entry = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog_entry"));
+	g_object_unref(builder);
 
 	// script tree
 	Store *config = $(Store *, config, getWritableConfig)();

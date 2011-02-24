@@ -21,26 +21,22 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
-#include "modules/linalg/Matrix.h"
-#include "modules/linalg/Vector.h"
+#include "modules/image/image.h"
 #include "memory_alloc.h"
 #include "api.h"
 #include "opengl.h"
 #include "texture.h"
 
 /**
- * Creates an OpenGL texture including CPU-side buffer that can be filled with texture values
+ * Creates an OpenGL texture from an image
  *
- * @param width			the width of the texture to create
- * @param height		the height of the texture to create
+ * @param image			the image from which to create the texture
  * @result				the created texture
  */
-API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height)
+API OpenGLTexture *createOpenGLTexture(Image *image)
 {
 	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
-	texture->width = width;
-	texture->height = height;
-	texture->data = ALLOCATE_OBJECTS(float, 3 * width * height);
+	texture->image = image;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
@@ -50,6 +46,8 @@ API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height)
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	updateOpenGLTexture(texture);
 
 	return texture;
 }
@@ -63,7 +61,29 @@ API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height)
 API bool updateOpenGLTexture(OpenGLTexture *texture)
 {
 	glBindTexture(GL_TEXTURE_2D, texture->texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->width, texture->height, 0, GL_RGB, GL_FLOAT, texture->data);
+
+	GLenum format;
+	switch(texture->image->channels) {
+		case 1:
+			format = GL_LUMINANCE;
+		break;
+		case 2:
+			format = GL_LUMINANCE_ALPHA;
+		break;
+		case 3:
+			format = GL_RGB;
+		break;
+		case 4:
+			format = GL_RGBA;
+		break;
+		default:
+			LOG_ERROR("Failed to update OpenGL texture: Unsupported number of image channels - %d", texture->image->channels);
+			return false;
+		break;
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, texture->image->channels, texture->image->width, texture->image->height, 0, format, GL_UNSIGNED_BYTE, texture->image->data);
+
 
 	if(checkOpenGLError()) {
 		return false;
@@ -79,7 +99,6 @@ API bool updateOpenGLTexture(OpenGLTexture *texture)
  */
 API void freeOpenGLTexture(OpenGLTexture *texture)
 {
-	free(texture->data);
 	glDeleteTextures(1, &texture->texture);
 	free(texture);
 }

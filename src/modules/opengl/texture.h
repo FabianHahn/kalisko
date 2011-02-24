@@ -22,26 +22,21 @@
 #define OPENGL_TEXTURE_H
 
 #include <GL/glew.h>
-#include "modules/linalg/Matrix.h"
-#include "modules/linalg/Vector.h"
+#include "modules/image/image.h"
 
 /**
  * Struct representing an OpenGL texture that can be attached to shaders as uniform
  */
 typedef struct {
-	/** The width of the texture */
-	unsigned int width;
-	/** The height of the texture */
-	unsigned int height;
-	/** The texture data stored from bottom left pixel to top right pixel */
-	float *data;
+	/** The image data of the texture */
+	Image *image;
 	/** The OpenGL texture context for this texture */
 	GLuint texture;
 	/** The OpenGL texture unit currently used to render this texture */
 	int unit;
 } OpenGLTexture;
 
-API OpenGLTexture *createOpenGLTexture(unsigned int width, unsigned int height);
+API OpenGLTexture *createOpenGLTexture(Image *image);
 API bool updateOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);
 

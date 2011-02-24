@@ -29,11 +29,13 @@
 #include "modules/opengl/mesh.h"
 #include "modules/opengl/camera.h"
 #include "modules/opengl/model.h"
+#include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
 #include "modules/linalg/store.h"
 #include "modules/mesh/io.h"
+#include "modules/image/io.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/store/parse.h"
@@ -43,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 2, 11);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 13, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 13, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLMeshByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -122,16 +124,57 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 						continue;
 					}
 				} else {
-					LOG_WARNING("Failed to read mesh from file for model '%s' when creating scene by store, skipping", key);
+					LOG_WARNING("Failed to read mesh file '%s' for '%s' when creating scene by store, skipping", value->content.string, key);
 					continue;
 				}
 			} else {
-				LOG_WARNING("Failed to read mesh path for model '%s' when creating scene by store, skipping", key);
+				LOG_WARNING("Failed to read mesh path for '%s' when creating scene by store, skipping", key);
 				continue;
 			}
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
+	}
+
+	// read textures
+	Store *textures = $(Store *, store, getStorePath)(store, "scene/textures");
+	if(textures != NULL && textures->type == STORE_ARRAY) {
+		GHashTableIter iter;
+		char *key;
+		Store *value;
+		g_hash_table_iter_init(&iter, meshes->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+			if(value->type == STORE_STRING) {
+				GString *texturepath = g_string_new(path_prefix);
+				g_string_append(texturepath, value->content.string);
+				Image *image = $(Image *, image, readImageFromFile)(texturepath->str);
+				g_string_free(texturepath, true);
+
+				if(image != NULL) {
+					OpenGLTexture *texture;
+
+					if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image)) != NULL) {
+						SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
+						parameter->type = OPENGL_UNIFORM_TEXTURE;
+						parameter->content.texture_value = texture;
+
+						g_hash_table_insert(scene->parameters, strdup(key), parameter);
+						LOG_DEBUG("Added texture '%s' to scene", key);
+					} else {
+						LOG_WARNING("Failed to create OpenGLTexture from texture image for '%s' when creating scene by store, skipping", key);
+						continue;
+					}
+				} else {
+					LOG_WARNING("Failed to read texture file '%s' for '%s' when creating scene by store, skipping", value->content.string, key);
+					continue;
+				}
+			} else {
+				LOG_WARNING("Failed to read texture path for '%s' when creating scene by store, skipping", key);
+				continue;
+			}
+		}
+	} else {
+		LOG_WARNING("Expected array store value in 'textures' when creating scene by store, skipping texture loading");
 	}
 
 	// read parameters
@@ -176,6 +219,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 			}
 
 			if(parameter != NULL) {
+				g_hash_table_remove(scene->parameters, key); // make sure no texture with that name is inserted
 				g_hash_table_insert(scene->parameters, strdup(key), parameter);
 				LOG_DEBUG("Added scene parameter '%s'", key);
 			}
@@ -499,6 +543,9 @@ static void freeSceneParameterByPointer(void *parameter_p)
 {
 	SceneParameter *parameter = parameter_p;
 	switch(parameter->type) {
+		case OPENGL_UNIFORM_TEXTURE:
+			$(void, opengl, freeOpenGLTexture)(parameter->content.texture_value);
+		break;
 		case OPENGL_UNIFORM_VECTOR:
 			$(void, linalg, freeVector)(parameter->content.vector_value);
 		break;

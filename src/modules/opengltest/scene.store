@@ -3,6 +3,10 @@ scene = {
 		tetrahedron = "/modules/opengltest/tetrahedron.store"
 	}
 	
+	textures = {
+		checkerboard = "/modules/opengltest/texture.png"
+	}
+	
 	parameters = {
 		perspective = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
 		lightPosition = (-10.0, 50.0, -50.0)
@@ -12,9 +16,9 @@ scene = {
 	}
 	
 	materials = {
-		phong = {
-			vertex_shader = "/modules/opengltest/shader.glslv"
-			fragment_shader = "/modules/opengltest/shader.glslf"
+		phong_vertexcolor = {
+			vertex_shader = "/modules/opengltest/phong.glslv"
+			fragment_shader = "/modules/opengltest/phong_vertexcolor.glslf"
 			uniforms = {
 				perspective = perspective
 				lightPosition = lightPosition
@@ -23,12 +27,25 @@ scene = {
 				specular = specular
 			}
 		}
+		
+		phong_texture = {
+			vertex_shader = "/modules/opengltest/phong.glslv"
+			fragment_shader = "/modules/opengltest/phong_texture.glslf"
+			uniforms = {
+				perspective = perspective
+				lightPosition = lightPosition
+				lightColor = lightColor
+				ambient = ambient
+				specular = specular
+				texture = checkerboard
+			}
+		}		
 	}
 	
 	models = {
 		tetrahedron = {
 			mesh = tetrahedron
-			material = phong
+			material = phong_vertexcolor
 			translation = (0.0, 0.0, 1.5)
 			scaleX = 0.75
 			scaleY = 0.75
@@ -37,7 +54,7 @@ scene = {
 		
 		tetrahedron2 = {
 			mesh = tetrahedron
-			material = phong
+			material = phong_texture
 			translation = (0.0, 0.25, 3.0)
 			rotationX = 3.14159265359 // rotation by pi = 180 degrees
 		}		

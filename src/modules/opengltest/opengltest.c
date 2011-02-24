@@ -47,9 +47,9 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 11, 4);
+MODULE_VERSION(0, 12, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 13, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("scene", 0, 2, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 13, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("scene", 0, 2, 3), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
 static Scene *scene = NULL;
 static FreeglutWindow *window = NULL;
@@ -114,13 +114,25 @@ MODULE_INIT
 		
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
 
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong", "camera", cameraUniform)) {
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong_vertexcolor", "camera", cameraUniform)) {
+			break;
+		}
+
+		cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong_texture", "camera", cameraUniform)) {
 			break;
 		}
 
 		OpenGLUniform *cameraPositionUniform = $(OpenGLUniform *, opengl, createOpenGLUniformVector)(camera->position);
 
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong", "cameraPosition", cameraPositionUniform)) {
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong_vertexcolor", "cameraPosition", cameraPositionUniform)) {
+			break;
+		}
+
+		cameraPositionUniform = $(OpenGLUniform *, opengl, createOpenGLUniformVector)(camera->position);
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong_texture", "cameraPosition", cameraPositionUniform)) {
 			break;
 		}
 

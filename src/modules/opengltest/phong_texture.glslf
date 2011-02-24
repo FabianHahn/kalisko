@@ -25,19 +25,26 @@ uniform vec3 lightPosition;
 uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
+uniform sampler2D texture;
 
 varying vec3 world_position;
 varying vec3 world_normal;
 varying vec4 world_color;
+varying vec2 world_uv;
+
+vec4 getColor()
+{
+	return texture2D(texture, world_uv);
+}
 
 vec4 phongAmbient()
 {
-	return ambient * world_color;
+	return ambient * getColor();
 }
 
 vec4 phongDiffuse(in vec3 pos2light, in vec3 normal)
 {
-	return (world_color * lightColor) * clamp(dot(pos2light, normal), 0.0, 1.0);
+	return (getColor() * lightColor) * clamp(dot(pos2light, normal), 0.0, 1.0);
 }
 
 vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)

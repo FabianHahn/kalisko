@@ -20,29 +20,50 @@
 
 #version 120
 
-uniform mat4 model;
-uniform mat4 modelNormal;
-uniform mat4 camera;
-uniform mat4 perspective;
-
-attribute vec3 position;
-attribute vec3 normal;
-attribute vec4 color;
+uniform vec3 cameraPosition;
+uniform vec3 lightPosition;
+uniform vec4 lightColor;
+uniform float ambient;
+uniform float specular;
 
 varying vec3 world_position;
 varying vec3 world_normal;
 varying vec4 world_color;
+varying vec2 world_uv;
+
+vec4 phongAmbient()
+{
+	return ambient * world_color;
+}
+
+vec4 phongDiffuse(in vec3 pos2light, in vec3 normal)
+{
+	return (world_color * lightColor) * clamp(dot(pos2light, normal), 0.0, 1.0);
+}
+
+vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
+{
+	vec3 reflectedLight = -reflect(pos2light, normal);
+	
+	float shininess = 100.0;
+	float specProd = clamp(dot(reflectedLight, pos2cam), 0.0, 1.0);
+	
+	return specular * lightColor * pow(specProd, shininess);
+}
 
 void main()
 {
-	vec4 pos4 = vec4(position.x, position.y, position.z, 1.0);
-	vec4 norm4 = vec4(normal.x, normal.y, normal.z, 1.0);
-	vec4 worldpos4 = model * pos4;
-	vec4 worldnorm4 = modelNormal * norm4;
+	vec3 normal = normalize(world_normal);
+	vec3 pos2light = normalize(lightPosition - world_position);
+	vec3 pos2cam = normalize(cameraPosition - world_position);
+	
+	if(dot(normal, pos2cam) < 0) {
+		normal = -normal;
+	}
+	
+	vec4 ac = phongAmbient();
+	vec4 dc = phongDiffuse(pos2light, normal);
+	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	world_position = worldpos4.xyz / worldpos4.w;
-	world_normal = worldnorm4.xyz / worldnorm4.w;
-	world_color = color;
-		
-	gl_Position = perspective * camera * worldpos4;
+	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
 }

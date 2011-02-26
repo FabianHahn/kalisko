@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,12 +18,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OPENGL_MESH_H
-#define OPENGL_MESH_H
+#ifndef MESH_OPENGL_MESH_OPENGL_H
+#define MESH_OPENGL_MESH_OPENGL_H
 
-#include "modules/mesh/mesh.h"
 #include <GL/glew.h>
-#include "primitive.h"
+#include "modules/mesh/mesh.h"
+#include "modules/opengl/primitive.h"
 
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage);
 API bool updateOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);

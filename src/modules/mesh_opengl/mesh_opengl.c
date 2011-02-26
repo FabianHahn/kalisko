@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,11 +23,28 @@
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/mesh/mesh.h"
+#include "modules/opengl/primitive.h"
+#include "modules/opengl/shader.h"
+#include "modules/opengl/opengl.h"
 #include "api.h"
-#include "opengl.h"
-#include "shader.h"
-#include "material.h"
-#include "mesh.h"
+#include "mesh_opengl.h"
+
+MODULE_NAME("mesh_opengl");
+MODULE_AUTHOR("The Kalisko team");
+MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 15, 1));
+
+MODULE_INIT
+{
+	return true;
+}
+
+MODULE_FINALIZE
+{
+
+}
 
 /**
  * Struct representing an OpenGL triangle mesh
@@ -66,7 +83,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 	glGenBuffers(1, &openglmesh->indexBuffer);
 	updateOpenGLPrimitiveMesh(&openglmesh->primitive);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		freeOpenGLPrimitiveMesh(&openglmesh->primitive);
 		return NULL;
 	}

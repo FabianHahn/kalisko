@@ -26,11 +26,11 @@
 #include "modules/opengl/opengl.h"
 #include "modules/opengl/material.h"
 #include "modules/opengl/shader.h"
-#include "modules/opengl/mesh.h"
 #include "modules/opengl/camera.h"
 #include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/opengl/primitive.h"
+#include "modules/mesh_opengl/mesh_opengl.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
@@ -46,9 +46,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 3, 5);
+MODULE_VERSION(0, 3, 6);
 MODULE_BCVERSION(0, 3, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 15, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("mesh_opengl", 0, 1, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -117,7 +117,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				if(mesh != NULL) {
 					OpenGLPrimitive *primitive;
 
-					if((primitive = $(OpenGLPrimitive *, opengl, createOpenGLPrimitiveMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
+					if((primitive = $(OpenGLPrimitive *, mesh_opengl, createOpenGLPrimitiveMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
 						g_hash_table_insert(scene->primitives, strdup(key), primitive);
 						LOG_DEBUG("Added mesh primitive '%s' to scene", key);
 					} else {

@@ -35,7 +35,7 @@ typedef enum {
  */
 typedef union {
 	/** A mesh value */
-	Mesh *mesh;
+	OpenGLMesh *mesh;
 } OpenGLPrimitiveValue;
 
 /**

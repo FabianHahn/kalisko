@@ -30,38 +30,65 @@
 #include "mesh.h"
 
 /**
- * Creates a new mesh by allocating space for a number of vertices and triangles. Also allocates needed OpenGL buffer objects
+ * Struct representing an OpenGL triangle mesh
+ */
+typedef struct {
+	/** The actual mesh geometry to render */
+	Mesh *mesh;
+	/** The OpenGL vertex buffer associated with this mesh */
+	GLuint vertexBuffer;
+	/** The OpenGL index buffer associated with this mesh */
+	GLuint indexBuffer;
+	/** The OpenGL usage pattern of this mesh */
+	GLenum usage;
+	/** The OpenGL primitive used to render the mesh */
+	OpenGLPrimitive primitive;
+} OpenGLMesh;
+
+/**
+ * Creates a new OpenGL primitive from a mesh
  *
  * @param mesh			the actual mesh geometry to use
  * @param usage			specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
  * @result				the created OpenGLMesh object or NULL on failure
  */
-OpenGLMesh *createOpenGLMesh(Mesh *mesh, GLenum usage)
+API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 {
 	OpenGLMesh *openglmesh = ALLOCATE_OBJECT(OpenGLMesh);
 	openglmesh->mesh = mesh;
 	openglmesh->usage = usage;
+	openglmesh->primitive.type = "mesh";
+	openglmesh->primitive.data = openglmesh;
+	openglmesh->primitive.draw_function = &drawOpenGLPrimitiveMesh;
+	openglmesh->primitive.free_function = &freeOpenGLPrimitiveMesh;
 
 	glGenBuffers(1, &openglmesh->vertexBuffer);
 	glGenBuffers(1, &openglmesh->indexBuffer);
-	updateOpenGLMesh(openglmesh);
+	updateOpenGLPrimitiveMesh(&openglmesh->primitive);
 
 	if(checkOpenGLError()) {
-		freeOpenGLMesh(openglmesh);
+		freeOpenGLPrimitiveMesh(&openglmesh->primitive);
 		return NULL;
 	}
 
-	return openglmesh;
+	return &openglmesh->primitive;
 }
 
 /**
- * Updates a mesh by synchronizing it with its associated OpenGL buffer objects
+ * Updates a mesh primitive by synchronizing it with its associated OpenGL buffer objects
  *
- * @param openglmesh			the mesh to be updated
- * @result						true if successful
+ * @param primitive			the mesh primitive to be updated
+ * @result					true if successful
  */
-bool updateOpenGLMesh(OpenGLMesh *openglmesh)
+API bool updateOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
+	if(g_strcmp0(primitive->type, "type") != 0) {
+		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		return false;
+	}
+
+	OpenGLMesh *openglmesh = primitive->data;
+
 	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(MeshVertex) * openglmesh->mesh->num_vertices, openglmesh->mesh->vertices, openglmesh->usage);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
@@ -75,12 +102,19 @@ bool updateOpenGLMesh(OpenGLMesh *openglmesh)
 }
 
 /**
- * Draws a mesh to OpenGL
+ * Draws an OpenGL mesh primitive
  *
- * @param openglmesh			the mesh to draw
+ * @param primitive			the mesh primitive to draw
  */
-bool drawOpenGLMesh(OpenGLMesh *openglmesh)
+API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
+	if(g_strcmp0(primitive->type, "type") != 0) {
+		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		return false;
+	}
+
+	OpenGLMesh *openglmesh = primitive->data;
+
 	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, position));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
@@ -106,13 +140,18 @@ bool drawOpenGLMesh(OpenGLMesh *openglmesh)
 }
 
 /**
- * Frees an OpenGL mesh
+ * Frees an OpenGL mesh primitive
  *
- * @param openglmesh			the mesh to free
+ * @param primitive			the mesh primitive to free
  */
-void freeOpenGLMesh(OpenGLMesh *openglmesh)
+API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
-	assert(openglmesh != NULL);
+	if(g_strcmp0(primitive->type, "type") != 0) {
+		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		return;
+	}
+
+	OpenGLMesh *openglmesh = primitive->data;
 
 	glDeleteBuffers(1, &openglmesh->vertexBuffer);
 	glDeleteBuffers(1, &openglmesh->indexBuffer);

@@ -21,35 +21,53 @@
 #ifndef OPENGL_PRIMITIVE_H
 #define OPENGL_PRIMITIVE_H
 
-#include "mesh.h"
+// Forward declaration
+struct OpenGLPrimitiveStruct;
 
 /**
- * Type to represent the type of an OpenGL primitive
+ * Function pointer type to draw OpenGL custom primitives
  */
-typedef enum {
-	OPENGL_PRIMITIVE_MESH
-} OpenGLPrimitiveType;
+typedef bool (OpenGLPrimitiveDrawFunction)(struct OpenGLPrimitiveStruct *primitive);
 
 /**
- * Type to represent the value of an OpenGL primitiv
+ * Function pointer type to free OpenGL custom primitives
  */
-typedef union {
-	/** A mesh value */
-	OpenGLMesh *mesh;
-} OpenGLPrimitiveValue;
+typedef void (OpenGLPrimitiveFreeFunction)(struct OpenGLPrimitiveStruct *primitive);
 
 /**
- * Type to represent a drawable OpenGL primitive
+ * OpenGL primitive data type
  */
-typedef struct {
-	/** The type of the OpenGL primitive */
-	OpenGLPrimitiveType type;
-	/** The value of the OpenGL primitive */
-	OpenGLPrimitiveValue value;
-} OpenGLPrimitive;
+struct OpenGLPrimitiveStruct {
+	/** An optional type string to identify the type of the primitive */
+	char *type;
+	/** The data of the primitive */
+	void *data;
+	/** The draw function of the primitive */
+	OpenGLPrimitiveDrawFunction *draw_function;
+	/** The free function of the primitive */
+	OpenGLPrimitiveFreeFunction *free_function;
+};
 
-API OpenGLPrimitive *createOpenGLPrimitiveMesh(OpenGLMesh *mesh);
-API void drawOpenGLPrimitive(OpenGLPrimitive *primitive);
-API void freeOpenGLPrimitive(OpenGLPrimitive *primitive);
+typedef struct OpenGLPrimitiveStruct OpenGLPrimitive;
+
+/**
+ * Draws an OpenGL primitive
+ *
+ * @param primitive			the primitive to draw
+ */
+static inline void drawOpenGLPrimitive(OpenGLPrimitive *primitive)
+{
+	primitive->draw_function(primitive);
+}
+
+/**
+ * Frees an OpenGL primitive
+ *
+ * @param primitive			the primitive to draw
+ */
+static inline void freeOpenGLPrimitive(OpenGLPrimitive *primitive)
+{
+	primitive->free_function(primitive);
+}
 
 #endif

@@ -23,24 +23,11 @@
 
 #include "modules/mesh/mesh.h"
 #include <GL/glew.h>
+#include "primitive.h"
 
-/**
- * Struct representing an OpenGL triangle mesh
- */
-typedef struct {
-	/** The actual mesh geometry to render */
-	Mesh *mesh;
-	/** The OpenGL vertex buffer associated with this mesh */
-	GLuint vertexBuffer;
-	/** The OpenGL index buffer associated with this mesh */
-	GLuint indexBuffer;
-	/** The OpenGL usage pattern of this mesh */
-	GLenum usage;
-} OpenGLMesh;
-
-OpenGLMesh *createOpenGLMesh(Mesh *mesh, GLenum usage);
-bool updateOpenGLMesh(OpenGLMesh *openglmesh);
-bool drawOpenGLMesh(OpenGLMesh *openglmesh);
-void freeOpenGLMesh(OpenGLMesh *openglmesh);
+API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage);
+API bool updateOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
+API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
+API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 
 #endif

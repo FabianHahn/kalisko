@@ -46,7 +46,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 3, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 14, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -115,10 +115,9 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				g_string_free(meshpath, true);
 
 				if(mesh != NULL) {
-					OpenGLMesh *openGLMesh;
+					OpenGLPrimitive *primitive;
 
-					if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
-						OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, createOpenGLPrimitiveMesh)(openGLMesh);
+					if((primitive = $(OpenGLPrimitive *, opengl, createOpenGLPrimitiveMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
 						g_hash_table_insert(scene->primitives, strdup(key), primitive);
 						LOG_DEBUG("Added mesh primitive '%s' to scene", key);
 					} else {

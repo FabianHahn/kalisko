@@ -48,4 +48,8 @@ typedef struct {
 	OpenGLPrimitiveValue value;
 } OpenGLPrimitive;
 
+API OpenGLPrimitive *createOpenGLPrimitiveMesh(OpenGLMesh *mesh);
+API void drawOpenGLPrimitive(OpenGLPrimitive *primitive);
+API void freeOpenGLPrimitive(OpenGLPrimitive *primitive);
+
 #endif

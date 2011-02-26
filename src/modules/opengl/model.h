@@ -28,13 +28,13 @@
 extern "C" {
 #endif
 
-#include "mesh.h"
+#include "primitive.h"
 
 API void initOpenGLModels();
 API void freeOpenGLModels();
 API bool createOpenGLModel(char *name);
 API bool deleteOpenGLModel(char *name);
-API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh);
+API bool attachOpenGLModelPrimitive(char *name, OpenGLPrimitive *primitive);
 API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
 API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
 API bool setOpenGLModelRotationX(char *model_name, double rotation);

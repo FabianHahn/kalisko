@@ -31,7 +31,7 @@ extern "C" {
 #include "api.h"
 
 extern "C" {
-#include "mesh.h"
+#include "primitive.h"
 #include "material.h"
 }
 
@@ -43,8 +43,8 @@ extern "C" {
 typedef struct {
 	/** The name of the model */
 	char *name;
-	/** The mesh that belongs to this material */
-	OpenGLMesh *mesh;
+	/** The primitive that belongs to this model */
+	OpenGLPrimitive *primitive;
 	/** True if the model should be drawn */
 	bool visible;
 	/** The material to use before drawing the model */
@@ -113,7 +113,7 @@ API bool createOpenGLModel(char *name)
 
 	OpenGLModel *model = ALLOCATE_OBJECT(OpenGLModel);
 	model->name = strdup(name);
-	model->mesh = NULL;
+	model->primitive = NULL;
 	model->visible = false;
 	model->material = NULL;
 	model->base_transform = new Matrix(4, 4);
@@ -148,13 +148,13 @@ API bool deleteOpenGLModel(char *name)
 }
 
 /**
- * Attaches a mesh to an OpenGL model and makes it visible
+ * Attaches a primitive to an OpenGL model and makes it visible
  *
- * @param name		the name of the OpenGL mesh to attach the mesh to
- * @param program	the OpenGLMesh object that should be attached to the model
- * @result			true if successful
+ * @param name			the name of the OpenGL model to attach the primitive to
+ * @param primitive		the OpenGLPrimitive object that should be attached to the model
+ * @result				true if successful
  */
-API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh)
+API bool attachOpenGLModelPrimitive(char *name, OpenGLPrimitive *primitive)
 {
 	OpenGLModel *model;
 
@@ -163,7 +163,7 @@ API bool attachOpenGLModelMesh(char *name, OpenGLMesh *mesh)
 		return false;
 	}
 
-	model->mesh = mesh;
+	model->primitive = primitive;
 	model->visible = true;
 
 	return true;
@@ -360,8 +360,8 @@ API void drawOpenGLModels()
 			continue;
 		}
 
-		if(model->mesh == NULL) {
-			LOG_WARNING("Trying to draw visible model '%s' without a mesh attached, skipping", name);
+		if(model->primitive == NULL) {
+			LOG_WARNING("Trying to draw visible model '%s' without a primitive attached, skipping", name);
 			continue;
 		}
 
@@ -371,7 +371,7 @@ API void drawOpenGLModels()
 		}
 
 		useOpenGLMaterial(model->material, model->transform, model->normal_transform);
-		drawOpenGLMesh(model->mesh);
+		drawOpenGLPrimitive(model->primitive);
 	}
 }
 

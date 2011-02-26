@@ -42,8 +42,8 @@ typedef struct {
 typedef struct {
 	/** The parameters associated with this scene */
 	GHashTable *parameters;
-	/** The meshes associated with this scene */
-	GHashTable *meshes;
+	/** The primitives associated with this scene */
+	GHashTable *primitives;
 	/**	The materials associated with this scene */
 	GQueue *materials;
 	/**	The models associated with this scene */

@@ -30,6 +30,7 @@
 #include "modules/opengl/camera.h"
 #include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
+#include "modules/opengl/primitive.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
@@ -45,11 +46,11 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 3, 1);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 13, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_VERSION(0, 3, 3);
+MODULE_BCVERSION(0, 3, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 14, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
-static void freeOpenGLMeshByPointer(void *mesh_p);
+static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
 
 MODULE_INIT
@@ -95,7 +96,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 {
 	Scene *scene = ALLOCATE_OBJECT(Scene);
 	scene->parameters = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSceneParameterByPointer);
-	scene->meshes = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLMeshByPointer);
+	scene->primitives = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLPrimitiveByPointer);
 	scene->materials = g_queue_new();
 	scene->models = g_queue_new();
 
@@ -117,8 +118,9 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 					OpenGLMesh *openGLMesh;
 
 					if((openGLMesh = $(OpenGLMesh *, opengl, createOpenGLMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
-						g_hash_table_insert(scene->meshes, strdup(key), openGLMesh);
-						LOG_DEBUG("Added mesh '%s' to scene", key);
+						OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, createOpenGLPrimitiveMesh)(openGLMesh);
+						g_hash_table_insert(scene->primitives, strdup(key), primitive);
+						LOG_DEBUG("Added mesh primitive '%s' to scene", key);
 					} else {
 						LOG_WARNING("Failed to create OpenGLMesh from mesh '%s' when creating scene by store, skipping", key);
 						continue;
@@ -361,23 +363,23 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				continue;
 			}
 
-			// set mesh
-			Store *modelmesh = $(Store *, store, getStorePath)(value, "mesh");
-			if(modelmesh != NULL && modelmesh->type == STORE_STRING) {
-				char *meshname = modelmesh->content.string;
-				OpenGLMesh *openGLMesh;
+			// set primitive
+			Store *modelprimitive = $(Store *, store, getStorePath)(value, "primitive");
+			if(modelprimitive != NULL && modelprimitive->type == STORE_STRING) {
+				char *primitivename = modelprimitive->content.string;
+				OpenGLPrimitive *primitive;
 
-				if((openGLMesh = g_hash_table_lookup(scene->meshes, meshname)) != NULL) {
-					if($(bool, opengl, attachOpenGLModelMesh)(key, openGLMesh)) {
-						LOG_DEBUG("Attached mesh '%s' to model '%s'", meshname, key);
+				if((primitive = g_hash_table_lookup(scene->primitives, primitivename)) != NULL) {
+					if($(bool, opengl, attachOpenGLModelPrimitive)(key, primitive)) {
+						LOG_DEBUG("Attached primitive '%s' to model '%s'", primitivename, key);
 					} else {
-						LOG_WARNING("Failed to attach mesh '%s' to model '%s' when creating scene by store, skipping", meshname, key);
+						LOG_WARNING("Failed to attach primitive '%s' to model '%s' when creating scene by store, skipping", primitivename, key);
 					}
 				} else {
-					LOG_WARNING("Failed to add mesh '%s' to model '%s' when creating scene by store: No such model - skipping", meshname, key);
+					LOG_WARNING("Failed to add primitive '%s' to model '%s' when creating scene by store: No such model - skipping", primitivename, key);
 				}
 			} else {
-				LOG_WARNING("Failed to read mesh for model '%s' when creating scene by store, skipping", key);
+				LOG_WARNING("Failed to read primitive for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set material
@@ -518,20 +520,20 @@ API void freeScene(Scene *scene)
 	g_hash_table_destroy(scene->parameters);
 
 	// free meshes
-	g_hash_table_destroy(scene->meshes);
+	g_hash_table_destroy(scene->primitives);
 
 	free(scene);
 }
 
 /**
- * Frees an OpenGL mesh
+ * Frees an OpenGL primitive
  *
- * @param mesh_p		a pointer to the OpenGL mesh to be freed
+ * @param primitive_p		a pointer to the OpenGL primitive to be freed
  */
-static void freeOpenGLMeshByPointer(void *mesh_p)
+static void freeOpenGLPrimitiveByPointer(void *primitive_p)
 {
-	OpenGLMesh *mesh = mesh_p;
-	$(void, opengl, freeOpenGLMesh)(mesh);
+	OpenGLPrimitive *primitive = primitive_p;
+	$(void, opengl, freeOpenGLPrimitive)(primitive);
 }
 
 /**

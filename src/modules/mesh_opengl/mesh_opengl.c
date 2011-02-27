@@ -32,7 +32,7 @@
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 16, 0));
 
@@ -67,7 +67,7 @@ typedef struct {
  *
  * @param mesh			the actual mesh geometry to use
  * @param usage			specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
- * @result				the created OpenGLMesh object or NULL on failure
+ * @result				the created OpenGL mesh primitive object or NULL on failure
  */
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 {

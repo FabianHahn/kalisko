@@ -89,6 +89,23 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 }
 
 /**
+ * Simulates an OpenGL particle effect primitive by moving forward a specified timestep
+ *
+ * @param primitive			the particle effect primitive to simulate
+ * @param dt				the timestep in microseconds to move forward
+ * @result					true if successful
+ */
+API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
+{
+	if(g_strcmp0(primitive->type, "particles") != 0) {
+		LOG_ERROR("Failed to simulate OpenGL particles: Primitive is not a particle effect");
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Updates a particle effect primitive by synchronizing it with its associated OpenGL buffer objects
  *
  * @param primitive			the particle effect primitive to be updated

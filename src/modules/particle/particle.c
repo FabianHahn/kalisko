@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <math.h>
 #include <assert.h>
 #include <glib.h>
 #include <stdlib.h>
@@ -32,7 +33,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0));
 
@@ -150,15 +151,15 @@ API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 			continue;
 		}
 
-		particles->properties[i].acceleration[0] += 0.001f * dt * (frand() - 0.5f);
-		particles->properties[i].acceleration[1] += 0.001f * dt * (frand() - 0.5f);
-		particles->properties[i].acceleration[2] += 0.001f * dt * (frand() - 0.5f);
+		particles->properties[i].acceleration[0] = 100.0f * dt * (frand() - 0.5f);
+		particles->properties[i].acceleration[2] = 100.0f * dt * (frand() - 0.5f);
+
 		particles->properties[i].velocity[0] += particles->properties[i].acceleration[0] * dt;
-		particles->properties[i].velocity[1] += particles->properties[i].acceleration[0] * dt;
-		particles->properties[i].velocity[2] += particles->properties[i].acceleration[0] * dt;
+		particles->properties[i].velocity[1] += particles->properties[i].acceleration[1] * dt;
+		particles->properties[i].velocity[2] += particles->properties[i].acceleration[2] * dt;
 		particles->particles[i].position[0] += particles->properties[i].velocity[0] * dt;
-		particles->particles[i].position[1] += particles->properties[i].velocity[0] * dt;
-		particles->particles[i].position[2] += particles->properties[i].velocity[0] * dt;
+		particles->particles[i].position[1] += particles->properties[i].velocity[1] * dt;
+		particles->particles[i].position[2] += particles->properties[i].velocity[2] * dt;
 	}
 
 	return true;
@@ -255,13 +256,14 @@ static void initParticle(OpenGLParticles *particles, unsigned int i)
 	particles->particles[i].position[1] = 0.0f;
 	particles->particles[i].position[2] = frand() - 0.5f;
 	particles->particles[i].color[0] = 1.0f;
-	particles->particles[i].color[1] = 0.0f;
-	particles->particles[i].color[2] = 0.0f;
+	particles->particles[i].color[1] = frand();
+	particles->particles[i].color[2] = frand();
 	particles->particles[i].color[3] = 1.0f;
-	particles->properties[i].acceleration[0] = frand() - 0.5f;
-	particles->properties[i].acceleration[1] = frand() - 0.5f;
-	particles->properties[i].acceleration[2] = frand() - 0.5f;
+	particles->properties[i].acceleration[0] = 0.0f;
+	particles->properties[i].acceleration[1] = 0.0f;
+	particles->properties[i].acceleration[2] = 0.0f;
 	particles->properties[i].velocity[0] = 0.0f;
-	particles->properties[i].velocity[1] = 1.0f;
+	particles->properties[i].velocity[1] = 0.5f;
 	particles->properties[i].velocity[2] = 0.0f;
+	particles->properties[i].alive = 0.0f;
 }

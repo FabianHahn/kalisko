@@ -20,6 +20,10 @@ Import('module')
 if not module.GetOption('clean'):
 	conf = Configure(module)
 		
+	if not conf.CheckLibWithHeader('m', 'math.h', 'C'):
+		print('Error: Could not find the m library and/or the math.h header file!')
+		Exit(1)		
+		
 	if module['PLATFORM'] != 'win32':
 		if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):
 			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')

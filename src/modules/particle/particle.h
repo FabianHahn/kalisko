@@ -35,11 +35,27 @@ typedef struct {
 } Particle;
 
 /**
+ * Struct representing the properties of a particle
+ */
+typedef struct {
+	/** The velocity of the particle */
+	float velocity[3];
+	/** The acceleration of the particle */
+	float acceleration[3];
+	/** The time in microseconds that the particle is already alive */
+	float alive;
+} ParticleProperty;
+
+/**
  * Struct representing an OpenGL particle effect
  */
 typedef struct {
 	/** The actual particles to render */
 	Particle *particles;
+	/** The properties of the particles to render */
+	ParticleProperty *properties;
+	/** The lifetime of a particle in microseconds */
+	float lifetime;
 	/** The number of particles in the particle effect */
 	unsigned int num_particles;
 	/** The OpenGL vertex buffer associated with this particle effect */
@@ -48,7 +64,8 @@ typedef struct {
 	OpenGLPrimitive primitive;
 } OpenGLParticles;
 
-API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles);
+API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime);
+API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);
 API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);

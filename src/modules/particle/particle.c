@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <glib.h>
+#include <stdlib.h>
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/opengl/primitive.h"
@@ -46,22 +47,38 @@ MODULE_FINALIZE
 }
 
 /**
+ * Returns a random float number between 0 and 1
+ *
+ * @result			the generated random number
+ */
+static float frand()
+{
+	return (float) rand() / RAND_MAX;
+}
+
+static void initParticle(OpenGLParticles *particles, unsigned int i);
+
+/**
  * Creates a new OpenGL particle effect primitive
  *
  * @param num_particles		the number of particles used for the effect
+ * @param lifetime			the lifetime of a particle in the particle effect
  * @result					the created OpenGL particle effect primitive object or NULL on failure
  */
-API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
+API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime)
 {
 	OpenGLParticles *particles = ALLOCATE_OBJECT(OpenGLParticles);
 	particles->particles = ALLOCATE_OBJECTS(Particle, num_particles);
+	particles->properties = ALLOCATE_OBJECTS(ParticleProperty, num_particles);
 	particles->num_particles = num_particles;
+	particles->lifetime = lifetime;
 	particles->primitive.type = "particles";
 	particles->primitive.data = particles;
 	particles->primitive.draw_function = &drawOpenGLPrimitiveParticles;
 	particles->primitive.free_function = &freeOpenGLPrimitiveParticles;
 
 	glGenBuffers(1, &particles->vertexBuffer);
+	initOpenGLPrimitiveParticles(&particles->primitive);
 	updateOpenGLPrimitiveParticles(&particles->primitive);
 
 	if($(bool, opengl, checkOpenGLError)()) {
@@ -70,6 +87,29 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 	}
 
 	return &particles->primitive;
+}
+
+/**
+ * Initlaizes an OpenGL particle effect primitive
+ *
+ * @param primitive			the OpenGL particle effect primitive to initialize
+ * @result					true if successful
+ */
+API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
+{
+	if(g_strcmp0(primitive->type, "particles") != 0) {
+		LOG_ERROR("Failed to initialize OpenGL particles: Primitive is not a particle effect");
+		return false;
+	}
+
+	OpenGLParticles *particles = primitive->data;
+
+	for(unsigned int i = 0; i < particles->num_particles; i++) {
+		initParticle(particles, i);
+		particles->properties[i].alive = frand() * particles->lifetime;
+	}
+
+	return true;
 }
 
 /**
@@ -100,6 +140,25 @@ API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 	if(g_strcmp0(primitive->type, "particles") != 0) {
 		LOG_ERROR("Failed to simulate OpenGL particles: Primitive is not a particle effect");
 		return false;
+	}
+
+	OpenGLParticles *particles = primitive->data;
+
+	for(unsigned int i = 0; i < particles->num_particles; i++) {
+		if((particles->properties[i].alive += dt) > particles->lifetime) {
+			initParticle(particles, i);
+			continue;
+		}
+
+		particles->properties[i].acceleration[0] += 0.001f * dt * (frand() - 0.5f);
+		particles->properties[i].acceleration[1] += 0.001f * dt * (frand() - 0.5f);
+		particles->properties[i].acceleration[2] += 0.001f * dt * (frand() - 0.5f);
+		particles->properties[i].velocity[0] += particles->properties[i].acceleration[0] * dt;
+		particles->properties[i].velocity[1] += particles->properties[i].acceleration[0] * dt;
+		particles->properties[i].velocity[2] += particles->properties[i].acceleration[0] * dt;
+		particles->particles[i].position[0] += particles->properties[i].velocity[0] * dt;
+		particles->particles[i].position[1] += particles->properties[i].velocity[0] * dt;
+		particles->particles[i].position[2] += particles->properties[i].velocity[0] * dt;
 	}
 
 	return true;
@@ -154,7 +213,9 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 		return false;
 	}
 
-	glDrawElements(GL_POINTS, particles->num_particles, GL_UNSIGNED_SHORT, NULL); // fixme correct?
+	glEnable(GL_POINT_SMOOTH);
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	glDrawArrays(GL_POINTS, 0, particles->num_particles);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -180,4 +241,27 @@ API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 	glDeleteBuffers(1, &particles->vertexBuffer);
 	free(particles->particles);
 	free(particles);
+}
+
+/**
+ * Initializes a particle
+ *
+ * @param particles			the particle effect in which to initialize a particle
+ * @param i					the number of the particle to initialize
+ */
+static void initParticle(OpenGLParticles *particles, unsigned int i)
+{
+	particles->particles[i].position[0] = frand() - 0.5f;
+	particles->particles[i].position[1] = 0.0f;
+	particles->particles[i].position[2] = frand() - 0.5f;
+	particles->particles[i].color[0] = 1.0f;
+	particles->particles[i].color[1] = 0.0f;
+	particles->particles[i].color[2] = 0.0f;
+	particles->particles[i].color[3] = 1.0f;
+	particles->properties[i].acceleration[0] = frand() - 0.5f;
+	particles->properties[i].acceleration[1] = frand() - 0.5f;
+	particles->properties[i].acceleration[2] = frand() - 0.5f;
+	particles->properties[i].velocity[0] = 0.0f;
+	particles->properties[i].velocity[1] = 1.0f;
+	particles->properties[i].velocity[2] = 0.0f;
 }

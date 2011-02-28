@@ -32,7 +32,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0));
 
@@ -229,7 +229,7 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  *
  * @param primitive			the particle effect primitive to free
  */
-API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
+API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
 		LOG_ERROR("Failed to free OpenGL particles: Primitive is not a particle effect");

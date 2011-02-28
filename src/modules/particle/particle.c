@@ -33,7 +33,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0));
 
@@ -241,6 +241,7 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 
 	glDeleteBuffers(1, &particles->vertexBuffer);
 	free(particles->particles);
+	free(particles->properties);
 	free(particles);
 }
 

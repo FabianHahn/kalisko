@@ -53,7 +53,7 @@ API void initOpenGLPrimitiveSceneParsers()
 API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser)
 {
 	if(g_hash_table_lookup(parsers, type) != NULL) {
-		LOG_WARNING("Tried to register OpenGLPrimitiveSceneParser for already registered type '%s'", type);
+		LOG_ERROR("Tried to register OpenGLPrimitiveSceneParser for already registered type '%s'", type);
 		return false;
 	}
 
@@ -71,6 +71,26 @@ API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSce
 API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
 {
 	return g_hash_table_remove(parsers, type);
+}
+
+/**
+ * Parses an OpenGLPrimitive from a scene store by retrieving the correct registered parser for the type and executing it
+ *
+ * @param type		the type of the OpenGLPrimitive to parse
+ * @param store		the store representation of the OpenGLPrimitive to parse
+ * @result			the parsed OpenGLPrimitive or NULL on failure
+ */
+API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *type, Store *store)
+{
+	OpenGLPrimitiveSceneParser *parser;
+
+	if((parser = g_hash_table_lookup(parsers, type)) == NULL) {
+		LOG_ERROR("Failed to parse OpenGLPrimitive from scene with type '%s' - no parser for that primitive type registered", type);
+		return NULL;
+	}
+
+	// Execute the parser
+	return parser(type, store);
 }
 
 /**

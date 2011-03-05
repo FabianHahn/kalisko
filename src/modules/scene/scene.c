@@ -42,6 +42,7 @@
 #include "modules/store/parse.h"
 #include "api.h"
 #include "scene.h"
+#include "primitive.h"
 
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
@@ -55,12 +56,14 @@ static void freeSceneParameterByPointer(void *parameter_p);
 
 MODULE_INIT
 {
+	initOpenGLPrimitiveSceneParsers();
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
-
+	freeOpenGLPrimitiveSceneParsers();
 }
 
 /**

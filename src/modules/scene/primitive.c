@@ -21,6 +21,7 @@
 
 #include <GL/glew.h>
 #include <glib.h>
+#include <assert.h>
 
 #include "dll.h"
 #include "modules/store/store.h"
@@ -29,11 +30,17 @@
 #include "primitive.h"
 
 /**
+ * A table of strings associated with OpenGLPrimitiveSceneParser callbacks
+ */
+static GHashTable *parsers = NULL;
+
+/**
  * Initializes the OpenGLPrimitive scene parsers
  */
 API void initOpenGLPrimitiveSceneParsers()
 {
-
+	assert(parsers == NULL);
+	parsers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 }
 
 /**
@@ -45,7 +52,14 @@ API void initOpenGLPrimitiveSceneParsers()
  */
 API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser)
 {
-	return false;
+	if(g_hash_table_lookup(parsers, type) != NULL) {
+		LOG_WARNING("Tried to register OpenGLPrimitiveSceneParser for already registered type '%s'", type);
+		return false;
+	}
+
+	g_hash_table_insert(parsers, strdup(type), parser);
+
+	return true;
 }
 
 /**
@@ -56,7 +70,7 @@ API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSce
  */
 API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
 {
-	return false;
+	return g_hash_table_remove(parsers, type);
 }
 
 /**
@@ -64,5 +78,7 @@ API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
  */
 API void freeOpenGLPrimitiveSceneParsers()
 {
-
+	assert(parsers != NULL);
+	g_hash_table_destroy(parsers);
+	parsers = NULL;
 }

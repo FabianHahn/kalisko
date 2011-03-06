@@ -79,10 +79,11 @@ API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
 /**
  * Parses an OpenGLPrimitive from a scene store by retrieving the correct registered parser for the type and executing it
  *
- * @param store		the store representation of the OpenGLPrimitive to parse
- * @result			the parsed OpenGLPrimitive or NULL on failure
+ * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param store			the store representation of the OpenGLPrimitive to parse
+ * @result				the parsed OpenGLPrimitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitive(Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *path_prefix, Store *store)
 {
 	assert(store->type == STORE_ARRAY);
 
@@ -101,7 +102,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitive(Store *store)
 	}
 
 	// Execute the parser
-	return parser(store);
+	return parser(path_prefix, store);
 }
 
 /**

@@ -22,28 +22,30 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
+#include "modules/scene/primitive.h"
 #include "modules/mesh/mesh.h"
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
 #include "api.h"
 #include "mesh_opengl.h"
+#include "scene.h"
 
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 16, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("scene", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 1), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 16, 0));
 
 MODULE_INIT
 {
-	return true;
+	return $(bool, scene, registerOpenGLPrimitiveSceneParser)("mesh", &parseOpenGLScenePrimitiveMesh);
 }
 
 MODULE_FINALIZE
 {
-
+	$(bool, scene, unregisterOpenGLPrimitiveSceneParser)("mesh");
 }
 
 /**

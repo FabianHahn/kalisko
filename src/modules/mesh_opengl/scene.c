@@ -34,18 +34,22 @@
 /**
  * Parses an OpenGL primitive mesh from a scene store
  *
- * @param store		the scene store to parse
- * @result			the parsed primitive or NULL on failure
+ * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param store			the scene store to parse
+ * @result				the parsed primitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(const char *path_prefix, Store *store)
 {
 	// Parse filename parameter
-	Store *filename;
+	Store *filenameParam;
 
-	if((filename = $(Store *, store, getStorePath)(store, "filename")) == NULL || filename->type != STORE_STRING) {
+	if((filenameParam = $(Store *, store, getStorePath)(store, "filename")) == NULL || filenameParam->type != STORE_STRING) {
 		LOG_ERROR("Failed to parse OpenGL scene primitive mesh - string parameter 'filename' not found");
 		return NULL;
 	}
+
+	GString *filename = g_string_new(path_prefix);
+	g_string_append(filename, filenameParam->content.string);
 
 	// Parse usage parameter
 	Store *usageParam;
@@ -68,9 +72,10 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Store *store)
 	}
 
 	// Create mesh
-	Mesh *mesh;
+	Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(filename->str);
+	g_string_free(filename, true);
 
-	if((mesh = $(Mesh *, mesh, readMeshFromFile)(filename->content.string)) == NULL) {
+	if(mesh == NULL) {
 		return NULL;
 	}
 

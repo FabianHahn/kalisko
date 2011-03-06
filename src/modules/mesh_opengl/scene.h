@@ -25,6 +25,6 @@
 #include "modules/store/store.h"
 #include "modules/opengl/primitive.h"
 
-API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Store *store);
+API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(const char *path_prefix, Store *store);
 
 #endif

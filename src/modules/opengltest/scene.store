@@ -1,6 +1,9 @@
 scene = {
-	meshes = {
-		tetrahedron = "/modules/opengltest/tetrahedron.store"
+	primitives = {
+		tetrahedron = {
+			type = mesh
+			filename = "/modules/opengltest/tetrahedron.store"
+		}
 	}
 	
 	textures = {

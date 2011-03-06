@@ -47,7 +47,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 4, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("mesh_opengl", 0, 1, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 

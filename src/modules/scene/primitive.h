@@ -29,11 +29,12 @@
 /**
  * Function pointer type for an OpeNGLPrimitive scene parser
  */
-typedef OpenGLPrimitive *(OpenGLPrimitiveSceneParser)(const char *type, Store *store);
+typedef OpenGLPrimitive *(OpenGLPrimitiveSceneParser)(Store *store);
 
 API void initOpenGLPrimitiveSceneParsers();
 API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser);
 API bool unregisterOpenGLPrimitiveSceneParser(const char *type);
+API OpenGLPrimitive *parseOpenGLScenePrimitive(Store *store);
 API void freeOpenGLPrimitiveSceneParsers();
 
 #endif

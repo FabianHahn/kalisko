@@ -25,6 +25,7 @@
 
 #include "dll.h"
 #include "modules/store/store.h"
+#include "modules/store/path.h"
 #include "modules/opengl/primitive.h"
 #include "api.h"
 #include "primitive.h"
@@ -76,21 +77,29 @@ API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
 /**
  * Parses an OpenGLPrimitive from a scene store by retrieving the correct registered parser for the type and executing it
  *
- * @param type		the type of the OpenGLPrimitive to parse
  * @param store		the store representation of the OpenGLPrimitive to parse
  * @result			the parsed OpenGLPrimitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *type, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitive(Store *store)
 {
+	assert(store->type == STORE_ARRAY);
+
+	Store *type;
+
+	if((type = $(Store *, store, getStorePath)(store, "type")) == NULL || type->type != STORE_STRING) {
+		LOG_ERROR("Failed to parse OpenGLPrimitive from scene - type parameter is not a string");
+		return NULL;
+	}
+
 	OpenGLPrimitiveSceneParser *parser;
 
-	if((parser = g_hash_table_lookup(parsers, type)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGLPrimitive from scene with type '%s' - no parser for that primitive type registered", type);
+	if((parser = g_hash_table_lookup(parsers, type->content.string)) == NULL) {
+		LOG_ERROR("Failed to parse OpenGLPrimitive from scene with type '%s' - no parser for that primitive type registered", type->content.string);
 		return NULL;
 	}
 
 	// Execute the parser
-	return parser(type, store);
+	return parser(store);
 }
 
 /**

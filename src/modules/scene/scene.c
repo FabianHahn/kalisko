@@ -47,8 +47,8 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 3, 6);
-MODULE_BCVERSION(0, 3, 3);
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("mesh_opengl", 0, 1, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
@@ -103,41 +103,31 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	scene->materials = g_queue_new();
 	scene->models = g_queue_new();
 
-	// read meshes
-	Store *meshes = $(Store *, store, getStorePath)(store, "scene/meshes");
-	if(meshes != NULL && meshes->type == STORE_ARRAY) {
+	// read primitives
+	Store *primitives = $(Store *, store, getStorePath)(store, "scene/primitives");
+	if(primitives != NULL && primitives->type == STORE_ARRAY) {
 		GHashTableIter iter;
 		char *key;
 		Store *value;
-		g_hash_table_iter_init(&iter, meshes->content.array);
+		g_hash_table_iter_init(&iter, primitives->content.array);
 		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
-			if(value->type == STORE_STRING) {
-				GString *meshpath = g_string_new(path_prefix);
-				g_string_append(meshpath, value->content.string);
-				Mesh *mesh = $(Mesh *, mesh, readMeshFromFile)(meshpath->str);
-				g_string_free(meshpath, true);
+			if(value->type == STORE_ARRAY) {
+				OpenGLPrimitive *primitive;
 
-				if(mesh != NULL) {
-					OpenGLPrimitive *primitive;
-
-					if((primitive = $(OpenGLPrimitive *, mesh_opengl, createOpenGLPrimitiveMesh)(mesh, GL_STATIC_DRAW)) != NULL) {
-						g_hash_table_insert(scene->primitives, strdup(key), primitive);
-						LOG_DEBUG("Added mesh primitive '%s' to scene", key);
-					} else {
-						LOG_WARNING("Failed to create OpenGLMesh from mesh '%s' when creating scene by store, skipping", key);
-						continue;
-					}
+				if((primitive = parseOpenGLScenePrimitive(store)) != NULL) {
+					g_hash_table_insert(scene->primitives, strdup(key), primitive);
+					LOG_DEBUG("Added primitive '%s' to scene", key);
 				} else {
-					LOG_WARNING("Failed to read mesh file '%s' for '%s' when creating scene by store, skipping", value->content.string, key);
+					LOG_WARNING("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
 					continue;
 				}
 			} else {
-				LOG_WARNING("Failed to read mesh path for '%s' when creating scene by store, skipping", key);
+				LOG_WARNING("Expected array store value in 'primitives/%s' when parsing scene primitive, skipping", key);
 				continue;
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
+		LOG_WARNING("Expected array store value in 'primitives' when creating scene by store, skipping primitive loading");
 	}
 
 	// read textures

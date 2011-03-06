@@ -34,7 +34,7 @@
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 1), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 16, 0));
 

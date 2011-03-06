@@ -54,17 +54,17 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Store *store)
 	if((usageParam = $(Store *, store, getStorePath)(store, "usage")) == NULL || usageParam->type != STORE_STRING) {
 		LOG_WARNING("OpenGL scene primitive mesh 'usage' parameter not specified, defaulting to GL_STATIC_DRAW");
 		usage = GL_STATIC_DRAW;
-	}
-
-	if(g_strcmp0(usageParam->content.string, "GL_STREAM_DRAW") == 0) {
-		usage = GL_STREAM_DRAW;
-	} else if(g_strcmp0(usageParam->content.string, "GL_STATIC_DRAW") == 0) {
-		usage = GL_STATIC_DRAW;
-	} else if(g_strcmp0(usageParam->content.string, "GL_DYNAMIC_DRAW") == 0) {
-		usage = GL_DYNAMIC_DRAW;
 	} else {
-		LOG_WARNING("Invalid OpenGL scene primitive mesh 'usage' parameter specified, defaulting to GL_STATIC_DRAW");
-		usage = GL_STATIC_DRAW;
+		if(g_strcmp0(usageParam->content.string, "GL_STREAM_DRAW") == 0) {
+			usage = GL_STREAM_DRAW;
+		} else if(g_strcmp0(usageParam->content.string, "GL_STATIC_DRAW") == 0) {
+			usage = GL_STATIC_DRAW;
+		} else if(g_strcmp0(usageParam->content.string, "GL_DYNAMIC_DRAW") == 0) {
+			usage = GL_DYNAMIC_DRAW;
+		} else {
+			LOG_WARNING("Invalid OpenGL scene primitive mesh 'usage' parameter specified, defaulting to GL_STATIC_DRAW");
+			usage = GL_STATIC_DRAW;
+		}
 	}
 
 	// Create mesh

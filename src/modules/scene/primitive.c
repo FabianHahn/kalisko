@@ -60,6 +60,8 @@ API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSce
 
 	g_hash_table_insert(parsers, strdup(type), parser);
 
+	LOG_INFO("Registered parser for OpenGL scene primitive type '%s'", type);
+
 	return true;
 }
 

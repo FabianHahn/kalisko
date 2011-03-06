@@ -30,12 +30,10 @@
 #include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/opengl/primitive.h"
-#include "modules/mesh_opengl/mesh_opengl.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
 #include "modules/linalg/store.h"
-#include "modules/mesh/io.h"
 #include "modules/image/io.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
@@ -47,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 4, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("mesh", 0, 4, 0), MODULE_DEPENDENCY("mesh_opengl", 0, 1, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);

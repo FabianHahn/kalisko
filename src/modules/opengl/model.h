@@ -44,6 +44,7 @@ API bool setOpenGLModelScaleX(char *model_name, double scale);
 API bool setOpenGLModelScaleY(char *model_name, double scale);
 API bool setOpenGLModelScaleZ(char *model_name, double scale);
 API void drawOpenGLModels();
+API void updateOpenGLModels(double dt);
 
 #ifdef __cplusplus
 }

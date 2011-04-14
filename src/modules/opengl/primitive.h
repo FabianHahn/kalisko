@@ -32,6 +32,11 @@ typedef bool (OpenGLPrimitiveDrawFunction)(struct OpenGLPrimitiveStruct *primiti
 /**
  * Function pointer type to free OpenGL custom primitives
  */
+typedef bool (OpenGLPrimitiveUpdateFunction)(struct OpenGLPrimitiveStruct *primitive, double dt);
+
+/**
+ * Function pointer type to free OpenGL custom primitives
+ */
 typedef void (OpenGLPrimitiveFreeFunction)(struct OpenGLPrimitiveStruct *primitive);
 
 /**
@@ -44,6 +49,8 @@ struct OpenGLPrimitiveStruct {
 	void *data;
 	/** The draw function of the primitive */
 	OpenGLPrimitiveDrawFunction *draw_function;
+	/** The update function of the primitive */
+	OpenGLPrimitiveUpdateFunction *update_function;
 	/** The free function of the primitive */
 	OpenGLPrimitiveFreeFunction *free_function;
 };
@@ -54,10 +61,22 @@ typedef struct OpenGLPrimitiveStruct OpenGLPrimitive;
  * Draws an OpenGL primitive
  *
  * @param primitive			the primitive to draw
+ * @result					true if successful
  */
-static inline void drawOpenGLPrimitive(OpenGLPrimitive *primitive)
+static inline bool drawOpenGLPrimitive(OpenGLPrimitive *primitive)
 {
-	primitive->draw_function(primitive);
+	return primitive->draw_function(primitive);
+}
+
+/**
+ * Updates an OpenGL primitive
+ *
+ * @param primitive			the primitive to update
+ * @result					true if successful
+ */
+static inline bool updateOpenGLPrimitive(OpenGLPrimitive *primitive, double dt)
+{
+	return primitive->update_function(primitive, dt);
 }
 
 /**

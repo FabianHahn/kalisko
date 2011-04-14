@@ -370,8 +370,38 @@ API void drawOpenGLModels()
 			continue;
 		}
 
-		useOpenGLMaterial(model->material, model->transform, model->normal_transform);
-		drawOpenGLPrimitive(model->primitive);
+		if(!useOpenGLMaterial(model->material, model->transform, model->normal_transform)) {
+			LOG_WARNING("Failed to use material for visible model '%s'", name);
+		}
+
+		if(!drawOpenGLPrimitive(model->primitive)) {
+			LOG_WARNING("Drawing of visible model '%s' failed", name);
+		}
+	}
+}
+
+/**
+ * Updates all OpenGL models
+ *
+ * @param dt			the time passed in seconds
+ */
+API void updateOpenGLModels(double dt)
+{
+	GHashTableIter iter;
+	char *name;
+	OpenGLModel *model;
+	g_hash_table_iter_init(&iter, models);
+	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) {
+		if(model->primitive == NULL) {
+			LOG_WARNING("Trying to update model '%s' without a primitive attached, skipping", name);
+			continue;
+		}
+
+		if(model->primitive->update_function != NULL) { // There is an update function registered
+			if(!updateOpenGLPrimitive(model->primitive, dt)) {
+				LOG_WARNING("Updating of model '%s' failed", name);
+			}
+		}
 	}
 }
 

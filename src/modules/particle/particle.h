@@ -25,41 +25,43 @@
 #include "modules/opengl/primitive.h"
 
 /**
- * Struct representing a particle
+ * Struct representing a particle vertex
  */
 typedef struct {
-	/** The position of the particle */
+	/** The position of the particle vertex */
 	float position[3];
-	/** The color of the particle */
-	float color[4];
-} Particle;
-
-/**
- * Struct representing the properties of a particle
- */
-typedef struct {
+	/** The corner of the particle vertex in its sprite */
+	float corner[2];
 	/** The velocity of the particle */
 	float velocity[3];
-	/** The acceleration of the particle */
-	float acceleration[3];
-	/** The time in microseconds that the particle is already alive */
-	float alive;
-} ParticleProperty;
+	/** The time in seconds that the particle is already alive */
+	float time;
+} ParticleVertex;
+
+/**
+ * Struct representing a particle sprite
+ */
+typedef struct {
+	/** The indices of the particle sprite */
+	unsigned int indices[6];
+} ParticleSprite;
 
 /**
  * Struct representing an OpenGL particle effect
  */
 typedef struct {
-	/** The actual particles to render */
-	Particle *particles;
-	/** The properties of the particles to render */
-	ParticleProperty *properties;
-	/** The lifetime of a particle in microseconds */
+	/** The vertices to render */
+	ParticleVertex *vertices;
+	/** The sprites to render */
+	ParticleSprite *sprites;
+	/** The lifetime of a particle in seconds */
 	float lifetime;
 	/** The number of particles in the particle effect */
 	unsigned int num_particles;
 	/** The OpenGL vertex buffer associated with this particle effect */
 	GLuint vertexBuffer;
+	/** The OpenGL index buffer associated with this particle effect */
+	GLuint indexBuffer;
 	/** The OpenGL primitive used to render the particle effect */
 	OpenGLPrimitive primitive;
 } OpenGLParticles;

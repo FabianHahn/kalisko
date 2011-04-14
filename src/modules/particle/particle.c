@@ -33,9 +33,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 1));
 
 MODULE_INIT
 {
@@ -69,8 +69,8 @@ static void initParticle(OpenGLParticles *particles, unsigned int i);
 API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime)
 {
 	OpenGLParticles *particles = ALLOCATE_OBJECT(OpenGLParticles);
-	particles->particles = ALLOCATE_OBJECTS(Particle, num_particles);
-	particles->properties = ALLOCATE_OBJECTS(ParticleProperty, num_particles);
+	particles->vertices = ALLOCATE_OBJECTS(ParticleVertex, num_particles * 4);
+	particles->sprites = ALLOCATE_OBJECTS(ParticleSprite, num_particles);
 	particles->num_particles = num_particles;
 	particles->lifetime = lifetime;
 	particles->primitive.type = "particles";
@@ -79,6 +79,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, 
 	particles->primitive.free_function = &freeOpenGLPrimitiveParticles;
 
 	glGenBuffers(1, &particles->vertexBuffer);
+	glGenBuffers(1, &particles->indexBuffer);
 	initOpenGLPrimitiveParticles(&particles->primitive);
 	updateOpenGLPrimitiveParticles(&particles->primitive);
 
@@ -107,7 +108,17 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
 		initParticle(particles, i);
-		particles->properties[i].alive = frand() * particles->lifetime;
+		float time = frand() * particles->lifetime;
+		particles->vertices[4*i+0].time = time;
+		particles->vertices[4*i+1].time = time;
+		particles->vertices[4*i+2].time = time;
+		particles->vertices[4*i+3].time = time;
+		particles->sprites[i].indices[0] = 0;
+		particles->sprites[i].indices[1] = 1;
+		particles->sprites[i].indices[2] = 2;
+		particles->sprites[i].indices[3] = 1;
+		particles->sprites[i].indices[4] = 2;
+		particles->sprites[i].indices[5] = 3;
 	}
 
 	return true;
@@ -133,7 +144,7 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
  * Simulates an OpenGL particle effect primitive by moving forward a specified timestep
  *
  * @param primitive			the particle effect primitive to simulate
- * @param dt				the timestep in microseconds to move forward
+ * @param dt				the timestep in seconds to move forward
  * @result					true if successful
  */
 API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
@@ -146,20 +157,10 @@ API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 	OpenGLParticles *particles = primitive->data;
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
-		if((particles->properties[i].alive += dt) > particles->lifetime) {
-			initParticle(particles, i);
+		if((particles->vertices[4*i+0].time + dt) > particles->lifetime) { // check if particle lifetime expired
+			initParticle(particles, i); // reinitialize it
 			continue;
 		}
-
-		particles->properties[i].acceleration[0] = 100.0f * dt * (frand() - 0.5f);
-		particles->properties[i].acceleration[2] = 100.0f * dt * (frand() - 0.5f);
-
-		particles->properties[i].velocity[0] += particles->properties[i].acceleration[0] * dt;
-		particles->properties[i].velocity[1] += particles->properties[i].acceleration[1] * dt;
-		particles->properties[i].velocity[2] += particles->properties[i].acceleration[2] * dt;
-		particles->particles[i].position[0] += particles->properties[i].velocity[0] * dt;
-		particles->particles[i].position[1] += particles->properties[i].velocity[1] * dt;
-		particles->particles[i].position[2] += particles->properties[i].velocity[2] * dt;
 	}
 
 	return true;
@@ -181,7 +182,9 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	OpenGLParticles *particles = primitive->data;
 
 	glBindBuffer(GL_ARRAY_BUFFER, particles->vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * particles->num_particles, particles->particles, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleVertex) * particles->num_particles * 4, particles->vertices, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particles->indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ParticleSprite) * particles->num_particles, particles->sprites, GL_DYNAMIC_DRAW);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -205,18 +208,21 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	OpenGLParticles *particles = primitive->data;
 
 	glBindBuffer(GL_ARRAY_BUFFER, particles->vertexBuffer);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(Particle), NULL + offsetof(Particle, position));
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, position));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(Particle), NULL + offsetof(Particle, color));
-	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_COLOR);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, corner));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, velocity));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_TIME, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, time));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
 
 	if(checkOpenGLError()) {
 		return false;
 	}
 
-	glEnable(GL_POINT_SMOOTH);
-	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-	glDrawArrays(GL_POINTS, 0, particles->num_particles);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particles->indexBuffer);
+	glDrawElements(GL_TRIANGLES, particles->num_particles * 6, GL_UNSIGNED_INT, NULL);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -240,8 +246,9 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	OpenGLParticles *particles = primitive->data;
 
 	glDeleteBuffers(1, &particles->vertexBuffer);
-	free(particles->particles);
-	free(particles->properties);
+	glDeleteBuffers(1, &particles->indexBuffer);
+	free(particles->vertices);
+	free(particles->sprites);
 	free(particles);
 }
 
@@ -253,18 +260,29 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  */
 static void initParticle(OpenGLParticles *particles, unsigned int i)
 {
-	particles->particles[i].position[0] = frand() - 0.5f;
-	particles->particles[i].position[1] = 0.0f;
-	particles->particles[i].position[2] = frand() - 0.5f;
-	particles->particles[i].color[0] = 1.0f;
-	particles->particles[i].color[1] = frand();
-	particles->particles[i].color[2] = frand();
-	particles->particles[i].color[3] = 1.0f;
-	particles->properties[i].acceleration[0] = 0.0f;
-	particles->properties[i].acceleration[1] = 0.0f;
-	particles->properties[i].acceleration[2] = 0.0f;
-	particles->properties[i].velocity[0] = 0.0f;
-	particles->properties[i].velocity[1] = 0.5f;
-	particles->properties[i].velocity[2] = 0.0f;
-	particles->properties[i].alive = 0.0f;
+	float positionx = frand() - 0.5f;
+	float positiony = 0.0f;
+	float positionz = frand() - 0.5f;
+	float velocityx = 0.0f;
+	float velocityy = 0.5f;
+	float velocityz = 0.0f;
+
+	particles->vertices[4*i+0].corner[0] = 0.0f;
+	particles->vertices[4*i+0].corner[1] = 0.0f;
+	particles->vertices[4*i+1].corner[0] = 0.0f;
+	particles->vertices[4*i+1].corner[1] = 1.0f;
+	particles->vertices[4*i+2].corner[0] = 1.0f;
+	particles->vertices[4*i+2].corner[1] = 0.0f;
+	particles->vertices[4*i+3].corner[0] = 1.0f;
+	particles->vertices[4*i+3].corner[1] = 1.0f;
+
+	for(int j = 0; j < 4; j++) {
+		particles->vertices[4*i+j].position[0] = positionx;
+		particles->vertices[4*i+j].position[1] = positiony;
+		particles->vertices[4*i+j].position[2] = positionz;
+		particles->vertices[4*i+j].velocity[0] = velocityx;
+		particles->vertices[4*i+j].velocity[1] = velocityy;
+		particles->vertices[4*i+j].velocity[2] = velocityz;
+		particles->vertices[4*i+j].time = 0.0f;
+	}
 }

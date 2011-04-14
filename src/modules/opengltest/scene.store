@@ -4,6 +4,12 @@ scene = {
 			type = mesh
 			filename = "/modules/opengltest/tetrahedron.store"
 		}
+		
+		effect = {
+			type = particles
+			num = 10
+			lifetime = 5.0
+		}
 	}
 	
 	textures = {
@@ -42,7 +48,15 @@ scene = {
 				specular = specular
 				texture = checkerboard
 			}
-		}		
+		}
+		
+		particle = {
+			vertex_shader = "/modules/opengltest/particle.glslv"
+			fragment_shader = "/modules/opengltest/particle.glslf"
+			uniforms = {
+				perspective = perspective
+			}
+		}	
 	}
 	
 	models = {
@@ -60,6 +74,12 @@ scene = {
 			material = phong_vertexcolor
 			translation = (0.0, 0.25, 3.0)
 			rotationX = 3.14159265359 // rotation by pi = 180 degrees
+		}
+		
+		particles = {
+			primitive = effect
+			material = particle
+			translation = (2.5, 0.0, 2.5)
 		}		
 	}
 }

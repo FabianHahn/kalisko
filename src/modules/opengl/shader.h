@@ -46,8 +46,8 @@ typedef enum {
  * Enum for possible predefined OpenGL vertex shader attribute locations
  */
 typedef enum {
-	/** The vertex attribute */
-	OPENGL_ATTRIBUTE_VERTEX,
+	/** The position attribute */
+	OPENGL_ATTRIBUTE_POSITION,
 	/** The normal attribute */
 	OPENGL_ATTRIBUTE_NORMAL,
 	/** The color attribute */

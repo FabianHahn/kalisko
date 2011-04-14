@@ -136,8 +136,8 @@ API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 	OpenGLMesh *openglmesh = primitive->data;
 
 	glBindBuffer(GL_ARRAY_BUFFER, openglmesh->vertexBuffer);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, position));
-	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_POSITION, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, position));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_POSITION);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, normal));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_COLOR, 4, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, color));

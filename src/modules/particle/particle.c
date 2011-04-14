@@ -217,8 +217,8 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	OpenGLParticles *particles = primitive->data;
 
 	glBindBuffer(GL_ARRAY_BUFFER, particles->vertexBuffer);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_VERTEX, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, position));
-	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_VERTEX);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_POSITION, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, position));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_POSITION);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, corner));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, velocity));

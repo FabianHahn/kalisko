@@ -26,7 +26,7 @@
 #include "modules/opengl/primitive.h"
 
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage);
-API bool updateOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
+API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 

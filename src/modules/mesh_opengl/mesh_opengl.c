@@ -34,9 +34,9 @@
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 16, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 17, 0));
 
 MODULE_INIT
 {
@@ -79,11 +79,12 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 	openglmesh->primitive.type = "mesh";
 	openglmesh->primitive.data = openglmesh;
 	openglmesh->primitive.draw_function = &drawOpenGLPrimitiveMesh;
+	openglmesh->primitive.update_function = NULL;
 	openglmesh->primitive.free_function = &freeOpenGLPrimitiveMesh;
 
 	glGenBuffers(1, &openglmesh->vertexBuffer);
 	glGenBuffers(1, &openglmesh->indexBuffer);
-	updateOpenGLPrimitiveMesh(&openglmesh->primitive);
+	synchronizeOpenGLPrimitiveMesh(&openglmesh->primitive);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		freeOpenGLPrimitiveMesh(&openglmesh->primitive);
@@ -94,15 +95,15 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 }
 
 /**
- * Updates a mesh primitive by synchronizing it with its associated OpenGL buffer objects
+ * Synchronizing a primitive mesh with its associated OpenGL buffer objects
  *
- * @param primitive			the mesh primitive to be updated
+ * @param primitive			the mesh primitive to be synchronized
  * @result					true if successful
  */
-API bool updateOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
+API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
-		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		LOG_ERROR("Failed to synchronize OpenGL primitive mesh: Primitive is not a mesh");
 		return false;
 	}
 

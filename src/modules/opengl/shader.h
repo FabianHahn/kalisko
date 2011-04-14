@@ -53,7 +53,9 @@ typedef enum {
 	/** The color attribute */
 	OPENGL_ATTRIBUTE_COLOR,
 	/** The UV attribute */
-	OPENGL_ATTRIBUTE_UV
+	OPENGL_ATTRIBUTE_UV,
+	/** The time attribute */
+	OPENGL_ATTRIBUTE_TIME
 } OpenGLAttributeLocation;
 
 /**

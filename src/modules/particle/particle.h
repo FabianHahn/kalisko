@@ -69,8 +69,8 @@ typedef struct {
 API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime);
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);
-API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
-API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
+API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
+API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 

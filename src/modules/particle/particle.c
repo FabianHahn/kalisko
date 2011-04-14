@@ -33,9 +33,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 17, 0));
 
 MODULE_INIT
 {
@@ -76,12 +76,13 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, 
 	particles->primitive.type = "particles";
 	particles->primitive.data = particles;
 	particles->primitive.draw_function = &drawOpenGLPrimitiveParticles;
+	particles->primitive.update_function = &updateOpenGLPrimitiveParticles;
 	particles->primitive.free_function = &freeOpenGLPrimitiveParticles;
 
 	glGenBuffers(1, &particles->vertexBuffer);
 	glGenBuffers(1, &particles->indexBuffer);
 	initOpenGLPrimitiveParticles(&particles->primitive);
-	updateOpenGLPrimitiveParticles(&particles->primitive);
+	synchronizeOpenGLPrimitiveParticles(&particles->primitive);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		freeOpenGLPrimitiveParticles(&particles->primitive);
@@ -141,13 +142,13 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 }
 
 /**
- * Simulates an OpenGL particle effect primitive by moving forward a specified timestep
+ * Updates an OpenGL particle effect primitive by moving forward a specified timestep
  *
- * @param primitive			the particle effect primitive to simulate
+ * @param primitive			the particle effect primitive to update
  * @param dt				the timestep in seconds to move forward
  * @result					true if successful
  */
-API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
+API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
 		LOG_ERROR("Failed to simulate OpenGL particles: Primitive is not a particle effect");
@@ -155,27 +156,33 @@ API bool simulateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 	}
 
 	OpenGLParticles *particles = primitive->data;
+	bool modified = false;
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
 		if((particles->vertices[4*i+0].time + dt) > particles->lifetime) { // check if particle lifetime expired
 			initParticle(particles, i); // reinitialize it
+			modified = true;
 			continue;
 		}
+	}
+
+	if(modified) { // synchronize particle effect with GPU if values were updated
+		synchronizeOpenGLPrimitiveParticles(primitive);
 	}
 
 	return true;
 }
 
 /**
- * Updates a particle effect primitive by synchronizing it with its associated OpenGL buffer objects
+ * Synchronizes a particle effect primitive with its associated OpenGL buffer objects
  *
- * @param primitive			the particle effect primitive to be updated
+ * @param primitive			the particle effect primitive to be synchronized
  * @result					true if successful
  */
-API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
+API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to update OpenGL particles: Primitive is not a particle effect");
+		LOG_ERROR("Failed to synchronized OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 

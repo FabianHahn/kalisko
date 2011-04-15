@@ -35,7 +35,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0));
 
@@ -116,12 +116,12 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 		particles->vertices[4*i+1].time = time;
 		particles->vertices[4*i+2].time = time;
 		particles->vertices[4*i+3].time = time;
-		particles->sprites[i].indices[0] = 0;
-		particles->sprites[i].indices[1] = 1;
-		particles->sprites[i].indices[2] = 2;
-		particles->sprites[i].indices[3] = 1;
-		particles->sprites[i].indices[4] = 2;
-		particles->sprites[i].indices[5] = 3;
+		particles->sprites[i].indices[0] = 4*i+2;
+		particles->sprites[i].indices[1] = 4*i+1;
+		particles->sprites[i].indices[2] = 4*i+0;
+		particles->sprites[i].indices[3] = 4*i+1;
+		particles->sprites[i].indices[4] = 4*i+2;
+		particles->sprites[i].indices[5] = 4*i+3;
 	}
 
 	return true;

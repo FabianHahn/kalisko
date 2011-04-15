@@ -35,7 +35,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0));
 
@@ -224,7 +224,7 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, velocity));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_TIME, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, time));
-	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_TIME);
 
 	if(checkOpenGLError()) {
 		return false;

@@ -38,3 +38,5 @@ if not module.GetOption('clean'):
 	module = conf.Finish()
 
 module.SharedLibrary('../kalisko_particle', Glob('*.c'))
+module.Command("particle.glslv", File("particle.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+module.Command("particle.glslf", File("particle.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))

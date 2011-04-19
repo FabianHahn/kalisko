@@ -51,8 +51,8 @@ scene = {
 		}
 		
 		particle = {
-			vertex_shader = "/modules/opengltest/particle.glslv"
-			fragment_shader = "/modules/opengltest/particle.glslf"
+			vertex_shader = "/modules/particle/particle.glslv"
+			fragment_shader = "/modules/particle/particle.glslf"
 			uniforms = {
 				perspective = perspective
 				texture = checkerboard

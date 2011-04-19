@@ -48,22 +48,23 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 
 	unsigned int num = numParam->content.integer;
 
+	// Create particle effect
+	OpenGLPrimitive *primitive;
+
+	if((primitive = createOpenGLPrimitiveParticles(num)) == NULL) {
+		return NULL;
+	}
+
+	OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
+
 	// Parse lifetime parameter
 	Store *lifetimeParam;
 
-	if((lifetimeParam = $(Store *, store, getStorePath)(store, "lifetime")) == NULL || !(lifetimeParam->type == STORE_INTEGER || lifetimeParam->type == STORE_FLOAT_NUMBER)) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive mesh - float parameter 'lifetime' not found");
-		return NULL;
+	if((lifetimeParam = $(Store *, store, getStorePath)(store, "lifetime")) != NULL && (lifetimeParam->type == STORE_INTEGER || lifetimeParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.lifetime = lifetimeParam->type == STORE_FLOAT_NUMBER ? lifetimeParam->content.float_number : lifetimeParam->content.integer;
 	}
 
-	float lifetime = lifetimeParam->type == STORE_FLOAT_NUMBER ? lifetimeParam->content.float_number : lifetimeParam->content.integer;
+	initOpenGLPrimitiveParticles(primitive);
 
-	// Create particle effect
-	OpenGLPrimitive *particles;
-
-	if((particles = createOpenGLPrimitiveParticles(num, lifetime)) == NULL) {
-		return NULL;
-	}
-
-	return particles;
+	return primitive;
 }

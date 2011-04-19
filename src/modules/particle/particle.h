@@ -23,6 +23,7 @@
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
+#include "modules/linalg/Vector.h"
 
 /**
  * Struct representing a particle vertex
@@ -54,8 +55,6 @@ typedef struct {
 	ParticleVertex *vertices;
 	/** The sprites to render */
 	ParticleSprite *sprites;
-	/** The lifetime of a particle in seconds */
-	float lifetime;
 	/** The current particle time */
 	float time;
 	/** The number of particles in the particle effect */
@@ -66,9 +65,22 @@ typedef struct {
 	GLuint indexBuffer;
 	/** The OpenGL primitive used to render the particle effect */
 	OpenGLPrimitive primitive;
+	/** The configurable properties of the particle effect */
+	struct {
+		/** The lifetime of a particle in seconds */
+		float lifetime;
+		/** The mean position of a new particle */
+		Vector *positionMean;
+		/** The standard deviation of a new particle's position */
+		Vector *positionStd;
+		/** The mean velocity of a new particle */
+		Vector *velocityMean;
+		/** The standard deviation of a new particle's velocity */
+		Vector *velocityStd;
+	} properties;
 } OpenGLParticles;
 
-API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime);
+API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles);
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *model_name, const char *material_name);
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);

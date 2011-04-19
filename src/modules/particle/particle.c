@@ -30,6 +30,7 @@
 #include "modules/opengl/opengl.h"
 #include "modules/opengl/material.h"
 #include "modules/random/random.h"
+#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "particle.h"
 #include "scene.h"
@@ -37,9 +38,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 6, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 1), MODULE_DEPENDENCY("random", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 1), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -57,16 +58,14 @@ static void initParticle(OpenGLParticles *particles, unsigned int i);
  * Creates a new OpenGL particle effect primitive
  *
  * @param num_particles		the number of particles used for the effect
- * @param lifetime			the lifetime of a particle in the particle effect
  * @result					the created OpenGL particle effect primitive object or NULL on failure
  */
-API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, double lifetime)
+API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 {
 	OpenGLParticles *particles = ALLOCATE_OBJECT(OpenGLParticles);
 	particles->vertices = ALLOCATE_OBJECTS(ParticleVertex, num_particles * 4);
 	particles->sprites = ALLOCATE_OBJECTS(ParticleSprite, num_particles);
 	particles->num_particles = num_particles;
-	particles->lifetime = lifetime;
 	particles->time = 0.0f;
 	particles->primitive.type = "particles";
 	particles->primitive.data = particles;
@@ -74,6 +73,11 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, 
 	particles->primitive.draw_function = &drawOpenGLPrimitiveParticles;
 	particles->primitive.update_function = &updateOpenGLPrimitiveParticles;
 	particles->primitive.free_function = &freeOpenGLPrimitiveParticles;
+	particles->properties.lifetime = 3.0f;
+	particles->properties.positionMean = $(Vector *, linalg, createVector3)(0.0f, 0.0f, 0.0f);
+	particles->properties.positionStd = $(Vector *, linalg, createVector3)(1.0f, 0.0f, 1.0f);
+	particles->properties.velocityMean = $(Vector *, linalg, createVector3)(0.0f, 1.0f, 0.0f);
+	particles->properties.velocityStd = $(Vector *, linalg, createVector3)(0.0f, 0.0f, 0.0f);
 
 	glGenBuffers(1, &particles->vertexBuffer);
 	glGenBuffers(1, &particles->indexBuffer);
@@ -105,7 +109,7 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
 		initParticle(particles, i);
-		float birth = -randomUniform() * particles->lifetime;
+		float birth = -randomUniform() * particles->properties.lifetime;
 		particles->vertices[4*i+0].birth = birth;
 		particles->vertices[4*i+1].birth = birth;
 		particles->vertices[4*i+2].birth = birth;
@@ -180,7 +184,7 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 	particles->time += dt; // update time
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
-		if((particles->time - particles->vertices[4*i+0].birth) > particles->lifetime) { // check if particle lifetime expired
+		if((particles->time - particles->vertices[4*i+0].birth) > particles->properties.lifetime) { // check if particle lifetime expired
 			initParticle(particles, i); // reinitialize it
 			modified = true;
 			continue;
@@ -277,6 +281,10 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glDeleteBuffers(1, &particles->indexBuffer);
 	free(particles->vertices);
 	free(particles->sprites);
+	free(particles->properties.positionMean);
+	free(particles->properties.positionStd);
+	free(particles->properties.velocityMean);
+	free(particles->properties.velocityStd);
 	free(particles);
 }
 
@@ -288,12 +296,12 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  */
 static void initParticle(OpenGLParticles *particles, unsigned int i)
 {
-	float positionx = randomUniform() - 0.5f;
-	float positiony = 0.0f;
-	float positionz = randomUniform() - 0.5f;
-	float velocityx = 0.0f;
-	float velocityy = 0.5f;
-	float velocityz = 0.0f;
+	float positionx = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.positionMean, 0), $(float, linalg, getVector)(particles->properties.positionStd, 0));
+	float positiony = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.positionMean, 1), $(float, linalg, getVector)(particles->properties.positionStd, 1));
+	float positionz = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.positionMean, 2), $(float, linalg, getVector)(particles->properties.positionStd, 2));
+	float velocityx = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 0), $(float, linalg, getVector)(particles->properties.velocityStd, 0));
+	float velocityy = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 1), $(float, linalg, getVector)(particles->properties.velocityStd, 1));
+	float velocityz = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 2), $(float, linalg, getVector)(particles->properties.velocityStd, 2));
 
 	particles->vertices[4*i+0].corner[0] = 0.0f;
 	particles->vertices[4*i+0].corner[1] = 0.0f;

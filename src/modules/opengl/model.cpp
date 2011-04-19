@@ -101,10 +101,11 @@ API void freeOpenGLModels()
 /**
  * Creates a new OpenGL model
  *
- * @param name		the name of the OpenGL model to create
- * @result			true if successful
+ * @param name			the name of the OpenGL model to create
+ * @param primitive		the primitive for which to create the model
+ * @result				true if successful
  */
-API bool createOpenGLModel(char *name)
+API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive)
 {
 	if(g_hash_table_lookup(models, name) != NULL) {
 		LOG_ERROR("Failed to create model '%s', a model with that name already exists!", name);
@@ -113,7 +114,7 @@ API bool createOpenGLModel(char *name)
 
 	OpenGLModel *model = ALLOCATE_OBJECT(OpenGLModel);
 	model->name = strdup(name);
-	model->primitive = NULL;
+	model->primitive = primitive;
 	model->visible = false;
 	model->material = NULL;
 	model->base_transform = new Matrix(4, 4);
@@ -148,29 +149,7 @@ API bool deleteOpenGLModel(char *name)
 }
 
 /**
- * Attaches a primitive to an OpenGL model and makes it visible
- *
- * @param name			the name of the OpenGL model to attach the primitive to
- * @param primitive		the OpenGLPrimitive object that should be attached to the model
- * @result				true if successful
- */
-API bool attachOpenGLModelPrimitive(char *name, OpenGLPrimitive *primitive)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
-		LOG_ERROR("Failed to attach a mesh to non existing model '%s'", name);
-		return false;
-	}
-
-	model->primitive = primitive;
-	model->visible = true;
-
-	return true;
-}
-
-/**
- * Sets the material to be used before drawing an OpenGL model
+ * Sets the material to be used before drawing an OpenGL model and makes the model visible
  *
  * @param model_name		the name of the OpenGL model to set the material for
  * @param material_name		the name of the material that should be set for the OpenGL model, or NULL if no material should be used
@@ -187,7 +166,14 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 
 	model->material = strdup(material_name);
 
-	updateOpenGLModelTransform(model);
+	OpenGLUniform *modelTransformUniform = createOpenGLUniformMatrix(model->transform);
+	OpenGLUniform *modelNormalTransformUniform = createOpenGLUniformMatrix(model->normal_transform);
+	detachOpenGLMaterialUniform(material_name, "model"); // remove old uniform if exists
+	attachOpenGLMaterialUniform(material_name, "model", modelTransformUniform);
+	detachOpenGLMaterialUniform(material_name, "modelNormal"); // remove old uniform if exists
+	attachOpenGLMaterialUniform(material_name, "modelNormal", modelNormalTransformUniform);
+
+	model->visible = true;
 
 	return true;
 }

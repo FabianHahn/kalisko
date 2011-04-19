@@ -38,10 +38,6 @@ typedef struct {
 	GLuint program;
 	/** A table of uniforms for the material's shader */
 	GHashTable *uniforms;
-	/** The model matrix */
-	Matrix *model;
-	/** The model normal matrix */
-	Matrix *modelNormal;
 	/** A list of textures added to this material. The positions in the list will correspond to the OpenGL texture units used */
 	GQueue *textures;
 } OpenGLMaterial;
@@ -86,8 +82,6 @@ API bool createOpenGLMaterial(const char *name)
 	material->name = strdup(name);
 	material->program = 0;
 	material->uniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
-	material->model = $(Matrix *, linalg, createMatrix)(4, 4);
-	material->modelNormal = $(Matrix *, linalg, createMatrix)(4, 4);
 	material->textures = g_queue_new();
 
 	g_hash_table_insert(materials, material->name, material);
@@ -124,13 +118,6 @@ API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 
 	material->program = program;
 
-	OpenGLUniform *modelUniform = createOpenGLUniformMatrix(material->model);
-	OpenGLUniform *modelNormalUniform = createOpenGLUniformMatrix(material->modelNormal);
-	detachOpenGLMaterialUniform(name, "model"); // remove old uniform if exists
-	attachOpenGLMaterialUniform(name, "model", modelUniform);
-	detachOpenGLMaterialUniform(name, "modelNormal"); // remove old uniform if exists
-	attachOpenGLMaterialUniform(name, "modelNormal", modelNormalUniform);
-
 	return true;
 }
 
@@ -164,7 +151,7 @@ API bool attachOpenGLMaterialUniform(const char *material_name, const char *unif
 	GLint location = glGetUniformLocation(material->program, uniform_name);
 
 	if(location == -1) {
-		LOG_ERROR("Failed to find uniform location for '%s' in shader program for material '%s'", uniform_name, material_name);
+		LOG_WARNING("Failed to find uniform location for '%s' in shader program for material '%s'", uniform_name, material_name);
 		return false;
 	}
 
@@ -245,10 +232,6 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 
 	glUseProgram(material->program);
 
-	// Assign model matrices
-	$(void, linalg, assignMatrix)(material->model, model);
-	$(void, linalg, assignMatrix)(material->modelNormal, modelNormal);
-
 	// Iterate over all uniforms for this shaders and use them
 	GList *uniforms = g_hash_table_get_values(material->uniforms);
 	for(GList *iter = uniforms; iter != NULL; iter = iter->next) {
@@ -288,8 +271,6 @@ static void freeOpenGLMaterial(void *material_p)
 {
 	OpenGLMaterial *material = material_p;
 
-	$(void, linalg, freeMatrix)(material->model);
-	$(void, linalg, freeMatrix)(material->modelNormal);
 	free(material->name);
 	glDeleteProgram(material->program);
 	g_hash_table_destroy(material->uniforms);

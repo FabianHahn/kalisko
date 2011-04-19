@@ -32,9 +32,8 @@ extern "C" {
 
 API void initOpenGLModels();
 API void freeOpenGLModels();
-API bool createOpenGLModel(char *name);
+API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive);
 API bool deleteOpenGLModel(char *name);
-API bool attachOpenGLModelPrimitive(char *name, OpenGLPrimitive *primitive);
 API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
 API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
 API bool setOpenGLModelRotationX(char *model_name, double rotation);

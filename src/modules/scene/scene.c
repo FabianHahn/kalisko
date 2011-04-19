@@ -45,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 4, 4);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 16, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 18, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -348,11 +348,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				continue;
 			}
 
-			if(!$(bool, opengl, createOpenGLModel)(key)) {
-				LOG_WARNING("Failed to create OpenGL model '%s' when creatig scene by store, skipping", key);
-				continue;
-			}
-
 			// set primitive
 			Store *modelprimitive = $(Store *, store, getStorePath)(value, "primitive");
 			if(modelprimitive != NULL && modelprimitive->type == STORE_STRING) {
@@ -360,16 +355,19 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				OpenGLPrimitive *primitive;
 
 				if((primitive = g_hash_table_lookup(scene->primitives, primitivename)) != NULL) {
-					if($(bool, opengl, attachOpenGLModelPrimitive)(key, primitive)) {
-						LOG_DEBUG("Attached primitive '%s' to model '%s'", primitivename, key);
+					if($(bool, opengl, createOpenGLModel)(key, primitive)) {
+						LOG_DEBUG("Created OpenGL model '%s' with primitive '%s'", key, primitivename);
 					} else {
-						LOG_WARNING("Failed to attach primitive '%s' to model '%s' when creating scene by store, skipping", primitivename, key);
+						LOG_WARNING("Failed to create OpenGL model '%s' with primitive '%s' when creatig scene by store, skipping", key, primitivename);
+						continue;
 					}
 				} else {
 					LOG_WARNING("Failed to add primitive '%s' to model '%s' when creating scene by store: No such model - skipping", primitivename, key);
+					continue;
 				}
 			} else {
 				LOG_WARNING("Failed to read primitive for model '%s' when creating scene by store, skipping", key);
+				continue;
 			}
 
 			// set material

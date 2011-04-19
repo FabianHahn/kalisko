@@ -28,6 +28,7 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
+#include "modules/random/random.h"
 #include "api.h"
 #include "particle.h"
 #include "scene.h"
@@ -35,9 +36,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0), MODULE_DEPENDENCY("random", 0, 1, 0));
 
 MODULE_INIT
 {
@@ -47,16 +48,6 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(bool, scene, unregisterOpenGLPrimitiveSceneParser)("particles");
-}
-
-/**
- * Returns a random float number between 0 and 1
- *
- * @result			the generated random number
- */
-static float frand()
-{
-	return (float) rand() / RAND_MAX;
 }
 
 static void initParticle(OpenGLParticles *particles, unsigned int i);

@@ -36,9 +36,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0), MODULE_DEPENDENCY("random", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 17, 0), MODULE_DEPENDENCY("random", 0, 2, 0));
 
 MODULE_INIT
 {
@@ -102,7 +102,7 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
 		initParticle(particles, i);
-		float time = frand() * particles->lifetime;
+		float time = randomUniform() * particles->lifetime;
 		particles->vertices[4*i+0].time = time;
 		particles->vertices[4*i+1].time = time;
 		particles->vertices[4*i+2].time = time;
@@ -260,9 +260,9 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  */
 static void initParticle(OpenGLParticles *particles, unsigned int i)
 {
-	float positionx = frand() - 0.5f;
+	float positionx = randomUniform() - 0.5f;
 	float positiony = 0.0f;
-	float positionz = frand() - 0.5f;
+	float positionz = randomUniform() - 0.5f;
 	float velocityx = 0.0f;
 	float velocityy = 0.5f;
 	float velocityz = 0.0f;

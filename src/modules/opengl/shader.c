@@ -101,7 +101,7 @@ API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader,
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_NORMAL, "normal");
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_COLOR, "color");
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_UV, "uv");
-	glBindAttribLocation(program, OPENGL_ATTRIBUTE_TIME, "time");
+	glBindAttribLocation(program, OPENGL_ATTRIBUTE_BIRTH, "birth");
 
 	glLinkProgram(program);
 

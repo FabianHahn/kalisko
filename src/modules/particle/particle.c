@@ -28,6 +28,7 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
+#include "modules/opengl/material.h"
 #include "modules/random/random.h"
 #include "api.h"
 #include "particle.h"
@@ -36,9 +37,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 6);
+MODULE_VERSION(0, 5, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("random", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 1), MODULE_DEPENDENCY("random", 0, 2, 0));
 
 MODULE_INIT
 {
@@ -66,6 +67,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, 
 	particles->sprites = ALLOCATE_OBJECTS(ParticleSprite, num_particles);
 	particles->num_particles = num_particles;
 	particles->lifetime = lifetime;
+	particles->time = 0.0f;
 	particles->primitive.type = "particles";
 	particles->primitive.data = particles;
 	particles->primitive.setup_function = &setupOpenGLPrimitiveParticles;
@@ -103,11 +105,11 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
 		initParticle(particles, i);
-		float time = randomUniform() * particles->lifetime;
-		particles->vertices[4*i+0].time = time;
-		particles->vertices[4*i+1].time = time;
-		particles->vertices[4*i+2].time = time;
-		particles->vertices[4*i+3].time = time;
+		float birth = -randomUniform() * particles->lifetime;
+		particles->vertices[4*i+0].birth = birth;
+		particles->vertices[4*i+1].birth = birth;
+		particles->vertices[4*i+2].birth = birth;
+		particles->vertices[4*i+3].birth = birth;
 		particles->sprites[i].indices[0] = 4*i+2;
 		particles->sprites[i].indices[1] = 4*i+1;
 		particles->sprites[i].indices[2] = 4*i+0;
@@ -133,6 +135,12 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *m
 		LOG_ERROR("Failed to initialize OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
+
+	OpenGLParticles *particles = primitive->data;
+
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "time");
+	OpenGLUniform *timeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->time);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "time", timeUniform);
 
 	return true;
 }
@@ -169,9 +177,10 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 
 	OpenGLParticles *particles = primitive->data;
 	bool modified = false;
+	particles->time += dt; // update time
 
 	for(unsigned int i = 0; i < particles->num_particles; i++) {
-		if((particles->vertices[4*i+0].time + dt) > particles->lifetime) { // check if particle lifetime expired
+		if((particles->time - particles->vertices[4*i+0].birth) > particles->lifetime) { // check if particle lifetime expired
 			initParticle(particles, i); // reinitialize it
 			modified = true;
 			continue;
@@ -233,8 +242,8 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_NORMAL, 3, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, velocity));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
-	glVertexAttribPointer(OPENGL_ATTRIBUTE_TIME, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, time));
-	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_TIME);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_BIRTH, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, birth));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_BIRTH);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -302,6 +311,6 @@ static void initParticle(OpenGLParticles *particles, unsigned int i)
 		particles->vertices[4*i+j].velocity[0] = velocityx;
 		particles->vertices[4*i+j].velocity[1] = velocityy;
 		particles->vertices[4*i+j].velocity[2] = velocityz;
-		particles->vertices[4*i+j].time = 0.0f;
+		particles->vertices[4*i+j].birth = particles->time;
 	}
 }

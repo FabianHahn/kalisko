@@ -24,18 +24,27 @@ uniform mat4 model;
 uniform mat4 modelNormal;
 uniform mat4 perspective;
 uniform mat4 camera;
+uniform float time;
 
 attribute vec3 position;
 attribute vec2 uv;
 attribute vec3 normal;
-attribute float time;
+attribute float birth;
 
 varying vec3 world_position;
 varying vec2 world_uv;
 
+vec3 computePosition()
+{
+	vec3 velocity = normal;
+	float dt = time - birth;
+	return position + velocity * dt;
+}
+
 void main()
 {
-	vec4 pos4 = vec4(position.x, position.y, position.z, 1.0);
+	vec3 currentPosition = computePosition();
+	vec4 pos4 = vec4(currentPosition.x, currentPosition.y, currentPosition.z, 1.0);
 	vec4 worldpos4 = model * pos4;
 	world_position = worldpos4.xyz / worldpos4.w;
 	world_uv = uv;

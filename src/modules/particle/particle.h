@@ -34,8 +34,8 @@ typedef struct {
 	float corner[2];
 	/** The velocity of the particle */
 	float velocity[3];
-	/** The time in seconds that the particle is already alive */
-	float time;
+	/** The birth time of the particle */
+	float birth;
 } ParticleVertex;
 
 /**
@@ -56,6 +56,8 @@ typedef struct {
 	ParticleSprite *sprites;
 	/** The lifetime of a particle in seconds */
 	float lifetime;
+	/** The current particle time */
+	float time;
 	/** The number of particles in the particle effect */
 	unsigned int num_particles;
 	/** The OpenGL vertex buffer associated with this particle effect */

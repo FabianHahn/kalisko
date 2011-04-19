@@ -142,6 +142,22 @@ API OpenGLUniform *createOpenGLUniformInt(int value)
 }
 
 /**
+ * Creates an int pointer valued OpenGL uniform
+ *
+ * @param value			the value of the uniform
+ * @result				the created uniform
+ */
+API OpenGLUniform *createOpenGLUniformIntPointer(int *value)
+{
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_INT_POINTER;
+	uniform->content.int_pointer_value = value;
+	uniform->location = -1;
+
+	return uniform;
+}
+
+/**
  * Creates a float valued OpenGL uniform
  *
  * @param value			the value of the uniform
@@ -152,6 +168,22 @@ API OpenGLUniform *createOpenGLUniformFloat(double value)
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
 	uniform->type = OPENGL_UNIFORM_FLOAT;
 	uniform->content.float_value = value;
+	uniform->location = -1;
+
+	return uniform;
+}
+
+/**
+ * Creates a float pointer valued OpenGL uniform
+ *
+ * @param value			the value of the uniform
+ * @result				the created uniform
+ */
+API OpenGLUniform *createOpenGLUniformFloatPointer(float *value)
+{
+	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+	uniform->type = OPENGL_UNIFORM_FLOAT_POINTER;
+	uniform->content.float_pointer_value = value;
 	uniform->location = -1;
 
 	return uniform;
@@ -235,8 +267,14 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 		case OPENGL_UNIFORM_INT:
 			glUniform1i(uniform->location, uniform->content.int_value);
 		break;
+		case OPENGL_UNIFORM_INT_POINTER:
+			glUniform1i(uniform->location, *uniform->content.int_pointer_value);
+		break;
 		case OPENGL_UNIFORM_FLOAT:
 			glUniform1f(uniform->location, uniform->content.float_value);
+		break;
+		case OPENGL_UNIFORM_FLOAT_POINTER:
+			glUniform1f(uniform->location, *uniform->content.float_pointer_value);
 		break;
 		case OPENGL_UNIFORM_VECTOR:
 			if($(unsigned int, linalg, getVectorSize)(uniform->content.vector_value) == 3) {

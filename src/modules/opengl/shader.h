@@ -32,8 +32,12 @@
 typedef enum {
 	/** A uniform int value */
 	OPENGL_UNIFORM_INT,
+	/** A uniform int pointer value */
+	OPENGL_UNIFORM_INT_POINTER,
 	/** A uniform float value */
 	OPENGL_UNIFORM_FLOAT,
+	/** A uniform float pointer value */
+	OPENGL_UNIFORM_FLOAT_POINTER,
 	/** A uniform 4-vector value */
 	OPENGL_UNIFORM_VECTOR,
 	/** A uniform 4x4-matrix value */
@@ -64,8 +68,12 @@ typedef enum {
 typedef union {
 	/** A uniform int value */
 	int int_value;
+	/** A uniform int pointer value */
+	int *int_pointer_value;
 	/** A uniform float value */
 	float float_value;
+	/** A uniform float pointer value */
+	float *float_pointer_value;
 	/** A uniform vector value */
 	Vector *vector_value;
 	/** A uniform matrix value */
@@ -90,7 +98,9 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
 API GLuint createOpenGLShaderFromFile(char *filename, GLenum type);
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
 API OpenGLUniform *createOpenGLUniformInt(int value);
+API OpenGLUniform *createOpenGLUniformIntPointer(int *value);
 API OpenGLUniform *createOpenGLUniformFloat(double value);
+API OpenGLUniform *createOpenGLUniformFloatPointer(float *value);
 API OpenGLUniform *createOpenGLUniformVector(Vector *value);
 API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
 API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture);

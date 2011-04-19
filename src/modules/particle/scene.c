@@ -25,6 +25,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/opengl/primitive.h"
+#include "modules/linalg/store.h"
 #include "api.h"
 #include "particle.h"
 #include "scene.h"
@@ -62,6 +63,43 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 
 	if((lifetimeParam = $(Store *, store, getStorePath)(store, "lifetime")) != NULL && (lifetimeParam->type == STORE_INTEGER || lifetimeParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.lifetime = lifetimeParam->type == STORE_FLOAT_NUMBER ? lifetimeParam->content.float_number : lifetimeParam->content.integer;
+		LOG_DEBUG("Set lifetime for particle effect");
+	}
+
+	// Parse position mean parameter
+	Store *positionMeanParam = $(Store *, store, getStorePath)(store, "positionMean");
+	if(positionMeanParam != NULL && positionMeanParam->type == STORE_LIST) {
+		Vector *positionMean = $(Vector *, linalg, convertStoreToVector)(positionMeanParam);
+		$(void, linalg, assignVector)(particles->properties.positionMean, positionMean);
+		$(void, linalg, freeVector)(positionMean);
+		LOG_DEBUG("Set mean position for particle effect");
+	}
+
+	// Parse position std parameter
+	Store *positionStdParam = $(Store *, store, getStorePath)(store, "positionStd");
+	if(positionStdParam != NULL && positionStdParam->type == STORE_LIST) {
+		Vector *positionStd = $(Vector *, linalg, convertStoreToVector)(positionStdParam);
+		$(void, linalg, assignVector)(particles->properties.positionStd, positionStd);
+		$(void, linalg, freeVector)(positionStd);
+		LOG_DEBUG("Set position standard deviation for particle effect");
+	}
+
+	// Parse velocity mean parameter
+	Store *velocityMeanParam = $(Store *, store, getStorePath)(store, "velocityMean");
+	if(velocityMeanParam != NULL && velocityMeanParam->type == STORE_LIST) {
+		Vector *velocityMean = $(Vector *, linalg, convertStoreToVector)(velocityMeanParam);
+		$(void, linalg, assignVector)(particles->properties.velocityMean, velocityMean);
+		$(void, linalg, freeVector)(velocityMean);
+		LOG_DEBUG("Set mean velocity for particle effect");
+	}
+
+	// Parse velocity std parameter
+	Store *velocityStdParam = $(Store *, store, getStorePath)(store, "velocityStd");
+	if(velocityStdParam != NULL && velocityStdParam->type == STORE_LIST) {
+		Vector *velocityStd = $(Vector *, linalg, convertStoreToVector)(velocityStdParam);
+		$(void, linalg, assignVector)(particles->properties.velocityStd, velocityStd);
+		$(void, linalg, freeVector)(velocityStd);
+		LOG_DEBUG("Set velocity standard deviation for particle effect");
 	}
 
 	initOpenGLPrimitiveParticles(primitive);

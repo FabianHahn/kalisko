@@ -24,11 +24,12 @@
 #include <GL/glew.h>
 #include "dll.h"
 #include "api.h"
+#include "random.h"
 
 MODULE_NAME("random");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Randomness functions");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -42,3 +43,23 @@ MODULE_FINALIZE
 
 }
 
+/**
+ * Returns a random gaussian number with specified distribution
+ *
+ * @param mean		the mean value of the gaussian distribution
+ * @param std		the standard deviation of the gaussian distribution
+ * @result			the gaussian random number
+ */
+API float randomGaussian(double mean, double std)
+{
+	float x1, x2, w;
+
+	do {
+		x1 = 2.0f * randomUniform() - 1.0f;
+		x2 = 2.0f * randomUniform() - 1.0f;
+		w = x1 * x1 + x2 * x2;
+	} while(w >= 1.0f);
+
+	w = sqrt((-2.0f * log(w)) / w);
+	return mean + std * x1 * w;
+}

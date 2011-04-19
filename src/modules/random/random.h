@@ -28,10 +28,11 @@
  *
  * @result			the generated random number
  */
-static inline float frand()
+static inline float randomUniform()
 {
 	return (float) rand() / RAND_MAX;
 }
 
+API float randomGaussian(double mean, double std);
 
 #endif

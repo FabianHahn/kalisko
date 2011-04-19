@@ -25,6 +25,11 @@
 struct OpenGLPrimitiveStruct;
 
 /**
+ * Function pointer type to setup OpenGL custom primitives
+ */
+typedef bool (OpenGLPrimitiveSetupFunction)(struct OpenGLPrimitiveStruct *primitive, const char *model_name, const char *material_name);
+
+/**
  * Function pointer type to draw OpenGL custom primitives
  */
 typedef bool (OpenGLPrimitiveDrawFunction)(struct OpenGLPrimitiveStruct *primitive);
@@ -47,6 +52,8 @@ struct OpenGLPrimitiveStruct {
 	char *type;
 	/** The data of the primitive */
 	void *data;
+	/** The init function of the primitive */
+	OpenGLPrimitiveSetupFunction *setup_function;
 	/** The draw function of the primitive */
 	OpenGLPrimitiveDrawFunction *draw_function;
 	/** The update function of the primitive */
@@ -58,6 +65,23 @@ struct OpenGLPrimitiveStruct {
 typedef struct OpenGLPrimitiveStruct OpenGLPrimitive;
 
 /**
+ * Sets up an OpenGL primitive for a model
+ *
+ * @param primitive			the primitive to setup
+ * @param model_name		the model name to setup the primitive for
+ * @param mesh_name			the mesh name to setup the primitive for
+ * @result					true if successful
+ */
+static inline bool setupOpenGLPrimitive(OpenGLPrimitive *primitive, const char *model_name, const char *mesh_name)
+{
+	if(primitive->setup_function != NULL) {
+		return primitive->setup_function(primitive, model_name, mesh_name);
+	} else {
+		return true;
+	}
+}
+
+/**
  * Draws an OpenGL primitive
  *
  * @param primitive			the primitive to draw
@@ -65,7 +89,11 @@ typedef struct OpenGLPrimitiveStruct OpenGLPrimitive;
  */
 static inline bool drawOpenGLPrimitive(OpenGLPrimitive *primitive)
 {
-	return primitive->draw_function(primitive);
+	if(primitive->draw_function != NULL) {
+		return primitive->draw_function(primitive);
+	} else {
+		return true;
+	}
 }
 
 /**
@@ -76,7 +104,11 @@ static inline bool drawOpenGLPrimitive(OpenGLPrimitive *primitive)
  */
 static inline bool updateOpenGLPrimitive(OpenGLPrimitive *primitive, double dt)
 {
-	return primitive->update_function(primitive, dt);
+	if(primitive->update_function != NULL) {
+		return primitive->update_function(primitive, dt);
+	} else {
+		return true;
+	}
 }
 
 /**

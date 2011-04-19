@@ -164,8 +164,6 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 		return false;
 	}
 
-	model->material = strdup(material_name);
-
 	OpenGLUniform *modelTransformUniform = createOpenGLUniformMatrix(model->transform);
 	OpenGLUniform *modelNormalTransformUniform = createOpenGLUniformMatrix(model->normal_transform);
 	detachOpenGLMaterialUniform(material_name, "model"); // remove old uniform if exists
@@ -173,6 +171,12 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 	detachOpenGLMaterialUniform(material_name, "modelNormal"); // remove old uniform if exists
 	attachOpenGLMaterialUniform(material_name, "modelNormal", modelNormalTransformUniform);
 
+	if(!setupOpenGLPrimitive(model->primitive, model_name, material_name)) {
+		LOG_WARNING("Setup for model '%s' with material '%s' failed", model_name, material_name);
+		return false;
+	}
+
+	model->material = strdup(material_name);
 	model->visible = true;
 
 	return true;
@@ -383,10 +387,8 @@ API void updateOpenGLModels(double dt)
 			continue;
 		}
 
-		if(model->primitive->update_function != NULL) { // There is an update function registered
-			if(!updateOpenGLPrimitive(model->primitive, dt)) {
-				LOG_WARNING("Updating of model '%s' failed", name);
-			}
+		if(!updateOpenGLPrimitive(model->primitive, dt)) {
+			LOG_WARNING("Updating of model '%s' failed", name);
 		}
 	}
 }

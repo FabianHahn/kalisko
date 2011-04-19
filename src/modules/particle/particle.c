@@ -36,9 +36,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 4, 5);
+MODULE_VERSION(0, 4, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 18, 0), MODULE_DEPENDENCY("random", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("random", 0, 2, 0));
 
 MODULE_INIT
 {
@@ -68,6 +68,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles, 
 	particles->lifetime = lifetime;
 	particles->primitive.type = "particles";
 	particles->primitive.data = particles;
+	particles->primitive.setup_function = &setupOpenGLPrimitiveParticles;
 	particles->primitive.draw_function = &drawOpenGLPrimitiveParticles;
 	particles->primitive.update_function = &updateOpenGLPrimitiveParticles;
 	particles->primitive.free_function = &freeOpenGLPrimitiveParticles;
@@ -113,6 +114,24 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 		particles->sprites[i].indices[3] = 4*i+1;
 		particles->sprites[i].indices[4] = 4*i+2;
 		particles->sprites[i].indices[5] = 4*i+3;
+	}
+
+	return true;
+}
+
+/**
+ * Sets up an OpenGL particle effect primitive for a model
+ *
+ * @param primitive			the particle effect primitive to setup
+ * @param model_name		the model name to setup the particle effect primitive for
+ * @param mesh_name			the mesh name to setup the particle effect primitive for
+ * @result					true if successful
+ */
+API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *model_name, const char *material_name)
+{
+	if(g_strcmp0(primitive->type, "particles") != 0) {
+		LOG_ERROR("Failed to initialize OpenGL particles: Primitive is not a particle effect");
+		return false;
 	}
 
 	return true;

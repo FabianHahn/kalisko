@@ -34,9 +34,9 @@
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 2, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 18, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 19, 0));
 
 MODULE_INIT
 {
@@ -78,6 +78,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 	openglmesh->usage = usage;
 	openglmesh->primitive.type = "mesh";
 	openglmesh->primitive.data = openglmesh;
+	openglmesh->primitive.setup_function = NULL;
 	openglmesh->primitive.draw_function = &drawOpenGLPrimitiveMesh;
 	openglmesh->primitive.update_function = NULL;
 	openglmesh->primitive.free_function = &freeOpenGLPrimitiveMesh;

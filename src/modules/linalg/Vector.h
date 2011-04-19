@@ -66,9 +66,7 @@ class Vector
 				return *this;
 			}
 
-			assert(size <= from.getSize());
-
-			for(unsigned int i = 0; i < size; i++) {
+			for(unsigned int i = 0; i < std::min(size, from.getSize()); i++) {
 				data[i] = from[i];
 			}
 

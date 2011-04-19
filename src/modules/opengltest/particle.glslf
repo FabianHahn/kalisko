@@ -20,10 +20,12 @@
 
 #version 120
 
+uniform sampler2D texture;
+
 varying vec3 world_position;
 varying vec2 world_uv;
 
 void main()
 {
-	gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	gl_FragColor = texture2D(texture, world_uv);
 }

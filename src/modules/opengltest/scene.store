@@ -55,6 +55,7 @@ scene = {
 			fragment_shader = "/modules/opengltest/particle.glslf"
 			uniforms = {
 				perspective = perspective
+				texture = checkerboard
 			}
 		}	
 	}

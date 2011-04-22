@@ -31,14 +31,18 @@ varying vec3 world_normal;
 varying vec4 world_color;
 varying vec2 world_uv;
 
-vec4 phongAmbient()
+vec4 phongAmbient(in vec4 textureColor)
 {
-	return ambient * world_color;
+	vec4 ambientColor = textureColor;
+	ambientColor.xyz *= ambient;
+	return ambientColor;
 }
 
-vec4 phongDiffuse(in vec3 pos2light, in vec3 normal)
+vec4 phongDiffuse(in vec4 textureColor, in vec3 pos2light, in vec3 normal)
 {
-	return (world_color * lightColor) * clamp(dot(pos2light, normal), 0.0, 1.0);
+	vec4 diffuseColor = textureColor * lightColor;
+	diffuseColor.xyz *= clamp(dot(pos2light, normal), 0.0, 1.0);
+	return diffuseColor;
 }
 
 vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
@@ -48,7 +52,9 @@ vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
 	float shininess = 100.0;
 	float specProd = clamp(dot(reflectedLight, pos2cam), 0.0, 1.0);
 	
-	return specular * lightColor * pow(specProd, shininess);
+	vec4 specularColor = lightColor;
+	specularColor.xyz *= specular * pow(specProd, shininess);
+	return specularColor;
 }
 
 void main()
@@ -61,8 +67,8 @@ void main()
 		normal = -normal;
 	}
 	
-	vec4 ac = phongAmbient();
-	vec4 dc = phongDiffuse(pos2light, normal);
+	vec4 ac = phongAmbient(world_color);
+	vec4 dc = phongDiffuse(world_color, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
 	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);

@@ -37,6 +37,8 @@ typedef struct {
 	float velocity[3];
 	/** The birth time of the particle */
 	float birth;
+	/** The angular velocity of the particle */
+	float angularVelocity;
 } ParticleVertex;
 
 /**
@@ -83,6 +85,10 @@ typedef struct {
 		float endSize;
 		/** The aspect ratio of a particle */
 		float aspectRatio;
+		/** The mean of a new particle's angular velocity */
+		float angularVelocityMean;
+		/** The standard deviation of a new particle's angular velocity */
+		float angularVelocityStd;
 	} properties;
 } OpenGLParticles;
 

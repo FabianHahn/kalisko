@@ -122,6 +122,20 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		LOG_DEBUG("Set aspect ratio for particle effect");
 	}
 
+	// Parse angular velocity mean param
+	Store *angularVelocityMeanParam;
+	if((angularVelocityMeanParam = $(Store *, store, getStorePath)(store, "angularVelocityMean")) != NULL && (angularVelocityMeanParam->type == STORE_INTEGER || angularVelocityMeanParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.angularVelocityMean = angularVelocityMeanParam->type == STORE_FLOAT_NUMBER ? angularVelocityMeanParam->content.float_number : angularVelocityMeanParam->content.integer;
+		LOG_DEBUG("Set mean angular velocity for particle effect");
+	}
+
+	// Parse angular velocity std param
+	Store *angularVelocityStdParam;
+	if((angularVelocityStdParam = $(Store *, store, getStorePath)(store, "angularVelocityStd")) != NULL && (angularVelocityStdParam->type == STORE_INTEGER || angularVelocityStdParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.angularVelocityStd = angularVelocityStdParam->type == STORE_FLOAT_NUMBER ? angularVelocityStdParam->content.float_number : angularVelocityStdParam->content.integer;
+		LOG_DEBUG("Set standard deviation of angular velocity for particle effect");
+	}
+
 	initOpenGLPrimitiveParticles(primitive);
 
 	return primitive;

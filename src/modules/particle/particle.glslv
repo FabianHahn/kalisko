@@ -34,6 +34,7 @@ attribute vec3 position;
 attribute vec2 uv;
 attribute vec3 normal;
 attribute float birth;
+attribute float angularVelocity;
 
 varying vec3 world_position;
 varying vec2 world_uv;
@@ -43,6 +44,14 @@ vec3 computePosition(float dt)
 {
 	vec3 velocity = normal;
 	return position + velocity * dt;
+}
+
+mat2 computeAngularRotation(float dt)
+{
+	float angle = angularVelocity * dt;
+	float s = sin(angle);
+	float c = cos(angle);
+	return mat2(c, s, -s, c);
 }
 
 float computeSize(float lifep)
@@ -72,7 +81,8 @@ void main()
 	world_uv = uv;
 	vec4 screenpos4 = perspectiveCamera * worldpos4;
 
-	vec2 corner = size * (uv - vec2(0.5, 0.5));
+	mat2 angularRotation = computeAngularRotation(dt);
+	vec2 corner = angularRotation * (size * (uv - vec2(0.5, 0.5)));	
 	corner.y *= aspectRatio;
 	screenpos4.xy += corner;
 	

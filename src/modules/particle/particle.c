@@ -38,9 +38,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 5);
+MODULE_VERSION(0, 6, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 1), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 3), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -81,6 +81,8 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 	particles->properties.startSize = 0.1f;
 	particles->properties.endSize = 0.2f;
 	particles->properties.aspectRatio = 1.0f;
+	particles->properties.angularVelocityMean = 0.0f;
+	particles->properties.angularVelocityStd = 0.1f;
 
 	glGenBuffers(1, &particles->vertexBuffer);
 	glGenBuffers(1, &particles->indexBuffer);
@@ -267,6 +269,8 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_NORMAL);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_BIRTH, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, birth));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_BIRTH);
+	glVertexAttribPointer(OPENGL_ATTRIBUTE_ANGULAR_VELOCITY, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, angularVelocity));
+	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_ANGULAR_VELOCITY);
 
 	if(checkOpenGLError()) {
 		return false;
@@ -322,6 +326,7 @@ static void initParticle(OpenGLParticles *particles, unsigned int i)
 	float velocityx = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 0), $(float, linalg, getVector)(particles->properties.velocityStd, 0));
 	float velocityy = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 1), $(float, linalg, getVector)(particles->properties.velocityStd, 1));
 	float velocityz = $(float, random, randomGaussian)($(float, linalg, getVector)(particles->properties.velocityMean, 2), $(float, linalg, getVector)(particles->properties.velocityStd, 2));
+	float angularVelocity = $(float, random, randomGaussian)(particles->properties.angularVelocityMean, particles->properties.angularVelocityStd);
 
 	particles->vertices[4*i+0].corner[0] = 0.0f;
 	particles->vertices[4*i+0].corner[1] = 0.0f;
@@ -340,5 +345,6 @@ static void initParticle(OpenGLParticles *particles, unsigned int i)
 		particles->vertices[4*i+j].velocity[1] = velocityy;
 		particles->vertices[4*i+j].velocity[2] = velocityz;
 		particles->vertices[4*i+j].birth = particles->time;
+		particles->vertices[4*i+j].angularVelocity = angularVelocity;
 	}
 }

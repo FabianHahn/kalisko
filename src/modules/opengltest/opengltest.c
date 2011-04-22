@@ -47,7 +47,7 @@
 MODULE_NAME("opengltest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
-MODULE_VERSION(0, 14, 2);
+MODULE_VERSION(0, 14, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 20, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6));
 
@@ -104,16 +104,9 @@ MODULE_INIT
 		camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
 		$(void, opengl, activateOpenGLCamera)(camera);
 
-		SceneParameter *perspectiveParam;
-		if((perspectiveParam = g_hash_table_lookup(scene->parameters, "perspective")) == NULL || perspectiveParam->type != OPENGL_UNIFORM_MATRIX || $(unsigned int, linalg, getMatrixRows)(perspectiveParam->content.matrix_value) != 4  || $(unsigned int, linalg, getMatrixCols)(perspectiveParam->content.matrix_value) != 4) {
-			LOG_ERROR("Failed to read perspective matrix from scene");
-			break;
-		}
-
-		perspectiveMatrix = perspectiveParam->content.matrix_value;
-		Matrix *newPerspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) 800 / 600, 0.1, 100.0);
-		$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
-		$(void, linalg, freeMatrix)(newPerspectiveMatrix);
+		perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) 800 / 600, 0.1, 100.0);
+		OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
+		$(void, opengl, addOpenGLGlobalShaderUniform)("perspective", perspectiveUniform);
 		
 		OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
 		OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
@@ -137,6 +130,10 @@ MODULE_INIT
 
 		if(execpath != NULL) {
 			free(execpath);
+		}
+
+		if(perspectiveMatrix != NULL) {
+			$(void, linalg, freeMatrix)(perspectiveMatrix);
 		}
 
 		return false;

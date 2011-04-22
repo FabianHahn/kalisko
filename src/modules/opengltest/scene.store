@@ -20,7 +20,6 @@ scene = {
 	}
 	
 	parameters = {
-		perspective = ((1 0 0 0)(0 1 0 0)(0 0 1 0)(0 0 0 1))
 		lightPosition = (-10.0, 50.0, -50.0)
 		lightColor = (1.0, 1.0, 1.0, 1.0)
 		ambient = 0.25
@@ -32,7 +31,6 @@ scene = {
 			vertex_shader = "/modules/opengltest/phong.glslv"
 			fragment_shader = "/modules/opengltest/phong_vertexcolor.glslf"
 			uniforms = {
-				perspective = perspective
 				lightPosition = lightPosition
 				lightColor = lightColor
 				ambient = ambient
@@ -44,7 +42,6 @@ scene = {
 			vertex_shader = "/modules/opengltest/phong.glslv"
 			fragment_shader = "/modules/opengltest/phong_texture.glslf"
 			uniforms = {
-				perspective = perspective
 				lightPosition = lightPosition
 				lightColor = lightColor
 				ambient = ambient
@@ -57,7 +54,6 @@ scene = {
 			vertex_shader = "/modules/particle/particle.glslv"
 			fragment_shader = "/modules/particle/particle.glslf"
 			uniforms = {
-				perspective = perspective
 				texture = checkerboard
 			}
 		}	

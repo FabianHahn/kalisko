@@ -80,29 +80,30 @@ API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
  * Parses an OpenGLPrimitive from a scene store by retrieving the correct registered parser for the type and executing it
  *
  * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param name			the name of the primitive to parse
  * @param store			the store representation of the OpenGLPrimitive to parse
  * @result				the parsed OpenGLPrimitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *path_prefix, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *path_prefix, const char *name, Store *store)
 {
 	assert(store->type == STORE_ARRAY);
 
 	Store *type;
 
 	if((type = $(Store *, store, getStorePath)(store, "type")) == NULL || type->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGLPrimitive from scene - type parameter is not a string");
+		LOG_ERROR("Failed to parse OpenGL primitive '%s' from scene - type parameter is not a string", name);
 		return NULL;
 	}
 
 	OpenGLPrimitiveSceneParser *parser;
 
 	if((parser = g_hash_table_lookup(parsers, type->content.string)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGLPrimitive from scene with type '%s' - no parser for that primitive type registered", type->content.string);
+		LOG_ERROR("Failed to parse OpenGL primitive '%s' from scene with type '%s' - no parser for that primitive type registered", name, type->content.string);
 		return NULL;
 	}
 
 	// Execute the parser
-	return parser(path_prefix, store);
+	return parser(path_prefix, name, store);
 }
 
 /**

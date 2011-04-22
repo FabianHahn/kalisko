@@ -77,6 +77,10 @@ typedef struct {
 		Vector *velocityMean;
 		/** The standard deviation of a new particle's velocity */
 		Vector *velocityStd;
+		/** The start size of a particle */
+		float startSize;
+		/** The end size of a particle */
+		float endSize;
 	} properties;
 } OpenGLParticles;
 

@@ -60,7 +60,6 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 
 	// Parse lifetime parameter
 	Store *lifetimeParam;
-
 	if((lifetimeParam = $(Store *, store, getStorePath)(store, "lifetime")) != NULL && (lifetimeParam->type == STORE_INTEGER || lifetimeParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.lifetime = lifetimeParam->type == STORE_FLOAT_NUMBER ? lifetimeParam->content.float_number : lifetimeParam->content.integer;
 		LOG_DEBUG("Set lifetime for particle effect");
@@ -100,6 +99,20 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		$(void, linalg, assignVector)(particles->properties.velocityStd, velocityStd);
 		$(void, linalg, freeVector)(velocityStd);
 		LOG_DEBUG("Set velocity standard deviation for particle effect");
+	}
+
+	// Parse start size param
+	Store *startSizeParam;
+	if((startSizeParam = $(Store *, store, getStorePath)(store, "startSize")) != NULL && (startSizeParam->type == STORE_INTEGER || startSizeParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.startSize = startSizeParam->type == STORE_FLOAT_NUMBER ? startSizeParam->content.float_number : startSizeParam->content.integer;
+		LOG_DEBUG("Set start size for particle effect");
+	}
+
+	// Parse end size param
+	Store *endSizeParam;
+	if((endSizeParam = $(Store *, store, getStorePath)(store, "startSize")) != NULL && (endSizeParam->type == STORE_INTEGER || endSizeParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.endSize = endSizeParam->type == STORE_FLOAT_NUMBER ? endSizeParam->content.float_number : endSizeParam->content.integer;
+		LOG_DEBUG("Set end size for particle effect");
 	}
 
 	initOpenGLPrimitiveParticles(primitive);

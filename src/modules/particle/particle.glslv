@@ -25,6 +25,9 @@ uniform mat4 modelNormal;
 uniform mat4 perspective;
 uniform mat4 camera;
 uniform float time;
+uniform float lifetime;
+uniform float startSize;
+uniform float endSize;
 
 attribute vec3 position;
 attribute vec2 uv;
@@ -34,23 +37,34 @@ attribute float birth;
 varying vec3 world_position;
 varying vec2 world_uv;
 
-vec3 computePosition()
+vec3 computePosition(float dt)
 {
 	vec3 velocity = normal;
-	float dt = time - birth;
 	return position + velocity * dt;
+}
+
+float computeSize(float lifep)
+{
+	return mix(startSize, endSize, lifep);
 }
 
 void main()
 {
-	vec3 currentPosition = computePosition();
+	mat4 perspectiveCamera = perspective * camera;
+
+	float dt = time - birth;
+	float lifep = dt / lifetime;
+
+	vec3 currentPosition = computePosition(dt);
+	float size = computeSize(lifep);
+	
 	vec4 pos4 = vec4(currentPosition.x, currentPosition.y, currentPosition.z, 1.0);
 	vec4 worldpos4 = model * pos4;
 	world_position = worldpos4.xyz / worldpos4.w;
 	world_uv = uv;
-	vec4 screenpos4 = perspective * camera * worldpos4;
+	vec4 screenpos4 = perspectiveCamera * worldpos4;
 
-	vec2 corner = 0.1 * (uv - vec2(0.5, 0.5));
+	vec2 corner = size * (uv - vec2(0.5, 0.5));
 	screenpos4.xy += corner;
 	
 	gl_Position = screenpos4;

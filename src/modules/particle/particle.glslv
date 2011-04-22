@@ -37,6 +37,7 @@ attribute float birth;
 
 varying vec3 world_position;
 varying vec2 world_uv;
+varying float world_fade;
 
 vec3 computePosition(float dt)
 {
@@ -49,6 +50,11 @@ float computeSize(float lifep)
 	return mix(startSize, endSize, lifep);
 }
 
+float computeFade(float lifep)
+{
+	return lifep * (1.0 - lifep) * (1.0 - lifep) * 6.7;
+}
+
 void main()
 {
 	mat4 perspectiveCamera = perspective * camera;
@@ -58,6 +64,7 @@ void main()
 
 	vec3 currentPosition = computePosition(dt);
 	float size = computeSize(lifep);
+	world_fade = computeFade(lifep);
 	
 	vec4 pos4 = vec4(currentPosition.x, currentPosition.y, currentPosition.z, 1.0);
 	vec4 worldpos4 = model * pos4;

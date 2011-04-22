@@ -24,8 +24,10 @@ uniform sampler2D texture;
 
 varying vec3 world_position;
 varying vec2 world_uv;
+varying float world_fade;
 
 void main()
 {
 	gl_FragColor = texture2D(texture, world_uv);
+	gl_FragColor.a *= world_fade;
 }

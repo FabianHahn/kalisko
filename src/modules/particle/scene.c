@@ -34,16 +34,17 @@
  * Parses an OpenGL particle effect from a scene store
  *
  * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param name			the name of the primitive to parse
  * @param store			the scene store to parse
  * @result				the parsed primitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix, const char *name, Store *store)
 {
 	// Parse num parameter
 	Store *numParam;
 
 	if((numParam = $(Store *, store, getStorePath)(store, "num")) == NULL || numParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive mesh - integer parameter 'num' not found");
+		LOG_ERROR("Failed to parse OpenGL scene primitive particle effect '%s' - integer parameter 'num' not found", name);
 		return NULL;
 	}
 
@@ -62,7 +63,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 	Store *lifetimeParam;
 	if((lifetimeParam = $(Store *, store, getStorePath)(store, "lifetime")) != NULL && (lifetimeParam->type == STORE_INTEGER || lifetimeParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.lifetime = lifetimeParam->type == STORE_FLOAT_NUMBER ? lifetimeParam->content.float_number : lifetimeParam->content.integer;
-		LOG_DEBUG("Set lifetime for particle effect");
+		LOG_DEBUG("Set lifetime for particle effect '%s'", name);
 	}
 
 	// Parse position mean parameter
@@ -71,7 +72,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		Vector *positionMean = $(Vector *, linalg, convertStoreToVector)(positionMeanParam);
 		$(void, linalg, assignVector)(particles->properties.positionMean, positionMean);
 		$(void, linalg, freeVector)(positionMean);
-		LOG_DEBUG("Set mean position for particle effect");
+		LOG_DEBUG("Set mean position for particle effect '%s'", name);
 	}
 
 	// Parse position std parameter
@@ -80,7 +81,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		Vector *positionStd = $(Vector *, linalg, convertStoreToVector)(positionStdParam);
 		$(void, linalg, assignVector)(particles->properties.positionStd, positionStd);
 		$(void, linalg, freeVector)(positionStd);
-		LOG_DEBUG("Set position standard deviation for particle effect");
+		LOG_DEBUG("Set position standard deviation for particle effect '%s'", name);
 	}
 
 	// Parse velocity mean parameter
@@ -89,7 +90,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		Vector *velocityMean = $(Vector *, linalg, convertStoreToVector)(velocityMeanParam);
 		$(void, linalg, assignVector)(particles->properties.velocityMean, velocityMean);
 		$(void, linalg, freeVector)(velocityMean);
-		LOG_DEBUG("Set mean velocity for particle effect");
+		LOG_DEBUG("Set mean velocity for particle effect for particle effect '%s'", name);
 	}
 
 	// Parse velocity std parameter
@@ -98,42 +99,42 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		Vector *velocityStd = $(Vector *, linalg, convertStoreToVector)(velocityStdParam);
 		$(void, linalg, assignVector)(particles->properties.velocityStd, velocityStd);
 		$(void, linalg, freeVector)(velocityStd);
-		LOG_DEBUG("Set velocity standard deviation for particle effect");
+		LOG_DEBUG("Set velocity standard deviation for particle effect '%s'", name);
 	}
 
 	// Parse start size param
 	Store *startSizeParam;
 	if((startSizeParam = $(Store *, store, getStorePath)(store, "startSize")) != NULL && (startSizeParam->type == STORE_INTEGER || startSizeParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.startSize = startSizeParam->type == STORE_FLOAT_NUMBER ? startSizeParam->content.float_number : startSizeParam->content.integer;
-		LOG_DEBUG("Set start size for particle effect");
+		LOG_DEBUG("Set start size for particle effect '%s'", name);
 	}
 
 	// Parse end size param
 	Store *endSizeParam;
 	if((endSizeParam = $(Store *, store, getStorePath)(store, "startSize")) != NULL && (endSizeParam->type == STORE_INTEGER || endSizeParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.endSize = endSizeParam->type == STORE_FLOAT_NUMBER ? endSizeParam->content.float_number : endSizeParam->content.integer;
-		LOG_DEBUG("Set end size for particle effect");
+		LOG_DEBUG("Set end size for particle effect '%s'", name);
 	}
 
 	// Parse aspect ratio param
 	Store *aspectRatioParam;
 	if((aspectRatioParam = $(Store *, store, getStorePath)(store, "aspectRatio")) != NULL && (aspectRatioParam->type == STORE_INTEGER || aspectRatioParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.aspectRatio = aspectRatioParam->type == STORE_FLOAT_NUMBER ? aspectRatioParam->content.float_number : aspectRatioParam->content.integer;
-		LOG_DEBUG("Set aspect ratio for particle effect");
+		LOG_DEBUG("Set aspect ratio for particle effect '%s'", name);
 	}
 
 	// Parse angular velocity mean param
 	Store *angularVelocityMeanParam;
 	if((angularVelocityMeanParam = $(Store *, store, getStorePath)(store, "angularVelocityMean")) != NULL && (angularVelocityMeanParam->type == STORE_INTEGER || angularVelocityMeanParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.angularVelocityMean = angularVelocityMeanParam->type == STORE_FLOAT_NUMBER ? angularVelocityMeanParam->content.float_number : angularVelocityMeanParam->content.integer;
-		LOG_DEBUG("Set mean angular velocity for particle effect");
+		LOG_DEBUG("Set mean angular velocity for particle effect '%s'", name);
 	}
 
 	// Parse angular velocity std param
 	Store *angularVelocityStdParam;
 	if((angularVelocityStdParam = $(Store *, store, getStorePath)(store, "angularVelocityStd")) != NULL && (angularVelocityStdParam->type == STORE_INTEGER || angularVelocityStdParam->type == STORE_FLOAT_NUMBER)) {
 		particles->properties.angularVelocityStd = angularVelocityStdParam->type == STORE_FLOAT_NUMBER ? angularVelocityStdParam->content.float_number : angularVelocityStdParam->content.integer;
-		LOG_DEBUG("Set standard deviation of angular velocity for particle effect");
+		LOG_DEBUG("Set standard deviation of angular velocity for particle effect '%s'", name);
 	}
 
 	initOpenGLPrimitiveParticles(primitive);

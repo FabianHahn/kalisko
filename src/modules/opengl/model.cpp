@@ -149,6 +149,24 @@ API bool deleteOpenGLModel(char *name)
 }
 
 /**
+ * Retrieves the OpenGL primitive for an OpenGL model
+ *
+ * @param name		the name of the OpenGL model to retrieve the primitive for
+ * @result			the retrived OpenGL primitive or NULL on failure
+ */
+API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name)
+{
+	OpenGLModel *model;
+
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
+		LOG_ERROR("Failed to lookup primitive for non existing model '%s'", name);
+		return false;
+	}
+
+	return model->primitive;
+}
+
+/**
  * Sets the material to be used before drawing an OpenGL model and makes the model visible
  *
  * @param model_name		the name of the OpenGL model to set the material for

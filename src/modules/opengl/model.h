@@ -34,6 +34,7 @@ API void initOpenGLModels();
 API void freeOpenGLModels();
 API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive);
 API bool deleteOpenGLModel(char *name);
+API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name);
 API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
 API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
 API bool setOpenGLModelRotationX(char *model_name, double rotation);

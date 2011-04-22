@@ -155,8 +155,12 @@ API void updateOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
 API void activateOpenGLCamera(OpenGLCamera *camera)
 {
 	delOpenGLGlobalShaderUniform("camera");
-	OpenGLUniform *uniform = createOpenGLUniformMatrix(camera->lookAt);
-	addOpenGLGlobalShaderUniform("camera", uniform);
+	OpenGLUniform *cameraUniform = createOpenGLUniformMatrix(camera->lookAt);
+	addOpenGLGlobalShaderUniform("camera", cameraUniform);
+
+	delOpenGLGlobalShaderUniform("cameraPosition");
+	OpenGLUniform *cameraPositionUniform = createOpenGLUniformVector(camera->position);
+	addOpenGLGlobalShaderUniform("cameraPosition", cameraPositionUniform);
 }
 
 /**

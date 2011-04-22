@@ -102,6 +102,7 @@ API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader,
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_COLOR, "color");
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_UV, "uv");
 	glBindAttribLocation(program, OPENGL_ATTRIBUTE_BIRTH, "birth");
+	glBindAttribLocation(program, OPENGL_ATTRIBUTE_ANGULAR_VELOCITY, "angularVelocity");
 
 	glLinkProgram(program);
 

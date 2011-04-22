@@ -59,7 +59,9 @@ typedef enum {
 	/** The UV attribute */
 	OPENGL_ATTRIBUTE_UV,
 	/** The birth attribute */
-	OPENGL_ATTRIBUTE_BIRTH
+	OPENGL_ATTRIBUTE_BIRTH,
+	/** The angular velocity attribute */
+	OPENGL_ATTRIBUTE_ANGULAR_VELOCITY
 } OpenGLAttributeLocation;
 
 /**

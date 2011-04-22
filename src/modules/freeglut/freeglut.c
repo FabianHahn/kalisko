@@ -37,7 +37,7 @@
 MODULE_NAME("freeglut");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The freeglut module is an freeglut context provider suited to rendering into multiple windows");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -188,7 +188,7 @@ static void freeglut_idle()
 	int *id;
 	FreeglutWindow *window;
 	g_hash_table_iter_init(&iter, windows);
-	while(g_hash_table_iter_next(&iter, (void *) &id, (void *) &window)) {
+	while(g_hash_table_iter_next(&iter, (void **) &id, (void **) &window)) {
 		if(window->active) {
 			glutSetWindow(window->id);
 			$(int, event, triggerEvent)(window, "update", dt);

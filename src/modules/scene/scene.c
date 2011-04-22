@@ -45,7 +45,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 6);
+MODULE_VERSION(0, 4, 7);
 MODULE_BCVERSION(0, 4, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -395,8 +395,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				}
 
 				$(void, linalg, freeVector)(translation);
-			} else {
-				LOG_WARNING("Failed to read translation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set rotationX
@@ -407,8 +405,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set X rotation for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read X rotation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set rotationY
@@ -419,8 +415,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set Y rotation for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read Y rotation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set rotationZ
@@ -431,8 +425,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set Z rotation for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read Z rotation for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set scaleX
@@ -443,8 +435,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set X scale for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read X scale for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set scaleY
@@ -455,8 +445,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set Y scale for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read Y scale for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// set scaleZ
@@ -467,8 +455,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				} else {
 					LOG_WARNING("Failed to set Z scale for model '%s' when creating scene by store, skipping", key);
 				}
-			} else {
-				LOG_WARNING("Failed to read Z scale for model '%s' when creating scene by store, skipping", key);
 			}
 
 			// add model name to models list

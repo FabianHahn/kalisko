@@ -38,7 +38,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("opengl", 0, 19, 1), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
@@ -80,6 +80,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 	particles->properties.velocityStd = $(Vector *, linalg, createVector3)(0.0f, 0.0f, 0.0f);
 	particles->properties.startSize = 0.1f;
 	particles->properties.endSize = 0.2f;
+	particles->properties.aspectRatio = 1.0f;
 
 	glGenBuffers(1, &particles->vertexBuffer);
 	glGenBuffers(1, &particles->indexBuffer);
@@ -159,6 +160,10 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *m
 	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "endSize");
 	OpenGLUniform *endSizeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.endSize);
 	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "endSize", endSizeUniform);
+
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "aspectRatio");
+	OpenGLUniform *aspectRatioUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.aspectRatio);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "aspectRatio", aspectRatioUniform);
 
 	return true;
 }

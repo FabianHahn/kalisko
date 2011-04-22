@@ -28,6 +28,7 @@ uniform float time;
 uniform float lifetime;
 uniform float startSize;
 uniform float endSize;
+uniform float aspectRatio;
 
 attribute vec3 position;
 attribute vec2 uv;
@@ -65,6 +66,7 @@ void main()
 	vec4 screenpos4 = perspectiveCamera * worldpos4;
 
 	vec2 corner = size * (uv - vec2(0.5, 0.5));
+	corner.y *= aspectRatio;
 	screenpos4.xy += corner;
 	
 	gl_Position = screenpos4;

@@ -81,6 +81,8 @@ typedef struct {
 		float startSize;
 		/** The end size of a particle */
 		float endSize;
+		/** The aspect ratio of a particle */
+		float aspectRatio;
 	} properties;
 } OpenGLParticles;
 

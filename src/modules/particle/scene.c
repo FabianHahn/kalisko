@@ -115,6 +115,13 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix,
 		LOG_DEBUG("Set end size for particle effect");
 	}
 
+	// Parse aspect ratio param
+	Store *aspectRatioParam;
+	if((aspectRatioParam = $(Store *, store, getStorePath)(store, "aspectRatio")) != NULL && (aspectRatioParam->type == STORE_INTEGER || aspectRatioParam->type == STORE_FLOAT_NUMBER)) {
+		particles->properties.aspectRatio = aspectRatioParam->type == STORE_FLOAT_NUMBER ? aspectRatioParam->content.float_number : aspectRatioParam->content.integer;
+		LOG_DEBUG("Set aspect ratio for particle effect");
+	}
+
 	initOpenGLPrimitiveParticles(primitive);
 
 	return primitive;

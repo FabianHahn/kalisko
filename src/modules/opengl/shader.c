@@ -26,7 +26,107 @@
 #include "memory_alloc.h"
 #include "log.h"
 #include "api.h"
+#include "material.h"
 #include "shader.h"
+
+/**
+ * Hash table associating strings with global uniform objects
+ */
+static GHashTable *globalUniforms;
+
+/**
+ * Initializes the OpenGL shaders
+ */
+API void initOpenGLShaders()
+{
+	globalUniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
+}
+
+/**
+ * Frees the OpenGL shaders
+ */
+API void freeOpenGLShaders()
+{
+	g_hash_table_destroy(globalUniforms);
+}
+
+/**
+ * Adds an OpenGL global shader uniform to the global uniforms table
+ *
+ * @param name			the name of the global uniform to add
+ * @param uniform		the global uniform to add
+ * @result				true if successful
+ */
+API bool addOpenGLGlobalShaderUniform(const char *name, OpenGLUniform *uniform)
+{
+	if(uniform->type == OPENGL_UNIFORM_TEXTURE) {
+		LOG_ERROR("Adding texture uniforms as global OpenGL shader uniforms is unsupported, aborting");
+		return false;
+	}
+
+	if(g_hash_table_lookup(globalUniforms, name) != NULL) {
+		LOG_ERROR("Tried to add global OpenGL shader uniform with name '%s', but such a uniform already exists", name);
+		return false;
+	}
+
+	g_hash_table_insert(globalUniforms, strdup(name), uniform);
+	refreshOpenGLGlobalShaderUniform(NULL, name);
+
+	return true;
+}
+
+/**
+ * Removes an OpenGL global shader uniform from the global uniforms table
+ *
+ * @param name			the name of the global uniform to remove
+ * @result				true if successful
+ */
+API bool delOpenGLGlobalShaderUniform(const char *name)
+{
+	bool ret = g_hash_table_remove(globalUniforms, name);
+	refreshOpenGLGlobalShaderUniform(NULL, name);
+
+	return ret;
+}
+
+/**
+ * Refreshes an OpenGL global shader uniform
+ *
+ * @param material			the material name to refresh or NULL to refresh all materials
+ * @param globalUniform		the global uniform name to refresh or NULL to refresh all global uniforms for the material(s)
+ * @result					true if successful
+ */
+API void refreshOpenGLGlobalShaderUniform(const char *material, const char *globalUniform)
+{
+	if(material == NULL) { // refresh all materials
+		GList *materials = getOpenGLMaterials();
+		for(GList *iter = materials; iter != NULL; iter = iter->next) {
+			assert(iter->data != NULL);
+			refreshOpenGLGlobalShaderUniform(iter->data, globalUniform); // recursively refresh the uniforms
+		}
+		g_list_free(materials);
+	} else {
+		if(globalUniform == NULL) { // refresh all global uniforms
+			GHashTableIter iter;
+			char *name;
+			OpenGLUniform *uniform;
+			g_hash_table_iter_init(&iter, globalUniforms);
+			while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &uniform)) {
+				detachOpenGLMaterialUniform(material, name); // detach previously registered uniform
+				OpenGLUniform *uniformCopy = copyOpenGLUniform(uniform); // copy global uniform
+				attachOpenGLMaterialUniform(material, name, uniformCopy); // reattach copied uniform
+			}
+		} else { // refresh only a specific uniform
+			detachOpenGLMaterialUniform(material, globalUniform); // detach previously registered uniform
+
+			OpenGLUniform *uniform;
+			if((uniform = g_hash_table_lookup(globalUniforms, globalUniform)) != NULL) {
+				OpenGLUniform *uniformCopy = copyOpenGLUniform(uniform); // copy global uniform
+				attachOpenGLMaterialUniform(material, globalUniform, uniformCopy); // reattach copied uniform
+			}
+		}
+	}
+}
 
 /**
  * Creates an OpenGL shader from a string
@@ -249,6 +349,22 @@ API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture)
 	uniform->location = -1;
 
 	return uniform;
+}
+
+/**
+ * Copies an OpenGL uniform
+ *
+ * @param uniform			the OpenGL uniform to be copied
+ * @result					the duplicated uniform
+ */
+API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform)
+{
+	OpenGLUniform *newUniform = ALLOCATE_OBJECT(OpenGLUniform);
+	newUniform->type = uniform->type;
+	newUniform->content = uniform->content;
+	newUniform->location = -1;
+
+	return newUniform;
 }
 
 /**

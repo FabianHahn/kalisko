@@ -96,6 +96,11 @@ typedef struct {
 	GLint location;
 } OpenGLUniform;
 
+API void initOpenGLShaders();
+API void freeOpenGLShaders();
+API bool addOpenGLGlobalShaderUniform(const char *name, OpenGLUniform *uniform);
+API bool delOpenGLGlobalShaderUniform(const char *name);
+API void refreshOpenGLGlobalShaderUniform(const char *material, const char *globalUniform);
 API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
 API GLuint createOpenGLShaderFromFile(char *filename, GLenum type);
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
@@ -106,6 +111,7 @@ API OpenGLUniform *createOpenGLUniformFloatPointer(float *value);
 API OpenGLUniform *createOpenGLUniformVector(Vector *value);
 API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
 API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture);
+API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform);
 API bool useOpenGLUniform(OpenGLUniform *uniform);
 
 #endif

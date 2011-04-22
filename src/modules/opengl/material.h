@@ -34,5 +34,6 @@ API bool attachOpenGLMaterialUniform(const char *material_name, const char *unif
 API bool detachOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
 API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
 API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal);
+API GList *getOpenGLMaterials();
 
 #endif

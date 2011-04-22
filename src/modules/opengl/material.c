@@ -263,6 +263,16 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 }
 
 /**
+ * Retrieves a list of OpenGL material names
+ *
+ * @result		a list of OpenGL material names registered, must not be modified but be freed with g_list_free
+ */
+API GList *getOpenGLMaterials()
+{
+	return g_hash_table_get_keys(materials);
+}
+
+/**
  * A GDestroyNotify function to free an OpenGL material
  *
  * @param material_p		a pointer to the material to be freed

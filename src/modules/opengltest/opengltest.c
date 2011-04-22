@@ -40,6 +40,7 @@
 #include "modules/linalg/transform.h"
 #include "modules/mesh/io.h"
 #include "modules/scene/scene.h"
+#include "modules/particle/particle.h"
 
 #include "api.h"
 
@@ -48,7 +49,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengltest module creates a simple OpenGL window sample");
 MODULE_VERSION(0, 14, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 4, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 19, 2), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 4), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 4, 0));
 
 static Scene *scene = NULL;
 static FreeglutWindow *window = NULL;
@@ -113,6 +114,10 @@ MODULE_INIT
 		$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
 		$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 		
+		OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
+		OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
+		particles->properties.aspectRatio = 800.0f / 600.0f;
+
 		OpenGLUniform *cameraUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(camera->lookAt);
 
 		if(!$(bool, opengl, attachOpenGLMaterialUniform)("phong_vertexcolor", "camera", cameraUniform)) {
@@ -319,6 +324,10 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	currentWidth = w;
 	currentHeight = h;
 	glutWarpPointer(w / 2, h / 2);
+
+	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
+	OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
+	particles->properties.aspectRatio = (float) w / h;
 }
 
 static void listener_mouseMove(void *subject, const char *event, void *data, va_list args)

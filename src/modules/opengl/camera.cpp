@@ -29,6 +29,7 @@ extern "C" {
 #include "modules/linalg/transform.h"
 #include "api.h"
 #include "camera.h"
+#include "shader.h"
 
 /**
  * Creates a new OpenGL camera positioned at the origin and looking in z direction with positive y axis as up vector
@@ -144,6 +145,18 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 API void updateOpenGLCameraLookAtMatrix(OpenGLCamera *camera)
 {
 	$(void, linalg, updateLookIntoDirectionMatrix)(camera->lookAt, camera->position, camera->direction, camera->up);
+}
+
+/**
+ * Activates an OpenGL camera by setting its look-at matrix as global "camera" shader uniform
+ *
+ * @param camera		the OpenGL camera to activate
+ */
+API void activateOpenGLCamera(OpenGLCamera *camera)
+{
+	delOpenGLGlobalShaderUniform("camera");
+	OpenGLUniform *uniform = createOpenGLUniformMatrix(camera->lookAt);
+	addOpenGLGlobalShaderUniform("camera", uniform);
 }
 
 /**

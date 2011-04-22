@@ -84,7 +84,10 @@ API bool addOpenGLGlobalShaderUniform(const char *name, OpenGLUniform *uniform)
 API bool delOpenGLGlobalShaderUniform(const char *name)
 {
 	bool ret = g_hash_table_remove(globalUniforms, name);
-	refreshOpenGLGlobalShaderUniform(NULL, name);
+
+	if(ret) { // only refresh if something was actually removed
+		refreshOpenGLGlobalShaderUniform(NULL, name);
+	}
 
 	return ret;
 }

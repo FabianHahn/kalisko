@@ -24,7 +24,7 @@
 
 typedef bool GlfwHandle;
 
-API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen);
+API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen, bool vsync);
 API bool closeGlfwWindow();
 API double getGlfwFps();
 API GlfwHandle *getGlfwHandle();

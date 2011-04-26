@@ -36,8 +36,8 @@
 MODULE_NAME("glfw");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use glfw as an OpenGL context provider for high performance applications");
-MODULE_VERSION(0, 2, 2);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 3);
+MODULE_BCVERSION(0, 2, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 TIMER_CALLBACK(GLFW_MAIN_LOOP);
@@ -94,9 +94,10 @@ TIMER_CALLBACK(GLFW_MAIN_LOOP)
  * @param width			the desired screen width
  * @param height		the desired screen height
  * @param fullscreen	whether to go to fullscreen mode
+ * @param vsynch		whether to use vertical sync mode
  * @result				true if successful
  */
-API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen)
+API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen, bool vsync)
 {
 	if(windowOpen) {
 		LOG_ERROR("Failed to open glfw window: Only one glfw window can be opened at the same time");
@@ -109,6 +110,9 @@ API bool openGlfwWindow(const char *title, int width, int height, bool fullscree
 		LOG_ERROR("Failed to open glfw window");
 		return false;
 	}
+
+	int interval = vsync ? 1 : 0;
+	glfwSwapInterval(interval);
 
 	LOG_INFO("Opened glfw window with name '%s', OpenGL vendor: %s %s", title, glGetString(GL_VENDOR), glGetString(GL_VERSION));
 

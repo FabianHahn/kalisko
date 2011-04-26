@@ -47,7 +47,7 @@
 MODULE_NAME("glfwtest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The glfwtest module creates a simple OpenGL window sample using glfw");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 3), MODULE_DEPENDENCY("opengl", 0, 20, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6));
 
@@ -68,8 +68,11 @@ MODULE_INIT
 {
 	char *execpath = NULL;
 
+	GLFWvidmode mode;
+	glfwGetDesktopMode(&mode);
+
 	// Create window and add listeners
-	if(!$(bool, glfw, openGlfwWindow)("Kalisko glfw OpenGL test", 800, 600, false, true)) {
+	if(!$(bool, glfw, openGlfwWindow)("Kalisko glfw OpenGL test", mode.Width, mode.Height, true, true)) {
 		return false;
 	}
 

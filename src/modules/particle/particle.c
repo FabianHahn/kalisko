@@ -38,7 +38,7 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 7);
+MODULE_VERSION(0, 6, 8);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 19, 3), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
@@ -305,10 +305,10 @@ API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glDeleteBuffers(1, &particles->indexBuffer);
 	free(particles->vertices);
 	free(particles->sprites);
-	free(particles->properties.positionMean);
-	free(particles->properties.positionStd);
-	free(particles->properties.velocityMean);
-	free(particles->properties.velocityStd);
+	$(void, linalg, freeVector)(particles->properties.positionMean);
+	$(void, linalg, freeVector)(particles->properties.positionStd);
+	$(void, linalg, freeVector)(particles->properties.velocityMean);
+	$(void, linalg, freeVector)(particles->properties.velocityStd);
 	free(particles);
 }
 

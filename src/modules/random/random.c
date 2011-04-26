@@ -29,12 +29,16 @@
 MODULE_NAME("random");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Randomness functions");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
 MODULE_INIT
 {
+	GTimeVal time;
+	g_get_current_time(&time);
+	srand(time.tv_usec);
+
 	return true;
 }
 

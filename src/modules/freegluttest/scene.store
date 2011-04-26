@@ -2,7 +2,7 @@ scene = {
 	primitives = {
 		tetrahedron = {
 			type = mesh
-			filename = "/modules/opengltest/tetrahedron.store"
+			filename = "/modules/freegluttest/tetrahedron.store"
 		}
 		
 		effect = {
@@ -16,7 +16,7 @@ scene = {
 	}
 	
 	textures = {
-		checkerboard = "/modules/opengltest/texture.png"
+		checkerboard = "/modules/freegluttest/texture.png"
 	}
 	
 	parameters = {

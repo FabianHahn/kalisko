@@ -47,17 +47,21 @@
 MODULE_NAME("glfwtest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The glfwtest module creates a simple OpenGL window sample using glfw");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 1), MODULE_DEPENDENCY("opengl", 0, 20, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6));
+MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 2), MODULE_DEPENDENCY("opengl", 0, 20, 3), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6));
 
 static Scene *scene = NULL;
 static OpenGLCamera *camera = NULL;
 static Matrix *perspectiveMatrix = NULL;
 static float rotation = 0.0f;
+static int lastx;
+static int lasty;
 
 static void listener_display(void *subject, const char *event, void *data, va_list args);
 static void listener_update(void *subject, const char *event, void *data, va_list args);
+static void listener_reshape(void *subject, const char *event, void *data, va_list args);
+static void listener_mouseMove(void *subject, const char *event, void *data, va_list args);
 static void listener_close(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
@@ -69,6 +73,9 @@ MODULE_INIT
 	if(!$(bool, glfw, openGlfwWindow)("Kalisko glfw OpenGL test", 800, 600, false)) {
 		return false;
 	}
+
+	glfwDisable(GLFW_MOUSE_CURSOR);
+	glfwGetMousePos(&lastx, &lasty);
 
 	execpath = $$(char *, getExecutablePath)();
 
@@ -100,6 +107,8 @@ MODULE_INIT
 	GlfwHandle *handle = $(GlfwHandle *, glfw, getGlfwHandle)();
 	$(void, event, attachEventListener)(handle, "display", NULL, &listener_display);
 	$(void, event, attachEventListener)(handle, "update", NULL, &listener_update);
+	$(void, event, attachEventListener)(handle, "reshape", NULL, &listener_reshape);
+	$(void, event, attachEventListener)(handle, "mouseMove", NULL, &listener_mouseMove);
 	$(void, event, attachEventListener)(handle, "close", NULL, &listener_close);
 
 	return true;
@@ -110,6 +119,8 @@ MODULE_FINALIZE
 	GlfwHandle *handle = $(GlfwHandle *, glfw, getGlfwHandle)();
 	$(void, event, detachEventListener)(handle, "display", NULL, &listener_display);
 	$(void, event, detachEventListener)(handle, "update", NULL, &listener_update);
+	$(void, event, detachEventListener)(handle, "reshape", NULL, &listener_reshape);
+	$(void, event, detachEventListener)(handle, "mouseMove", NULL, &listener_mouseMove);
 	$(void, event, detachEventListener)(handle, "close", NULL, &listener_close);
 
 	$(bool, glfw, closeGlfwWindow)();
@@ -129,6 +140,10 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 {
 	double dt = va_arg(args, double);
 	bool cameraChanged = false;
+
+	if(glfwGetKey(GLFW_KEY_ESC)) {
+		$(void, module_util, safeRevokeModule)("glfwtest");
+	}
 
 	if(glfwGetKey('W')) {
 		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_FORWARD, dt);
@@ -169,6 +184,50 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 	$(bool, opengl, setOpenGLModelRotationY)("tetrahedron", rotation);
 
 	$(void, opengl, updateOpenGLModels)(dt);
+}
+
+static void listener_reshape(void *subject, const char *event, void *data, va_list args)
+{
+	int w = va_arg(args, int);
+	int h = va_arg(args, int);
+
+	glViewport(0, 0, w, h);
+	Matrix *newPerspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
+	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
+	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
+
+	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
+	OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
+	particles->properties.aspectRatio = (float) w / h;
+}
+
+static void listener_mouseMove(void *subject, const char *event, void *data, va_list args)
+{
+	bool cameraChanged = false;
+
+	int x = va_arg(args, int);
+	int y = va_arg(args, int);
+
+	int dx = x - lastx;
+	int dy = y - lasty;
+
+	if(dx != 0) {
+		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_LEFT, 0.005 * dx);
+		cameraChanged = true;
+	}
+
+	if(dy != 0) {
+		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_UP, 0.005 * dy);
+		cameraChanged = true;
+	}
+
+	// We need to update the camera matrix if some tilting happened
+	if(cameraChanged) {
+		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
+	}
+
+	lastx = x;
+	lasty = y;
 }
 
 static void listener_close(void *subject, const char *event, void *data, va_list args)

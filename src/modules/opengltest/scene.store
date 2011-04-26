@@ -28,8 +28,8 @@ scene = {
 	
 	materials = {
 		phong_vertexcolor = {
-			vertex_shader = "/modules/opengltest/phong.glslv"
-			fragment_shader = "/modules/opengltest/phong_vertexcolor.glslf"
+			vertex_shader = "/modules/mesh_opengl/phong.glslv"
+			fragment_shader = "/modules/mesh_opengl/phong_vertexcolor.glslf"
 			uniforms = {
 				lightPosition = lightPosition
 				lightColor = lightColor
@@ -39,8 +39,8 @@ scene = {
 		}
 		
 		phong_texture = {
-			vertex_shader = "/modules/opengltest/phong.glslv"
-			fragment_shader = "/modules/opengltest/phong_texture.glslf"
+			vertex_shader = "/modules/mesh_opengl/phong.glslv"
+			fragment_shader = "/modules/mesh_opengl/phong_texture.glslf"
 			uniforms = {
 				lightPosition = lightPosition
 				lightColor = lightColor

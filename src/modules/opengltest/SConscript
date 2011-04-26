@@ -50,9 +50,6 @@ if not module.GetOption('clean'):
 	module = conf.Finish()
 
 module.SharedLibrary('../kalisko_opengltest', Glob('*.c'))
-module.Command("phong.glslv", File("phong.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("phong_vertexcolor.glslf", File("phong_vertexcolor.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("phong_texture.glslf", File("phong_texture.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
 module.Command("scene.store", File("scene.store").srcnode(), Copy("$TARGET", "$SOURCE"))
 module.Command("tetrahedron.store", File("tetrahedron.store").srcnode(), Copy("$TARGET", "$SOURCE"))
 module.Command("texture.png", File("texture.png").srcnode(), Copy("$TARGET", "$SOURCE"))

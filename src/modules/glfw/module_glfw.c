@@ -36,12 +36,18 @@
 MODULE_NAME("glfw");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use glfw as an OpenGL context provider for high performance applications");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 TIMER_CALLBACK(GLFW_MAIN_LOOP);
-static double getDoubleTime();
+void GLFWCALL glfw_reshape(int widht, int height);
+void GLFWCALL glfw_key(int key, int state);
+void GLFWCALL glfw_char(int key, int state);
+void GLFWCALL glfw_mouseMove(int x, int y);
+void GLFWCALL glfw_mouseButton(int button, int state);
+void GLFWCALL glfw_mouseWheel(int position);
+
 static bool windowOpen;
 static double dt;
 static double loopTime;
@@ -53,7 +59,7 @@ MODULE_INIT
 	}
 
 	dt = 0.0;
-	loopTime = getDoubleTime();
+	loopTime = glfwGetTime();
 
 	return true;
 }
@@ -66,7 +72,7 @@ MODULE_FINALIZE
 TIMER_CALLBACK(GLFW_MAIN_LOOP)
 {
 	if(windowOpen && glfwGetWindowParam(GLFW_OPENED)) { // continue as long as window is opened
-		double now = getDoubleTime();
+		double now = glfwGetTime();
 		dt = now - loopTime;
 		loopTime = now;
 
@@ -97,8 +103,6 @@ API bool openGlfwWindow(const char *title, int width, int height, bool fullscree
 		return false;
 	}
 
-	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
-
 	int mode = fullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW;
 
 	if(glfwOpenWindow(width, height, 8, 8, 8, 8, 8, 0, mode) == GL_FALSE) {
@@ -109,6 +113,12 @@ API bool openGlfwWindow(const char *title, int width, int height, bool fullscree
 	LOG_INFO("Opened glfw window with name '%s', OpenGL vendor: %s %s", title, glGetString(GL_VENDOR), glGetString(GL_VERSION));
 
 	glfwSetWindowTitle(title);
+	glfwSetWindowSizeCallback(&glfw_reshape);
+	glfwSetKeyCallback(&glfw_key);
+	glfwSetCharCallback(&glfw_char);
+	glfwSetMousePosCallback(&glfw_mouseMove);
+	glfwSetMouseButtonCallback(&glfw_mouseButton);
+	glfwSetMouseWheelCallback(&glfw_mouseWheel);
 
 	// Initialize GLEW as well
 	GLenum err;
@@ -166,13 +176,66 @@ API GlfwHandle *getGlfwHandle()
 }
 
 /**
- * Returns the current system time as double
+ * Glfw callback function for window reshapes
  *
- * @result		the current system time
+ * @param width		the new width of the reshaped window
+ * @param height	the new height of the reshaped window
  */
-static double getDoubleTime()
+void GLFWCALL glfw_reshape(int width, int height)
 {
-	GTimeVal time;
-	g_get_current_time(&time);
-	return (G_USEC_PER_SEC * time.tv_sec + time.tv_usec) * (1.0 / G_USEC_PER_SEC);
+	$(int, event, triggerEvent)(&windowOpen, "reshape", width, height);
+}
+
+/**
+ * Glfw callback function for key events
+ *
+ * @param key		the key that was pressed or released
+ * @param state		GLFW_PRESS if the key was pressed, GLFW_RELEASE if the key was released
+ */
+void GLFWCALL glfw_key(int key, int state)
+{
+	$(int, event, triggerEvent)(&windowOpen, "key", key, state);
+}
+
+/**
+ * Glfw callback function for char events
+ *
+ * @param ch		the character that was pressed or released
+ * @param state		GLFW_PRESS if the key was pressed, GLFW_RELEASE if the key was released
+ */
+void GLFWCALL glfw_char(int ch, int state)
+{
+	$(int, event, triggerEvent)(&windowOpen, "char", ch, state);
+}
+
+/**
+ * Glfw callback function for mouse move events
+ *
+ * @param x			the x position of the mouse
+ * @param y			the y position of the mouse
+ */
+void GLFWCALL glfw_mouseMove(int x, int y)
+{
+	$(int, event, triggerEvent)(&windowOpen, "mouseMove", x, y);
+}
+
+/**
+ * Glfw callback function for mouse button events
+ *
+ * @param button		the mouse button that was pressed, usually one of the GLFW_MOUSE_BUTTON_* constants
+ * @param state			GLFW_PRESS if the key was pressed, GLFW_RELEASE if the key was released
+ */
+void GLFWCALL glfw_mouseButton(int button, int state)
+{
+	$(int, event, triggerEvent)(&windowOpen, "mouseButton", button, state);
+}
+
+/**
+ * Glfw callback function for mouse wheel events
+ *
+ * @param position		the position of the mouse wheel
+ */
+void GLFWCALL glfw_mouseWheel(int position)
+{
+	$(int, event, triggerEvent)(&windowOpen, "mouseWheel", position);
 }

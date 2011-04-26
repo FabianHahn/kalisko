@@ -36,8 +36,8 @@
 MODULE_NAME("glfw");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use glfw as an OpenGL context provider for high performance applications");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 TIMER_CALLBACK(GLFW_MAIN_LOOP);
@@ -69,24 +69,33 @@ TIMER_CALLBACK(GLFW_MAIN_LOOP)
 
 	$(int, event, triggerEvent)(&windowOpen, "update", dt);
 	$(int, event, triggerEvent)(&windowOpen, "display");
+	glfwSwapBuffers();
 
-	TIMER_ADD_TIMEOUT(0, GLFW_MAIN_LOOP);
+	if(glfwGetWindowParam(GLFW_OPENED)) { // continue as long as window is opened
+		TIMER_ADD_TIMEOUT(0, GLFW_MAIN_LOOP);
+	} else {
+		$(int, event, triggerEvent)(&windowOpen, "close");
+		windowOpen = false;
+	}
 }
 
 /**
  * Opens a glfw window
  *
+ * @param title			the title to use for the window
  * @param width			the desired screen width
  * @param height		the desired screen height
  * @param fullscreen	whether to go to fullscreen mode
  * @result				true if successful
  */
-API bool openGlfwWindow(int width, int height, bool fullscreen)
+API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen)
 {
 	if(windowOpen) {
 		LOG_ERROR("Failed to open glfw window: Only one glfw window can be opened at the same time");
 		return false;
 	}
+
+	glfwOpenWindowHint(GLFW_WINDOW_NO_RESIZE, GL_TRUE);
 
 	int mode = fullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW;
 
@@ -94,6 +103,8 @@ API bool openGlfwWindow(int width, int height, bool fullscreen)
 		LOG_ERROR("Failed to open glfw window");
 		return false;
 	}
+
+	glfwSetWindowTitle(title);
 
 	windowOpen = true;
 
@@ -113,6 +124,8 @@ API bool closeGlfwWindow()
 
 	glfwCloseWindow();
 	windowOpen = false;
+
+	$(int, event, triggerEvent)(&windowOpen, "close");
 
 	return true;
 }

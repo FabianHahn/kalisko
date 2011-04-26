@@ -36,13 +36,14 @@
 MODULE_NAME("glfw");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use glfw as an OpenGL context provider for high performance applications");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
 TIMER_CALLBACK(GLFW_MAIN_LOOP);
 static double getDoubleTime();
 static bool windowOpen;
+static double dt;
 static double loopTime;
 
 MODULE_INIT
@@ -51,7 +52,8 @@ MODULE_INIT
 		return false;
 	}
 
-	TIMER_ADD_TIMEOUT(0, GLFW_MAIN_LOOP);
+	dt = 0.0;
+	loopTime = getDoubleTime();
 
 	return true;
 }
@@ -63,15 +65,15 @@ MODULE_FINALIZE
 
 TIMER_CALLBACK(GLFW_MAIN_LOOP)
 {
-	double now = getDoubleTime();
-	double dt = now - loopTime;
-	loopTime = now;
+	if(windowOpen && glfwGetWindowParam(GLFW_OPENED)) { // continue as long as window is opened
+		double now = getDoubleTime();
+		dt = now - loopTime;
+		loopTime = now;
 
-	$(int, event, triggerEvent)(&windowOpen, "update", dt);
-	$(int, event, triggerEvent)(&windowOpen, "display");
-	glfwSwapBuffers();
+		$(int, event, triggerEvent)(&windowOpen, "update", dt);
+		$(int, event, triggerEvent)(&windowOpen, "display");
+		glfwSwapBuffers();
 
-	if(glfwGetWindowParam(GLFW_OPENED)) { // continue as long as window is opened
 		TIMER_ADD_TIMEOUT(0, GLFW_MAIN_LOOP);
 	} else {
 		$(int, event, triggerEvent)(&windowOpen, "close");
@@ -104,9 +106,22 @@ API bool openGlfwWindow(const char *title, int width, int height, bool fullscree
 		return false;
 	}
 
+	LOG_INFO("Opened glfw window with name '%s', OpenGL vendor: %s %s", title, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+
 	glfwSetWindowTitle(title);
 
+	// Initialize GLEW as well
+	GLenum err;
+	if((err = glewInit()) != GLEW_OK) {
+		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
+		return false;
+	}
+
+	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
+
 	windowOpen = true;
+
+	TIMER_ADD_TIMEOUT(0, GLFW_MAIN_LOOP);
 
 	return true;
 }
@@ -137,7 +152,7 @@ API bool closeGlfwWindow()
  */
 API double getGlfwFps()
 {
-	return 1.0 / loopTime;
+	return 1.0 / dt;
 }
 
 /**

@@ -141,7 +141,7 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *model_name, const char *material_name)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to initialize OpenGL particles: Primitive is not a particle effect");
+		LOG_ERROR("Failed to setup OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 

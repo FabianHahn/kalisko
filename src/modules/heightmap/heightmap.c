@@ -153,6 +153,14 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 	OpenGLUniform *heightsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->heightsTexture);
 	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heights", heightsUniform);
 
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heightmapWidth");
+	OpenGLUniform *heightmapWidthUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->width);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heightmapWidth", heightmapWidthUniform);
+
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heightmapHeight");
+	OpenGLUniform *heightmapHeightUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->height);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heightmapHeight", heightmapHeightUniform);
+
 	return true;
 }
 
@@ -241,7 +249,7 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glDrawElements(GL_TRIANGLES, heightmap->heights->height * heightmap->heights->width * 2, GL_UNSIGNED_INT, NULL);
+	glDrawElements(GL_TRIANGLES, (heightmap->heights->height - 1) * (heightmap->heights->width - 1) * 6, GL_UNSIGNED_INT, NULL);
 
 	if(checkOpenGLError()) {
 		return false;

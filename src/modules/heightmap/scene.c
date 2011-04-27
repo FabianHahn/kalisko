@@ -39,7 +39,7 @@
  * @param store			the scene store to parse
  * @result				the parsed primitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix, const char *name, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(const char *path_prefix, const char *name, Store *store)
 {
 	// Parse num parameter
 	Store *heightmapParam;

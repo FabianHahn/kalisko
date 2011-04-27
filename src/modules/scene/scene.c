@@ -45,7 +45,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 8);
+MODULE_VERSION(0, 4, 9);
 MODULE_BCVERSION(0, 4, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -234,7 +234,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 			}
 
 			if(!$(bool, opengl, createOpenGLMaterial)(key)) {
-				LOG_WARNING("Failed to create OpenGL material '%s' when creatig scene by store, skipping", key);
+				LOG_WARNING("Failed to create OpenGL material '%s' when creating scene by store, skipping", key);
 				break;
 			}
 
@@ -264,32 +264,32 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 									hasShader = true;
 									LOG_DEBUG("Added shader program to material '%s'", key);
 								} else {
-									LOG_WARNING("Failed to attach shader program to material '%s' when creatig scene by store, skipping", key);
+									LOG_WARNING("Failed to attach shader program to material '%s' when creating scene by store, skipping", key);
 									glDeleteProgram(program);
 								}
 							} else {
-								LOG_WARNING("Failed to create shader program for material '%s' when creatig scene by store, skipping", key);
+								LOG_WARNING("Failed to create shader program for material '%s' when creating scene by store, skipping", key);
 							}
 
 							glDeleteShader(vertexShader);
 							glDeleteShader(fragmentShader);
 						} else {
-							LOG_WARNING("Failed to read fragment shader from '%s', for material '%s' when creatig scene by store, skipping", fragmentShaderFile->content.string, key);
+							LOG_WARNING("Failed to read fragment shader from '%s', for material '%s' when creating scene by store, skipping", fragmentShaderFile->content.string, key);
 							glDeleteShader(vertexShader);
 						}
 
 						g_string_free(fragmentShaderPath, true);
 					} else {
-						LOG_WARNING("Failed to read fragment shader path for material '%s' when creatig scene by store, skipping", key);
+						LOG_WARNING("Failed to read fragment shader path for material '%s' when creating scene by store, skipping", key);
 						glDeleteShader(vertexShader);
 					}
 				} else {
-					LOG_WARNING("Failed to read vertex shader from '%s', for material '%s' when creatig scene by store, skipping", vertexShaderFile->content.string, key);
+					LOG_WARNING("Failed to read vertex shader from '%s', for material '%s' when creating scene by store, skipping", vertexShaderFile->content.string, key);
 				}
 
 				g_string_free(vertexShaderPath, true);
 			} else {
-				LOG_WARNING("Failed to read vertex shader path for material '%s' when creatig scene by store, skipping", key);
+				LOG_WARNING("Failed to read vertex shader path for material '%s' when creating scene by store, skipping", key);
 			}
 
 			if(hasShader) {
@@ -358,7 +358,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 					if($(bool, opengl, createOpenGLModel)(key, primitive)) {
 						LOG_DEBUG("Created OpenGL model '%s' with primitive '%s'", key, primitivename);
 					} else {
-						LOG_WARNING("Failed to create OpenGL model '%s' with primitive '%s' when creatig scene by store, skipping", key, primitivename);
+						LOG_WARNING("Failed to create OpenGL model '%s' with primitive '%s' when creating scene by store, skipping", key, primitivename);
 						continue;
 					}
 				} else {

@@ -196,7 +196,7 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to simulate OpenGL particles: Primitive is not a particle effect");
+		LOG_ERROR("Failed to update OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 

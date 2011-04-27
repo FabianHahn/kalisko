@@ -25,7 +25,8 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/opengl/primitive.h"
-#include "modules/linalg/store.h"
+#include "modules/image/io.h"
+#include "modules/image/image.h"
 #include "api.h"
 #include "heightmap.h"
 #include "scene.h"
@@ -40,5 +41,32 @@
  */
 API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix, const char *name, Store *store)
 {
-	return NULL;
+	// Parse num parameter
+	Store *heightmapParam;
+
+	if((heightmapParam = $(Store *, store, getStorePath)(store, "heightmap")) == NULL || heightmapParam->type != STORE_STRING) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': String parameter 'heightmap' not found", name);
+		return NULL;
+	}
+
+	GString *path = g_string_new(path_prefix);
+	g_string_append_printf(path, "/%s", heightmapParam->content.string);
+	Image *image = $(Image *, image, readImageFromFile)(path->str);
+	g_string_free(path, true);
+
+	if(image == NULL) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to load heightmap image from '%s'", name, path->str);
+		return NULL;
+	}
+
+	// Create particle effect
+	OpenGLPrimitive *primitive;
+
+	if((primitive = createOpenGLPrimitiveHeightmap(image)) == NULL) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to create heightmap primitive from heightmap image", name);
+		$(Image *, image, freeImage)(image);
+		return NULL;
+	}
+
+	return primitive;
 }

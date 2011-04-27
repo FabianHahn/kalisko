@@ -228,7 +228,7 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to synchronized OpenGL particles: Primitive is not a particle effect");
+		LOG_ERROR("Failed to synchronize OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 

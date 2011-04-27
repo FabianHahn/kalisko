@@ -29,6 +29,7 @@
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
 #include "modules/opengl/material.h"
+#include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/image/image.h"
 #include "api.h"
@@ -69,6 +70,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
+	heightmap->heightsTexture = $(OpenGLTexture *, texture, createOpenGLTexture)(heights);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;
@@ -146,6 +148,10 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 	}
 
 	OpenGLHeightmap *heightmap = primitive->data;
+
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heights");
+	OpenGLUniform *heightsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->heightsTexture);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heights", heightsUniform);
 
 	return true;
 }
@@ -258,6 +264,7 @@ API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 
 	OpenGLHeightmap *heightmap = primitive->data;
 
+	$(void, opengl, freeOpenGLTexture)(heightmap->heightsTexture);
 	glDeleteBuffers(1, &heightmap->vertexBuffer);
 	glDeleteBuffers(1, &heightmap->indexBuffer);
 	free(heightmap->vertices);

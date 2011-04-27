@@ -23,6 +23,7 @@
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
+#include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/image/image.h"
 
@@ -52,6 +53,8 @@ typedef struct {
 	HeightmapTile *tiles;
 	/** The image with the height data */
 	Image *heights;
+	/** The texture with the height data */
+	OpenGLTexture *heightsTexture;
 	/** The image with the normal data */
 	Image *normals;
 	/** The OpenGL vertex buffer associated with this heightmap */

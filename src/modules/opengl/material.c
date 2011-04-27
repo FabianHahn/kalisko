@@ -263,6 +263,24 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 }
 
 /**
+ * Check whether an OpenGL material already has a shader attached
+ *
+ * @param name			the name of the OpenGL material to check
+ * @result				true if the material exists and has a shader attached
+ */
+API bool checkOpenGLMaterialShader(const char *name)
+{
+	OpenGLMaterial *material;
+
+	if((material = g_hash_table_lookup(materials, name)) == NULL) {
+		LOG_ERROR("Failed to check non existing material '%s'", name);
+		return false;
+	}
+
+	return material->program != 0;
+}
+
+/**
  * Retrieves a list of OpenGL material names
  *
  * @result		a list of OpenGL material names registered, must not be modified but be freed with g_list_free

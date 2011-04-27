@@ -178,7 +178,12 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
 	OpenGLModel *model;
 
 	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to attach material to non existing model '%s'", model_name);
+		LOG_ERROR("Failed to attach material '%s' to non existing model '%s'", material_name, model_name);
+		return false;
+	}
+
+	if(!checkOpenGLMaterialShader(material_name)) {
+		LOG_ERROR("Failed to attach material '%s' without a shader to model '%s'", material_name, model_name);
 		return false;
 	}
 

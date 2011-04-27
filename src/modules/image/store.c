@@ -67,12 +67,25 @@ API Image *createImageFromStore(Store *store)
 	for(GList *iter = pList->head; iter != NULL; iter = iter->next, i++) {
 		Store *pixel = iter->data;
 
-		if(pixel->type != STORE_LIST || g_queue_get_length(pixel->content.list) != image->channels) {
-			LOG_WARNING("Invalid pixel %d in image store, setting to zero", i);
-			for(unsigned int c = 0; c < image->channels; c++) {
-				image->data[i * image->channels + c] = 0;
+		if(pixel->type != STORE_LIST) {
+			if(pixel->type == STORE_INTEGER) { // allow non-list format equal channel pixels
+				for(unsigned int c = 0; c < image->channels; c++) {
+					image->data[i * image->channels + c] = pixel->content.integer;
+				}
+			} else {
+				LOG_WARNING("Invalid pixel %d in image store, setting to zero", i);
+				for(unsigned int c = 0; c < image->channels; c++) {
+					image->data[i * image->channels + c] = 0;
+				}
 			}
 		} else {
+			if(g_queue_get_length(pixel->content.list) != image->channels) {
+				LOG_WARNING("Pixel %d in image store has invalid number of %u channels, setting to zero", i, g_queue_get_length(pixel->content.list));
+				for(unsigned int c = 0; c < image->channels; c++) {
+					image->data[i * image->channels + c] = 0;
+				}
+			}
+
 			int c = 0;
 			for(GList *piter = pixel->content.list->head; piter != NULL; piter = piter->next, c++) {
 				Store *pval = piter->data;

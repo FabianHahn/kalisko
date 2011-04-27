@@ -67,7 +67,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 
 	OpenGLHeightmap *heightmap = ALLOCATE_OBJECT(OpenGLHeightmap);
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
-	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, heights->height * heights->width);
+	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
@@ -103,6 +103,29 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	OpenGLHeightmap *heightmap = primitive->data;
+
+	for(unsigned int y = 0; y < heightmap->heights->height - 1; y++) {
+		for(unsigned int x = 0; x < heightmap->heights->width - 1; x++) {
+			int lowerLeft = x + y * heightmap->heights->width;
+			int lowerRight = (x + 1) + y * heightmap->heights->width;
+			int topLeft = x + (y + 1) * heightmap->heights->width;
+			int topRight = (x + 1) + (y + 1) * heightmap->heights->width;
+
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[0] = topLeft;
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[1] = lowerRight;
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[2] = lowerLeft;
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[3] = topLeft;
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[4] = topRight;
+			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[5] = lowerRight;
+		}
+	}
+
+	for(unsigned int y = 0; y < heightmap->heights->height; y++) {
+		for(unsigned int x = 0; x < heightmap->heights->width; x++) {
+			heightmap->vertices[y * heightmap->heights->width + x].position[0] = x;
+			heightmap->vertices[y * heightmap->heights->width + x].position[1] = y;
+		}
+	}
 
 	return true;
 }

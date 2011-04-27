@@ -56,7 +56,7 @@ MODULE_FINALIZE
 /**
  * Creates a new OpenGL heightmap primitive
  *
- * @param heights			the image from which the heightmap values will be read
+ * @param heights			the image from which the heightmap values will be read (the primitive takes control over this value, do not free it yourself)
  * @result					the created OpenGL heightmap primitive object or NULL on failure
  */
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)

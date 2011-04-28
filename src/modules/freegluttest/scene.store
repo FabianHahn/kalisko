@@ -13,6 +13,11 @@ scene = {
 			velocityStd = (0.0, 0.1, 0.0)
 			angularVelocityStd = 0.5
 		}
+		
+		heightmap = {
+			type = heightmap
+			heightmap = "/modules/heightmap/heightmap.store"
+		}
 	}
 	
 	textures = {
@@ -50,6 +55,17 @@ scene = {
 			}
 		}
 		
+		heightmap = {
+			vertex_shader = "/modules/heightmap/heightmap.glslv"
+			fragment_shader = "/modules/mesh_opengl/phong_vertexcolor.glslf"
+			uniforms = {
+				lightPosition = lightPosition
+				lightColor = lightColor
+				ambient = ambient
+				specular = specular
+			}		
+		}
+		
 		particle = {
 			vertex_shader = "/modules/particle/particle.glslv"
 			fragment_shader = "/modules/particle/particle.glslf"
@@ -80,6 +96,12 @@ scene = {
 			primitive = effect
 			material = particle
 			translation = (2.5, 0.0, 2.5)
+		}
+		
+		heightmap = {
+			primitive = heightmap
+			material = heightmap
+			translation = (0.0, -1.0, 0.0)
 		}		
 	}
 }

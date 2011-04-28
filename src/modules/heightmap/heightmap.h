@@ -69,7 +69,6 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *image);
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *model_name, const char *material_name);
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive);
-API bool updateOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, double dt);
 API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);

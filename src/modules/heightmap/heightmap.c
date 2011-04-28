@@ -75,7 +75,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;
 	heightmap->primitive.draw_function = &drawOpenGLPrimitiveHeightmap;
-	heightmap->primitive.update_function = &updateOpenGLPrimitiveHeightmap;
+	heightmap->primitive.update_function = NULL;
 	heightmap->primitive.free_function = &freeOpenGLPrimitiveHeightmap;
 
 	glGenBuffers(1, &heightmap->vertexBuffer);
@@ -178,25 +178,6 @@ API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	return primitive->data;
-}
-
-/**
- * Updates an OpenGL heightmap primitive
- *
- * @param primitive			the heightmap primitive to update
- * @param dt				the timestep in seconds to move forward
- * @result					true if successful
- */
-API bool updateOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, double dt)
-{
-	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to update OpenGL heightmap: Primitive is not a heightmap");
-		return false;
-	}
-
-	OpenGLHeightmap *heightmap = primitive->data;
-
-	return true;
 }
 
 /**

@@ -37,7 +37,7 @@ varying vec2 world_uv;
 
 void main()
 {
-	vec2 heightmapPosition = uv / vec2(heightmapWidth, heightmapHeight);
+	vec2 heightmapPosition = uv / vec2(heightmapWidth - 1.0, heightmapHeight - 1.0);
 	float height = texture2D(heights, heightmapPosition).x;
 	vec4 pos4 = vec4(uv.x, height, uv.y, 1.0);
 	vec4 norm4 = vec4(0.0, 1.0, 0.0, 1.0);
@@ -46,7 +46,7 @@ void main()
 
 	world_position = worldpos4.xyz / worldpos4.w;
 	world_normal = worldnorm4.xyz / worldnorm4.w;
-	world_color = vec4(height, height, height, 1.0);
+	world_color = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
 	world_uv = uv;
 		
 	gl_Position = perspective * camera * worldpos4;

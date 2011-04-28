@@ -31,9 +31,10 @@
  * Creates an OpenGL texture from an image
  *
  * @param image			the image from which to create the texture
+ * @param mipmaps		whether the texture should make use of mipmaps
  * @result				the created texture
  */
-API OpenGLTexture *createOpenGLTexture(Image *image)
+API OpenGLTexture *createOpenGLTexture(Image *image, bool mipmaps)
 {
 	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
 	texture->image = image;
@@ -43,9 +44,13 @@ API OpenGLTexture *createOpenGLTexture(Image *image)
 	glBindTexture(GL_TEXTURE_2D, texture->texture);
 
 	// Set texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if(mipmaps) {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+	}
 
 	updateOpenGLTexture(texture);
 

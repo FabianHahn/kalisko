@@ -36,7 +36,7 @@ typedef struct {
 	int unit;
 } OpenGLTexture;
 
-API OpenGLTexture *createOpenGLTexture(Image *image);
+API OpenGLTexture *createOpenGLTexture(Image *image, bool mipmaps);
 API bool updateOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);
 

@@ -45,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 4, 9);
+MODULE_VERSION(0, 4, 10);
 MODULE_BCVERSION(0, 4, 8);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 19, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 20, 6), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -145,7 +145,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				if(image != NULL) {
 					OpenGLTexture *texture;
 
-					if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image)) != NULL) {
+					if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image, true)) != NULL) {
 						SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
 						parameter->type = OPENGL_UNIFORM_TEXTURE;
 						parameter->content.texture_value = texture;

@@ -25,6 +25,18 @@
 #include "modules/image/image.h"
 
 /**
+ * Specifies the mipmap mode to use for an OpenGL texture
+ */
+typedef enum {
+	/** No mipmaps should be generated */
+	OPENGL_TEXTURE_MIPMAP_NONE,
+	/** Generate mipmaps and use nearest neighbour lookup */
+	OPENGL_TEXTURE_MIPMAP_NEAREST,
+	/** Generate mipmaps and use linear interpolation lookup */
+	OPENGL_TEXTURE_MIPMAP_LINEAR
+} OpenGLTextureMipmapMode;
+
+/**
  * Struct representing an OpenGL texture that can be attached to shaders as uniform
  */
 typedef struct {
@@ -34,10 +46,17 @@ typedef struct {
 	GLuint texture;
 	/** The OpenGL texture unit currently used to render this texture */
 	int unit;
+	/** The mipmap mode to use for this texture */
+	OpenGLTextureMipmapMode mipmap_mode;
+	/** The texture format to use for this texture */
+	GLuint format;
+	/** The internal texture format to use for this texture */
+	GLuint internalFormat;
 } OpenGLTexture;
 
-API OpenGLTexture *createOpenGLTexture(Image *image, bool mipmaps);
-API bool updateOpenGLTexture(OpenGLTexture *texture);
+API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init);
+API bool initOpenGLTexture(OpenGLTexture *texture);
+API bool synchronizeOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);
 
 #endif

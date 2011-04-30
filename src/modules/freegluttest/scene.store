@@ -16,7 +16,7 @@ scene = {
 		
 		heightmap = {
 			type = heightmap
-			heightmap = "/modules/heightmap/heightmap.store"
+			heightmap = "/modules/freegluttest/texture.png"
 		}
 	}
 	
@@ -101,7 +101,7 @@ scene = {
 		heightmap = {
 			primitive = heightmap
 			material = heightmap
-			translation = (0.0, -1.0, 0.0)
+			translation = (2.0, -1.0, 2.0)
 		}		
 	}
 }

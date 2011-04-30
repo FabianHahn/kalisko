@@ -40,15 +40,13 @@ API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init)
 	texture->image = image;
 	texture->format = -1;
 	texture->internalFormat = -1;
+	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
 	glBindTexture(GL_TEXTURE_2D, texture->texture);
 
 	if(auto_init) {
-		// Set texture parameters
-		texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
-
 		if(!initOpenGLTexture(texture)) {
 			freeOpenGLTexture(texture);
 			return NULL;
@@ -155,12 +153,12 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 		case OPENGL_TEXTURE_SAMPLING_MIPMAP_NEAREST:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // use mipmaps to interpolate
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
 		case OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		break;
 	}
 

@@ -39,7 +39,7 @@ void main()
 {
 	vec2 heightmapPosition = uv / vec2(heightmapWidth - 1.0, heightmapHeight - 1.0);
 	float height = texture2D(heights, heightmapPosition).x;
-	vec4 pos4 = vec4(uv.x, height, uv.y, 1.0);
+	vec4 pos4 = vec4(uv.x / heightmapWidth, height, uv.y / heightmapHeight, 1.0);
 	vec4 norm4 = vec4(0.0, 1.0, 0.0, 1.0);
 	vec4 worldpos4 = model * pos4;
 	vec4 worldnorm4 = modelNormal * norm4;

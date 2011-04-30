@@ -39,9 +39,9 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 21, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 4, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 21, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 4, 0));
 
 MODULE_INIT
 {
@@ -61,16 +61,11 @@ MODULE_FINALIZE
  */
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 {
-	if(heights->channels != 1) {
-		LOG_ERROR("Tried to create OpenGL heightmap primitive from image with %u channels, but only one channel is supported", heights->channels);
-		return NULL;
-	}
-
 	OpenGLHeightmap *heightmap = ALLOCATE_OBJECT(OpenGLHeightmap);
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
-	heightmap->heightsTexture = $(OpenGLTexture *, texture, createOpenGLTexture)(heights, false);
+	heightmap->heightsTexture = $(OpenGLTexture *, texture, createOpenGLVertexTexture)(heights);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;

@@ -69,6 +69,44 @@ API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init)
 }
 
 /**
+ * Creates an OpenGL vertex texture from an image to be used in a vertex shader. The texture does not use mipmaps and is automatically initialized, i.e. you don't have to call initOpenGLTexture or synchronizeOpenGLTexture before using it
+ *
+ * @param image			the image from which to create the texture
+ * @result				the created texture or NULL on failure
+ */
+API OpenGLTexture *createOpenGLVertexTexture(Image *image)
+{
+	OpenGLTexture *texture = createOpenGLTexture(image, false);
+
+	if(texture == NULL) {
+		return NULL;
+	}
+
+	texture->mipmap_mode = OPENGL_TEXTURE_MIPMAP_NONE;
+
+	switch(image->channels) {
+		case 1:
+			texture->internalFormat = GL_LUMINANCE32F_ARB;
+		break;
+		case 4:
+			texture->internalFormat = GL_RGBA_FLOAT32_ATI;
+		break;
+	}
+
+	if(!initOpenGLTexture(texture)) {
+		freeOpenGLTexture(texture);
+		return NULL;
+	}
+
+	if(!synchronizeOpenGLTexture(texture)) {
+		freeOpenGLTexture(texture);
+		return NULL;
+	}
+
+	return texture;
+}
+
+/**
  * Initializes an OpenGL texture
  *
  * @param texture			the OpenGL texture to initialize
@@ -106,6 +144,8 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 	switch(texture->mipmap_mode) {
 		case OPENGL_TEXTURE_MIPMAP_NONE:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // not that it matters, but just to be sure...
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
 		case OPENGL_TEXTURE_MIPMAP_NEAREST:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update

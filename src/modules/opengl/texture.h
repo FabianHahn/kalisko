@@ -55,6 +55,7 @@ typedef struct {
 } OpenGLTexture;
 
 API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init);
+API OpenGLTexture *createOpenGLVertexTexture(Image *image);
 API bool initOpenGLTexture(OpenGLTexture *texture);
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);

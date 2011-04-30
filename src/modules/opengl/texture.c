@@ -47,7 +47,7 @@ API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init)
 
 	if(auto_init) {
 		// Set texture parameters
-		texture->mipmap_mode = OPENGL_TEXTURE_MIPMAP_LINEAR;
+		texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
 
 		if(!initOpenGLTexture(texture)) {
 			freeOpenGLTexture(texture);
@@ -82,14 +82,14 @@ API OpenGLTexture *createOpenGLVertexTexture(Image *image)
 		return NULL;
 	}
 
-	texture->mipmap_mode = OPENGL_TEXTURE_MIPMAP_NONE;
+	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_NEAREST;
 
 	switch(image->channels) {
 		case 1:
 			texture->internalFormat = GL_LUMINANCE32F_ARB;
 		break;
-		case 4:
-			texture->internalFormat = GL_RGBA_FLOAT32_ATI;
+		default:
+			texture->internalFormat = GL_RGBA32F;
 		break;
 	}
 
@@ -141,21 +141,26 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 		texture->internalFormat = texture->image->channels;
 	}
 
-	switch(texture->mipmap_mode) {
-		case OPENGL_TEXTURE_MIPMAP_NONE:
+	switch(texture->samplingMode) {
+		case OPENGL_TEXTURE_SAMPLING_NEAREST:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // not that it matters, but just to be sure...
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
-		case OPENGL_TEXTURE_MIPMAP_NEAREST:
+		case OPENGL_TEXTURE_SAMPLING_LINEAR:
+			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		break;
+		case OPENGL_TEXTURE_SAMPLING_MIPMAP_NEAREST:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // use mipmaps to interpolate
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 		break;
-		case OPENGL_TEXTURE_MIPMAP_LINEAR:
+		case OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR:
 			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		break;
 	}
 

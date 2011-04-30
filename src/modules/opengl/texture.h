@@ -28,13 +28,15 @@
  * Specifies the mipmap mode to use for an OpenGL texture
  */
 typedef enum {
-	/** No mipmaps should be generated */
-	OPENGL_TEXTURE_MIPMAP_NONE,
+	/** No mipmaps should be generated, use nearest neighbor lookup */
+	OPENGL_TEXTURE_SAMPLING_NEAREST,
+	/** No mipmaps should be generated, use linear lookup */
+	OPENGL_TEXTURE_SAMPLING_LINEAR,
 	/** Generate mipmaps and use nearest neighbour lookup */
-	OPENGL_TEXTURE_MIPMAP_NEAREST,
+	OPENGL_TEXTURE_SAMPLING_MIPMAP_NEAREST,
 	/** Generate mipmaps and use linear interpolation lookup */
-	OPENGL_TEXTURE_MIPMAP_LINEAR
-} OpenGLTextureMipmapMode;
+	OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR
+} OpenGLTextureSamplingMode;
 
 /**
  * Struct representing an OpenGL texture that can be attached to shaders as uniform
@@ -46,8 +48,8 @@ typedef struct {
 	GLuint texture;
 	/** The OpenGL texture unit currently used to render this texture */
 	int unit;
-	/** The mipmap mode to use for this texture */
-	OpenGLTextureMipmapMode mipmap_mode;
+	/** The sampling mode to use for this texture */
+	OpenGLTextureSamplingMode samplingMode;
 	/** The texture format to use for this texture */
 	GLuint format;
 	/** The internal texture format to use for this texture */

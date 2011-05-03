@@ -39,4 +39,3 @@ if not module.GetOption('clean'):
 
 module.SharedLibrary('../kalisko_heightmap', Glob('*.c'))
 module.Command("heightmap.glslv", File("heightmap.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("heightmap.glslf", File("heightmap.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))

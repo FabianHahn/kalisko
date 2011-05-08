@@ -28,8 +28,8 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 4, 1);
-MODULE_BCVERSION(0, 4, 0);
+MODULE_VERSION(0, 5, 0);
+MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
 MODULE_INIT
@@ -45,58 +45,43 @@ MODULE_FINALIZE
 }
 
 /**
- * Creates a new image
+ * Creates a new byte image
  *
  * @param width			the width of the image to create
  * @param height		the height of the image to create
  * @param channels		the number of image channels to create
  * @result				the created image
  */
-API Image *createImage(unsigned int width, unsigned int height, unsigned int channels)
+API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels)
 {
 	Image *image = ALLOCATE_OBJECT(Image);
 	image->width = width;
 	image->height = height;
 	image->channels = channels;
-	image->data = ALLOCATE_OBJECTS(unsigned char, width * height * channels);
+	image->type = IMAGE_TYPE_BYTE;
+	image->data.byte_data = ALLOCATE_OBJECTS(unsigned char, width * height * channels);
 
 	return image;
 }
 
 /**
- * Retrieves an image pixel
+ * Creates a new float image
  *
- * @param image			the image from which to retrieve the pixel
- * @param x				the x location to access
- * @param y				the y location to access
- * @param c				the channel to access
- * @result				the pixel at the requested position
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @result				the created image
  */
-API unsigned char getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
+API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels)
 {
-	assert(x < image->width);
-	assert(y < image->height);
-	assert(c < image->channels);
+	Image *image = ALLOCATE_OBJECT(Image);
+	image->width = width;
+	image->height = height;
+	image->channels = channels;
+	image->type = IMAGE_TYPE_BYTE;
+	image->data.float_data = ALLOCATE_OBJECTS(unsigned char, width * height * channels);
 
-	return image->data[y * image->width * image->channels + x * image->channels + c];
-}
-
-/**
- * Sets an image pixel
- *
- * @param image			the image from which to retrieve the pixel
- * @param x				the x location to access
- * @param y				the y location to access
- * @param c				the channel to access
- * @param value			the value to set at the specified location
- */
-API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, unsigned char value)
-{
-	assert(x < image->width);
-	assert(y < image->height);
-	assert(c < image->channels);
-
-	image->data[y * image->width * image->channels + x * image->channels + c] = value;
+	return image;
 }
 
 /**
@@ -106,6 +91,13 @@ API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, 
  */
 API void freeImage(Image *image)
 {
-	free(image->data);
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			free(image->data.byte_data);
+		break;
+		case IMAGE_TYPE_FLOAT:
+			free(image->data.float_data);
+		break;
+	}
 	free(image);
 }

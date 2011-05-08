@@ -46,6 +46,12 @@ API Image *createImageFromStore(Store *store)
 		return NULL;
 	}
 
+	Store *type;
+	if((type = $(Store *, store, getStorePath)(store, "image/type")) == NULL || type->type != STORE_STRING || (g_strcmp0(type->content.string, "byte") != 0 && g_strcmp0(type->content.string, "float") != 0)) {
+		LOG_ERROR("Failed to parse image store: Store path 'image/type' must be either 'byte' or 'float'");
+		return NULL;
+	}
+
 	Store *channels;
 	if((channels = $(Store *, store, getStorePath)(store, "image/channels")) == NULL || channels->type != STORE_INTEGER || channels->content.integer <= 0) {
 		LOG_ERROR("Failed to parse image store: Could not find store integer path 'image/channels'");
@@ -60,29 +66,39 @@ API Image *createImageFromStore(Store *store)
 
 	GQueue *pList = pixels->content.list;
 
-	Image *image = createImage(width->content.integer, height->content.integer, channels->content.integer);
+	Image *image;
+	if(g_strcmp0(type->content.string, "byte") == 0) {
+		image = createImageByte(width->content.integer, height->content.integer, channels->content.integer);
+	} else {
+		image = createImageFloat(width->content.integer, height->content.integer, channels->content.integer);
+	}
 
 	// Read pixels
-	int i = 0;
-	for(GList *iter = pList->head; iter != NULL; iter = iter->next, i++) {
+	int x = 0;
+	int y = 0;
+	for(GList *iter = pList->head; iter != NULL; iter = iter->next) {
 		Store *pixel = iter->data;
 
 		if(pixel->type != STORE_LIST) {
-			if(pixel->type == STORE_INTEGER) { // allow non-list format equal channel pixels
+			if(pixel->type == STORE_INTEGER) { // allow non-list format equal channel pixels (int)
 				for(unsigned int c = 0; c < image->channels; c++) {
-					image->data[i * image->channels + c] = pixel->content.integer;
+					setImage(image, x, y, c, pixel->content.integer);
+				}
+			} else if(pixel->type == STORE_FLOAT_NUMBER) { // allow non-list format equal channel pixels (float)
+				for(unsigned int c = 0; c < image->channels; c++) {
+					setImage(image, x, y, c, pixel->content.float_number);
 				}
 			} else {
-				LOG_WARNING("Invalid pixel %d in image store, setting to zero", i);
+				LOG_WARNING("Invalid pixel %d/%d in image store, setting to zero", x, y);
 				for(unsigned int c = 0; c < image->channels; c++) {
-					image->data[i * image->channels + c] = 0;
+					setImage(image, x, y, c, 0);
 				}
 			}
 		} else {
 			if(g_queue_get_length(pixel->content.list) != image->channels) {
-				LOG_WARNING("Pixel %d in image store has invalid number of %u channels, setting to zero", i, g_queue_get_length(pixel->content.list));
+				LOG_WARNING("Pixel %d/%d in image store has invalid number of %u channels, setting to zero", x, y, g_queue_get_length(pixel->content.list));
 				for(unsigned int c = 0; c < image->channels; c++) {
-					image->data[i * image->channels + c] = 0;
+					setImage(image, x, y, c, 0);
 				}
 			}
 
@@ -91,12 +107,20 @@ API Image *createImageFromStore(Store *store)
 				Store *pval = piter->data;
 
 				if(pval->type == STORE_INTEGER && pval->content.integer >= 0 && pval->content.integer <= 255) {
-					image->data[i * image->channels + c] = pval->content.integer;
+					setImage(image, x, y, c, pval->content.integer);
+				} else if(pval->type == STORE_FLOAT_NUMBER) {
+					setImage(image, x, y, c, pval->content.float_number);
 				} else {
-					LOG_WARNING("Invalid value in channel %d of pixel %d in image store, replacing by 0", c, i);
-					image->data[i * image->channels + c] = 0;
+					LOG_WARNING("Invalid value in channel %d of pixel %d/%d in image store, replacing by 0", c, x, y);
+					setImage(image, x, y, c, 0);
 				}
 			}
+		}
+
+		x++;
+		if(x >= image->width) {
+			x = 0;
+			y++;
 		}
 	}
 
@@ -118,18 +142,36 @@ API Store *convertImageToStore(Image *image)
 	$(bool, store, setStorePath)(store, "image/height", $(Store *, store, createStoreIntegerValue)(image->height));
 	$(bool, store, setStorePath)(store, "image/channels", $(Store *, store, createStoreIntegerValue)(image->channels));
 
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			$(bool, store, setStorePath)(store, "image/type", $(Store *, store, createStoreStringValue)("byte"));
+		break;
+		case IMAGE_TYPE_FLOAT:
+			$(bool, store, setStorePath)(store, "image/float", $(Store *, store, createStoreStringValue)("float"));
+		break;
+	}
+
 	Store *pixels = $(Store *, store, createStoreListValue)(NULL);
 	$(bool, store, setStorePath)(store, "image/pixels", pixels);
 
-	// Write vertices
-	for(unsigned int i = 0; i < image->width * image->height; i++) {
-		Store *pixel = $(Store *, store, createStoreListValue)(NULL);
+	// Write pixels
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			Store *pixel = $(Store *, store, createStoreListValue)(NULL);
 
-		for(unsigned int c = 0; c < image->channels; c++) {
-			g_queue_push_tail(pixel->content.list, $(Store *, store, createStoreIntegerValue)(image->data[i * image->channels + c]));
+			for(unsigned int c = 0; c < image->channels; c++) {
+				switch(image->type) {
+					case IMAGE_TYPE_BYTE:
+						g_queue_push_tail(pixel->content.list, $(Store *, store, createStoreIntegerValue)(getImageByte(image, x, y, c)));
+					break;
+					case IMAGE_TYPE_FLOAT:
+						g_queue_push_tail(pixel->content.list, $(Store *, store, createStoreFloatNumberValue)(getImageFloat(image, x, y, c)));
+					break;
+				}
+			}
+
+			g_queue_push_tail(pixels->content.list, pixel);
 		}
-
-		g_queue_push_tail(pixels->content.list, pixel);
 	}
 
 	return store;

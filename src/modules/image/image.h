@@ -24,6 +24,16 @@
 #include <assert.h>
 
 /**
+ * Enum type describing possible image types
+ */
+typedef enum {
+	/** An image containing byte channels */
+	IMAGE_TYPE_BYTE,
+	/** An image containing float channels */
+	IMAGE_TYPE_FLOAT
+} ImageType;
+
+/**
  * Struct representing an image
  */
 typedef struct {
@@ -33,13 +43,145 @@ typedef struct {
 	unsigned int height;
 	/** the number of image channels */
 	unsigned int channels;
+	/** the type of the image */
+	ImageType type;
 	/** the image data */
-	unsigned char *data;
+	union {
+		/** byte data if the type is IMAGE_TYPE_BYTE */
+		unsigned char *byte_data;
+		/** float data if the type is IMAGE_TYPE_FLOAT */
+		float *float_data;
+	} data;
 } Image;
 
-API Image *createImage(unsigned int width, unsigned int height, unsigned int channels);
-API unsigned char getImage(Image *image, unsigned int x, unsigned int y, unsigned int c);
-API void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, unsigned char value);
+API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels);
+API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
 API void freeImage(Image *image);
+
+/**
+ * Retrieves an image pixel from a byte image
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @result				the pixel at the requested position
+ */
+static inline unsigned char getImageByte(Image *image, unsigned int x, unsigned int y, unsigned int c)
+{
+	assert(image->type == IMAGE_TYPE_BYTE);
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	return image->data.byte_data[y * image->width * image->channels + x * image->channels + c];
+}
+
+/**
+ * Retrieves an image pixel from a float image
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @result				the pixel at the requested position
+ */
+static inline float getImageFloat(Image *image, unsigned int x, unsigned int y, unsigned int c)
+{
+	assert(image->type == IMAGE_TYPE_FLOAT);
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	return image->data.float_data[y * image->width * image->channels + x * image->channels + c];
+}
+
+/**
+ * Retrieves an image pixel from an image
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @result				the pixel at the requested position
+ */
+static inline float getImage(Image *image, unsigned int x, unsigned int y, unsigned int c)
+{
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			return image->data.byte_data[y * image->width * image->channels + x * image->channels + c];
+		break;
+		case IMAGE_TYPE_FLOAT:
+			return image->data.float_data[y * image->width * image->channels + x * image->channels + c];
+		break;
+	}
+}
+
+/**
+ * Sets an image pixel for a byte image
+ *
+ * @param image			the image from which to set the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @param value			the value to set at the specified location
+ */
+static inline void setImageByte(Image *image, unsigned int x, unsigned int y, unsigned int c, unsigned char value)
+{
+	assert(image->type == IMAGE_TYPE_BYTE);
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	image->data.byte_data[y * image->width * image->channels + x * image->channels + c] = value;
+}
+
+/**
+ * Sets an image pixel for a byte image
+ *
+ * @param image			the image from which to set the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @param value			the value to set at the specified location
+ */
+static inline void setImageFloat(Image *image, unsigned int x, unsigned int y, unsigned int c, double value)
+{
+	assert(image->type == IMAGE_TYPE_FLOAT);
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	image->data.float_data[y * image->width * image->channels + x * image->channels + c] = value;
+}
+
+/**
+ * Sets an image pixel for an image
+ *
+ * @param image			the image from which to set the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @param value			the value to set at the specified location
+ */
+static inline void setImage(Image *image, unsigned int x, unsigned int y, unsigned int c, double value)
+{
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			image->data.byte_data[y * image->width * image->channels + x * image->channels + c] = value;
+		break;
+		case IMAGE_TYPE_FLOAT:
+			image->data.float_data[y * image->width * image->channels + x * image->channels + c] = value;
+		break;
+	}
+}
 
 #endif

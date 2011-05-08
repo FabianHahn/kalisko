@@ -28,7 +28,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -82,6 +82,36 @@ API Image *createImageFloat(unsigned int width, unsigned int height, unsigned in
 	image->data.float_data = ALLOCATE_OBJECTS(float, width * height * channels);
 
 	return image;
+}
+
+/**
+ * Copies an image and possibly converts it to another type while doing so
+ *
+ * @param image			the image to copy
+ * @param targetType	the type of the target image into which the contents of source should be copied
+ */
+API Image *copyImage(Image *source, ImageType targetType)
+{
+	Image *target;
+
+	switch(targetType) {
+		case IMAGE_TYPE_BYTE:
+			target = createImageByte(source->width, source->height, source->channels);
+		break;
+		case IMAGE_TYPE_FLOAT:
+			target = createImageFloat(source->width, source->height, source->channels);
+		break;
+	}
+
+	for(unsigned int y = 0; y < source->height; y++) {
+		for(unsigned int x = 0; x < source->width; x++) {
+			for(unsigned int c = 0; c < source->channels; c++) {
+				setImage(target, x, y, c, getImage(source, x, y, c));
+			}
+		}
+	}
+
+	return target;
 }
 
 /**

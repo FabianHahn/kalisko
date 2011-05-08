@@ -56,6 +56,7 @@ typedef struct {
 
 API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels);
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
+API Image *copyImage(Image *source, ImageType targetType);
 API void freeImage(Image *image);
 
 /**
@@ -119,6 +120,8 @@ static inline float getImage(Image *image, unsigned int x, unsigned int y, unsig
 			return image->data.float_data[y * image->width * image->channels + x * image->channels + c];
 		break;
 	}
+
+	return 0.0f; // never reached
 }
 
 /**

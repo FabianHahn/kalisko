@@ -28,7 +28,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -79,7 +79,7 @@ API Image *createImageFloat(unsigned int width, unsigned int height, unsigned in
 	image->height = height;
 	image->channels = channels;
 	image->type = IMAGE_TYPE_BYTE;
-	image->data.float_data = ALLOCATE_OBJECTS(unsigned char, width * height * channels);
+	image->data.float_data = ALLOCATE_OBJECTS(float, width * height * channels);
 
 	return image;
 }

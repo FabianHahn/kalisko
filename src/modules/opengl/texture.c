@@ -180,8 +180,14 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 {
 	glBindTexture(GL_TEXTURE_2D, texture->texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data);
-
+	switch(texture->image->type) {
+		case IMAGE_TYPE_BYTE:
+			glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
+		break;
+		case IMAGE_TYPE_FLOAT:
+			glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_FLOAT, texture->image->data.float_data);
+		break;
+	}
 
 	if(checkOpenGLError()) {
 		return false;

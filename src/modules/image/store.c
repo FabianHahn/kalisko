@@ -147,7 +147,7 @@ API Store *convertImageToStore(Image *image)
 			$(bool, store, setStorePath)(store, "image/type", $(Store *, store, createStoreStringValue)("byte"));
 		break;
 		case IMAGE_TYPE_FLOAT:
-			$(bool, store, setStorePath)(store, "image/float", $(Store *, store, createStoreStringValue)("float"));
+			$(bool, store, setStorePath)(store, "image/type", $(Store *, store, createStoreStringValue)("float"));
 		break;
 	}
 

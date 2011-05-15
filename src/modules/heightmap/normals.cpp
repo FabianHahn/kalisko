@@ -75,12 +75,12 @@ API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
 			Vector exm1yp0 = getHeightmapVector(heightmap->heights, xm1, y) - current;
 
 			// add contributions from neighboring triangles
-			normal += (exp1yp0 % exp1ym1);
-			normal += (exp1ym1 % exp0ym1);
-			normal += (exp0ym1 % exm1yp0);
-			normal += (exm1yp0 % exm1yp1);
-			normal += (exm1yp1 % exp0yp1);
-			normal += (exp0yp1 % exp1yp0);
+			normal += (exp1yp0 % exp1ym1).normalize();
+			normal += (exp1ym1 % exp0ym1).normalize();
+			normal += 2.0f * (exp0ym1 % exm1yp0).normalize();
+			normal += (exm1yp0 % exm1yp1).normalize();
+			normal += (exm1yp1 % exp0yp1).normalize();
+			normal += 2.0f * (exp0yp1 % exp1yp0).normalize();
 			normal.normalize(); // normalize it
 
 			setImage(heightmap->normals, x, y, 0, normal[0]);

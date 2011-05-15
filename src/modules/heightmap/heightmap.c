@@ -35,11 +35,12 @@
 #include "api.h"
 #include "heightmap.h"
 #include "scene.h"
+#include "normals.h"
 
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 21, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
 
@@ -66,6 +67,8 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
 	heightmap->heightsTexture = $(OpenGLTexture *, texture, createOpenGLVertexTexture)(heights);
+	heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
+	heightmap->normalsTexture = $(OpenGLTexture *, texture, createOpenGLVertexTexture)(heightmap->normals);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;
@@ -96,6 +99,11 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
 		LOG_ERROR("Failed to initialize OpenGL heightmap: Primitive is not a heightmap");
+		return false;
+	}
+
+	if(!computeOpenGLPrimitiveHeightmapNormals(primitive)) {
+		LOG_ERROR("Failed to initialize OpenGL heightmap: Could not compute normals");
 		return false;
 	}
 

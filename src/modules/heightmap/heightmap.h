@@ -57,6 +57,8 @@ typedef struct {
 	OpenGLTexture *heightsTexture;
 	/** The image with the normal data */
 	Image *normals;
+	/** The texture with the normal data */
+	OpenGLTexture *normalsTexture;
 	/** The OpenGL vertex buffer associated with this heightmap */
 	GLuint vertexBuffer;
 	/** The OpenGL index buffer associated with this heightmap */

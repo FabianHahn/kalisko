@@ -17,6 +17,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
 
+def merge(*args):
+    r = []
+    for a in args: r += a
+    return r
+
 if not module.GetOption('clean'):
 	conf = Configure(module)
 		
@@ -37,5 +42,5 @@ if not module.GetOption('clean'):
 							
 	module = conf.Finish()
 
-module.SharedLibrary('../kalisko_heightmap', Glob('*.c'))
+module.SharedLibrary('../kalisko_heightmap', merge(Glob('*.cpp'), Glob('*.c')))
 module.Command("heightmap.glslv", File("heightmap.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))

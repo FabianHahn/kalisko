@@ -114,7 +114,7 @@ static inline float getImage(Image *image, unsigned int x, unsigned int y, unsig
 
 	switch(image->type) {
 		case IMAGE_TYPE_BYTE:
-			return image->data.byte_data[y * image->width * image->channels + x * image->channels + c];
+			return image->data.byte_data[y * image->width * image->channels + x * image->channels + c] / 255.0f;
 		break;
 		case IMAGE_TYPE_FLOAT:
 			return image->data.float_data[y * image->width * image->channels + x * image->channels + c];
@@ -179,7 +179,7 @@ static inline void setImage(Image *image, unsigned int x, unsigned int y, unsign
 
 	switch(image->type) {
 		case IMAGE_TYPE_BYTE:
-			image->data.byte_data[y * image->width * image->channels + x * image->channels + c] = value;
+			image->data.byte_data[y * image->width * image->channels + x * image->channels + c] = 255 * value;
 		break;
 		case IMAGE_TYPE_FLOAT:
 			image->data.float_data[y * image->width * image->channels + x * image->channels + c] = value;

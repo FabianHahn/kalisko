@@ -33,9 +33,9 @@ extern "C" {
 }
 #include "normals.h"
 
-static inline Vector getHeightmapVector(Image *heights, unsigned int x, unsigned int y)
+static inline Vector getHeightmapVector(Image *heights, int x, int y)
 {
-	return Vector3((float) x / (heights->width - 1.0f), getImage(heights, x, y, 1), (float) y / (heights->height - 1.0f));
+	return Vector3((float) x / (heights->width - 1.0f), getImage(heights, x, y, 0), (float) y / (heights->height - 1.0f));
 }
 
 /**
@@ -67,16 +67,20 @@ API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
 
 			Vector normal = Vector3(0.0f, 0.0f, 0.0f);
 			Vector current = getHeightmapVector(heightmap->heights, x, y);
-			Vector exp1 = getHeightmapVector(heightmap->heights, xp1, y) - current;
-			Vector exm1 = getHeightmapVector(heightmap->heights, xm1, y) - current;
-			Vector eyp1 = getHeightmapVector(heightmap->heights, x, yp1) - current;
-			Vector eym1 = getHeightmapVector(heightmap->heights, x, ym1) - current;
+			Vector exp1yp0 = getHeightmapVector(heightmap->heights, xp1, y) - current;
+			Vector exp1ym1 = getHeightmapVector(heightmap->heights, xp1, ym1) - current;
+			Vector exp0yp1 = getHeightmapVector(heightmap->heights, x, yp1) - current;
+			Vector exp0ym1 = getHeightmapVector(heightmap->heights, x, ym1) - current;
+			Vector exm1yp1 = getHeightmapVector(heightmap->heights, xm1, yp1) - current;
+			Vector exm1yp0 = getHeightmapVector(heightmap->heights, xm1, y) - current;
 
 			// add contributions from neighboring triangles
-			normal += exp1 % eyp1;
-			normal += eyp1 % exm1;
-			normal += exm1 % eym1;
-			normal += eym1 % exp1;
+			normal += (exp1yp0 % exp1ym1);
+			normal += (exp1ym1 % exp0ym1);
+			normal += (exp0ym1 % exm1yp0);
+			normal += (exm1yp0 % exm1yp1);
+			normal += (exm1yp1 % exp0yp1);
+			normal += (exp0yp1 % exp1yp0);
 			normal.normalize(); // normalize it
 
 			setImage(heightmap->normals, x, y, 0, normal[0]);

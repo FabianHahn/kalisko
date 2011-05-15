@@ -35,7 +35,7 @@ extern "C" {
 
 static inline Vector getHeightmapVector(Image *heights, unsigned int x, unsigned int y)
 {
-	return Vector3((float) x / (heights->width - 1.0f), getImageFloat(heights, x, y, 1), (float) y / (heights->height - 1.0f));
+	return Vector3((float) x / (heights->width - 1.0f), getImage(heights, x, y, 1), (float) y / (heights->height - 1.0f));
 }
 
 /**

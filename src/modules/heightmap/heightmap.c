@@ -164,6 +164,10 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 	OpenGLUniform *heightmapHeightUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->height);
 	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heightmapHeight", heightmapHeightUniform);
 
+	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "normals");
+	OpenGLUniform *normalsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->normalsTexture);
+	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "normals", normalsUniform);
+
 	return true;
 }
 
@@ -257,6 +261,7 @@ API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	OpenGLHeightmap *heightmap = primitive->data;
 
 	$(void, opengl, freeOpenGLTexture)(heightmap->heightsTexture);
+	$(void, opengl, freeOpenGLTexture)(heightmap->normalsTexture);
 	glDeleteBuffers(1, &heightmap->vertexBuffer);
 	glDeleteBuffers(1, &heightmap->indexBuffer);
 	free(heightmap->vertices);

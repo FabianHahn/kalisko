@@ -54,29 +54,30 @@ API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
 	OpenGLHeightmap *heightmap = (OpenGLHeightmap *) primitive->data;
 
 	Vector up = Vector3(0.0f, 1.0f, 0.0f);
+	int height = heightmap->heights->height;
+	int width = heightmap->heights->width;
 
-	for(unsigned int y = 0; y < heightmap->heights->height; y++) {
-		for(unsigned int x = 0; x < heightmap->heights->width; x++) {
+	for(int y = 0; y < height; y++) {
+		int ym1 = y - 1 < 0 ? 0 : y - 1;
+		int yp1 = y + 1 >= height ? height - 1 : y + 1;
+
+		for(int x = 0; x < width; x++) {
+			int xm1 = x - 1 < 0 ? 0 : x - 1;
+			int xp1 = x + 1 >= width ? width - 1 : x + 1;
+
 			Vector normal = Vector3(0.0f, 0.0f, 0.0f);
 			Vector current = getHeightmapVector(heightmap->heights, x, y);
+			Vector exp1 = getHeightmapVector(heightmap->heights, xp1, y) - current;
+			Vector exm1 = getHeightmapVector(heightmap->heights, xm1, y) - current;
+			Vector eyp1 = getHeightmapVector(heightmap->heights, x, yp1) - current;
+			Vector eym1 = getHeightmapVector(heightmap->heights, x, ym1) - current;
 
-			// Loop over neighbors to get contributions
-			for(int j = -1; j <= 1; j++) {
-				for(int i = -1; i <= 1; i++) {
-					int yc = y + j;
-					int xc = x + i;
-
-					if(yc >= 0 && yc < (int) heightmap->heights->height && xc >= 0 && xc < (int) heightmap->heights->width) { // If valid, add difference to normal
-						normal += (getHeightmapVector(heightmap->heights, xc, yc) - current);
-					}
-				}
-			}
-
-			if(normal * up < 0) { // If the normal is oriented towards the ground, flip it
-				normal *= -1;
-			}
-
-			normal.normalize(); // Normalize it
+			// add contributions from neighboring triangles
+			normal += exp1 % eyp1;
+			normal += eyp1 % exm1;
+			normal += exm1 % eym1;
+			normal += eym1 % exp1;
+			normal.normalize(); // normalize it
 
 			setImage(heightmap->normals, x, y, 0, normal[0]);
 			setImage(heightmap->normals, x, y, 1, normal[1]);

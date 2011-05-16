@@ -33,6 +33,19 @@ static inline float randomUniform()
 	return (float) rand() / RAND_MAX;
 }
 
+/**
+ * Returns a random integer number between specified min and max values
+ *
+ * @param min		the minimum number to generate
+ * @param max		the maximum number to generate
+ * @result			the generated random number between min and max (inclusive)
+ */
+static inline int randomUniformInteger(int min, int max)
+{
+	return min + (max - min) * randomUniform();
+}
+
 API float randomGaussian(double mean, double std);
+API unsigned int *randomPermutation(unsigned int size);
 
 #endif

@@ -29,7 +29,7 @@
 MODULE_NAME("random");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Randomness functions");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -66,4 +66,28 @@ API float randomGaussian(double mean, double std)
 
 	w = sqrt((-2.0f * log(w)) / w);
 	return mean + std * x1 * w;
+}
+
+/**
+ * Computes a random permutation of the specified size
+ *
+ * @param size			the size of the permutation
+ * @result				an allocated array containing the permutation with size elements, must be freed by the caller after use
+ */
+API unsigned int *randomPermutation(unsigned int size)
+{
+	unsigned int *permutation = ALLOCATE_OBJECTS(unsigned int, size);
+
+	for(unsigned int i = 0; i < size; i++) {
+		permutation[i] = i;
+	}
+
+	for(unsigned int i = size - 1; i > 0; i--) {
+		int j = randomUniformInteger(0, i);
+		unsigned int temp = permutation[j];
+		permutation[j] = permutation[i];
+		permutation[i] = temp;
+	}
+
+	return permutation;
 }

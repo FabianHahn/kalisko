@@ -21,7 +21,6 @@
 #include <math.h>
 #include <assert.h>
 #include <glib.h>
-#include <GL/glew.h>
 #include "dll.h"
 #include "api.h"
 #include "random.h"

@@ -239,7 +239,7 @@ API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particles->indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ParticleSprite) * particles->num_particles, particles->sprites, GL_DYNAMIC_DRAW);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
@@ -272,7 +272,7 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_ANGULAR_VELOCITY, 1, GL_FLOAT, false, sizeof(ParticleVertex), NULL + offsetof(ParticleVertex, angularVelocity));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_ANGULAR_VELOCITY);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
@@ -280,7 +280,7 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particles->indexBuffer);
 	glDrawElements(GL_TRIANGLES, particles->num_particles * 6, GL_UNSIGNED_INT, NULL);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 

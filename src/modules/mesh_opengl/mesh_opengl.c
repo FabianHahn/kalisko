@@ -115,7 +115,7 @@ API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(MeshTriangle) * openglmesh->mesh->num_triangles, openglmesh->mesh->triangles, openglmesh->usage);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
@@ -146,14 +146,14 @@ API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(MeshVertex), NULL + offsetof(MeshVertex, uv));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, openglmesh->indexBuffer);
 	glDrawElements(GL_TRIANGLES, openglmesh->mesh->num_triangles * 3, GL_UNSIGNED_SHORT, NULL);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 

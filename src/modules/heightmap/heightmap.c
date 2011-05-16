@@ -207,7 +207,7 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * heightmap->heights->height * heightmap->heights->width, heightmap->tiles, GL_STATIC_DRAW);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
@@ -232,14 +232,14 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(HeightmapVertex), NULL + offsetof(HeightmapVertex, position));
 	glEnableVertexAttribArray(OPENGL_ATTRIBUTE_UV);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
 	glDrawElements(GL_TRIANGLES, (heightmap->heights->height - 1) * (heightmap->heights->width - 1) * 6, GL_UNSIGNED_INT, NULL);
 
-	if(checkOpenGLError()) {
+	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
 	}
 

@@ -112,7 +112,7 @@ MODULE_INIT
 	$(void, opengl, addOpenGLGlobalShaderUniform)("perspective", perspectiveUniform);
 
 	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
+	OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
 	particles->properties.aspectRatio = 800.0f / 600.0f;
 
 	GlfwHandle *handle = $(GlfwHandle *, glfw, getGlfwHandle)();
@@ -208,7 +208,7 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 
 	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	OpenGLParticles *particles = $(Particles *, particle, getOpenGLParticles)(primitive);
+	OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
 	particles->properties.aspectRatio = (float) w / h;
 }
 

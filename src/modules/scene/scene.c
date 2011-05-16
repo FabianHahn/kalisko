@@ -507,7 +507,7 @@ API void freeScene(Scene *scene)
 static void freeOpenGLPrimitiveByPointer(void *primitive_p)
 {
 	OpenGLPrimitive *primitive = primitive_p;
-	$(void, opengl, freeOpenGLPrimitive)(primitive);
+	freeOpenGLPrimitive(primitive);
 }
 
 /**

@@ -66,9 +66,9 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
-	heightmap->heightsTexture = $(OpenGLTexture *, texture, createOpenGLVertexTexture)(heights);
+	heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture)(heights);
 	heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
-	heightmap->normalsTexture = $(OpenGLTexture *, texture, createOpenGLVertexTexture)(heightmap->normals);
+	heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture)(heightmap->normals);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;

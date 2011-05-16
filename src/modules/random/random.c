@@ -25,11 +25,12 @@
 #include "dll.h"
 #include "api.h"
 #include "random.h"
+#include "perlin.h"
 
 MODULE_NAME("random");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Randomness functions");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -39,12 +40,14 @@ MODULE_INIT
 	g_get_current_time(&time);
 	srand(time.tv_usec);
 
+	initPerlin();
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
-
+	freePerlin();
 }
 
 /**

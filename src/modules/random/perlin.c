@@ -52,6 +52,18 @@ static int gradients[] = {
 	(0 << 6) + (2 << 3) + 2  // (0,-1,-1)
 };
 
+static inline float fade(float t)
+{
+	return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+static inline float lerp(float t, float a, float b)
+{
+	return a + t * (b - a);
+}
+
+static float gradientProduct(unsigned int corner, float dx, float dy, float dz);
+
 /**
  * Initialized the perlin noise generator
  */
@@ -66,46 +78,6 @@ API void initPerlin()
 API void freePerlin()
 {
 	free(permutation);
-}
-
-static inline float fade(float t)
-{
-	return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-static inline float lerp(float t, float a, float b)
-{
-	return a + t * (b - a);
-}
-
-static inline float gradient(unsigned int corner, float dx, float dy, float dz)
-{
-	int gradient = gradients[corner & 15]; // extract lower 4 bits = modulo 16, then lookup gradient
-
-	float result = 0.0f;
-
-	// Check x coordinate
-	if(gradient & (4 << 6)) { // (1,_,_)
-		result += dx;
-	} else if(gradient & (2 << 6)) { // (-1,_,_)
-		result -= dx;
-	}
-
-	// Check y coordinate
-	if(gradient & (4 << 3)) { // (_,1,_)
-		result += dy;
-	} else if(gradient & (2 << 3)) { // (_,-1,_)
-		result -= dy;
-	}
-
-	// Check z coordinate
-	if(gradient & 4) { // (_,_,1)
-		result += dz;
-	} else if(gradient & 2) { // (_,_,-1)
-		result -= dz;
-	}
-
-	return result;
 }
 
 /**
@@ -143,14 +115,14 @@ API float randomPerlin(double x, double y, double z)
 	float dz = z - Z;
 
 	// Compute dot products with corner gradients
-	float dxlylzl = gradient(cxlylzl, dx, dy, dz);
-	float dxlylzh = gradient(cxlylzh, dx, dy, dz-1);
-	float dxlyhzl = gradient(cxlyhzl, dx, dy-1, dz);
-	float dxlyhzh = gradient(cxlyhzh, dx, dy-1, dz-1);
-	float dxhylzl = gradient(cxhylzl, dx-1, dy, dz);
-	float dxhylzh = gradient(cxhylzh, dx-1, dy, dz-1);
-	float dxhyhzl = gradient(cxhyhzl, dx-1, dy-1, dz);
-	float dxhyhzh = gradient(cxhyhzh, dx-1, dy-1, dz-1);
+	float dxlylzl = gradientProduct(cxlylzl, dx, dy, dz);
+	float dxlylzh = gradientProduct(cxlylzh, dx, dy, dz-1);
+	float dxlyhzl = gradientProduct(cxlyhzl, dx, dy-1, dz);
+	float dxlyhzh = gradientProduct(cxlyhzh, dx, dy-1, dz-1);
+	float dxhylzl = gradientProduct(cxhylzl, dx-1, dy, dz);
+	float dxhylzh = gradientProduct(cxhylzh, dx-1, dy, dz-1);
+	float dxhyhzl = gradientProduct(cxhyhzl, dx-1, dy-1, dz);
+	float dxhyhzh = gradientProduct(cxhyhzh, dx-1, dy-1, dz-1);
 
 	float fadex = fade(dx);
 	float fadey = fade(dy);
@@ -164,4 +136,43 @@ API float randomPerlin(double x, double y, double z)
 	float izl = lerp(fadey, iylzl, iyhzl);
 	float izh = lerp(fadey, iylzh, iyhzh);
 	return lerp(fadez, izl, izh);
+}
+
+/**
+ * Computes the dot product between a difference vector and a corner gradient of a perlin noise cube lookup
+ *
+ * @param corner		the index of the corner for which the gradient should be looked up and multiplied
+ * @param dx			the x component of the difference vector
+ * @param dy			the y component of the difference vector
+ * @param dz			the z component of the difference vector
+ * @result				the dot product between the two vectors
+ */
+static float gradientProduct(unsigned int corner, float dx, float dy, float dz)
+{
+	int gradient = gradients[corner & 15]; // extract lower 4 bits = modulo 16, then lookup gradient
+
+	float result = 0.0f;
+
+	// Check x coordinate
+	if(gradient & (4 << 6)) { // (1,_,_)
+		result += dx;
+	} else if(gradient & (2 << 6)) { // (-1,_,_)
+		result -= dx;
+	}
+
+	// Check y coordinate
+	if(gradient & (4 << 3)) { // (_,1,_)
+		result += dy;
+	} else if(gradient & (2 << 3)) { // (_,-1,_)
+		result -= dy;
+	}
+
+	// Check z coordinate
+	if(gradient & 4) { // (_,_,1)
+		result += dz;
+	} else if(gradient & 2) { // (_,_,-1)
+		result -= dz;
+	}
+
+	return result;
 }

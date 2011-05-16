@@ -205,7 +205,7 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	glBindBuffer(GL_ARRAY_BUFFER, heightmap->vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(HeightmapVertex) * heightmap->heights->height * heightmap->heights->width, heightmap->vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * heightmap->heights->height * heightmap->heights->width, heightmap->tiles, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->heights->height - 1) * (heightmap->heights->width - 1), heightmap->tiles, GL_STATIC_DRAW);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		return false;

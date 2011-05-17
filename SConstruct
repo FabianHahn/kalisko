@@ -22,7 +22,7 @@ modules = os.listdir('src/modules')
 
 def CheckPKGConfig(context, name):
      context.Message( 'Checking pkg-config for %s... ' % name )
-     ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0]
+     ret = context.TryAction('pkg-config --exists %s' % name)[0]
      context.Result( ret )
      return ret
 

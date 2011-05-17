@@ -47,7 +47,7 @@
 MODULE_NAME("glfwtest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The glfwtest module creates a simple OpenGL window sample using glfw");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 3), MODULE_DEPENDENCY("opengl", 0, 21, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 1, 0));
 
@@ -112,8 +112,10 @@ MODULE_INIT
 	$(void, opengl, addOpenGLGlobalShaderUniform)("perspective", perspectiveUniform);
 
 	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
-	particles->properties.aspectRatio = 800.0f / 600.0f;
+	if(primitive != NULL) {
+		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
+		particles->properties.aspectRatio = 800.0f / 600.0f;
+	}
 
 	GlfwHandle *handle = $(GlfwHandle *, glfw, getGlfwHandle)();
 	$(void, event, attachEventListener)(handle, "display", NULL, &listener_display);
@@ -208,8 +210,10 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 
 	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
-	particles->properties.aspectRatio = (float) w / h;
+	if(primitive != NULL) {
+		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
+		particles->properties.aspectRatio = (float) w / h;
+	}
 }
 
 static void listener_mouseMove(void *subject, const char *event, void *data, va_list args)

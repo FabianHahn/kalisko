@@ -82,7 +82,7 @@ API Image *createImageFromStore(Store *store)
 		if(pixel->type != STORE_LIST) {
 			if(pixel->type == STORE_INTEGER) { // allow non-list format equal channel pixels (int)
 				for(unsigned int c = 0; c < image->channels; c++) {
-					setImage(image, x, y, c, pixel->content.integer);
+					setImage(image, x, y, c, pixel->content.integer / 255.0f);
 				}
 			} else if(pixel->type == STORE_FLOAT_NUMBER) { // allow non-list format equal channel pixels (float)
 				for(unsigned int c = 0; c < image->channels; c++) {
@@ -107,7 +107,7 @@ API Image *createImageFromStore(Store *store)
 				Store *pval = piter->data;
 
 				if(pval->type == STORE_INTEGER && pval->content.integer >= 0 && pval->content.integer <= 255) {
-					setImage(image, x, y, c, pval->content.integer);
+					setImage(image, x, y, c, pval->content.integer / 255.0f);
 				} else if(pval->type == STORE_FLOAT_NUMBER) {
 					setImage(image, x, y, c, pval->content.float_number);
 				} else {

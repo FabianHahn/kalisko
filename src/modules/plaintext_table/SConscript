@@ -16,7 +16,16 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-module.Append(LINKFLAGS = ['-lm'])
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
 
-module.SharedLibrary('../kalisko_plaintext_table', Glob('*.c'))
+module = conf.Finish()
+
+if check:
+	module.SharedLibrary('../kalisko_plaintext_table', Glob('*.c'))
+else:
+	print('A required library for the \'plaintext_table\' module is not available, skipping build...')

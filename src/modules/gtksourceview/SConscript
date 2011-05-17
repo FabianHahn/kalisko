@@ -16,7 +16,19 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0 gtksourceview-2.0')
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckPKGConfig('gtk+-2.0')
+check = check and conf.CheckPKGConfig('gmodule-2.0')
+check = check and conf.CheckPKGConfig('gtksourceview-2.0')
 
-module.SharedLibrary('../kalisko_gtksourceview', Glob('*.c'))
+module = conf.Finish()
+
+if check:
+	module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0 gtksourceview-2.0')
+	module.SharedLibrary('../kalisko_gtksourceview', Glob('*.c'))
+else:
+	print('A required library for the \'gtksourceview\' module is not available, skipping build...')

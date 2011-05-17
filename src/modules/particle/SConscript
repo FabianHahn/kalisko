@@ -16,27 +16,27 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
-		
-	if not conf.CheckLibWithHeader('m', 'math.h', 'C'):
-		print('Error: Could not find the m library and/or the math.h header file!')
-		Exit(1)		
-		
-	if module['PLATFORM'] != 'win32':
-		if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):
-			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
-			Exit(1)	
-	else:
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
+	
+if module['PLATFORM'] != 'win32':
+	check = check and conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C')
+else:
+	check = check and conf.CheckPKGConfig('glew')
+	check = check and conf.CheckLib('opengl32')		
+
+module = conf.Finish()
+
+if check:
+	if module['PLATFORM'] == 'win32':
 		module.ParseConfig('pkg-config --libs --cflags glew')
-			
-		if not conf.CheckLib('opengl32'):
-			print('Error: Could not find the opengl32 library!')
-			Exit(1)
-							
-	module = conf.Finish()
-
-module.SharedLibrary('../kalisko_particle', Glob('*.c'))
-module.Command("particle.glslv", File("particle.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("particle.glslf", File("particle.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
+		
+	module.SharedLibrary('../kalisko_particle', Glob('*.c'))
+	module.Command("particle.glslv", File("particle.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("particle.glslf", File("particle.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
+else:
+	print('A required library for the \'particle\' module is not available, skipping build...')

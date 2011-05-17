@@ -16,40 +16,32 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
+conf = Configure(module, custom_tests)
+check = True
 	
-	if not conf.CheckLibWithHeader('m', 'math.h', 'C'):
-		print('Error: Could not find the m library and/or the math.h header file!')
-		Exit(1)
-		
-	if module['PLATFORM'] != 'win32':
-		if not conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C'):
-			print('Error: Could not find the glut library and/or the GL/freeglut.h header file!')
-			Exit(1)
-			
-		if not conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C'):
-			print('Error: Could not find the GLU library and/or the GL/glu.h header file!')
-			Exit(1)		
-			
-		if not conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C'):
-			print('Error: Could not find the GLEW library and/or the GL/glew.h header file!')
-			Exit(1)	
-	else:
-		module.ParseConfig('pkg-config --libs --cflags freeglut glew')
-			
-		if not conf.CheckLib('opengl32'):
-			print('Error: Could not find the opengl32 library!')
-			Exit(1)
-			
-		if not conf.CheckLib('glu32'):
-			print('Error: Could not find the glu32 library!')
-			Exit(1)
-				
-	module = conf.Finish()
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
+	
+if module['PLATFORM'] != 'win32':
+	check = check and conf.CheckLibWithHeader('glut', 'GL/freeglut.h', 'C')
+	check = check and conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C')
+	check = check and conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C')
+else:
+	check = check and conf.CheckPKGConfig('freeglut')
+	check = check and conf.CheckPKGConfig('glew')
+	check = check and conf.CheckLib('opengl32')
+	check = check and conf.CheckLib('glu32')
 
-module.SharedLibrary('../kalisko_freegluttest', Glob('*.c'))
-module.Command("scene.store", File("scene.store").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("tetrahedron.store", File("tetrahedron.store").srcnode(), Copy("$TARGET", "$SOURCE"))
-module.Command("texture.png", File("texture.png").srcnode(), Copy("$TARGET", "$SOURCE"))
+module = conf.Finish()
+
+if check:
+	if module['PLATFORM'] == 'win32':
+		module.ParseConfig('pkg-config --libs --cflags freeglut glew')
+		
+	module.SharedLibrary('../kalisko_freegluttest', Glob('*.c'))
+	module.Command("scene.store", File("scene.store").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("tetrahedron.store", File("tetrahedron.store").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("texture.png", File("texture.png").srcnode(), Copy("$TARGET", "$SOURCE"))
+else:
+	print('A required library for the \'freegluttest\' module is not available, skipping build...')

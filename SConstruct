@@ -140,7 +140,7 @@ for prefix, env, buildtests in targets:
 				if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
 					# Build test
 					test = env.Clone()		
-					SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), 'test')
+					SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), ['test', 'custom_tests'])
 					
 	else:
 		# Build core

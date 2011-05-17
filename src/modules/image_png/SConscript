@@ -16,7 +16,17 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-module.ParseConfig('pkg-config --libs --cflags libpng')
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckPKGConfig('libpng')
 
-module.SharedLibrary('../kalisko_image_png', Glob('*.c'))
+module = conf.Finish()
+
+if check:
+	module.ParseConfig('pkg-config --libs --cflags libpng')
+	module.SharedLibrary('../kalisko_image_png', Glob('*.c'))
+else:
+	print('A required library for the \'image_png\' module is not available, skipping build...')

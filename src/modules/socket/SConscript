@@ -16,19 +16,18 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
+conf = Configure(module, custom_tests)
+check = True
 
-	if conf.env['PLATFORM'] == 'win32':
-		if not conf.CheckLibWithHeader('ws2_32', 'winsock2.h', 'c'):
-			print('Error: Could not find ws2_32 and the corresponding winsock2.h header file!')
-			Exit(1)
-			
-		if not conf.CheckCHeader('Ws2tcpip.h'):
-			print('Error: Could not find Ws2tcpip.h header file!')
-			Exit(1)
-			
-	module = conf.Finish()
+if conf.env['PLATFORM'] == 'win32':
+	check = check and conf.CheckLibWithHeader('ws2_32', 'winsock2.h', 'c')
+	check = check and conf.CheckCHeader('Ws2tcpip.h')
 
-module.SharedLibrary('../kalisko_socket', Glob('*.c'))
+module = conf.Finish()
+
+if check:
+	module.SharedLibrary('../kalisko_socket', Glob('*.c'))
+else:
+	print('A required library for the \'socket\' module is not available, skipping build...')

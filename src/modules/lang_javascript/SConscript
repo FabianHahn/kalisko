@@ -15,21 +15,32 @@ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-Import('module')
 import os
+Import('module')
+Import('custom_tests')
 
+conf = Configure(module, custom_tests)
+check = True
+	
 if module['PLATFORM'] == 'win32':
 	thirdPartyDir = os.path.join(module.GetLaunchDir(), '3rd_party')
-	
-	if os.path.exists(thirdPartyDir):
+	check = check and os.path.exists(thirdPartyDir)
+else:
+	try:
+		conf.env.ParseConfig('js-config --libs --cflags')
+	except:
+		check = False
+
+module = conf.Finish()
+
+if check:
+	if module['PLATFORM'] == 'win32':
 		module.Append(LIBPATH = [thirdPartyDir + '/lib'])
 		module.Append(CPPPATH = [thirdPartyDir + '/include'])
 		module.Append(LIBS=['mozjs'])
 		module.Command("../../mozjs.dll", File(thirdPartyDir + '/bin/mozjs.dll').srcnode(), Copy("$TARGET", "$SOURCE"))
 		module.Command("../../libgcc_s_sjlj-1.dll", File(thirdPartyDir + '/bin/libgcc_s_sjlj-1.dll').srcnode(), Copy("$TARGET", "$SOURCE"))
-		
-		module.SharedLibrary('../kalisko_lang_javascript', Glob('*.c'))
-else:
-	module.ParseConfig('js-config --libs --cflags')
-	
+
 	module.SharedLibrary('../kalisko_lang_javascript', Glob('*.c'))
+else:
+	print('A required library for the \'lang_javascript\' module is not available, skipping build...')

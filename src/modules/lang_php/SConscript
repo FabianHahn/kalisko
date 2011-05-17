@@ -16,11 +16,22 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if module['PLATFORM'] != 'win32':
-	if not module.GetOption('clean'):
-		conf = Configure(module)
-		module.ParseConfig('php-config-embed --includes')
-		module = conf.Finish()
+conf = Configure(module, custom_tests)
+check = True
 	
+if module['PLATFORM'] == 'win32':
+	check = False
+else:
+	try:
+		conf.env.ParseConfig('php-config-embed --includes')
+	except:
+		check = False
+
+module = conf.Finish()
+
+if check:
 	module.SharedLibrary('../kalisko_lang_php', Glob('*.c'))
+else:
+	print('A required library for the \'lang_php\' module is not available, skipping build...')

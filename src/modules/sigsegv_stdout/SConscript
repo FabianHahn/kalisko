@@ -16,6 +16,17 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if module['PLATFORM'] != 'win32':
+conf = Configure(module, custom_tests)
+check = True
+
+if module['PLATFORM'] == 'win32':
+	check = False
+
+module = conf.Finish()
+
+if check:
 	module.SharedLibrary('../kalisko_sigsegv_stdout', Glob('*.c'))
+else:
+	print('A required library for the \'sigsegv_stdout\' module is not available, skipping build...')

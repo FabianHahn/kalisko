@@ -16,13 +16,16 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
-		
-	if not conf.CheckLibWithHeader('m', 'math.h', 'C'):
-		print('Error: Could not find the m library and/or the math.h header file!')
-		Exit(1)		
-	module = conf.Finish()
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
 
-module.SharedLibrary('../kalisko_random', Glob('*.c'))
+module = conf.Finish()
+
+if check:
+	module.SharedLibrary('../kalisko_random', Glob('*.c'))
+else:
+	print('A required library for the \'random\' module is not available, skipping build...')

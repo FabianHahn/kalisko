@@ -16,24 +16,37 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0 gtksourceview-2.0')
+conf = Configure(module, custom_tests)
+check = True
 
-if not module.GetOption('clean'):
-	conf = Configure(module)
+check = check and conf.CheckPKGConfig('gtk+-2.0')
+check = check and conf.CheckPKGConfig('gmodule-2.0')
+check = check and conf.CheckPKGConfig('gtksourceview-2.0')
+	
+if conf.env['PLATFORM'] == 'posix':
+	if conf.CheckPKGConfig('lua'):
+		lua = 'lua'
+	elif conf.CheckPKGConfig('lua5.1'):
+		lua = 'lua5.1'
+	else:
+		check = False
+else: 
+	check = check and conf.CheckLib('lua5.1')
 
+module = conf.Finish()
+
+if check:
 	if conf.env['PLATFORM'] == 'posix':
-		module.ParseConfig('pkg-config --libs --cflags lua')
-	elif conf.env['PLATFORM'] == 'win32': 
+		module.ParseConfig('pkg-config --libs --cflags ' + lua)
+	else:
 		import os
 		luaroot = os.environ['LUA_DEV']
 		module.Append(LIBPATH=[luaroot + '/lib'], CPPPATH=[luaroot + '/include'])
 
-		if not conf.CheckLib('lua5.1'):
-			print('Error: Could not find liblua and/or the corresponding lua.h header file!')
-			Exit(1)
-			
-	module = conf.Finish()
-
-module.SharedLibrary('../kalisko_lua_ide', Glob('*.c'))
-module.Command("lua_ide.xml", File("lua_ide.xml").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.ParseConfig('pkg-config --libs --cflags gtk+-2.0 gmodule-2.0 gtksourceview-2.0')
+	module.SharedLibrary('../kalisko_lua_ide', Glob('*.c'))
+	module.Command("lua_ide.xml", File("lua_ide.xml").srcnode(), Copy("$TARGET", "$SOURCE"))
+else:
+	print('A required library for the \'lua_ide\' module is not available, skipping build...')

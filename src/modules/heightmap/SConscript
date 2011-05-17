@@ -40,7 +40,7 @@ if check:
 	if module['PLATFORM'] == 'win32':
 		module.ParseConfig('pkg-config --libs --cflags glew')
 
-	module.SharedLibrary('../kalisko_heightmap', Glob('*.c'))
+	module.SharedLibrary('../kalisko_heightmap', merge(Glob('*.c'), Glob('*.cpp')))
 	module.Command("heightmap.glslv", File("heightmap.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
 else:
 	print('A required library for the \'heightmap\' module is not available, skipping build...')

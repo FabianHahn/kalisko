@@ -1,0 +1,63 @@
+=========
+ Kalisko
+=========
+
+Kalisko is a free modular application framework written in C.
+
+--------------
+ Dependencies
+--------------
+
+Core:
+
+libglib
+
+Modules:
+
+libglfw
+libglu
+libglew
+libfreeglut
+liblua-5.1
+libmozjs
+libphp
+libgtk+-2.0
+
+Build dependencies:
+
+scons
+pkg-config
+
+-------------
+ Compilation
+-------------
+
+Compile Kalisko's core:
+
+$ scons
+
+To compile the core and all modules you have to run:
+
+$ scons modules=all
+
+You can exclude certain modules with the 'exclude' statement, e.g.:
+
+$ scons modules=all exclude=lang_php
+
+For a complete list of build options run:
+
+$ scons -h
+
+---------
+ Usage
+---------
+
+The directory 'src/modules' contains all available modules. To run a module
+you have to pass '-m <module name>' to the kalisko binary. E.g.:
+
+$ ./kalisko -m freegluttest
+
+Only modules that implement a main loop can be started. Additional documentation
+can be found in the wiki. http://www.kalisko.org/wiki
+
+

@@ -41,9 +41,9 @@ static Image *createTestImage();
 MODULE_NAME("test_image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the image module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 0));
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6));
 
 TEST_SUITE_BEGIN(image)
 	TEST_CASE_ADD(io);
@@ -81,8 +81,8 @@ TEST_CASE(convert)
 	TEST_ASSERT(image != NULL);
 
 	Image *copy;
-	TEST_ASSERT((copy = $(Image *, image, copyImage)(image, IMAGE_TYPE_BYTE)) != NULL);
-	TEST_ASSERT(copy->type == IMAGE_TYPE_BYTE);
+	TEST_ASSERT((copy = $(Image *, image, copyImage)(image, IMAGE_TYPE_FLOAT)) != NULL);
+	TEST_ASSERT(copy->type == IMAGE_TYPE_FLOAT);
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
@@ -93,8 +93,8 @@ TEST_CASE(convert)
 	}
 
 	Image *copy2;
-	TEST_ASSERT((copy2 = $(Image *, image, copyImage)(copy, IMAGE_TYPE_FLOAT)) != NULL);
-	TEST_ASSERT(copy2->type == IMAGE_TYPE_FLOAT);
+	TEST_ASSERT((copy2 = $(Image *, image, copyImage)(copy, IMAGE_TYPE_BYTE)) != NULL);
+	TEST_ASSERT(copy2->type == IMAGE_TYPE_BYTE);
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
@@ -114,12 +114,12 @@ TEST_CASE(convert)
 
 static Image *createTestImage()
 {
-	Image *image = $(Image *, image, createImageFloat)(10, 10, 3);
+	Image *image = $(Image *, image, createImageByte)(10, 10, 3);
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
 			for(unsigned int c = 0; c < image->channels; c++) {
-				setImage(image, x, y, c, x + y + c);
+				setImageByte(image, x, y, c, x + y + c);
 			}
 		}
 	}

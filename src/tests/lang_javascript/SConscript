@@ -23,7 +23,7 @@ conf = Configure(test, custom_tests)
 check = True
 	
 if conf.env['PLATFORM'] == 'win32':
-	thirdPartyDir = os.path.join(module.GetLaunchDir(), '3rd_party')
+	thirdPartyDir = os.path.join(test.GetLaunchDir(), '3rd_party')
 	check = check and os.path.exists(thirdPartyDir)
 else:
 	try:

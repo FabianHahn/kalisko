@@ -20,6 +20,14 @@ import re
 
 modules = os.listdir('src/modules')
 
+def CheckPKGConfig(context, name):
+     context.Message( 'Checking pkg-config for %s... ' % name )
+     ret = context.TryAction('pkg-config --exists \'%s\'' % name)[0]
+     context.Result( ret )
+     return ret
+
+custom_tests = {'CheckPKGConfig' : CheckPKGConfig}
+
 vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
 vars.Add(BoolVariable('release', 'Set to build release target', 1))
@@ -114,7 +122,7 @@ for prefix, env, buildtests in targets:
 				# Build module
 				module = env.Clone()
 				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
-				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), 'module')
+				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests'])
 	
 	# Build tests
 	if buildtests:

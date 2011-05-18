@@ -22,6 +22,8 @@ liblua-5.1
 libmozjs
 libphp
 libgtk+-2.0
+gtksourceview-2.0
+libpng
 
 Build dependencies:
 

@@ -53,6 +53,11 @@ typedef struct {
 
 API Scene *createScene(char *filename, char *path_prefix);
 API Scene *createSceneByStore(Store *store, char *path_prefix);
+API bool addScenePrimitive(Scene *scene, const char *key, OpenGLPrimitive *primitive);
+API bool addSceneTexture(Scene *scene, const char *key, OpenGLTexture *texture);
+API bool addSceneTextureFromFile(Scene *scene, const char *key, const char *filename);
+API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *store);
+API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parameter);
 API void freeScene(Scene *scene);
 
 #endif

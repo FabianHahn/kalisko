@@ -113,8 +113,9 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				OpenGLPrimitive *primitive;
 
 				if((primitive = parseOpenGLScenePrimitive(path_prefix, key, value)) != NULL) {
-					g_hash_table_insert(scene->primitives, strdup(key), primitive);
-					LOG_DEBUG("Added primitive '%s' to scene", key);
+					if(addScenePrimitive(scene, key, primitive)) {
+						LOG_DEBUG("Added primitive '%s' to scene", key);
+					}
 				} else {
 					LOG_WARNING("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
 					continue;
@@ -139,27 +140,10 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 			if(value->type == STORE_STRING) {
 				GString *texturepath = g_string_new(path_prefix);
 				g_string_append(texturepath, value->content.string);
-				Image *image = $(Image *, image, readImageFromFile)(texturepath->str);
-				g_string_free(texturepath, true);
-
-				if(image != NULL) {
-					OpenGLTexture *texture;
-
-					if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image, true)) != NULL) {
-						SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
-						parameter->type = OPENGL_UNIFORM_TEXTURE;
-						parameter->content.texture_value = texture;
-
-						g_hash_table_insert(scene->parameters, strdup(key), parameter);
-						LOG_DEBUG("Added texture '%s' to scene", key);
-					} else {
-						LOG_WARNING("Failed to create OpenGLTexture from texture image for '%s' when creating scene by store, skipping", key);
-						continue;
-					}
-				} else {
-					LOG_WARNING("Failed to read texture file '%s' for '%s' when creating scene by store, skipping", value->content.string, key);
-					continue;
+				if(addSceneTextureFromFile(scene, key, texturepath->str)) {
+					LOG_DEBUG("Added texture '%s' to scene", key);
 				}
+				g_string_free(texturepath, true);
 			} else {
 				LOG_WARNING("Failed to read texture path for '%s' when creating scene by store, skipping", key);
 				continue;
@@ -177,42 +161,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		Store *value;
 		g_hash_table_iter_init(&iter, parameters->content.array);
 		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
-			SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
-
-			switch(value->type) {
-				case STORE_INTEGER:
-					parameter->type = OPENGL_UNIFORM_INT;
-					parameter->content.int_value = value->content.integer;
-				break;
-				case STORE_FLOAT_NUMBER:
-					parameter->type = OPENGL_UNIFORM_FLOAT;
-					parameter->content.float_value = value->content.float_number;
-				break;
-				case STORE_LIST:
-					if(g_queue_get_length(value->content.list) > 0) {
-						Store *firstelement = value->content.list->head->data;
-						if(firstelement->type == STORE_LIST) { // assume matrix
-							parameter->type = OPENGL_UNIFORM_MATRIX;
-							parameter->content.matrix_value = $(Matrix *, linalg, convertStoreToMatrix)(value);
-						} else { // assume vector
-							parameter->type = OPENGL_UNIFORM_VECTOR;
-							parameter->content.vector_value = $(Vector *, linalg, convertStoreToVector)(value);
-						}
-					} else {
-						parameter->type = OPENGL_UNIFORM_VECTOR;
-						parameter->content.vector_value = $(Vector *, linalg, createVector)(0);
-					}
-				break;
-				default:
-					free(parameter);
-					parameter = NULL;
-					LOG_WARNING("Expected integer, float, vector or matrix value as parameter in 'parameters/%s' when creating scene by store, skipping", key);
-				break;
-			}
-
-			if(parameter != NULL) {
-				g_hash_table_remove(scene->parameters, key); // make sure no texture with that name is inserted
-				g_hash_table_insert(scene->parameters, strdup(key), parameter);
+			if(addSceneParameterFromStore(scene, key, value)) {
 				LOG_DEBUG("Added scene parameter '%s'", key);
 			}
 		}
@@ -497,6 +446,151 @@ API void freeScene(Scene *scene)
 	g_hash_table_destroy(scene->primitives);
 
 	free(scene);
+}
+
+/**
+ * Adds an OpenGL primitive to a scene
+ *
+ * @param scene			the scene to add the primitive to
+ * @param key			the name of the primitive to add
+ * @param primitive		the primitive to add to the scene (note that the scene takes over control of the primitive)
+ * @result				true if successful
+ */
+API bool addScenePrimitive(Scene *scene, const char *key, OpenGLPrimitive *primitive)
+{
+	if(g_hash_table_lookup(scene->primitives, key) != NULL) {
+		LOG_ERROR("Failed to add primitive '%s' to scene, a primitive with that name already exists!", key);
+		return false;
+	}
+
+	g_hash_table_insert(scene->primitives, strdup(key), primitive);
+	return true;
+}
+
+/**
+ * Adds an OpenGL texture to a scene
+ *
+ * @param scene			the scene to add the texture to
+ * @param key			the name of the texture to add
+ * @param primitive		the texture to add to the scene (note that the scene takes over control of the texture)
+ * @result				true if successful
+ */
+API bool addSceneTexture(Scene *scene, const char *key, OpenGLTexture *texture)
+{
+	SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
+	parameter->type = OPENGL_UNIFORM_TEXTURE;
+	parameter->content.texture_value = texture;
+
+	if(!addSceneParameter(scene, key, parameter)) {
+		free(parameter);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Adds an OpenGL texture loaded from a file to a scene
+ *
+ * @param scene			the scene to add the texture to
+ * @param key			the name of the texture to add
+ * @param filename		the file name from which the texture should be loaded and added to the scene
+ * @result				true if successful
+ */
+API bool addSceneTextureFromFile(Scene *scene, const char *key, const char *filename)
+{
+	Image *image;
+	if((image = $(Image *, image, readImageFromFile)(filename)) != NULL) {
+		OpenGLTexture *texture;
+		if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image, true)) != NULL) {
+			if(!addSceneTexture(scene, key, texture)) {
+				$(void, opengl, freeOpenGLTexture)(texture);
+				return false;
+			}
+		} else {
+			LOG_ERROR("Failed to create OpenGL texture '%s' from '%s' for scene", key, filename);
+			$(void, image, freeImage)(image);
+			return false;
+		}
+	} else {
+		LOG_ERROR("Failed to read texture '%s' from '%s'", key, filename);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Adds a scene parameter from a store parameter representation to a scene
+ *
+ * @param scene			the scene to add the parameter to
+ * @param key			the name of the parameter to add
+ * @param value			the store representation of the parameter to parse
+ * @result				true if successful
+ */
+API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *value)
+{
+	SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
+
+	switch(value->type) {
+		case STORE_INTEGER:
+			parameter->type = OPENGL_UNIFORM_INT;
+			parameter->content.int_value = value->content.integer;
+		break;
+		case STORE_FLOAT_NUMBER:
+			parameter->type = OPENGL_UNIFORM_FLOAT;
+			parameter->content.float_value = value->content.float_number;
+		break;
+		case STORE_LIST:
+			if(g_queue_get_length(value->content.list) > 0) {
+				Store *firstelement = value->content.list->head->data;
+				if(firstelement->type == STORE_LIST) { // assume matrix
+					parameter->type = OPENGL_UNIFORM_MATRIX;
+					parameter->content.matrix_value = $(Matrix *, linalg, convertStoreToMatrix)(value);
+				} else { // assume vector
+					parameter->type = OPENGL_UNIFORM_VECTOR;
+					parameter->content.vector_value = $(Vector *, linalg, convertStoreToVector)(value);
+				}
+			} else {
+				parameter->type = OPENGL_UNIFORM_VECTOR;
+				parameter->content.vector_value = $(Vector *, linalg, createVector)(0);
+			}
+		break;
+		default:
+			free(parameter);
+			parameter = NULL;
+			LOG_WARNING("Expected integer, float, vector or matrix value for parameter '%s' for scene, skipping", key);
+		break;
+	}
+
+	if(parameter != NULL) {
+		if(!addSceneParameter(scene, key, parameter)) {
+			return false;
+		}
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Adds a scene parameter to a scene
+ *
+ * @param scene			the scene to add the parameter to
+ * @param key			the name of the parameter to add
+ * @param parameter		the parameter to add the the scene (note that the scene takes over control of the parameter)
+ * @result				true if successful
+ */
+API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parameter)
+{
+	if(g_hash_table_lookup(scene->parameters, key) != NULL) {
+		LOG_ERROR("Failed to add parameter '%s' to scene, a parameter with that name already exists!", key);
+		return false;
+	}
+
+	g_hash_table_insert(scene->parameters, strdup(key), parameter);
+	return true;
 }
 
 /**

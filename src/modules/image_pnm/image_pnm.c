@@ -47,9 +47,10 @@ MODULE_FINALIZE
 }
 
 /**
- * Writes an image to a ppm file
+ * Writes an image to a PPM (portable pixmap format) file
  *
- * @param filename			the ppm file to write to
+ * @param fileName			the ppm file to write to
+ * @param image				the image data to write
  * @result					true if successful
  */
 static bool writeImageFilePPM(const char* fileName, Image* image)

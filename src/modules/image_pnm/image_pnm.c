@@ -27,7 +27,7 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
@@ -128,9 +128,9 @@ static Image *readImageFilePPM(const char *fileName)
 				fclose(file);
 				return NULL;
 			}
-			setImageByte(image, x, y, 0, r);
-			setImageByte(image, x, y, 1, g);
-			setImageByte(image, x, y, 2, b);
+			setImage(image, x, y, 0, r/(double)maxValue);
+			setImage(image, x, y, 1, g/(double)maxValue);
+			setImage(image, x, y, 2, b/(double)maxValue);
 		}
 	}
 

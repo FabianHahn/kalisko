@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
 #include "dll.h"
 #include "modules/image/io.h"
 #include "api.h"
@@ -26,7 +27,7 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
@@ -117,7 +118,7 @@ static Image *readImageFilePPM(const char *fileName)
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
 			unsigned int r, g, b;
-			r = g = b = 999;
+			r = g = b = UINT_MAX;
 			fscanf(file, "%u", &r);
 			fscanf(file, "%u", &g);
 			fscanf(file, "%u", &b);

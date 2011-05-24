@@ -26,14 +26,18 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
+static Image *readImageFilePPM(const char *fileName);
 static bool writeImageFilePPM(const char* fileName, Image* image);
 
 MODULE_INIT
 {
+	if(!$(bool, Image, addImageIOReadHandler)("ppm", &readImageFilePPM)) {
+		return false;
+	}
 	if(!$(bool, Image, addImageIOWriteHandler)("ppm", &writeImageFilePPM)) {
 		return false;
 	}
@@ -47,6 +51,94 @@ MODULE_FINALIZE
 }
 
 /**
+ * Reads an image from a PPM (portable pixmap format) file
+ *
+ * Note: Only the ASCII version of PPM format is supported.
+ *
+ * @param fileName			the ppm file to read from
+ * @result					the parsed image or NULL on failure
+ */
+static Image *readImageFilePPM(const char *fileName)
+{
+	assert(fileName != NULL);
+
+	FILE* file;
+	file = fopen(fileName, "r");
+
+	if(file == NULL) {
+		LOG_ERROR("Failed to read PPM image '%s': fopen failed", fileName);
+		return NULL;
+	}
+
+	// read magic number
+	char magic[4];
+	fgets(magic, 4, file);
+	if(strncmp(magic, "P3", 2) != 0)
+	{
+		LOG_ERROR("Failed to read PPM image '%s': invalid magic number", fileName);
+		fclose(file);
+		return NULL;
+	}
+
+	// skip comments
+	int c = getc(file);
+	while(c == '#')
+	{
+		// go to end of line
+		while(c != '\n') {
+			if(c == EOF) {
+				LOG_ERROR("Failed to read PPM image '%s': invalid header", fileName);
+				fclose(file);
+				return NULL;
+			}
+			c = getc(file);
+		}
+		c = getc(file);
+	}
+	ungetc(c, file);
+
+	// read header
+	unsigned int width = 0, height = 0;
+	fscanf(file, "%u %u", &width, &height);
+
+	unsigned int maxValue = 0;
+	fscanf(file, "%u", &maxValue);
+
+	if(height == 0 || width == 0 || maxValue == 0) {
+		LOG_ERROR("Failed to read PPM image '%s': invalid header", fileName);
+		fclose(file);
+		return NULL;
+	}
+
+	// allocate image
+	Image *image = $(Image *, image, createImageByte)(width, height, 3);
+
+	// read pixels
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
+			unsigned int r, g, b;
+			r = g = b = 999;
+			fscanf(file, "%u", &r);
+			fscanf(file, "%u", &g);
+			fscanf(file, "%u", &b);
+			if(r > maxValue || g > maxValue || b > maxValue) {
+				LOG_ERROR("Failed to read PPM image '%s': invalid pixel data", fileName);
+				$(void, image, freeImage)(image);
+				fclose(file);
+				return NULL;
+			}
+			setImageByte(image, x, y, 0, r);
+			setImageByte(image, x, y, 1, g);
+			setImageByte(image, x, y, 2, b);
+		}
+	}
+
+	fclose(file);
+	LOG_DEBUG("Read PPN image '%s'", fileName);
+	return image;
+}
+
+/**
  * Writes an image to a PPM (portable pixmap format) file
  *
  * @param fileName			the ppm file to write to
@@ -55,7 +147,9 @@ MODULE_FINALIZE
  */
 static bool writeImageFilePPM(const char* fileName, Image* image)
 {
+	assert(fileName != NULL);
 	assert(image != NULL);
+
 	if(image->channels < 3) {
 		LOG_ERROR("Failed to write PPM image '%s': only RGB images are supported", fileName);
 		return false;
@@ -71,17 +165,16 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 
 	// write the PPM header
 	fputs("P3\n", file); // file type
-	fputs("# PPM ASCII RGB file\n", file); // comment
-	fprintf(file, "%d %d\n", image->height, image->width); // image size
-	fputs("255\n", file); // max. value
+	fputs("# PPM ASCII RGB image created by Kalisko\n", file); // comment
+	fprintf(file, "%u %u\n", image->height, image->width); // image size
+	fputs("255\n", file); // max. channel value
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
-			fprintf(file, "%u %u %u ", getImageByte(image, x, y, 0),
-									   getImageByte(image, x, y, 1),
-									   getImageByte(image, x, y, 2));
+			fprintf(file, "%u %u %u\n", getImageByte(image, x, y, 0),
+									    getImageByte(image, x, y, 1),
+									    getImageByte(image, x, y, 2));
 		}
-		fputs("\n", file);
 	}
 
 	fclose(file);

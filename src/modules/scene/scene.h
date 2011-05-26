@@ -58,6 +58,10 @@ API bool addSceneTexture(Scene *scene, const char *key, OpenGLTexture *texture);
 API bool addSceneTextureFromFile(Scene *scene, const char *key, const char *filename);
 API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *store);
 API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parameter);
+API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, const char *key, const char *name);
+API bool addSceneMaterialFromStore(Scene *scene, const char *material, const char *path_prefix, Store *store);
+API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile);
+API bool addSceneMaterial(Scene *scene, const char *material);
 API void freeScene(Scene *scene);
 
 #endif

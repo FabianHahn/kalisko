@@ -182,103 +182,9 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				continue;
 			}
 
-			if(!$(bool, opengl, createOpenGLMaterial)(key)) {
-				LOG_WARNING("Failed to create OpenGL material '%s' when creating scene by store, skipping", key);
-				break;
+			if(addSceneMaterialFromStore(scene, key, path_prefix, value)) {
+				LOG_DEBUG("Added material '%s' to scene", key);
 			}
-
-			bool hasShader = false;
-
-			// vertex shader
-			Store *vertexShaderFile = $(Store *, store, getStorePath)(value, "vertex_shader");
-			if(vertexShaderFile != NULL && vertexShaderFile->type == STORE_STRING) {
-				GLuint vertexShader;
-
-				GString *vertexShaderPath = g_string_new(path_prefix);
-				g_string_append(vertexShaderPath, vertexShaderFile->content.string);
-				if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderPath->str, GL_VERTEX_SHADER)) != 0) {
-					// fragment shader
-					Store *fragmentShaderFile = $(Store *, store, getStorePath)(value, "fragment_shader");
-					if(fragmentShaderFile != NULL && fragmentShaderFile->type == STORE_STRING) {
-						GLuint fragmentShader;
-
-						GString *fragmentShaderPath = g_string_new(path_prefix);
-						g_string_append(fragmentShaderPath, fragmentShaderFile->content.string);
-						if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderPath->str, GL_FRAGMENT_SHADER)) != 0) {
-							// shader program
-							GLuint program;
-
-							if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, false)) != 0) {
-								if($(bool, opengl, attachOpenGLMaterialShaderProgram)(key, program)) {
-									hasShader = true;
-									LOG_DEBUG("Added shader program to material '%s'", key);
-								} else {
-									LOG_WARNING("Failed to attach shader program to material '%s' when creating scene by store, skipping", key);
-									glDeleteProgram(program);
-								}
-							} else {
-								LOG_WARNING("Failed to create shader program for material '%s' when creating scene by store, skipping", key);
-							}
-
-							glDeleteShader(vertexShader);
-							glDeleteShader(fragmentShader);
-						} else {
-							LOG_WARNING("Failed to read fragment shader from '%s', for material '%s' when creating scene by store, skipping", fragmentShaderFile->content.string, key);
-							glDeleteShader(vertexShader);
-						}
-
-						g_string_free(fragmentShaderPath, true);
-					} else {
-						LOG_WARNING("Failed to read fragment shader path for material '%s' when creating scene by store, skipping", key);
-						glDeleteShader(vertexShader);
-					}
-				} else {
-					LOG_WARNING("Failed to read vertex shader from '%s', for material '%s' when creating scene by store, skipping", vertexShaderFile->content.string, key);
-				}
-
-				g_string_free(vertexShaderPath, true);
-			} else {
-				LOG_WARNING("Failed to read vertex shader path for material '%s' when creating scene by store, skipping", key);
-			}
-
-			if(hasShader) {
-				// add uniforms
-				Store *uniforms = $(Store *, store, getStorePath)(value, "uniforms");
-				if(uniforms != NULL && uniforms->type == STORE_ARRAY) {
-					GHashTableIter uniformIter;
-					char *uniformKey;
-					Store *uniformValue;
-					g_hash_table_iter_init(&uniformIter, uniforms->content.array);
-					while(g_hash_table_iter_next(&uniformIter, (void *) &uniformKey, (void *) &uniformValue)) {
-						if(uniformValue->type != STORE_STRING) {
-							LOG_WARNING("Expected string store value in 'materials/%s/uniforms/%s' when creating scene by store, skipping", key, uniformKey);
-							continue;
-						}
-
-						char *parameterName = uniformValue->content.string;
-						SceneParameter *parameter;
-						if((parameter = g_hash_table_lookup(scene->parameters, parameterName)) != NULL) {
-							OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
-							uniform->type = parameter->type;
-							uniform->content = parameter->content;
-							uniform->location = -1;
-
-							if($(bool, opengl, attachOpenGLMaterialUniform)(key, uniformKey, uniform)) {
-								LOG_DEBUG("Added parameter '%s' as uniform '%s' to material '%s'", parameterName, uniformKey, key);
-							} else {
-								LOG_WARNING("Failed to attach paramter '%s' as uniform '%s' to material '%s' when creating scene by store, skipping", parameterName, uniformKey, key);
-								free(uniform);
-							}
-						} else {
-							LOG_WARNING("Failed to add parameter '%s' as uniform '%s' to material '%s' when creating scene by store: No such parameter - skipping", parameterName, uniformKey, key);
-						}
-					}
-				} else {
-					LOG_WARNING("Expected array store value in 'materials/%s/uniforms' when creating scene by store, skipping uniform loading", key);
-				}
-			}
-
-			g_queue_push_head(scene->materials, strdup(key));
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'materials' when creating scene by store, skipping material loading");
@@ -590,6 +496,181 @@ API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parame
 	}
 
 	g_hash_table_insert(scene->parameters, strdup(key), parameter);
+	return true;
+}
+
+/**
+ * Adds a parameter uniform to a scene material
+ *
+ * @param scene			the scene to add a parameter uniform to one of its materials
+ * @param material		the material to which the parameter uniform should be added
+ * @param key			the name of the parameter to add as uniform
+ * @param name			the name of the uniform to be added to the material
+ * @result				true if successful
+ */
+API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, const char *key, const char *name)
+{
+	SceneParameter *parameter;
+	if((parameter = g_hash_table_lookup(scene->parameters, key)) != NULL) {
+		OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
+		uniform->type = parameter->type;
+		uniform->content = parameter->content;
+		uniform->location = -1;
+
+		if(!$(bool, opengl, attachOpenGLMaterialUniform)(material, name, uniform)) {
+			LOG_ERROR("Failed to attach parameter '%s' as uniform '%s' to material '%s'", key, name, material);
+			free(uniform);
+			return false;
+		}
+	} else {
+		LOG_ERROR("Failed to attach parameter '%s' as uniform '%s' to material '%s': No such parameter found", key, name, material);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Adds a material created from a store configuration to a scene
+ *
+ * @param scene					the scene to which the created material should be added
+ * @param material				the name of the material to be created
+ * @param path_prefix			the path prefix to be prepended to all loaded files
+ * @param store					the store configuration of the material to create
+ * @result						true if successful
+ */
+API bool addSceneMaterialFromStore(Scene *scene, const char *material, const char *path_prefix, Store *store)
+{
+	// vertex shader path
+	Store *vertexShaderParam = $(Store *, store, getStorePath)(store, "vertex_shader");
+	if(vertexShaderParam == NULL || vertexShaderParam->type != STORE_STRING) {
+		LOG_ERROR("Failed to read vertex_shader path property for material '%s' to be added to scene", material);
+		return false;
+	}
+
+	GString *vertexShaderPath = g_string_new(path_prefix);
+	g_string_append(vertexShaderPath, vertexShaderParam->content.string);
+
+	// fragment shader path
+	Store *fragmentShaderParam = $(Store *, store, getStorePath)(store, "fragment_shader");
+	if(fragmentShaderParam == NULL || fragmentShaderParam->type != STORE_STRING) {
+		LOG_ERROR("Failed to read fragment_shader path property for material '%s' to be added to scene", material);
+		g_string_free(vertexShaderPath, true);
+		return false;
+	}
+
+	GString *fragmentShaderPath = g_string_new(path_prefix);
+	g_string_append(fragmentShaderPath, fragmentShaderParam->content.string);
+
+	bool ret = addSceneMaterialFromFiles(scene, material, vertexShaderPath->str, fragmentShaderPath->str);
+	g_string_free(vertexShaderPath, true);
+	g_string_free(fragmentShaderPath, true);
+
+	if(ret) {
+		// add uniforms
+		Store *uniforms = $(Store *, store, getStorePath)(store, "uniforms");
+		if(uniforms != NULL && uniforms->type == STORE_ARRAY) {
+			GHashTableIter uniformIter;
+			char *uniformKey;
+			Store *uniformValue;
+			g_hash_table_iter_init(&uniformIter, uniforms->content.array);
+			while(g_hash_table_iter_next(&uniformIter, (void *) &uniformKey, (void *) &uniformValue)) {
+				if(uniformValue->type != STORE_STRING) {
+					LOG_WARNING("Expected string store value in 'uniforms/%s' for material '%s' to be added to scene, skipping", uniformKey, material);
+					continue;
+				}
+
+				if(addSceneMaterialUniformParameter(scene, material, uniformValue->content.string, uniformKey)) {
+					LOG_DEBUG("Added parameter '%s' as uniform '%s' to material '%s' to be added to scene", uniformValue->content.string, uniformKey, material);
+				}
+			}
+		} else {
+			LOG_DEBUG("No uniforms specified for material '%s' to be added to scene", material);
+		}
+	}
+
+	return ret;
+}
+
+/**
+ * Adds a material created from shader files to a scene
+ *
+ * @param scene					the scene to which the created material should be added
+ * @param material				the name of the material to be created
+ * @param vertexShaderFile		the file name of the vertex shader to load for the material
+ * @param fragmentShaderFile	the file name of the fragment shader to load for the material
+ * @result						true if successful
+ */
+API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile)
+{
+	// create the material
+	if(!$(bool, opengl, createOpenGLMaterial)(material)) {
+		LOG_ERROR("Failed to create OpenGL material '%s' to be added to scene", material);
+		return false;
+	}
+
+	// load vertex shader
+	GLuint vertexShader;
+	if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile, GL_VERTEX_SHADER)) == 0) {
+		LOG_ERROR("Failed to read vertex shader from '%s' for material '%s' to be added to scene", vertexShaderFile, material);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// load fragment shader
+	GLuint fragmentShader;
+	if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile, GL_FRAGMENT_SHADER)) == 0) {
+		LOG_ERROR("Failed to read fragment shader from '%s' for material '%s' to be added to scene", fragmentShaderFile, material);
+		glDeleteShader(vertexShader);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// link them to a shader program
+	GLuint program;
+	if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, false)) == 0) {
+		LOG_ERROR("Failed to create OpenGL shader program for material '%s' to be added to scene", material);
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// attach shader program to material
+	if(!$(bool, opengl, attachOpenGLMaterialShaderProgram)(material, program)) {
+		LOG_ERROR("Failed to attach shader program to material '%s' to be added to scene", material);
+		glDeleteProgram(program);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// add material to scene
+	if(!addSceneMaterial(scene, material))
+	{
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Adds a material to a scene
+ *
+ * @param scene			the scene to add the material to
+ * @param material		the material to add to the scene
+ * @result				true if successful
+ */
+API bool addSceneMaterial(Scene *scene, const char *material)
+{
+	for(GList *iter = scene->materials->head; iter != NULL; iter = iter->next) {
+		if(g_strcmp0(material, iter->data) == 0) {
+			LOG_ERROR("Failed to add material '%s' to scene: The scene already contains this material", material);
+			return false;
+		}
+	}
+
+	g_queue_push_tail(scene->materials, strdup(material));
 	return true;
 }
 

@@ -49,10 +49,10 @@ MODULE_FINALIZE
 }
 
 /**
- * Reads a image from an png file
+ * Reads an image from a png file
  *
  * @param filename			the png file to read from
- * @result					the parsed image of NULL on failure
+ * @result					the parsed image or NULL on failure
  */
 static Image *readImageFilePng(const char *filename)
 {

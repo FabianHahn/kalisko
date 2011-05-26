@@ -62,6 +62,9 @@ API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, co
 API bool addSceneMaterialFromStore(Scene *scene, const char *material, const char *path_prefix, Store *store);
 API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile);
 API bool addSceneMaterial(Scene *scene, const char *material);
+API bool addSceneModelFromStore(Scene *scene, const char *model, Store *store);
+API bool addSceneModelFromPrimitive(Scene *scene, const char *model, const char *key);
+API bool addSceneModel(Scene *scene, const char *model);
 API void freeScene(Scene *scene);
 
 #endif

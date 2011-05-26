@@ -27,7 +27,7 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
@@ -48,6 +48,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
+	$(bool, const char *, deleteImageIOReadHandler)("ppm");
 	$(bool, const char *, deleteImageIOWriteHandler)("ppm");
 }
 

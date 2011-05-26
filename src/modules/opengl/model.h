@@ -32,17 +32,17 @@ extern "C" {
 
 API void initOpenGLModels();
 API void freeOpenGLModels();
-API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive);
-API bool deleteOpenGLModel(char *name);
+API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive);
+API bool deleteOpenGLModel(const char *name);
 API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name);
-API bool attachOpenGLModelMaterial(char *model_name, char *material_name);
-API bool setOpenGLModelTranslation(char *model_name, Vector *translation);
-API bool setOpenGLModelRotationX(char *model_name, double rotation);
-API bool setOpenGLModelRotationY(char *model_name, double rotation);
-API bool setOpenGLModelRotationZ(char *model_name, double rotation);
-API bool setOpenGLModelScaleX(char *model_name, double scale);
-API bool setOpenGLModelScaleY(char *model_name, double scale);
-API bool setOpenGLModelScaleZ(char *model_name, double scale);
+API bool attachOpenGLModelMaterial(const char *model_name, const char *material_name);
+API bool setOpenGLModelTranslation(const char *model_name, Vector *translation);
+API bool setOpenGLModelRotationX(const char *model_name, double rotation);
+API bool setOpenGLModelRotationY(const char *model_name, double rotation);
+API bool setOpenGLModelRotationZ(const char *model_name, double rotation);
+API bool setOpenGLModelScaleX(const char *model_name, double scale);
+API bool setOpenGLModelScaleY(const char *model_name, double scale);
+API bool setOpenGLModelScaleZ(const char *model_name, double scale);
 API void drawOpenGLModels();
 API void updateOpenGLModels(double dt);
 

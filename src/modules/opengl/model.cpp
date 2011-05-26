@@ -105,7 +105,7 @@ API void freeOpenGLModels()
  * @param primitive		the primitive for which to create the model
  * @result				true if successful
  */
-API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive)
+API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive)
 {
 	if(g_hash_table_lookup(models, name) != NULL) {
 		LOG_ERROR("Failed to create model '%s', a model with that name already exists!", name);
@@ -143,7 +143,7 @@ API bool createOpenGLModel(char *name, OpenGLPrimitive *primitive)
  * @param name		the name of the OpenGL model to delete
  * @result			true if successful
  */
-API bool deleteOpenGLModel(char *name)
+API bool deleteOpenGLModel(const char *name)
 {
 	return g_hash_table_remove(models, name);
 }
@@ -173,7 +173,7 @@ API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name)
  * @param material_name		the name of the material that should be set for the OpenGL model, or NULL if no material should be used
  * @result					true if successful
  */
-API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
+API bool attachOpenGLModelMaterial(const char *model_name, const char *material_name)
 {
 	OpenGLModel *model;
 
@@ -213,7 +213,7 @@ API bool attachOpenGLModelMaterial(char *model_name, char *material_name)
  * @param translation		the translation to set for the OpenGL model
  * @result					true if successful
  */
-API bool setOpenGLModelTranslation(char *model_name, Vector *translation)
+API bool setOpenGLModelTranslation(const char *model_name, Vector *translation)
 {
 	OpenGLModel *model;
 
@@ -235,7 +235,7 @@ API bool setOpenGLModelTranslation(char *model_name, Vector *translation)
  * @param rotation			the rotation in radians to set the model to
  * @result					true if successful
  */
-API bool setOpenGLModelRotationX(char *model_name, double rotation)
+API bool setOpenGLModelRotationX(const char *model_name, double rotation)
 {
 	OpenGLModel *model;
 
@@ -257,7 +257,7 @@ API bool setOpenGLModelRotationX(char *model_name, double rotation)
  * @param rotation			the rotation in radians to set the model to
  * @result					true if successful
  */
-API bool setOpenGLModelRotationY(char *model_name, double rotation)
+API bool setOpenGLModelRotationY(const char *model_name, double rotation)
 {
 	OpenGLModel *model;
 
@@ -279,7 +279,7 @@ API bool setOpenGLModelRotationY(char *model_name, double rotation)
  * @param rotation			the rotation in radians to set the model to
  * @result					true if successful
  */
-API bool setOpenGLModelRotationZ(char *model_name, double rotation)
+API bool setOpenGLModelRotationZ(const char *model_name, double rotation)
 {
 	OpenGLModel *model;
 
@@ -301,7 +301,7 @@ API bool setOpenGLModelRotationZ(char *model_name, double rotation)
  * @param scale				the x scale to apply to the model
  * @result					true if successful
  */
-API bool setOpenGLModelScaleX(char *model_name, double scale)
+API bool setOpenGLModelScaleX(const char *model_name, double scale)
 {
 	OpenGLModel *model;
 
@@ -323,7 +323,7 @@ API bool setOpenGLModelScaleX(char *model_name, double scale)
  * @param scale				the y scale to apply to the model
  * @result					true if successful
  */
-API bool setOpenGLModelScaleY(char *model_name, double scale)
+API bool setOpenGLModelScaleY(const char *model_name, double scale)
 {
 	OpenGLModel *model;
 
@@ -345,7 +345,7 @@ API bool setOpenGLModelScaleY(char *model_name, double scale)
  * @param scale				the z scale to apply to the model
  * @result					true if successful
  */
-API bool setOpenGLModelScaleZ(char *model_name, double scale)
+API bool setOpenGLModelScaleZ(const char *model_name, double scale)
 {
 	OpenGLModel *model;
 

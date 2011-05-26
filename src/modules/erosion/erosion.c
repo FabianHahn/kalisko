@@ -30,17 +30,28 @@
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Erosion functions");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6), MODULE_DEPENDENCY("image_pnm", 0, 1, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
 MODULE_INIT
 {
 	// test code, will be moved into a unit test
-	Image *surface = $(Image *, image, readImageFromFile)("modules/erosion/erosion_in.png");
+	char *execpath = $$(char *, getExecutablePath)();
+	GString *path = g_string_new(execpath);
+	g_string_append(path, "/modules/erosion/erosion_in.png");
+	Image *surface = $(Image *, image, readImageFromFile)(path->str);
+	g_string_free(path, true);
+
 	assert(surface != NULL);
 	erodeThermal(surface, M_PI/4.5, 50); // 40 deg
-	assert($(bool, image, writeImageToFile)("modules/erosion/erosion_out.ppm", surface));
+
+	path = g_string_new(execpath);
+	g_string_append(path, "/modules/erosion/erosion_out.ppm");
+	assert($(bool, image, writeImageToFile)(path->str, surface));
+	g_string_free(path, true);
+
+	free(execpath);
 
 	return true;
 }

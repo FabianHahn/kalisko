@@ -167,7 +167,7 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
  * @param type		the type of the shader, usually either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
  * @result			the compiled shader identifier, or 0 on error
  */
-API GLuint createOpenGLShaderFromFile(char *filename, GLenum type)
+API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type)
 {
 	char *shaderSource;
 	gsize shaderLength;

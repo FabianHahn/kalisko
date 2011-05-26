@@ -94,6 +94,7 @@ MODULE_INIT
 	g_string_append(scenePath, "/modules/freegluttest/scene.store");
 	scene = $(Scene *, scene, createScene)(scenePath->str, execpath);
 	g_string_free(scenePath, true);
+	free(execpath);
 
 	if(scene == NULL) {
 		$(bool, glfw, closeGlfwWindow)();

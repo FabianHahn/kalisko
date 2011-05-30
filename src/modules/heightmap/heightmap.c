@@ -40,9 +40,9 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 21, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 4, 8), MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
 
 MODULE_INIT
 {
@@ -66,9 +66,9 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
-	heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture)(heights);
+	heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heights);
 	heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
-	heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture)(heightmap->normals);
+	heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heightmap->normals);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;

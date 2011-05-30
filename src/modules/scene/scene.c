@@ -45,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 4, 8);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 21, 6), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -300,7 +300,7 @@ API bool addSceneTextureFromFile(Scene *scene, const char *key, const char *file
 	Image *image;
 	if((image = $(Image *, image, readImageFromFile)(filename)) != NULL) {
 		OpenGLTexture *texture;
-		if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture)(image, true)) != NULL) {
+		if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(image, true)) != NULL) {
 			if(!addSceneTexture(scene, key, texture)) {
 				$(void, opengl, freeOpenGLTexture)(texture);
 				return false;

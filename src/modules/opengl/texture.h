@@ -56,6 +56,8 @@ typedef struct {
 	Image *image;
 	/** The texture type of the texture */
 	OpenGLTextureType type;
+	/** If the texture is an array, specifies its size */
+	unsigned int arraySize;
 	/** The OpenGL texture context for this texture */
 	GLuint texture;
 	/** The OpenGL texture unit currently used to render this texture */
@@ -70,6 +72,7 @@ typedef struct {
 
 API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init);
 API OpenGLTexture *createOpenGLVertexTexture2D(Image *image);
+API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size, bool auto_init);
 API bool initOpenGLTexture(OpenGLTexture *texture);
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);

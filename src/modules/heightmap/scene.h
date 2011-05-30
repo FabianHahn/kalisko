@@ -24,7 +24,8 @@
 #include <GL/glew.h>
 #include "modules/store/store.h"
 #include "modules/opengl/primitive.h"
+#include "modules/scene/scene.h"
 
-API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(const char *path_prefix, const char *name, Store *store);
+API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
 #endif

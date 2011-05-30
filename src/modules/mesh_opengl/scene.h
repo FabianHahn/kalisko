@@ -24,7 +24,8 @@
 #include <GL/glew.h>
 #include "modules/store/store.h"
 #include "modules/opengl/primitive.h"
+#include "modules/scene/scene.h"
 
-API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(const char *path_prefix, const char *name, Store *store);
+API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
 #endif

@@ -33,12 +33,13 @@
 /**
  * Parses an OpenGL particle effect from a scene store
  *
+ * @param scene			the scene to parse the OpenGL primitive for
  * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
  * @param name			the name of the primitive to parse
  * @param store			the scene store to parse
  * @result				the parsed primitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(const char *path_prefix, const char *name, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitiveParticles(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
 	// Parse num parameter
 	Store *numParam;

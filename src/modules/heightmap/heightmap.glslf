@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2010, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,17 +19,14 @@
  */
 
 #version 120
+#extension GL_EXT_texture_array : enable
 
-uniform mat4 model;
-uniform mat4 modelNormal;
-uniform mat4 camera;
-uniform mat4 perspective;
-uniform sampler2D heights;
-uniform int heightmapWidth;
-uniform int heightmapHeight;
-uniform sampler2D normals;
-
-attribute vec2 uv;
+uniform vec3 cameraPosition;
+uniform vec3 lightPosition;
+uniform vec4 lightColor;
+uniform float ambient;
+uniform float specular;
+uniform sampler2DArray texture;
 
 varying vec3 world_position;
 varying vec3 world_normal;
@@ -37,20 +34,51 @@ varying vec4 world_color;
 varying vec2 world_uv;
 varying float world_height;
 
+vec4 getColor()
+{
+	return texture2DArray(texture, vec3(world_uv, world_height));
+}
+
+vec4 phongAmbient(in vec4 textureColor)
+{
+	vec4 ambientColor = textureColor;
+	ambientColor.xyz *= ambient;
+	return ambientColor;
+}
+
+vec4 phongDiffuse(in vec4 textureColor, in vec3 pos2light, in vec3 normal)
+{
+	vec4 diffuseColor = textureColor * lightColor;
+	diffuseColor.xyz *= clamp(dot(pos2light, normal), 0.0, 1.0);
+	return diffuseColor;
+}
+
+vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
+{
+	vec3 reflectedLight = -reflect(pos2light, normal);
+	
+	float shininess = 100.0;
+	float specProd = clamp(dot(reflectedLight, pos2cam), 0.0, 1.0);
+	
+	vec4 specularColor = lightColor;
+	specularColor.xyz *= specular * pow(specProd, shininess);
+	return specularColor;
+}
+
 void main()
 {
-	vec2 heightmapPosition = uv / vec2(heightmapWidth - 1.0, heightmapHeight - 1.0);
-	float height = texture2D(heights, heightmapPosition).x;
-	vec4 pos4 = vec4(uv.x / heightmapWidth, height, uv.y / heightmapHeight, 1.0);
-	vec4 norm4 = vec4(texture2D(normals, heightmapPosition).xyz, 1.0);
-	vec4 worldpos4 = model * pos4;
-	vec4 worldnorm4 = modelNormal * norm4;
+	vec3 normal = normalize(world_normal);
+	vec3 pos2light = normalize(lightPosition - world_position);
+	vec3 pos2cam = normalize(cameraPosition - world_position);
+	
+	if(dot(normal, pos2cam) < 0) {
+		normal = -normal;
+	}
+	
+	vec4 textureColor = getColor();
+	vec4 ac = phongAmbient(textureColor);
+	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
+	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	world_position = worldpos4.xyz / worldpos4.w;
-	world_normal = worldnorm4.xyz / worldnorm4.w;
-	world_color = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
-	world_uv = heightmapPosition;
-	world_height = height;
-		
-	gl_Position = perspective * camera * worldpos4;
+	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
 }

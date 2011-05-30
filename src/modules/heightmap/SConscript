@@ -42,5 +42,6 @@ if check:
 
 	module.SharedLibrary('../kalisko_heightmap', merge(Glob('*.c'), Glob('*.cpp')))
 	module.Command("heightmap.glslv", File("heightmap.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("heightmap.glslf", File("heightmap.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
 else:
 	print('A required library for the \'heightmap\' module is not available, skipping build...')

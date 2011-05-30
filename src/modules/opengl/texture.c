@@ -34,10 +34,11 @@
  * @param auto_init		if true, initializes the texture with default parameters and synchronizes it (i.e. you don't have to call initOpenGLTexture or synchronizeOpenGLTexture before using it)
  * @result				the created texture or NULL on failure
  */
-API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init)
+API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 {
 	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
 	texture->image = image;
+	texture->type = OPENGL_TEXTURE_TYPE_2D;
 	texture->format = -1;
 	texture->internalFormat = -1;
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
@@ -72,9 +73,9 @@ API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init)
  * @param image			the image from which to create the texture
  * @result				the created texture or NULL on failure
  */
-API OpenGLTexture *createOpenGLVertexTexture(Image *image)
+API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
 {
-	OpenGLTexture *texture = createOpenGLTexture(image, false);
+	OpenGLTexture *texture = createOpenGLTexture2D(image, false);
 
 	if(texture == NULL) {
 		return NULL;
@@ -112,7 +113,18 @@ API OpenGLTexture *createOpenGLVertexTexture(Image *image)
  */
 API bool initOpenGLTexture(OpenGLTexture *texture)
 {
-	glBindTexture(GL_TEXTURE_2D, texture->texture);
+	GLuint typeEnum;
+	switch(texture->type) {
+		case OPENGL_TEXTURE_TYPE_2D:
+			glBindTexture(GL_TEXTURE_2D, texture->texture);
+			typeEnum = GL_TEXTURE_2D;
+		break;
+		default:
+			LOG_ERROR("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
+			return false;
+		break;
+	}
+
 
 	if(texture->format == -1) { // if the caller didn't specify the format himself, auto-select it
 		switch(texture->image->channels) {
@@ -141,24 +153,24 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 
 	switch(texture->samplingMode) {
 		case OPENGL_TEXTURE_SAMPLING_NEAREST:
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_FALSE);
+			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
 		case OPENGL_TEXTURE_SAMPLING_LINEAR:
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_FALSE);
+			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
 		case OPENGL_TEXTURE_SAMPLING_MIPMAP_NEAREST:
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // use mipmaps to interpolate
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
+			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); // use mipmaps to interpolate
+			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		break;
 		case OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR:
-			glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
+			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
+			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		break;
 	}
 
@@ -178,14 +190,22 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
  */
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 {
-	glBindTexture(GL_TEXTURE_2D, texture->texture);
+	switch(texture->type) {
+		case OPENGL_TEXTURE_TYPE_2D:
+			glBindTexture(GL_TEXTURE_2D, texture->texture);
 
-	switch(texture->image->type) {
-		case IMAGE_TYPE_BYTE:
-			glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
+			switch(texture->image->type) {
+				case IMAGE_TYPE_BYTE:
+					glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
+				break;
+				case IMAGE_TYPE_FLOAT:
+					glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_FLOAT, texture->image->data.float_data);
+				break;
+			}
 		break;
-		case IMAGE_TYPE_FLOAT:
-			glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_FLOAT, texture->image->data.float_data);
+		default:
+			LOG_ERROR("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
+			return false;
 		break;
 	}
 

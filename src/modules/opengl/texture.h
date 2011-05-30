@@ -39,11 +39,23 @@ typedef enum {
 } OpenGLTextureSamplingMode;
 
 /**
+ * Specifies the type of an OpenGL texture
+ */
+typedef enum {
+	/** A 2D texture */
+	OPENGL_TEXTURE_TYPE_2D,
+	/** An array of 2D textures */
+	OPENGL_TEXTURE_TYPE_2D_ARRAY
+} OpenGLTextureType;
+
+/**
  * Struct representing an OpenGL texture that can be attached to shaders as uniform
  */
 typedef struct {
 	/** The image data of the texture */
 	Image *image;
+	/** The texture type of the texture */
+	OpenGLTextureType type;
 	/** The OpenGL texture context for this texture */
 	GLuint texture;
 	/** The OpenGL texture unit currently used to render this texture */
@@ -56,8 +68,8 @@ typedef struct {
 	GLuint internalFormat;
 } OpenGLTexture;
 
-API OpenGLTexture *createOpenGLTexture(Image *image, bool auto_init);
-API OpenGLTexture *createOpenGLVertexTexture(Image *image);
+API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init);
+API OpenGLTexture *createOpenGLVertexTexture2D(Image *image);
 API bool initOpenGLTexture(OpenGLTexture *texture);
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);

@@ -121,9 +121,13 @@ API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
  */
 API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size, bool auto_init)
 {
-	Image *image;
+	if(size == 0) {
+		LOG_ERROR("Failed to create OpenGL 2D texture array: Passed empty set of images");
+		return NULL;
+	}
 
 	// Create large image container for array
+	Image *image;
 	switch(images[0]->type) {
 		case IMAGE_TYPE_BYTE:
 			image = $(Image *, image, createImageByte)(images[0]->width, size * images[0]->height, images[0]->channels);
@@ -147,7 +151,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 
 		for(unsigned int y = 0; y < images[0]->height; y++) {
 			for(unsigned int x = 0; x < images[0]->width; x++) {
-				for(unsigned int c = 0; x < images[0]->channels; c++) {
+				for(unsigned int c = 0; c < images[0]->channels; c++) {
 					if(images[0]->type == IMAGE_TYPE_BYTE) {
 						setImageByte(image, x, i * images[0]->height + y, c, getImageByte(images[i], x, y, c));
 					} else {
@@ -160,7 +164,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 
 	OpenGLTexture *texture = ALLOCATE_OBJECT(OpenGLTexture);
 	texture->image = image;
-	texture->type = OPENGL_TEXTURE_TYPE_2D;
+	texture->type = OPENGL_TEXTURE_TYPE_2D_ARRAY;
 	texture->arraySize = size;
 	texture->format = -1;
 	texture->internalFormat = -1;
@@ -205,6 +209,7 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 		break;
 		case OPENGL_TEXTURE_TYPE_2D_ARRAY:
 			typeEnum = GL_TEXTURE_2D_ARRAY;
+		break;
 		default:
 			LOG_ERROR("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
 			return false;

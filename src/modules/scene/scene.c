@@ -45,8 +45,8 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 5, 1);
-MODULE_BCVERSION(0, 4, 8);
+MODULE_VERSION(0, 5, 2);
+MODULE_BCVERSION(0, 5, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
@@ -100,34 +100,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	scene->primitives = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLPrimitiveByPointer);
 	scene->materials = g_queue_new();
 	scene->models = g_queue_new();
-
-	// read primitives
-	Store *primitives = $(Store *, store, getStorePath)(store, "scene/primitives");
-	if(primitives != NULL && primitives->type == STORE_ARRAY) {
-		GHashTableIter iter;
-		char *key;
-		Store *value;
-		g_hash_table_iter_init(&iter, primitives->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
-			if(value->type == STORE_ARRAY) {
-				OpenGLPrimitive *primitive;
-
-				if((primitive = parseOpenGLScenePrimitive(path_prefix, key, value)) != NULL) {
-					if(addScenePrimitive(scene, key, primitive)) {
-						LOG_DEBUG("Added primitive '%s' to scene", key);
-					}
-				} else {
-					LOG_WARNING("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
-					continue;
-				}
-			} else {
-				LOG_WARNING("Expected array store value in 'primitives/%s' when parsing scene primitive, skipping", key);
-				continue;
-			}
-		}
-	} else {
-		LOG_WARNING("Expected array store value in 'primitives' when creating scene by store, skipping primitive loading");
-	}
 
 	// read textures
 	Store *textures = $(Store *, store, getStorePath)(store, "scene/textures");
@@ -188,6 +160,34 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'materials' when creating scene by store, skipping material loading");
+	}
+
+	// read primitives
+	Store *primitives = $(Store *, store, getStorePath)(store, "scene/primitives");
+	if(primitives != NULL && primitives->type == STORE_ARRAY) {
+		GHashTableIter iter;
+		char *key;
+		Store *value;
+		g_hash_table_iter_init(&iter, primitives->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+			if(value->type == STORE_ARRAY) {
+				OpenGLPrimitive *primitive;
+
+				if((primitive = parseOpenGLScenePrimitive(scene, path_prefix, key, value)) != NULL) {
+					if(addScenePrimitive(scene, key, primitive)) {
+						LOG_DEBUG("Added primitive '%s' to scene", key);
+					}
+				} else {
+					LOG_WARNING("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
+					continue;
+				}
+			} else {
+				LOG_WARNING("Expected array store value in 'primitives/%s' when parsing scene primitive, skipping", key);
+				continue;
+			}
+		}
+	} else {
+		LOG_WARNING("Expected array store value in 'primitives' when creating scene by store, skipping primitive loading");
 	}
 
 	// read models

@@ -25,16 +25,17 @@
 #include <GL/glew.h>
 #include "modules/store/store.h"
 #include "modules/opengl/primitive.h"
+#include "scene.h"
 
 /**
  * Function pointer type for an OpeNGLPrimitive scene parser
  */
-typedef OpenGLPrimitive *(OpenGLPrimitiveSceneParser)(const char *path_prefix, const char *name, Store *store);
+typedef OpenGLPrimitive *(OpenGLPrimitiveSceneParser)(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
 API void initOpenGLPrimitiveSceneParsers();
 API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser);
 API bool unregisterOpenGLPrimitiveSceneParser(const char *type);
-API OpenGLPrimitive *parseOpenGLScenePrimitive(const char *path_prefix, const char *name, Store *store);
+API OpenGLPrimitive *parseOpenGLScenePrimitive(Scene *scene, const char *path_prefix, const char *name, Store *store);
 API void freeOpenGLPrimitiveSceneParsers();
 
 #endif

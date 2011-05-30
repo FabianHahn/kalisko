@@ -42,6 +42,7 @@ if check:
 	module.SharedLibrary('../kalisko_freegluttest', Glob('*.c'))
 	module.Command("scene.store", File("scene.store").srcnode(), Copy("$TARGET", "$SOURCE"))
 	module.Command("tetrahedron.store", File("tetrahedron.store").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("green.png", File("green.png").srcnode(), Copy("$TARGET", "$SOURCE"))
 	module.Command("texture.png", File("texture.png").srcnode(), Copy("$TARGET", "$SOURCE"))
 else:
 	print('A required library for the \'freegluttest\' module is not available, skipping build...')

@@ -6,7 +6,7 @@ scene = {
 		}
 		
 		effect = {
-			type = particles
+			//type = particles
 			num = 50
 			lifetime = 3.0
 			positionStd = (0.5, 0.0, 0.5)
@@ -22,6 +22,10 @@ scene = {
 	
 	textures = {
 		checkerboard = "/modules/freegluttest/texture.png"
+		multi = (
+			"/modules/freegluttest/green.png",
+			"/modules/freegluttest/texture.png"
+		)		
 	}
 	
 	parameters = {
@@ -57,12 +61,13 @@ scene = {
 		
 		heightmap = {
 			vertex_shader = "/modules/heightmap/heightmap.glslv"
-			fragment_shader = "/modules/mesh_opengl/phong_vertexcolor.glslf"
+			fragment_shader = "/modules/heightmap/heightmap.glslf"
 			uniforms = {
 				lightPosition = lightPosition
 				lightColor = lightColor
 				ambient = ambient
 				specular = specular
+				texture = multi
 			}		
 		}
 		

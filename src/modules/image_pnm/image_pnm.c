@@ -27,7 +27,7 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 3);
+MODULE_VERSION(0, 2, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
@@ -168,7 +168,7 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	// write the PPM header
 	fputs("P3\n", file); // file type
 	fputs("# PPM ASCII RGB image created by Kalisko\n", file); // comment
-	fprintf(file, "%u %u\n", image->height, image->width); // image size
+	fprintf(file, "%u %u\n", image->width, image->height); // image size
 	fputs("255\n", file); // max. channel value
 
 	for(unsigned int y = 0; y < image->height; y++) {

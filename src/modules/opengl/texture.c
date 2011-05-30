@@ -202,6 +202,8 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
  */
 API bool initOpenGLTexture(OpenGLTexture *texture)
 {
+	bindOpenGLTexture(texture);
+
 	GLuint typeEnum;
 	switch(texture->type) {
 		case OPENGL_TEXTURE_TYPE_2D:
@@ -215,8 +217,6 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 			return false;
 		break;
 	}
-
-	glBindTexture(typeEnum, texture->texture);
 
 	if(texture->format == -1) { // if the caller didn't specify the format himself, auto-select it
 		switch(texture->image->channels) {
@@ -282,10 +282,10 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
  */
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 {
+	bindOpenGLTexture(texture);
+
 	switch(texture->type) {
 		case OPENGL_TEXTURE_TYPE_2D:
-			glBindTexture(GL_TEXTURE_2D, texture->texture);
-
 			switch(texture->image->type) {
 				case IMAGE_TYPE_BYTE:
 					glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
@@ -296,8 +296,6 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 			}
 		break;
 		case OPENGL_TEXTURE_TYPE_2D_ARRAY:
-			glBindTexture(GL_TEXTURE_2D_ARRAY, texture->texture);
-
 			switch(texture->image->type) {
 				case IMAGE_TYPE_BYTE:
 					glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, texture->internalFormat, texture->image->width, texture->image->height, texture->arraySize, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);

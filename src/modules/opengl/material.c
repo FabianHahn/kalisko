@@ -250,7 +250,7 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 		assert(uniform->type == OPENGL_UNIFORM_TEXTURE);
 
 		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, uniform->content.texture_value->texture);
+		bindOpenGLTexture(uniform->content.texture_value);
 		uniform->content.texture_value->unit = i; // Set texture unit
 		useOpenGLUniform(uniform);
 	}

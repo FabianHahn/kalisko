@@ -77,4 +77,24 @@ API bool initOpenGLTexture(OpenGLTexture *texture);
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture);
 API void freeOpenGLTexture(OpenGLTexture *texture);
 
+/**
+ * Binds an OpenGL texture
+ *
+ * @param texture			the texture to bind
+ */
+static inline void bindOpenGLTexture(OpenGLTexture *texture)
+{
+	switch(texture->type) {
+		case OPENGL_TEXTURE_TYPE_2D:
+			glBindTexture(GL_TEXTURE_2D, texture->texture);
+		break;
+		case OPENGL_TEXTURE_TYPE_2D_ARRAY:
+			glBindTexture(GL_TEXTURE_2D_ARRAY, texture->texture);
+		break;
+		default:
+			LOG_ERROR("Failed to bind OpenGL texture: Unsupported texture type '%d'", texture->type);
+		break;
+	}
+}
+
 #endif

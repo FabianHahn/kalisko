@@ -6,7 +6,7 @@ scene = {
 		}
 		
 		effect = {
-			//type = particles
+			type = particles
 			num = 50
 			lifetime = 3.0
 			positionStd = (0.5, 0.0, 0.5)
@@ -25,7 +25,7 @@ scene = {
 		multi = (
 			"/modules/freegluttest/green.png",
 			"/modules/freegluttest/texture.png"
-		)		
+		)	
 	}
 	
 	parameters = {

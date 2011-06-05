@@ -27,12 +27,14 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
 
 static Image *readImageFilePPM(const char *fileName);
 static bool writeImageFilePPM(const char* fileName, Image* image);
+static bool writeImageFilePGM(const char* fileName, Image* image);
+static bool writeImageFilePBM(const char* fileName, Image* image);
 
 MODULE_INIT
 {
@@ -42,6 +44,12 @@ MODULE_INIT
 	if(!$(bool, Image, addImageIOWriteHandler)("ppm", &writeImageFilePPM)) {
 		return false;
 	}
+	if(!$(bool, Image, addImageIOWriteHandler)("pgm", &writeImageFilePGM)) {
+		return false;
+	}
+	if(!$(bool, Image, addImageIOWriteHandler)("pbm", &writeImageFilePBM)) {
+		return false;
+	}
 
 	return true;
 }
@@ -49,7 +57,10 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	$(bool, const char *, deleteImageIOReadHandler)("ppm");
+
 	$(bool, const char *, deleteImageIOWriteHandler)("ppm");
+	$(bool, const char *, deleteImageIOWriteHandler)("pgm");
+	$(bool, const char *, deleteImageIOWriteHandler)("pbm");
 }
 
 /**
@@ -152,6 +163,8 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	assert(fileName != NULL);
 	assert(image != NULL);
 
+	const unsigned int maxChannelValue = 255;
+
 	if(image->channels < 3) {
 		LOG_ERROR("Failed to write PPM image '%s': only RGB images are supported", fileName);
 		return false;
@@ -169,18 +182,105 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	fputs("P3\n", file); // file type
 	fputs("# PPM ASCII RGB image created by Kalisko\n", file); // comment
 	fprintf(file, "%u %u\n", image->width, image->height); // image size
-	fputs("255\n", file); // max. channel value
+	fprintf(file, "%u\n", maxChannelValue); // max. channel value
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
-			fprintf(file, "%u %u %u\n", getImageByte(image, x, y, 0),
-									    getImageByte(image, x, y, 1),
-									    getImageByte(image, x, y, 2));
+			fprintf(file, "%u %u %u\n", (unsigned int)(getImage(image, x, y, 0) * maxChannelValue),
+									    (unsigned int)(getImage(image, x, y, 1) * maxChannelValue),
+									    (unsigned int)(getImage(image, x, y, 2) * maxChannelValue));
 		}
 	}
 
 	fclose(file);
-	LOG_DEBUG("Wrote PPN image '%s'", fileName);
+	LOG_DEBUG("Wrote PPM image '%s'", fileName);
+
+	return true;
+}
+
+/**
+ * Writes an image to a PGM (portable graymap format) file
+ *
+ * @param fileName			the pgm file to write to
+ * @param image				the image data to write
+ * @result					true if successful
+ */
+static bool writeImageFilePGM(const char* fileName, Image* image)
+{
+	assert(fileName != NULL);
+	assert(image != NULL);
+
+	const unsigned int maxChannelValue = 255;
+
+	if(image->channels > 1) {
+		LOG_ERROR("Failed to write PGM image '%s': only single channel images are supported", fileName);
+		return false;
+	}
+
+	FILE* file;
+	file = fopen(fileName, "w");
+
+	if(file == NULL) {
+		LOG_ERROR("Failed to write PGM image '%s': fopen failed", fileName);
+		return false;
+	}
+
+	// write the PGM header
+	fputs("P2\n", file); // file type
+	fputs("# PGM ASCII graymap image created by Kalisko\n", file); // comment
+	fprintf(file, "%u %u\n", image->width, image->height); // image size
+	fprintf(file, "%u\n", maxChannelValue); // max. channel value
+
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			fprintf(file, "%u\n", (unsigned int)(getImage(image, x, y, 0) * maxChannelValue));
+		}
+	}
+
+	fclose(file);
+	LOG_DEBUG("Wrote PGM image '%s'", fileName);
+
+	return true;
+}
+
+/**
+ * Writes an image to a PBM (portable bitmap format) file
+ *
+ * @param fileName			the pbm file to write to
+ * @param image				the image data to write
+ * @result					true if successful
+ */
+static bool writeImageFilePBM(const char* fileName, Image* image)
+{
+	assert(fileName != NULL);
+	assert(image != NULL);
+
+	if(image->channels > 1) {
+		LOG_ERROR("Failed to write PBM image '%s': only single channel images are supported", fileName);
+		return false;
+	}
+
+	FILE* file;
+	file = fopen(fileName, "w");
+
+	if(file == NULL) {
+		LOG_ERROR("Failed to write PBM image '%s': fopen failed", fileName);
+		return false;
+	}
+
+	// write the PGM header
+	fputs("P1\n", file); // file type
+	fputs("# PBM ASCII bitmap image created by Kalisko\n", file); // comment
+	fprintf(file, "%u %u\n", image->width, image->height); // image size
+
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			fprintf(file, "%u\n", getImage(image, x, y, 0) > 0.0 ? 1 : 0);
+		}
+	}
+
+	fclose(file);
+	LOG_DEBUG("Wrote PBM image '%s'", fileName);
 
 	return true;
 }

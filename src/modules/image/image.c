@@ -54,6 +54,8 @@ MODULE_FINALIZE
  */
 API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels)
 {
+	assert(channels > 0);
+
 	Image *image = ALLOCATE_OBJECT(Image);
 	image->width = width;
 	image->height = height;
@@ -74,6 +76,8 @@ API Image *createImageByte(unsigned int width, unsigned int height, unsigned int
  */
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels)
 {
+	assert(channels > 0);
+
 	Image *image = ALLOCATE_OBJECT(Image);
 	image->width = width;
 	image->height = height;

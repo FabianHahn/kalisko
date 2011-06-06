@@ -27,9 +27,9 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 7));
 
 static Image *readImageFilePPM(const char *fileName);
 static bool writeImageFilePPM(const char* fileName, Image* image);
@@ -173,9 +173,9 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
-			fprintf(file, "%u %u %u\n", getImageByte(image, x, y, 0),
-									    getImageByte(image, x, y, 1),
-									    getImageByte(image, x, y, 2));
+			fprintf(file, "%u %u %u\n", getImageAsByte(image, x, y, 0),
+									    getImageAsByte(image, x, y, 1),
+									    getImageAsByte(image, x, y, 2));
 		}
 	}
 

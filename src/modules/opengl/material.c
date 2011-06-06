@@ -232,6 +232,9 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 
 	glUseProgram(material->program);
 
+	unsigned int textureIndex = 0;
+	useOpenGLUniformAttachment(getOpenGLGlobalUniforms(), material->program, &textureIndex);
+
 	// Iterate over all uniforms for this shaders and use them
 	GList *uniforms = g_hash_table_get_values(material->uniforms);
 	for(GList *iter = uniforms; iter != NULL; iter = iter->next) {
@@ -244,14 +247,13 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 	g_list_free(uniforms);
 
 	// Iterate over all texture uniforms and first bind them, then use them
-	int i = 0;
-	for(GList *iter = material->textures->head; iter != NULL; iter = iter->next, i++) {
+	for(GList *iter = material->textures->head; iter != NULL; iter = iter->next, textureIndex++) {
 		OpenGLUniform *uniform = iter->data;
 		assert(uniform->type == OPENGL_UNIFORM_TEXTURE);
 
-		glActiveTexture(GL_TEXTURE0 + i);
+		glActiveTexture(GL_TEXTURE0 + textureIndex);
 		bindOpenGLTexture(uniform->content.texture_value);
-		uniform->content.texture_value->unit = i; // Set texture unit
+		uniform->content.texture_value->unit = textureIndex; // Set texture unit
 		useOpenGLUniform(uniform);
 	}
 

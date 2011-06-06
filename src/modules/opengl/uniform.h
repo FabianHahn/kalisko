@@ -78,6 +78,16 @@ typedef struct {
 	GLint location;
 } OpenGLUniform;
 
+/**
+ * Struct representing an OpenGL uniform attachment point
+ */
+typedef struct {
+	/** The uniforms attached to this attachment point */
+	GHashTable *uniforms;
+	/** Specifies whether the uniform locations are static and can be cached */
+	bool staticLocation;
+} OpenGLUniformAttachment;
+
 API OpenGLUniform *createOpenGLUniformInt(int value);
 API OpenGLUniform *createOpenGLUniformIntPointer(int *value);
 API OpenGLUniform *createOpenGLUniformFloat(double value);
@@ -87,5 +97,10 @@ API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
 API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture);
 API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform);
 API bool useOpenGLUniform(OpenGLUniform *uniform);
+API OpenGLUniformAttachment *createOpenGLUniformAttachment();
+API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name, OpenGLUniform *uniform);
+API bool detachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name);
+API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint program, unsigned int *textureIndex);
+API void freeOpenGLUniformAttachment(OpenGLUniformAttachment *attachment);
 
 #endif

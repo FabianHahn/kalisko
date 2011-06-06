@@ -27,6 +27,7 @@
 #include "material.h"
 #include "texture.h"
 #include "uniform.h"
+#include "opengl.h"
 
 /**
  * Creates an int valued OpenGL uniform
@@ -211,4 +212,106 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 	}
 
 	return true;
+}
+
+/**
+ * Creates an OpenGL uniform attachment point
+ *
+ * @result		the created uniform attachment point
+ */
+API OpenGLUniformAttachment *createOpenGLUniformAttachment()
+{
+	OpenGLUniformAttachment *attachment = ALLOCATE_OBJECT(OpenGLUniformAttachment);
+	attachment->uniforms = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
+	attachment->staticLocation = true;
+
+	return attachment;
+}
+
+/**
+ * Attaches an OpenGL uniform to a uniform attachment point
+ *
+ * @param attachment		the OpenGL uniform attachment point to attach the uniform to
+ * @param name				the name of the uniform to be added
+ * @param uniform			the uniform to be added
+ * @result					true if successful
+ */
+API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name, OpenGLUniform *uniform)
+{
+	if(g_hash_table_lookup(attachment->uniforms, name) != NULL) {
+		LOG_ERROR("Failed to attach already existing uniform '%s' to attachment point", name);
+		return false;
+	}
+
+	uniform->location = -1;
+
+	g_hash_table_insert(attachment->uniforms, strdup(name), uniform);
+
+	return true;
+}
+
+/**
+ * Detaches an OpeNGL uniform from a uniform attachment point
+ *
+ * @param attachment			the OpenGL uniform attachment point to detach the uniform from
+ * @param name					the name of the uniform to be detached
+ * @result						true if successful
+ */
+API bool detachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name)
+{
+	return g_hash_table_remove(attachment->uniforms, name);
+}
+
+/**
+ * Uses all uniforms in an OpenGL uniform attachment point
+ *
+ * @param attachment			the OpenGL uniform attachment point for which to use all uniforms
+ * @param program				the OpenGL shader program for which the uniforms should be used
+ * @param textureIndex			a pointer the texture index to start from, will be updated to reflect the new texture index to start from for further attachments
+ * @result						true if successful
+ */
+API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint program, unsigned int *textureIndex)
+{
+	// Iterate over all uniforms for this shaders and use them
+	GHashTableIter iter;
+	char *name;
+	OpenGLUniform *uniform;
+	g_hash_table_iter_init(&iter, attachment->uniforms);
+	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &uniform)) {
+		// If there is no location yet or the locations aren't static, update it now
+		if(uniform->location == -1 || !attachment->staticLocation) {
+			uniform->location = glGetUniformLocation(program, name);
+		}
+
+		if(uniform->location == -1) {
+			LOG_WARNING("Failed to lookup uniform location for '%s'", name);
+			continue;
+		}
+
+		if(uniform->type == OPENGL_UNIFORM_TEXTURE) {
+			glActiveTexture(GL_TEXTURE0 + *textureIndex);
+			bindOpenGLTexture(uniform->content.texture_value);
+			uniform->content.texture_value->unit = *textureIndex;
+			*textureIndex = *textureIndex + 1;
+		}
+
+		useOpenGLUniform(uniform);
+	}
+
+	if(checkOpenGLError()) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Frees an OpenGL uniform attachment point
+ *
+ * @param attachment			the attachment point to free
+ */
+API void freeOpenGLUniformAttachment(OpenGLUniformAttachment *attachment)
+{
+	g_hash_table_destroy(attachment->uniforms);
+	free(attachment);
 }

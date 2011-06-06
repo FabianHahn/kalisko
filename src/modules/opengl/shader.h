@@ -22,29 +22,8 @@
 #define OPENGL_SHADER_H
 
 #include <GL/glew.h>
-#include "modules/linalg/Matrix.h"
-#include "modules/linalg/Vector.h"
 #include "texture.h"
-
-/**
- * Enum for possible OpenGL uniform types
- */
-typedef enum {
-	/** A uniform int value */
-	OPENGL_UNIFORM_INT,
-	/** A uniform int pointer value */
-	OPENGL_UNIFORM_INT_POINTER,
-	/** A uniform float value */
-	OPENGL_UNIFORM_FLOAT,
-	/** A uniform float pointer value */
-	OPENGL_UNIFORM_FLOAT_POINTER,
-	/** A uniform 4-vector value */
-	OPENGL_UNIFORM_VECTOR,
-	/** A uniform 4x4-matrix value */
-	OPENGL_UNIFORM_MATRIX,
-	/** A texture value */
-	OPENGL_UNIFORM_TEXTURE
-} OpenGLUniformType;
+#include "uniform.h"
 
 /**
  * Enum for possible predefined OpenGL vertex shader attribute locations
@@ -64,38 +43,6 @@ typedef enum {
 	OPENGL_ATTRIBUTE_ANGULAR_VELOCITY
 } OpenGLAttributeLocation;
 
-/**
- * Union for possible OpenGL uniform values
- */
-typedef union {
-	/** A uniform int value */
-	int int_value;
-	/** A uniform int pointer value */
-	int *int_pointer_value;
-	/** A uniform float value */
-	float float_value;
-	/** A uniform float pointer value */
-	float *float_pointer_value;
-	/** A uniform vector value */
-	Vector *vector_value;
-	/** A uniform matrix value */
-	Matrix *matrix_value;
-	/** A texture value */
-	OpenGLTexture *texture_value;
-} OpenGLUniformContent;
-
-/**
- * Struct representing an OpenGL uniform value
- */
-typedef struct {
-	/** The type of the uniform value */
-	OpenGLUniformType type;
-	/** The content of the uniform value */
-	OpenGLUniformContent content;
-	/** The location of the uniform in the shader program */
-	GLint location;
-} OpenGLUniform;
-
 API void initOpenGLShaders();
 API void freeOpenGLShaders();
 API bool addOpenGLGlobalShaderUniform(const char *name, OpenGLUniform *uniform);
@@ -104,14 +51,5 @@ API void refreshOpenGLGlobalShaderUniform(const char *material, const char *glob
 API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
 API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type);
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);
-API OpenGLUniform *createOpenGLUniformInt(int value);
-API OpenGLUniform *createOpenGLUniformIntPointer(int *value);
-API OpenGLUniform *createOpenGLUniformFloat(double value);
-API OpenGLUniform *createOpenGLUniformFloatPointer(float *value);
-API OpenGLUniform *createOpenGLUniformVector(Vector *value);
-API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value);
-API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture);
-API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform);
-API bool useOpenGLUniform(OpenGLUniform *uniform);
 
 #endif

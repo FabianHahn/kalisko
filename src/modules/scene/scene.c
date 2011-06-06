@@ -45,7 +45,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 6, 0);
+MODULE_VERSION(0, 6, 1);
 MODULE_BCVERSION(0, 5, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 23, 1), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -108,7 +108,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		char *key;
 		Store *value;
 		g_hash_table_iter_init(&iter, textures->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type == STORE_STRING) { // 2D texture
 				GString *texturepath = g_string_new(path_prefix);
 				g_string_append(texturepath, value->content.string);
@@ -155,7 +155,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		char *key;
 		Store *value;
 		g_hash_table_iter_init(&iter, parameters->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(addSceneParameterFromStore(scene, key, value)) {
 				LOG_DEBUG("Added scene parameter '%s'", key);
 			}
@@ -171,7 +171,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		char *key;
 		Store *value;
 		g_hash_table_iter_init(&iter, materials->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type != STORE_ARRAY) {
 				LOG_WARNING("Expected array store value in 'materials/%s' when creating scene by store, skipping", key);
 				continue;
@@ -192,7 +192,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		char *key;
 		Store *value;
 		g_hash_table_iter_init(&iter, primitives->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type == STORE_ARRAY) {
 				OpenGLPrimitive *primitive;
 
@@ -220,7 +220,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		char *key;
 		Store *value;
 		g_hash_table_iter_init(&iter, models->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &value)) {
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type != STORE_ARRAY) {
 				LOG_WARNING("Expected array store value in 'meshes/%s' when creating scene by store, skipping", key);
 				continue;
@@ -533,7 +533,7 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
 			char *uniformKey;
 			Store *uniformValue;
 			g_hash_table_iter_init(&uniformIter, uniforms->content.array);
-			while(g_hash_table_iter_next(&uniformIter, (void *) &uniformKey, (void *) &uniformValue)) {
+			while(g_hash_table_iter_next(&uniformIter, (void **) &uniformKey, (void **) &uniformValue)) {
 				if(uniformValue->type != STORE_STRING) {
 					LOG_WARNING("Expected string store value in 'uniforms/%s' for material '%s' to be added to scene, skipping", uniformKey, material);
 					continue;

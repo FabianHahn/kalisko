@@ -60,7 +60,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 		return NULL;
 	}
 
-	// Create particle effect
+	// Create heightmap
 	OpenGLPrimitive *primitive;
 
 	if((primitive = createOpenGLPrimitiveHeightmap(image)) == NULL) {

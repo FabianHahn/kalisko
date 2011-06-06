@@ -33,7 +33,7 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 0));
 
@@ -61,7 +61,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			setImage(map, x, y, 0, $(float, random, randomPerlin)((double) x / frequency, (double) y / frequency, 0.0));
+			setImage(map, x, y, 0, $(float, random, randomPerlin)((double) x * frequency, (double) y * frequency, 0.0));
 		}
 	}
 

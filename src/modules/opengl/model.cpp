@@ -193,7 +193,6 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 	attachOpenGLMaterialUniform(material_name, "model", modelTransformUniform);
 	detachOpenGLMaterialUniform(material_name, "modelNormal"); // remove old uniform if exists
 	attachOpenGLMaterialUniform(material_name, "modelNormal", modelNormalTransformUniform);
-	refreshOpenGLGlobalShaderUniform(material_name, NULL); // refresh global uniforms for this material
 
 	if(!setupOpenGLPrimitive(model->primitive, model_name, material_name)) {
 		LOG_WARNING("Setup for model '%s' with material '%s' failed", model_name, material_name);

@@ -30,6 +30,38 @@
 #include "opengl.h"
 
 /**
+ * Global uniform attachment point
+ */
+static OpenGLUniformAttachment *globalUniforms;
+
+/**
+ * Initializes the OpenGL uniforms
+ */
+API void initOpenGLUniforms()
+{
+	globalUniforms = createOpenGLUniformAttachment();
+	globalUniforms->staticLocation = false;
+}
+
+/**
+ * Frees the OpenGL uniforms
+ */
+API void freeOpenGLUniforms()
+{
+	freeOpenGLUniformAttachment(globalUniforms);
+}
+
+/**
+ * Retrieves the global OpenGL uniform attachment point
+ *
+ * @result			the global OpenGL uniform attachment point
+ */
+API OpenGLUniformAttachment *getOpenGLGlobalUniforms()
+{
+	return globalUniforms;
+}
+
+/**
  * Creates an int valued OpenGL uniform
  *
  * @param value			the value of the uniform

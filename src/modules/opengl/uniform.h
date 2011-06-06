@@ -88,6 +88,9 @@ typedef struct {
 	bool staticLocation;
 } OpenGLUniformAttachment;
 
+API void initOpenGLUniforms();
+API void freeOpenGLUniforms();
+API OpenGLUniformAttachment *getOpenGLGlobalUniforms();
 API OpenGLUniform *createOpenGLUniformInt(int value);
 API OpenGLUniform *createOpenGLUniformIntPointer(int *value);
 API OpenGLUniform *createOpenGLUniformFloat(double value);

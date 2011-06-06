@@ -43,11 +43,6 @@ typedef enum {
 	OPENGL_ATTRIBUTE_ANGULAR_VELOCITY
 } OpenGLAttributeLocation;
 
-API void initOpenGLShaders();
-API void freeOpenGLShaders();
-API bool addOpenGLGlobalShaderUniform(const char *name, OpenGLUniform *uniform);
-API bool delOpenGLGlobalShaderUniform(const char *name);
-API void refreshOpenGLGlobalShaderUniform(const char *material, const char *globalUniform);
 API GLuint createOpenGLShaderFromString(const char *source, GLenum type);
 API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type);
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders);

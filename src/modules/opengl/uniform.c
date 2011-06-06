@@ -311,23 +311,25 @@ API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint 
 	g_hash_table_iter_init(&iter, attachment->uniforms);
 	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &uniform)) {
 		// If there is no location yet or the locations aren't static, update it now
-		if(uniform->location == -1 || !attachment->staticLocation) {
+		if(uniform->location == -1 || (!attachment->staticLocation && uniform->location != -2)) {
 			uniform->location = glGetUniformLocation(program, name);
 		}
 
 		if(uniform->location == -1) {
 			LOG_WARNING("Failed to lookup uniform location for '%s'", name);
-			continue;
+			uniform->location = -2; // cache the lookup failure
 		}
 
-		if(uniform->type == OPENGL_UNIFORM_TEXTURE) {
-			glActiveTexture(GL_TEXTURE0 + *textureIndex);
-			bindOpenGLTexture(uniform->content.texture_value);
-			uniform->content.texture_value->unit = *textureIndex;
-			*textureIndex = *textureIndex + 1;
-		}
+		if(uniform->location >= 0) { // only consider positive locations to be valid
+			if(uniform->type == OPENGL_UNIFORM_TEXTURE) {
+				glActiveTexture(GL_TEXTURE0 + *textureIndex);
+				bindOpenGLTexture(uniform->content.texture_value);
+				uniform->content.texture_value->unit = *textureIndex;
+				*textureIndex = *textureIndex + 1;
+			}
 
-		useOpenGLUniform(uniform);
+			useOpenGLUniform(uniform);
+		}
 	}
 
 	if(checkOpenGLError()) {

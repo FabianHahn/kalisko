@@ -29,6 +29,7 @@
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
 #include "modules/opengl/material.h"
+#include "modules/opengl/uniform.h"
 #include "modules/random/random.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
@@ -38,9 +39,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 12);
+MODULE_VERSION(0, 6, 13);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 25, 0), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -146,6 +147,7 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *m
 	}
 
 	OpenGLParticles *particles = primitive->data;
+	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLModelUniforms)(model_name);
 
 	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "time");
 	OpenGLUniform *timeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->time);

@@ -311,13 +311,13 @@ API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint 
 	g_hash_table_iter_init(&iter, attachment->uniforms);
 	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &uniform)) {
 		// If there is no location yet or the locations aren't static, update it now
-		if(uniform->location == -1 || (!attachment->staticLocation && uniform->location != -2)) {
+		if(uniform->location == -1 || !attachment->staticLocation) {
 			uniform->location = glGetUniformLocation(program, name);
 		}
 
-		if(uniform->location == -1) {
+		if(uniform->location == -1 && !attachment->staticLocation) { // global uniform lookup failures are normal
 			LOG_WARNING("Failed to lookup uniform location for '%s'", name);
-			uniform->location = -2; // cache the lookup failure
+			uniform->location = -2; // cache the lookup failure if the location is static
 		}
 
 		if(uniform->location >= 0) { // only consider positive locations to be valid

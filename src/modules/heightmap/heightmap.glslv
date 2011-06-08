@@ -39,9 +39,9 @@ varying float world_height;
 
 void main()
 {
-	vec2 heightmapPosition = uv / vec2(heightmapWidth - 1.0, heightmapHeight - 1.0);
+	vec2 heightmapPosition = uv / vec2(heightmapWidth, heightmapHeight);
 	float height = texture2D(heights, heightmapPosition).x;
-	vec4 pos4 = vec4(uv.x / heightmapWidth, height, uv.y / heightmapHeight, 1.0);
+	vec4 pos4 = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
 	vec4 norm4 = vec4(texture2D(normals, heightmapPosition).xyz, 1.0);
 	vec4 worldpos4 = model * pos4;
 	vec4 worldnorm4 = modelNormal * norm4;

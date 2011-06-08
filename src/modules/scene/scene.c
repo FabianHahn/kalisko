@@ -45,9 +45,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 5, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 25, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *mesh_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -476,7 +476,8 @@ API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, co
 		uniform->content = parameter->content;
 		uniform->location = -1;
 
-		if(!$(bool, opengl, attachOpenGLMaterialUniform)(material, name, uniform)) {
+		OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material);
+		if(uniforms == NULL || !$(bool, opengl, attachOpenGLUniform)(uniforms, name, uniform)) {
 			LOG_ERROR("Failed to attach parameter '%s' as uniform '%s' to material '%s'", key, name, material);
 			free(uniform);
 			return false;

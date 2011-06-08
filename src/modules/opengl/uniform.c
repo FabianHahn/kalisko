@@ -315,7 +315,7 @@ API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint 
 			uniform->location = glGetUniformLocation(program, name);
 		}
 
-		if(uniform->location == -1 && !attachment->staticLocation) { // global uniform lookup failures are normal
+		if(uniform->location == -1 && attachment->staticLocation) { // global uniform lookup failures are normal
 			LOG_WARNING("Failed to lookup uniform location for '%s'", name);
 			uniform->location = -2; // cache the lookup failure if the location is static
 		}

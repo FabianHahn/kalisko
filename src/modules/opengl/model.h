@@ -29,12 +29,14 @@ extern "C" {
 #endif
 
 #include "primitive.h"
+#include "uniform.h"
 
 API void initOpenGLModels();
 API void freeOpenGLModels();
 API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive);
 API bool deleteOpenGLModel(const char *name);
 API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name);
+API OpenGLUniformAttachment *getOpenGLModelUniforms(const char *name);
 API bool attachOpenGLModelMaterial(const char *model_name, const char *material_name);
 API bool setOpenGLModelTranslation(const char *model_name, Vector *translation);
 API bool setOpenGLModelRotationX(const char *model_name, double rotation);

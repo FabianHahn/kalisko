@@ -32,7 +32,7 @@ API bool createOpenGLMaterial(const char *name);
 API bool deleteOpenGLMaterial(const char *name);
 API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program);
 API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name);
-API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal);
+API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *uniforms, Matrix *model, Matrix *modelNormal);
 API bool checkOpenGLMaterialShader(const char *name);
 API GList *getOpenGLMaterials();
 

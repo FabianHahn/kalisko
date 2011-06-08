@@ -137,13 +137,15 @@ API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name)
 }
 
 /**
- * Uses an OpenGL material for rendering
+ * Uses an OpenGL material for rendering a model
  *
- * @param				the name of the material to use
- * @param model			the model matrix to use for the material
- * @param modelNormal	the normal model matrix to use for the material
+ * @param					the name of the material to use
+ * @param modelUniforms		the OpenGL uniform attachment point for model specific uniforms
+ * @param model				the model matrix to use for the material
+ * @param modelNormal		the normal model matrix to use for the material
+ * @result					true if successful
  */
-API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
+API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *modelUniforms, Matrix *model, Matrix *modelNormal)
 {
 	OpenGLMaterial *material;
 
@@ -160,8 +162,21 @@ API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal)
 	glUseProgram(material->program);
 
 	unsigned int textureIndex = 0;
-	useOpenGLUniformAttachment(getOpenGLGlobalUniforms(), material->program, &textureIndex);
-	useOpenGLUniformAttachment(material->uniforms, material->program, &textureIndex);
+
+	// global uniforms
+	if(!useOpenGLUniformAttachment(getOpenGLGlobalUniforms(), material->program, &textureIndex)) {
+		return false;
+	}
+
+	// material uniforms
+	if(!useOpenGLUniformAttachment(material->uniforms, material->program, &textureIndex)) {
+		return false;
+	}
+
+	// model specific uniforms
+	if(!useOpenGLUniformAttachment(modelUniforms, material->program, &textureIndex)) {
+		return false;
+	}
 
 	if(checkOpenGLError()) {
 		return false;

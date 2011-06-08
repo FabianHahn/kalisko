@@ -33,6 +33,7 @@ extern "C" {
 extern "C" {
 #include "primitive.h"
 #include "material.h"
+#include "uniform.h"
 }
 
 #include "model.h"
@@ -49,6 +50,8 @@ typedef struct {
 	bool visible;
 	/** The material to use before drawing the model */
 	char *material;
+	/** The OpenGL uniform attachment point for model specific uniforms */
+	OpenGLUniformAttachment *uniforms;
 	/** The base model transformation to which all further modifications are applied */
 	Matrix *base_transform;
 	/** The inverse base model transformation to which all further modifications are applied */
@@ -117,6 +120,7 @@ API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive)
 	model->primitive = primitive;
 	model->visible = false;
 	model->material = NULL;
+	model->uniforms = NULL;
 	model->base_transform = new Matrix(4, 4);
 	model->base_transform->identity();
 	model->base_normal_transform = new Matrix(4, 4);
@@ -157,13 +161,29 @@ API bool deleteOpenGLModel(const char *name)
 API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name)
 {
 	OpenGLModel *model;
-
 	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
 		LOG_ERROR("Failed to lookup primitive for non existing model '%s'", name);
 		return false;
 	}
 
 	return model->primitive;
+}
+
+/**
+ * Retrieves the OpenGL uniform attachment point for an OpenGL model
+ *
+ * @param name		the name of the OpenGL model to retrieve the primitive for
+ * @result			the retrived OpenGL primitive or NULL on failure
+ */
+API OpenGLUniformAttachment *getOpenGLModelUniforms(const char *name)
+{
+	OpenGLModel *model;
+	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
+		LOG_ERROR("Failed to lookup uniform attachment point for non existing model '%s'", name);
+		return false;
+	}
+
+	return model->uniforms;
 }
 
 /**
@@ -187,21 +207,24 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 		return false;
 	}
 
+	if(model->material != NULL) { // reattachment, free old binding
+		free(model->material);
+		freeOpenGLUniformAttachment(model->uniforms);
+	}
+
+	model->material = strdup(material_name);
+	model->uniforms = createOpenGLUniformAttachment();
+	model->visible = true;
+
 	OpenGLUniform *modelTransformUniform = createOpenGLUniformMatrix(model->transform);
+	attachOpenGLUniform(model->uniforms, "model", modelTransformUniform);
 	OpenGLUniform *modelNormalTransformUniform = createOpenGLUniformMatrix(model->normal_transform);
-	OpenGLUniformAttachment *uniforms = getOpenGLMaterialUniforms(material_name);
-	detachOpenGLUniform(uniforms, "model"); // remove old uniform if exists
-	attachOpenGLUniform(uniforms, "model", modelTransformUniform);
-	detachOpenGLUniform(uniforms, "modelNormal"); // remove old uniform if exists
-	attachOpenGLUniform(uniforms, "modelNormal", modelNormalTransformUniform);
+	attachOpenGLUniform(model->uniforms, "modelNormal", modelNormalTransformUniform);
 
 	if(!setupOpenGLPrimitive(model->primitive, model_name, material_name)) {
 		LOG_WARNING("Setup for model '%s' with material '%s' failed", model_name, material_name);
 		return false;
 	}
-
-	model->material = strdup(material_name);
-	model->visible = true;
 
 	return true;
 }
@@ -384,7 +407,7 @@ API void drawOpenGLModels()
 			continue;
 		}
 
-		if(!useOpenGLMaterial(model->material, model->transform, model->normal_transform)) {
+		if(!useOpenGLMaterial(model->material, model->uniforms, model->transform, model->normal_transform)) {
 			LOG_WARNING("Failed to use material for visible model '%s'", name);
 		}
 
@@ -498,6 +521,7 @@ static void freeOpenGLModel(void *model_p)
 
 	free(model->name);
 	free(model->material);
+	freeOpenGLUniformAttachment(model->uniforms);
 	delete model->transform;
 	delete model->normal_transform;
 	delete model->base_transform;

@@ -189,10 +189,11 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 
 	OpenGLUniform *modelTransformUniform = createOpenGLUniformMatrix(model->transform);
 	OpenGLUniform *modelNormalTransformUniform = createOpenGLUniformMatrix(model->normal_transform);
-	detachOpenGLMaterialUniform(material_name, "model"); // remove old uniform if exists
-	attachOpenGLMaterialUniform(material_name, "model", modelTransformUniform);
-	detachOpenGLMaterialUniform(material_name, "modelNormal"); // remove old uniform if exists
-	attachOpenGLMaterialUniform(material_name, "modelNormal", modelNormalTransformUniform);
+	OpenGLUniformAttachment *uniforms = getOpenGLMaterialUniforms(material_name);
+	detachOpenGLUniform(uniforms, "model"); // remove old uniform if exists
+	attachOpenGLUniform(uniforms, "model", modelTransformUniform);
+	detachOpenGLUniform(uniforms, "modelNormal"); // remove old uniform if exists
+	attachOpenGLUniform(uniforms, "modelNormal", modelNormalTransformUniform);
 
 	if(!setupOpenGLPrimitive(model->primitive, model_name, material_name)) {
 		LOG_WARNING("Setup for model '%s' with material '%s' failed", model_name, material_name);

@@ -28,6 +28,7 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
+#include "modules/opengl/model.h"
 #include "modules/opengl/material.h"
 #include "modules/opengl/uniform.h"
 #include "modules/opengl/texture.h"

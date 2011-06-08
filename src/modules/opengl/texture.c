@@ -48,6 +48,7 @@ API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 	texture->format = -1;
 	texture->internalFormat = -1;
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
+	texture->wrappingMode = OPENGL_TEXTURE_WRAPPING_REPEAT;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
@@ -88,6 +89,7 @@ API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
 	}
 
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_NEAREST;
+	texture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
 
 	switch(image->channels) {
 		case 1:
@@ -169,6 +171,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	texture->format = -1;
 	texture->internalFormat = -1;
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
+	texture->wrappingMode = OPENGL_TEXTURE_WRAPPING_REPEAT;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
@@ -263,6 +266,21 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update
 			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // use mipmaps to interpolate
 			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		break;
+	}
+
+	switch(texture->wrappingMode) {
+		case OPENGL_TEXTURE_WRAPPING_CLAMP:
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		break;
+		case OPENGL_TEXTURE_WRAPPING_REPEAT:
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		break;
+		case OPENGL_TEXTURE_WRAPPING_MIRROR:
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+			glTexParameteri(typeEnum, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 		break;
 	}
 

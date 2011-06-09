@@ -61,15 +61,29 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 {
 #if 1
 	Image *map = $(Image *, image, createImageFloat)(width, height, 1);
+	float maxValue = 0.0, minValue = 0.0;
 
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
 			//setImage(map, x, y, 0, 0.5 + $(float, random, randomPerlin)((double) x * frequency / width, (double) y * frequency / height, 0.0));
 
-			setImage(map, x, y, 0, 0.5 + $(float, random, noiseFBm)(x, y, 0.0,
+			float value = 0.5 + $(float, random, noiseFBm)(x, y, 0.0,
 					frequency / width, frequency / height, 0.0,
 					/* persistance */ 0.5,
-					/* depth */ 6));
+					/* depth */ 6);
+			setImage(map, x, y, 0, value);
+
+			if(value > maxValue)
+				maxValue = value;
+			if(value < minValue)
+				minValue = value;
+		}
+	}
+
+	// rescale heightmap to [0,1]
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
+			setImage(map, x, y, 0, (getImage(map, x, y, 0) - minValue) / (maxValue - minValue));
 		}
 	}
 #else

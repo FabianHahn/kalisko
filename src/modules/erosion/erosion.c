@@ -36,6 +36,7 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6), MODULE_DEPENDENCY("image_pnm
 
 MODULE_INIT
 {
+#if 0
 	// test code, will be moved into a unit test
 	char *execpath = $$(char *, getExecutablePath)();
 	GString *path = g_string_new(execpath);
@@ -60,7 +61,7 @@ MODULE_INIT
 	g_string_free(path, true);
 
 	free(execpath);
-
+#endif
 	return true;
 }
 
@@ -113,8 +114,6 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
 	float hNew = h - c * (dMax-T);
 	setImage(hMap, x, y, 0, hNew);
 }
-
-
 
 /**
  * Erodes the height map using thermal weathering.
@@ -357,14 +356,6 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 		}
 	}
 
-/*
-	char *execpath = $$(char *, getExecutablePath)();
-	GString *path = g_string_new(execpath);
-	g_string_append(path, "/modules/erosion/water.pbm");
-	assert($(bool, image, writeImageToFile)(path->str, waterMap));
-	g_string_free(path, true);
-	free(execpath);
-*/
 	// cleanup
 	if(hMap->type != IMAGE_TYPE_FLOAT) {
 		$(void, Image*, freeImage)(heightMap);

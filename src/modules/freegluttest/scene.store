@@ -23,7 +23,7 @@ scene = {
 			type = landscape
 			width = 512
 			height = 512
-			frequency = 20
+			frequency = 4
 		}
 	}
 

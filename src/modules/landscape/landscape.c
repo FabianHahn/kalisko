@@ -37,7 +37,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
 MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 1), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
 MODULE_INIT
 {
@@ -59,12 +59,17 @@ MODULE_FINALIZE
  */
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, double frequency)
 {
-#if 0
+#if 1
 	Image *map = $(Image *, image, createImageFloat)(width, height, 1);
 
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			setImage(map, x, y, 0, 0.5 + $(float, random, randomPerlin)((double) x * frequency / width, (double) y * frequency / height, 0.0));
+			//setImage(map, x, y, 0, 0.5 + $(float, random, randomPerlin)((double) x * frequency / width, (double) y * frequency / height, 0.0));
+
+			setImage(map, x, y, 0, 0.5 + $(float, random, noiseFBm)(x, y, 0.0,
+					frequency / width, frequency / height, 0.0,
+					/* persistance */ 0.5,
+					/* depth */ 6));
 		}
 	}
 #else

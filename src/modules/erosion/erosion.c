@@ -30,7 +30,7 @@
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Erosion functions");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6), MODULE_DEPENDENCY("image_pnm", 0, 1, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
@@ -44,7 +44,8 @@ MODULE_INIT
 	g_string_free(path, true);
 
 	assert(surface != NULL);
-	erodeThermal(surface, M_PI/4.5, 50); // 40 deg
+	//erodeThermal(surface, M_PI/4.5, 50); // 40 deg
+	erodeHydraulic(surface, 100);
 
 	path = g_string_new(execpath);
 	g_string_append(path, "/modules/erosion/erosion_out.ppm");
@@ -100,7 +101,8 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
 			}
 		}
 	}
-	// NOTE: The total amount of material is not preserved. Is this desirable?
+	// NOTE: The total amount of material is not preserved, which is not physically correct.
+	// Is this desirable?
 /*
 	float hNew = getImage(hMap, x, y, 0) - c * (dMax-T);
 	setImage(hMap, x, y, 0, hNew);
@@ -116,7 +118,7 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
  * @param talusAngle	critical angle of response
  * @param steps			number of iteration steps
  */
-API void erodeThermal(Image* heightMap, float talusAngle,  unsigned int steps)
+API void erodeThermal(Image* heightMap, float talusAngle, unsigned int steps)
 {
 	assert(heightMap != NULL);
 
@@ -130,51 +132,203 @@ API void erodeThermal(Image* heightMap, float talusAngle,  unsigned int steps)
 	}
 }
 
+static inline void waterFlowCell(Image* hMap, Image* waterMap, Image* sedimentMap, unsigned int x, unsigned int y)
+{
+	unsigned int width = hMap->width;
+	unsigned int height = hMap->height;
+	unsigned int cellCount = 0;
+	double dTotal = 0.0, aTotal = 0.0;
+	double w = getImage(waterMap, x, y, 0);
+	double h = getImage(hMap, x, y, 0);
+	double m = getImage(sedimentMap, x, y, 0);
+	double a = h + w;
+
+	for(unsigned int i=(MAX(y-1,0)); i<(MIN(y+2,height)); i++) {
+		for(unsigned int j=(MAX(x-1,0)); j<(MIN(x+2,width)); j++) {
+			if(j == x && i == y)
+				continue;
+
+			double hi = getImage(hMap, j, i, 0);
+			double wi = getImage(waterMap, j, i, 0);
+			double ai = hi + wi;
+			double di = a - ai;
+			if(di > 0.0) {
+				dTotal += di;
+				aTotal += ai;
+				cellCount++;
+			}
+		}
+	}
+
+	if(cellCount < 1) {
+		return;
+	}
+
+	double deltaA = a - (aTotal / (double)cellCount);
+
+	for(unsigned int i=(MAX(y-1,0)); i<(MIN(y+2,height)); i++) {
+		for(unsigned int j=(MAX(x-1,0)); j<(MIN(x+2,width)); j++) {
+			if(j == x && i == y)
+				continue;
+
+			double hi = getImage(hMap, j, i, 0);
+			double wi = getImage(waterMap, j, i, 0);
+			double mi = getImage(sedimentMap, j, i, 0);
+			double ai = hi + wi;
+			double di = a - ai;
+
+			if(di > 0.0) {
+				// water flow to neighboring cells
+				double deltaWi = (MIN(w, deltaA)) * di / dTotal;
+				setImage(waterMap, j, i, 0, wi + deltaWi);
+
+				// sediment distribution
+				// assumption: all material is uniformly distributed within the water w
+				double deltaMi = m * deltaWi / w;
+				setImage(sedimentMap, j, i, 0, mi + deltaMi);
+				setImage(sedimentMap, x, y, 0, getImage(sedimentMap, x, y, 0) - deltaMi);
+			}
+		}
+	}
+
+	setImage(waterMap, x, y, 0, w - (MIN(w, deltaA)));
+}
+
 /**
  * Erodes the height map using hydraulic erosion.
  *
  * @param height_map	height map of the erosion surface
  * @param steps			number of iteration steps
  */
-API void erodeHydraulic(Image* heightMap, unsigned int steps)
+API void erodeHydraulic(Image* hMap, unsigned int steps)
 {
-	assert(heightMap != NULL);
+	assert(hMap != NULL);
 
-	Image *hMapIn, *hMapOut, *hMapCopy;
+	Image *waterMap, *sedimentMap, *heightMap;
+	unsigned int width, height;
+	const float K_rain = 0.01; // amount of new water per cell
+	const float K_solubility = 0.01; // (German: lösbarkeit)
+	const float K_evaporation = 0.5;
+	const float K_capacity = 0.3;
+	const float hScale = 1.0;
 
-	// create a temporary copy
-	hMapCopy = copyImage(heightMap, heightMap->type);
-	assert(hMapCopy != NULL);
+	width = hMap->width;
+	height = hMap->height;
 
-	hMapIn = heightMap;
-	hMapOut = hMapCopy;
+	// create a float image copy and rescale it
+	if(hMap->type != IMAGE_TYPE_FLOAT) {
+		heightMap = $(Image *, image, createImageFloat)(width, height, 1);
+		assert(heightMap != NULL);
 
-	for(int k=0; k<steps; k++) {
-		// erode one time step
-		for(unsigned int y = 0; y < heightMap->height; y++) {
-			for(unsigned int x = 0; x < heightMap->width; x++) {
-				// TODO
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				setImage(heightMap, x, y, 0, hScale*getImage(hMap, x, y, 0));
 			}
 		}
-		// swap maps
-		Image *hMapTmp = hMapIn;
-		hMapIn = hMapOut;
-		hMapOut = hMapTmp;
-	}
+	} else {
+		heightMap = hMap;
 
-	if(steps % 2 == 1) {
-		// copy the result into the input image
-		if(heightMap->type == IMAGE_TYPE_BYTE) {
-			memcpy(heightMap->data.byte_data, hMapCopy->data.byte_data,
-				   heightMap->width*heightMap->height*heightMap->channels*sizeof(unsigned char));
-		} else if (heightMap->type == IMAGE_TYPE_FLOAT) {
-			memcpy(heightMap->data.float_data, hMapCopy->data.float_data,
-				   heightMap->width*heightMap->height*heightMap->channels*sizeof(float));
-		} else {
-			assert(0); // unhandled image type
+		if (hScale != 1.0) {
+			for(unsigned int y = 0; y < height; y++) {
+				for(unsigned int x = 0; x < width; x++) {
+					setImage(heightMap, x, y, 0, hScale*getImage(heightMap, x, y, 0));
+				}
+			}
 		}
 	}
 
+	// create water map
+	waterMap = $(Image *, image, createImageFloat)(width, height, 1);
+	assert(waterMap != NULL);
+
+	// create map of the sediment in the water
+	sedimentMap = $(Image *, image, createImageFloat)(width, height, 1);
+	assert(sedimentMap != NULL);
+
+	// init water level and sediment to zero
+	memset(waterMap->data.byte_data, 0, width*height*sizeof(float));
+	memset(sedimentMap->data.byte_data, 0, width*height*sizeof(float));
+
+	for(int k=0; k<steps; k++) {
+		// let it rain
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				setImage(waterMap, x, y, 0, getImage(waterMap, x, y, 0) + K_rain);
+			}
+		}
+
+		// erode terrain
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				//double mMax = getImage(waterMap, x, y, 0) * K_solubility - getImage(sedimentMap, x, y, 0);
+				//double deltaM = CLAMP(mMax, 0.f, getImage(heightMap, x, y, 0));
+				double deltaM = K_solubility * getImage(waterMap, x, y, 0);
+				setImage(heightMap, x, y, 0, getImage(heightMap, x, y, 0) - deltaM);
+				setImage(sedimentMap, x, y, 0, getImage(sedimentMap, x, y, 0) + deltaM);
+			}
+		}
+
+		// water flow and sediment transport
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				waterFlowCell(heightMap, waterMap, sedimentMap, x, y);
+			}
+		}
+
+		// evaporate water and accumulate sediments
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				double h = getImage(heightMap, x, y, 0);
+				double m = getImage(sedimentMap, x, y, 0);
+				double w = getImage(waterMap, x, y, 0);
+
+				double wNew = w * (1.0 - K_evaporation);
+				// NOTE: water will never completely vanish
+
+				double mMax = K_capacity * wNew;
+				double deltaM = MAX(0.0, m - mMax);
+
+				setImage(sedimentMap, x, y, 0, m - deltaM);
+				setImage(heightMap, x, y, 0, h + deltaM);
+				setImage(waterMap, x, y, 0, wNew);
+			}
+		}
+	}
+
+	// evaporate all remaining water
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
+			double h = getImage(heightMap, x, y, 0);
+			double m = getImage(sedimentMap, x, y, 0);
+			setImage(heightMap, x, y, 0, h + m);
+			// NOTE: unnecessary
+			setImage(waterMap, x, y, 0, 0.0);
+		}
+	}
+
+	// copy values to the original height map channels
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
+			double value = CLAMP(getImage(heightMap, x, y, 0)/hScale, 0.0, 1.0);
+			assert(value <= 1.0 && value >= 0.0);
+			for(unsigned int c = 0; c < hMap->channels; c++) {
+				setImage(hMap, x, y, c, value);
+			}
+		}
+	}
+
+/*
+	char *execpath = $$(char *, getExecutablePath)();
+	GString *path = g_string_new(execpath);
+	g_string_append(path, "/modules/erosion/water.pbm");
+	assert($(bool, image, writeImageToFile)(path->str, waterMap));
+	g_string_free(path, true);
+	free(execpath);
+*/
 	// cleanup
-	freeImage(hMapCopy);
+	if(hMap->type != IMAGE_TYPE_FLOAT) {
+		$(void, Image*, freeImage)(heightMap);
+	}
+	$(void, Image*, freeImage)(waterMap);
+	$(void, Image*, freeImage)(sedimentMap);
 }

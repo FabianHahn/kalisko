@@ -134,7 +134,7 @@ API void erodeThermal(Image* heightMap, float talusAngle, unsigned int steps)
 		for(unsigned int x = 0; x < heightMap->width; x++) {
 			double value = getImage(heightMap, x, y, 0);
 			assert(value <= 1.0 && value >= 0.0);
-			for(unsigned int c = 1; c < heightMap->channels; c++) {
+			for(unsigned int c = 1; c < MIN(heightMap->channels, 3); c++) {
 				setImage(heightMap, x, y, c, value);
 			}
 		}
@@ -318,9 +318,9 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	// copy values to the original height map channels
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			double value = CLAMP(getImage(heightMap, x, y, 0)/hScale, 0.0, 1.0);
+			double value = getImage(heightMap, x, y, 0)/hScale;
 			assert(value <= 1.0 && value >= 0.0);
-			for(unsigned int c = 0; c < hMap->channels; c++) {
+			for(unsigned int c = 0; c < MIN(hMap->channels, 3); c++) {
 				setImage(hMap, x, y, c, value);
 			}
 		}

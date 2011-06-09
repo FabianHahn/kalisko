@@ -177,3 +177,31 @@ static float gradientProduct(unsigned int corner, float dx, float dy, float dz)
 
 	return result;
 }
+
+/**
+ * Generates fractional Brownian motion (fBm) noise
+ * Reference: http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
+ *
+ * @param x		the x coordinate
+ * @param y		the y coordinate
+ * @param z		the z coordinate
+ * @param fx	frequency in x direction
+ * @param fy	frequency in y direction
+ * @param fz	frequency in z direction
+ * @param persistence	...
+ * @param depth			...
+ * @return				...
+ */
+API float noiseFBm(double x, double y, double z, double fx, double fy, double fz, double persistence, unsigned int depth)
+{
+	float res = 0.f;
+
+	for(unsigned int i = 0; i < depth; i++) {
+		res += pow(persistence, (double) i) * randomPerlin(
+				fx * pow(2.0, (double) i) * x,
+				fy * pow(2.0, (double) i) * y,
+				fz * pow(2.0, (double) i) * z);
+	}
+
+	return res;
+}

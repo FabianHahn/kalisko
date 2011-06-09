@@ -24,5 +24,6 @@
 API void initPerlin();
 API void freePerlin();
 API float randomPerlin(double x, double y, double z);
+API float noiseFBm(double x, double y, double z, double fx, double fy, double fz, double persistence, unsigned int depth);
 
 #endif

@@ -18,6 +18,13 @@ scene = {
 			type = heightmap
 			heightmap = "/modules/freegluttest/texture.png"
 		}
+		
+		landscape = {
+			type = landscape
+			width = 128
+			height = 128
+			frequency = 2
+		}		
 	}
 	
 	textures = {
@@ -107,6 +114,12 @@ scene = {
 			primitive = heightmap
 			material = heightmap
 			translation = (2.0, -1.0, 2.0)
+		}
+		
+		landscape = {
+			primitive = landscape
+			material = heightmap
+			translation = (-2.0, -1.0, 2.0)
 		}		
 	}
 }

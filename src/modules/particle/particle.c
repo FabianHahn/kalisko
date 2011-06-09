@@ -28,7 +28,9 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
+#include "modules/opengl/model.h"
 #include "modules/opengl/material.h"
+#include "modules/opengl/uniform.h"
 #include "modules/random/random.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
@@ -38,9 +40,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 11);
+MODULE_VERSION(0, 6, 13);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("random", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -146,26 +148,27 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *m
 	}
 
 	OpenGLParticles *particles = primitive->data;
+	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLModelUniforms)(model_name);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "time");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "time");
 	OpenGLUniform *timeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->time);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "time", timeUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "time", timeUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "lifetime");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "lifetime");
 	OpenGLUniform *lifetimeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.lifetime);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "lifetime", lifetimeUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "lifetime", lifetimeUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "startSize");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "startSize");
 	OpenGLUniform *startSizeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.startSize);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "startSize", startSizeUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "startSize", startSizeUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "endSize");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "endSize");
 	OpenGLUniform *endSizeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.endSize);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "endSize", endSizeUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "endSize", endSizeUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "aspectRatio");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "aspectRatio");
 	OpenGLUniform *aspectRatioUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->properties.aspectRatio);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "aspectRatio", aspectRatioUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "aspectRatio", aspectRatioUniform);
 
 	return true;
 }

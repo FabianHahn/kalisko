@@ -28,7 +28,9 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
+#include "modules/opengl/model.h"
 #include "modules/opengl/material.h"
+#include "modules/opengl/uniform.h"
 #include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/image/image.h"
@@ -40,9 +42,9 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 9);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 22, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
 
 MODULE_INIT
 {
@@ -151,22 +153,23 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 	}
 
 	OpenGLHeightmap *heightmap = primitive->data;
+	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLModelUniforms)(model_name);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heights");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "heights");
 	OpenGLUniform *heightsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->heightsTexture);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heights", heightsUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "heights", heightsUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heightmapWidth");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "heightmapWidth");
 	OpenGLUniform *heightmapWidthUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->width);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heightmapWidth", heightmapWidthUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "heightmapWidth", heightmapWidthUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "heightmapHeight");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "heightmapHeight");
 	OpenGLUniform *heightmapHeightUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->height);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "heightmapHeight", heightmapHeightUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "heightmapHeight", heightmapHeightUniform);
 
-	$(bool, opengl, detachOpenGLMaterialUniform)(material_name, "normals");
+	$(bool, opengl, detachOpenGLUniform)(uniforms, "normals");
 	OpenGLUniform *normalsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->normalsTexture);
-	$(bool, opengl, attachOpenGLMaterialUniform)(material_name, "normals", normalsUniform);
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "normals", normalsUniform);
 
 	return true;
 }

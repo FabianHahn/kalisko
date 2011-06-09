@@ -18,39 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#version 120
+#ifndef LANDSCAPE_SCENE_H
+#define LANDSCAPE_SCENE_H
 
-uniform mat4 model;
-uniform mat4 modelNormal;
-uniform mat4 camera;
-uniform mat4 perspective;
-uniform sampler2D heights;
-uniform int heightmapWidth;
-uniform int heightmapHeight;
-uniform sampler2D normals;
+#include "modules/store/store.h"
+#include "modules/opengl/primitive.h"
+#include "modules/scene/scene.h"
 
-attribute vec2 uv;
+API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
-varying vec3 world_position;
-varying vec3 world_normal;
-varying vec4 world_color;
-varying vec2 world_uv;
-varying float world_height;
-
-void main()
-{
-	vec2 heightmapPosition = uv / vec2(heightmapWidth, heightmapHeight);
-	float height = texture2D(heights, heightmapPosition).x;
-	vec4 pos4 = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
-	vec4 norm4 = vec4(texture2D(normals, heightmapPosition).xyz, 1.0);
-	vec4 worldpos4 = model * pos4;
-	vec4 worldnorm4 = modelNormal * norm4;
-
-	world_position = worldpos4.xyz / worldpos4.w;
-	world_normal = worldnorm4.xyz / worldnorm4.w;
-	world_color = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
-	world_uv = heightmapPosition;
-	world_height = height;
-		
-	gl_Position = perspective * camera * worldpos4;
-}
+#endif

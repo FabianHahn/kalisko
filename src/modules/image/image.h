@@ -98,6 +98,39 @@ static inline float getImageFloat(Image *image, unsigned int x, unsigned int y, 
 }
 
 /**
+ * Retrieves an image pixel from an image as a byte value
+ *
+ * @param image			the image from which to retrieve the pixel
+ * @param x				the x location to access
+ * @param y				the y location to access
+ * @param c				the channel to access
+ * @result				the pixel at the requested position
+ */
+static inline unsigned int getImageAsByte(Image *image, unsigned int x, unsigned int y, unsigned int c)
+{
+	assert(x < image->width);
+	assert(y < image->height);
+	assert(c < image->channels);
+
+	if(image->type == IMAGE_TYPE_BYTE) {
+		return image->data.byte_data[y * image->width * image->channels + x * image->channels + c];
+	} else if(image->type == IMAGE_TYPE_FLOAT) {
+		int scaled = 255.0f * image->data.float_data[y * image->width * image->channels + x * image->channels + c];
+		if(scaled > 255) {
+			scaled = 255;
+		}
+
+		if(scaled < 0) {
+			scaled = 0;
+		}
+
+		return scaled;
+	}
+
+	return 0; // never reached
+}
+
+/**
  * Retrieves an image pixel from an image
  *
  * @param image			the image from which to retrieve the pixel

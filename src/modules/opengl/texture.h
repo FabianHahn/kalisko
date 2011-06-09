@@ -39,6 +39,18 @@ typedef enum {
 } OpenGLTextureSamplingMode;
 
 /**
+ * Specifies the wrapping mode to use for an OpenGL texture
+ */
+typedef enum {
+	/** The texture values are simply clamped to the range of the provided image */
+	OPENGL_TEXTURE_WRAPPING_CLAMP,
+	/** The texture values are repeated modulo the dimension of the provided image */
+	OPENGL_TEXTURE_WRAPPING_REPEAT,
+	/** The texture values are mirrored at the borders of the image */
+	OPENGL_TEXTURE_WRAPPING_MIRROR
+} OpenGLTextureWrappingMode;
+
+/**
  * Specifies the type of an OpenGL texture
  */
 typedef enum {
@@ -64,6 +76,8 @@ typedef struct {
 	int unit;
 	/** The sampling mode to use for this texture */
 	OpenGLTextureSamplingMode samplingMode;
+	/** The wrapping mode to use for this texture */
+	OpenGLTextureWrappingMode wrappingMode;
 	/** The texture format to use for this texture */
 	GLuint format;
 	/** The internal texture format to use for this texture */

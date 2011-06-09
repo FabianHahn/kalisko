@@ -27,12 +27,13 @@
 #include "modules/opengl/primitive.h"
 #include "modules/image/io.h"
 #include "modules/image/image.h"
+#include "modules/heightmap/heightmap.h"
 #include "api.h"
-#include "heightmap.h"
+#include "landscape.h"
 #include "scene.h"
 
 /**
- * Parses an OpenGL heightmap from a scene store
+ * Parses a landscape from a scene store
  *
  * @param scene			the scene to parse the OpenGL primitive for
  * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
@@ -40,31 +41,46 @@
  * @param store			the scene store to parse
  * @result				the parsed primitive or NULL on failure
  */
-API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char *path_prefix, const char *name, Store *store)
+API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
-	// Parse num parameter
-	Store *heightmapParam;
+	// Parse width parameter
+	Store *widthParam;
 
-	if((heightmapParam = $(Store *, store, getStorePath)(store, "heightmap")) == NULL || heightmapParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': String parameter 'heightmap' not found", name);
+	if((widthParam = $(Store *, store, getStorePath)(store, "width")) == NULL || widthParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'width' not found", name);
 		return NULL;
 	}
 
-	GString *path = g_string_new(path_prefix);
-	g_string_append_printf(path, "/%s", heightmapParam->content.string);
-	Image *image = $(Image *, image, readImageFromFile)(path->str);
-	g_string_free(path, true);
+	unsigned int width = widthParam->content.integer;
 
-	if(image == NULL) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to load heightmap image from '%s'", name, path->str);
+	// Parse height parameter
+	Store *heightParam;
+
+	if((heightParam = $(Store *, store, getStorePath)(store, "height")) == NULL || heightParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'height' not found", name);
 		return NULL;
 	}
+
+	unsigned int height = heightParam->content.integer;
+
+	// Parse frequency parameter
+	Store *frequencyParam;
+
+	if((frequencyParam = $(Store *, store, getStorePath)(store, "frequency")) == NULL || !(frequencyParam->type == STORE_FLOAT_NUMBER || frequencyParam->type == STORE_INTEGER)) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'frequency' not found", name);
+		return NULL;
+	}
+
+	double frequency = frequencyParam->type == STORE_FLOAT_NUMBER ? frequencyParam->content.float_number : frequencyParam->content.integer;
+
+	// Generate heightmap
+	Image *image = generateLandscapeHeightmap(width, height, frequency);
 
 	// Create heightmap
 	OpenGLPrimitive *primitive;
 
-	if((primitive = createOpenGLPrimitiveHeightmap(image)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to create heightmap primitive from heightmap image", name);
+	if((primitive = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(image)) == NULL) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Failed to create heightmap primitive from landscape heightmap image", name);
 		$(Image *, image, freeImage)(image);
 		return NULL;
 	}

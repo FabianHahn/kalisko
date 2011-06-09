@@ -24,16 +24,15 @@
 #include <GL/glew.h>
 #include "modules/linalg/Matrix.h"
 #include "shader.h"
+#include "uniform.h"
 
 API void initOpenGLMaterials();
 API void freeOpenGLMaterials();
 API bool createOpenGLMaterial(const char *name);
 API bool deleteOpenGLMaterial(const char *name);
 API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program);
-API bool attachOpenGLMaterialUniform(const char *material_name, const char *uniform_name, OpenGLUniform *uniform);
-API bool detachOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
-API OpenGLUniform *getOpenGLMaterialUniform(const char *material_name, const char *uniform_name);
-API bool useOpenGLMaterial(const char *name, Matrix *model, Matrix *modelNormal);
+API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name);
+API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *uniforms, Matrix *model, Matrix *modelNormal);
 API bool checkOpenGLMaterialShader(const char *name);
 API GList *getOpenGLMaterials();
 

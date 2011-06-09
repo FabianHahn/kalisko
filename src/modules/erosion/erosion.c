@@ -96,8 +96,6 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
 			if(di > T) {
 				float hNew = getImage(hMap, j, i, 0) + c * (dMax-T) * di/dTotal;
 				setImage(hMap, j, i, 0, hNew);
-				setImage(hMap, j, i, 1, hNew);
-				setImage(hMap, j, i, 2, hNew);
 			}
 		}
 	}
@@ -127,6 +125,17 @@ API void erodeThermal(Image* heightMap, float talusAngle, unsigned int steps)
 		for(unsigned int y = 0; y < heightMap->height; y++) {
 			for(unsigned int x = 0; x < heightMap->width; x++) {
 				erodeThermalCell(heightMap, x, y, talusAngle);
+			}
+		}
+	}
+
+	// copy result to the other height map channels
+	for(unsigned int y = 0; y < heightMap->height; y++) {
+		for(unsigned int x = 0; x < heightMap->width; x++) {
+			double value = getImage(heightMap, x, y, 0);
+			assert(value <= 1.0 && value >= 0.0);
+			for(unsigned int c = 1; c < heightMap->channels; c++) {
+				setImage(heightMap, x, y, c, value);
 			}
 		}
 	}

@@ -40,16 +40,23 @@ MODULE_INIT
 	char *execpath = $$(char *, getExecutablePath)();
 	GString *path = g_string_new(execpath);
 	g_string_append(path, "/modules/erosion/erosion_in.png");
-	Image *surface = $(Image *, image, readImageFromFile)(path->str);
+	Image *surface1 = $(Image *, image, readImageFromFile)(path->str);
+	assert(surface1 != NULL);
+	Image *surface2 = copyImage(surface1, surface1->type);
+	assert(surface2 != NULL);
 	g_string_free(path, true);
 
-	assert(surface != NULL);
-	//erodeThermal(surface, M_PI/4.5, 50); // 40 deg
-	erodeHydraulic(surface, 100);
+	erodeThermal(surface1, M_PI/4.5, 50); // 40 deg
+	erodeHydraulic(surface2, 100);
 
 	path = g_string_new(execpath);
-	g_string_append(path, "/modules/erosion/erosion_out.ppm");
-	assert($(bool, image, writeImageToFile)(path->str, surface));
+	g_string_append(path, "/modules/erosion/erosion_out_thermal.ppm");
+	assert($(bool, image, writeImageToFile)(path->str, surface1));
+	g_string_free(path, true);
+
+	path = g_string_new(execpath);
+	g_string_append(path, "/modules/erosion/erosion_out_hydraulic.ppm");
+	assert($(bool, image, writeImageToFile)(path->str, surface2));
 	g_string_free(path, true);
 
 	free(execpath);
@@ -64,16 +71,16 @@ MODULE_FINALIZE
 static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y, float talusAngle)
 {
 	const float c = 0.5;
-	const float cellSize = 0.001;
-	float dMax = 0.0, dTotal = 0.0;
-	float T = cellSize * tan(talusAngle);
+	const float cellSize = 0.01; // NOTE: angle depends on the terrain scale!
+	double dMax = 0.0, dTotal = 0.0;
+	double T = cellSize * tan(talusAngle);
 
 	for(unsigned int i=(MAX(y-1,0)); i<(MIN(y+2,hMap->height)); i++) {
 		for(unsigned int j=(MAX(x-1,0)); j<(MIN(x+2,hMap->width)); j++) {
 			if(j == x && i == y)
 				continue;
 
-			float di = getImage(hMap, x, y, 0) - getImage(hMap, j, i, 0);
+			double di = getImage(hMap, x, y, 0) - getImage(hMap, j, i, 0);
 			if(di > T) {
 				dTotal += di;
 				if(di > dMax) {
@@ -87,27 +94,27 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
 		return;
 	}
 
+	float h = getImage(hMap, x, y, 0);
+
 	for(unsigned int i=(MAX(y-1,0)); i<(MIN(y+2,hMap->height)); i++) {
 		for(unsigned int j=(MAX(x-1,0)); j<(MIN(x+2,hMap->width)); j++) {
 			if(j == x && i == y)
 				continue;
 
-			float di = getImage(hMap, x, y, 0) - getImage(hMap, j, i, 0);
+			double di = h - getImage(hMap, j, i, 0);
 			if(di > T) {
-				float hNew = getImage(hMap, j, i, 0) + c * (dMax-T) * di/dTotal;
+				double hNew = getImage(hMap, j, i, 0) + c * (dMax-T) * di/dTotal;
 				setImage(hMap, j, i, 0, hNew);
 			}
 		}
 	}
-	// NOTE: The total amount of material is not preserved, which is not physically correct.
-	// Is this desirable?
-/*
-	float hNew = getImage(hMap, x, y, 0) - c * (dMax-T);
+
+	// reduce the cell center to preserve the total amount of material
+	float hNew = h - c * (dMax-T);
 	setImage(hMap, x, y, 0, hNew);
-	setImage(hMap, x, y, 1, hNew);
-	setImage(hMap, x, y, 2, hNew);
-*/
 }
+
+
 
 /**
  * Erodes the height map using thermal weathering.
@@ -116,28 +123,52 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
  * @param talusAngle	critical angle of response
  * @param steps			number of iteration steps
  */
-API void erodeThermal(Image* heightMap, float talusAngle, unsigned int steps)
+API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
 {
-	assert(heightMap != NULL);
+	assert(hMap != NULL);
+
+	Image* heightMap;
+	unsigned int width, height;
+	width = hMap->width;
+	height = hMap->height;
+
+	// ensure floating point precission
+	if(hMap->type != IMAGE_TYPE_FLOAT) {
+		heightMap = $(Image *, image, createImageFloat)(width, height, 1);
+		assert(heightMap != NULL);
+
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
+				setImage(heightMap, x, y, 0, getImage(hMap, x, y, 0));
+			}
+		}
+	} else {
+		heightMap = hMap;
+	}
 
 	for(int k=0; k<steps; k++) {
 		// erode one time step
-		for(unsigned int y = 0; y < heightMap->height; y++) {
-			for(unsigned int x = 0; x < heightMap->width; x++) {
+		for(unsigned int y = 0; y < height; y++) {
+			for(unsigned int x = 0; x < width; x++) {
 				erodeThermalCell(heightMap, x, y, talusAngle);
 			}
 		}
 	}
 
 	// copy result to the other height map channels
-	for(unsigned int y = 0; y < heightMap->height; y++) {
-		for(unsigned int x = 0; x < heightMap->width; x++) {
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
 			double value = getImage(heightMap, x, y, 0);
 			assert(value <= 1.0 && value >= 0.0);
-			for(unsigned int c = 1; c < MIN(heightMap->channels, 3); c++) {
-				setImage(heightMap, x, y, c, value);
+			for(unsigned int c = 0; c < MIN(hMap->channels, 4); c++) {
+				setImage(hMap, x, y, c, value);
 			}
 		}
+	}
+
+	// cleanup
+	if(hMap->type != IMAGE_TYPE_FLOAT) {
+		$(void, Image*, freeImage)(heightMap);
 	}
 }
 
@@ -320,7 +351,7 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 		for(unsigned int x = 0; x < width; x++) {
 			double value = getImage(heightMap, x, y, 0)/hScale;
 			assert(value <= 1.0 && value >= 0.0);
-			for(unsigned int c = 0; c < MIN(hMap->channels, 3); c++) {
+			for(unsigned int c = 0; c < MIN(hMap->channels, 4); c++) {
 				setImage(hMap, x, y, c, value);
 			}
 		}

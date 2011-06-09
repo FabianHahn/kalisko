@@ -105,6 +105,8 @@ API Image *copyImage(Image *source, ImageType targetType)
 		case IMAGE_TYPE_FLOAT:
 			target = createImageFloat(source->width, source->height, source->channels);
 		break;
+		default:
+			target = NULL;
 	}
 
 	for(unsigned int y = 0; y < source->height; y++) {

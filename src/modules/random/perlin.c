@@ -87,6 +87,7 @@ API void freePerlin()
  * @param x		the x coordinate
  * @param y		the y coordinate
  * @param z		the z coordinate
+ * @return		FIXME
  */
 API float randomPerlin(double x, double y, double z)
 {

@@ -23,7 +23,9 @@
 #include <glib.h>
 #include <stdio.h>
 #include "dll.h"
+#include "modules/erosion/erosion.h"
 #include "modules/image/image.h"
+#include "modules/image/io.h"
 #include "modules/random/perlin.h"
 #include "modules/scene/primitive.h"
 #include "api.h"
@@ -35,7 +37,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
 MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
 MODULE_INIT
 {
@@ -57,6 +59,7 @@ MODULE_FINALIZE
  */
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, double frequency)
 {
+#if 0
 	Image *map = $(Image *, image, createImageFloat)(width, height, 1);
 
 	for(unsigned int y = 0; y < height; y++) {
@@ -64,6 +67,18 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 			setImage(map, x, y, 0, 0.5 + $(float, random, randomPerlin)((double) x * frequency / width, (double) y * frequency / height, 0.0));
 		}
 	}
+#else
+	char *execpath = $$(char *, getExecutablePath)();
+	GString *path = g_string_new(execpath);
+	g_string_append(path, "/modules/erosion/erosion_in.png");
+	Image *map = $(Image *, image, readImageFromFile)(path->str);
+	assert(map != NULL);
+	g_string_free(path, true);
+	free(execpath);
+#endif
+
+	//erodeThermal(map, M_PI/4.5, 50); // 40 deg
+	//erodeHydraulic(map, 100);
 
 	return map;
 }

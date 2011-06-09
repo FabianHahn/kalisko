@@ -4,7 +4,7 @@ scene = {
 			type = mesh
 			filename = "/modules/freegluttest/tetrahedron.store"
 		}
-		
+
 		effect = {
 			type = particles
 			num = 50
@@ -13,35 +13,35 @@ scene = {
 			velocityStd = (0.0, 0.1, 0.0)
 			angularVelocityStd = 0.5
 		}
-		
+
 		heightmap = {
 			type = heightmap
 			heightmap = "/modules/freegluttest/texture.png"
 		}
-		
+
 		landscape = {
 			type = landscape
-			width = 128
-			height = 128
-			frequency = 2
-		}		
+			width = 512
+			height = 512
+			frequency = 20
+		}
 	}
-	
+
 	textures = {
 		checkerboard = "/modules/freegluttest/texture.png"
 		multi = (
 			"/modules/freegluttest/green.png",
 			"/modules/freegluttest/texture.png"
-		)	
+		)
 	}
-	
+
 	parameters = {
 		lightPosition = (-10.0, 50.0, -50.0)
 		lightColor = (1.0, 1.0, 1.0, 1.0)
 		ambient = 0.25
-		specular = 0.9
+		specular = 0.4
 	}
-	
+
 	materials = {
 		phong_vertexcolor = {
 			vertex_shader = "/modules/mesh_opengl/phong.glslv"
@@ -53,7 +53,7 @@ scene = {
 				specular = specular
 			}
 		}
-		
+
 		phong_texture = {
 			vertex_shader = "/modules/mesh_opengl/phong.glslv"
 			fragment_shader = "/modules/mesh_opengl/phong_texture.glslf"
@@ -65,7 +65,7 @@ scene = {
 				texture = checkerboard
 			}
 		}
-		
+
 		heightmap = {
 			vertex_shader = "/modules/heightmap/heightmap.glslv"
 			fragment_shader = "/modules/heightmap/heightmap.glslf"
@@ -75,18 +75,18 @@ scene = {
 				ambient = ambient
 				specular = specular
 				texture = multi
-			}		
+			}
 		}
-		
+
 		particle = {
 			vertex_shader = "/modules/particle/particle.glslv"
 			fragment_shader = "/modules/particle/particle.glslf"
 			uniforms = {
 				texture = checkerboard
 			}
-		}	
+		}
 	}
-	
+
 	models = {
 		tetrahedron = {
 			primitive = tetrahedron
@@ -96,30 +96,32 @@ scene = {
 			scaleY = 0.75
 			scaleZ = 0.75
 		}
-		
+
 		tetrahedron2 = {
 			primitive = tetrahedron
 			material = phong_vertexcolor
 			translation = (0.0, 0.25, 3.0)
 			rotationX = 3.14159265359 // rotation by pi = 180 degrees
 		}
-		
+
 		particles = {
 			primitive = effect
 			material = particle
 			translation = (2.5, 0.0, 2.5)
 		}
-		
+
 		heightmap = {
 			primitive = heightmap
 			material = heightmap
 			translation = (2.0, -1.0, 2.0)
+			scaleY = 0.2
 		}
-		
+
 		landscape = {
 			primitive = landscape
 			material = heightmap
 			translation = (-2.0, -1.0, 2.0)
-		}		
+			scaleY = 0.2
+		}
 	}
 }

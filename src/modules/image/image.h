@@ -58,6 +58,7 @@ API Image *createImageByte(unsigned int width, unsigned int height, unsigned int
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
 API Image *copyImage(Image *source, ImageType targetType);
 API void normalizeImageChannel(Image *image, unsigned int channel);
+API void invertImageChannel(Image *image, unsigned int channel);
 API void freeImage(Image *image);
 
 /**

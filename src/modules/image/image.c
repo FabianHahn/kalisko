@@ -159,7 +159,27 @@ API void normalizeImageChannel(Image *image, unsigned int channel)
 	// shift the whole image
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
-			setImage(image, x, y, channel, minValue + (maxValue - minValue) * getImageFloat(image, x, y, channel));
+			setImageFloat(image, x, y, channel, minValue + (maxValue - minValue) * getImageFloat(image, x, y, channel));
+		}
+	}
+}
+
+/**
+ * Inverts an image channel
+ *
+ * @param image			the image to invert
+ * @param channel		the image channel to invert
+ */
+API void invertImageChannel(Image *image, unsigned int channel)
+{
+	if(channel >= image->channels) {
+		return;
+	}
+
+	// invert the image
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			setImage(image, x, y, channel, 1.0f - getImage(image, x, y, channel));
 		}
 	}
 }

@@ -27,6 +27,7 @@ uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
 uniform sampler2DArray texture;
+uniform int textureCount;
 
 varying vec3 world_position;
 varying vec3 world_normal;
@@ -36,7 +37,7 @@ varying float world_height;
 
 vec4 getColor()
 {
-	return texture2DArray(texture, vec3(world_uv, world_height));
+	return texture2DArray(texture, (textureCount - 1) * vec3(world_uv, world_height));
 }
 
 vec4 phongAmbient(in vec4 textureColor)

@@ -35,9 +35,17 @@ varying vec4 world_color;
 varying vec2 world_uv;
 varying float world_height;
 
-vec4 getColor()
+vec4 getColor(float x)
 {
-	return texture2DArray(texture, (textureCount - 1) * vec3(world_uv, world_height));
+	float scaled = (textureCount - 1) * x;
+	int prev = int(floor(scaled));
+	int next = prev + 1;
+	float diff = scaled - prev;
+	
+	vec4 lower = texture2DArray(texture, vec3(world_uv, prev));
+	vec4 higher = texture2DArray(texture, vec3(world_uv, next));
+
+	return mix(lower, higher, diff);
 }
 
 vec4 phongAmbient(in vec4 textureColor)
@@ -76,7 +84,7 @@ void main()
 		normal = -normal;
 	}
 	
-	vec4 textureColor = getColor();
+	vec4 textureColor = getColor(world_height);
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);

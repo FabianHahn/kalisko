@@ -79,6 +79,8 @@ API RandomWorleyContext* createWorleyContext(unsigned int count, unsigned int di
 		for(unsigned int d = 0; d < dimensions; d++) {
 			pointData[d] = randomUniform();
 		}
+
+		g_ptr_array_add(context->points, point);
 	}
 
 	return context;

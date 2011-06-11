@@ -37,9 +37,9 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 1, 8);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 4, 1), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
@@ -71,12 +71,13 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	fBm =		$(Image *, image, createImageFloat)(width, height, 1);
 
 	// 1. create worley noise for the overall map structure (valleys, peaks and ridges)
-	RandomWorleyCtx* worleyCtx = createWorleyCtx(20, 2);
+	RandomWorleyContext* worleyContext = $(RandomWorleyContext *, random, createWorleyContext)(20, 2);
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			float value = $(float, random, randomWorley)(worleyCtx,
-					(double) x / width, (double) y / height, 0.0,
-					1, RANDOM_DIST_EUCLIDEAN);
+			Vector *point = $(Vector *, linalg, createVector2)((double) x / width, (double) y / height);
+			float value = $(float, random, randomWorley)(worleyContext, point, 1, RANDOM_WORLEY_DISTANCE_EUCLIDEAN);
+			$(void, linalg, freeVector)(point);
+			
 			setImage(worley, x, y, 0, value);
 
 			if(value > maxValue)
@@ -85,7 +86,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 				minValue = value;
 		}
 	}
-	freeWorleyCtx(worleyCtx);
+	$(void, random, freeWorleyContext)(worleyContext);
 
 	// rescale heightmap to [0,1] and invert it
 	for(unsigned int y = 0; y < height; y++) {
@@ -104,10 +105,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			float value = 0.5 + $(float, random, noiseFBm)(x, y, 0.0,
-					frequency / width, frequency / height, 0.0,
-					/* persistance */ 0.5,
-					/* depth */ 6);
+			float value = 0.5f + $(float, random, noiseFBm)((double) x * frequency / width, (double) y * frequency / height, 0.0, /* persistance */ 0.5, /* depth */ 6);
 			setImage(fBm, x, y, 0, value);
 
 			if(value > maxValue)

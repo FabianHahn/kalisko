@@ -29,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 9);
+MODULE_VERSION(0, 5, 10);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -156,10 +156,12 @@ API void normalizeImageChannel(Image *image, unsigned int channel)
 		}
 	}
 
+	float factor = 1.0f / (maxValue - minValue);
+
 	// shift the whole image
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
-			setImageFloat(image, x, y, channel, minValue + (maxValue - minValue) * getImageFloat(image, x, y, channel));
+			setImageFloat(image, x, y, channel, factor * (minValue + getImageFloat(image, x, y, channel)));
 		}
 	}
 }

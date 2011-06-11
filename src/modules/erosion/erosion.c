@@ -126,6 +126,9 @@ API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
 {
 	assert(hMap != NULL);
 
+	if(steps == 0)
+		return;
+
 	Image* heightMap;
 	unsigned int width, height;
 	width = hMap->width;
@@ -242,6 +245,9 @@ static inline void waterFlowCell(Image* hMap, Image* waterMap, Image* sedimentMa
 API void erodeHydraulic(Image* hMap, unsigned int steps)
 {
 	assert(hMap != NULL);
+
+	if(steps == 0)
+		return;
 
 	Image *waterMap, *sedimentMap, *heightMap;
 	unsigned int width, height;

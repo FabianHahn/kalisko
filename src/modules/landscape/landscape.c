@@ -22,7 +22,6 @@
 #include <assert.h>
 #include <glib.h>
 #include <stdio.h>
-#include <limits.h>
 #include "dll.h"
 #include "modules/erosion/erosion.h"
 #include "modules/image/image.h"
@@ -37,9 +36,9 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 9), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
@@ -64,8 +63,6 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 #define DEBUGIMAGES
 	// inefficent but useful for debugging
 	Image *map, *worley, *fBm;
-	float maxValue = 0.0, minValue = FLT_MAX;
-
 	map =		$(Image *, image, createImageFloat)(width, height, 1);
 	worley = 	$(Image *, image, createImageFloat)(width, height, 1);
 	fBm =		$(Image *, image, createImageFloat)(width, height, 1);
@@ -79,48 +76,25 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 			$(void, linalg, freeVector)(point);
 			
 			setImage(worley, x, y, 0, value);
-
-			if(value > maxValue)
-				maxValue = value;
-			if(value < minValue)
-				minValue = value;
 		}
 	}
 	$(void, random, freeWorleyContext)(worleyContext);
 
-	// rescale heightmap to [0,1] and invert it
-	for(unsigned int y = 0; y < height; y++) {
-		for(unsigned int x = 0; x < width; x++) {
-			float value = (getImage(worley, x, y, 0) - minValue) / (maxValue - minValue);
-			setImage(worley, x, y, 0, 1.f - value);
-		}
-	}
+	$(void, image, normalizeImageChannel)(worley, 0);
+	$(void, image, invertImageChannel)(worley, 0);
 
 #ifdef DEBUGIMAGES
 	assert($(bool, image, writeImageToFile)("worley.pgm", worley));
 #endif
-	maxValue = 0.0;
-	minValue = 0.0;
-
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
 			float value = 0.5f + $(float, random, noiseFBm)((double) x * frequency / width, (double) y * frequency / height, 0.0, /* persistance */ 0.5, /* depth */ 6);
 			setImage(fBm, x, y, 0, value);
-
-			if(value > maxValue)
-				maxValue = value;
-			if(value < minValue)
-				minValue = value;
 		}
 	}
 
-	// rescale heightmap to [0,1]
-	for(unsigned int y = 0; y < height; y++) {
-		for(unsigned int x = 0; x < width; x++) {
-			setImage(fBm, x, y, 0, (getImage(fBm, x, y, 0) - minValue) / (maxValue - minValue));
-		}
-	}
+	$(void, image, normalizeImageChannel)(fBm, 0);
 
 #ifdef DEBUGIMAGES
 	assert($(bool, image, writeImageToFile)("fbm.pgm", fBm));

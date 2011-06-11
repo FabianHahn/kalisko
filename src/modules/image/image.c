@@ -29,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 10);
+MODULE_VERSION(0, 5, 11);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -155,6 +155,8 @@ API void normalizeImageChannel(Image *image, unsigned int channel)
 			}
 		}
 	}
+
+	LOG_DEBUG("Shifting image from [%f,%f] to [0,1]", minValue, maxValue);
 
 	float factor = 1.0f / (maxValue - minValue);
 

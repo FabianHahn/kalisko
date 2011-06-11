@@ -38,7 +38,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
 MODULE_VERSION(0, 1, 10);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 9), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 9), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
@@ -72,19 +72,18 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
 			Vector *point = $(Vector *, linalg, createVector2)((double) x / width, (double) y / height);
-			float value = $(float, random, randomWorley)(worleyContext, point, 1, RANDOM_WORLEY_DISTANCE_EUCLIDEAN);
+			float value = $(float, random, randomWorleyDifference21)(worleyContext, point, RANDOM_WORLEY_DISTANCE_EUCLIDEAN);
 			$(void, linalg, freeVector)(point);
-			
+
 			setImage(worley, x, y, 0, value);
 		}
 	}
 	$(void, random, freeWorleyContext)(worleyContext);
 
 	$(void, image, normalizeImageChannel)(worley, 0);
-	$(void, image, invertImageChannel)(worley, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("worley.pgm", worley));
+	assert($(bool, image, writeImageToFile)("01_worley.pgm", worley));
 #endif
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
@@ -97,13 +96,25 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	$(void, image, normalizeImageChannel)(fBm, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("fbm.pgm", fBm));
+	assert($(bool, image, writeImageToFile)("02_fbm.pgm", fBm));
 #endif
 
-	// 3. filter the worley noise to remove straight lines
-	// TODO
+	// 3. combine worley noise and fBm
+	const float mixRatio = 1/3.f;
+	for(unsigned int y = 0; y < height; y++) {
+		for(unsigned int x = 0; x < width; x++) {
+			float value = mixRatio * getImage(worley, x, y, 0) + (1.f - mixRatio) * getImage(fBm, x, y, 0);
+			setImage(map, x, y, 0, value);
+		}
+	}
 
-	// 4. combine worley noise and fBm
+	$(void, image, normalizeImageChannel)(map, 0);
+
+#ifdef DEBUGIMAGES
+	assert($(bool, image, writeImageToFile)("03_mix.pgm", map));
+#endif
+
+	// 4. apply a perturbation filter to remove straight lines
 	// TODO
 
 	// 5. apply erosion to make the appearance physically-based
@@ -122,5 +133,8 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 
 
 	// 6. profit!
-	return fBm; // FIXME
+	$(void, image, freeImage)(worley);
+	$(void, image, freeImage)(fBm);
+
+	return map;
 }

@@ -18,146 +18,128 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include <math.h>
 #include <assert.h>
 #include "dll.h"
+#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "random.h"
 #include "worley.h"
 
 /**
- * A 3d point
- */
-typedef struct {
-	float x;
-	float y;
-	float z;
-} Point;
-
-/**
  * Private Woley noise context struct
  */
-struct RandomWorleyCtxImpl {
-	Point *points; //!< array of all surface centers
-	unsigned int point_count; //!< number of surface centers
-	unsigned int dimensions; //!< number of spacial dimensions
+struct RandomWorleyContextStruct {
+	/** array of all surface centers */
+	GPtrArray *points;
+	/** number of points to use */
+	unsigned int count;
+	/** number of spacial dimensions */
+	unsigned int dimensions;
 };
+
+/**
+ * Compare function for float distances
+ *
+ * @param a		a pointer to the first distance to compare
+ * @param b		a pointer to the first distance to compare
+ * @result		positive if a > b, zero if a == b, negative if a < b
+ */
+static int compareDistances(const void *a, const void *b)
+{
+	if(*(const float*)a < *(const float*)b) {
+		return -1;
+	} else {
+		return *(const float*)a > *(const float*)b;
+	}
+}
 
 /**
  * Initializes a Worley noise context
  *
- * The caller has to free it with 'freeWorleyCtx' after use.
+ * The caller has to free it with 'freeWorleyContext' after use.
  *
- * @param count			number of points in space
- * @param dimensions	number of spacial dimensions
- * @return 				a new worley context
+ * @see freeWorleyContext
+ * @param count				number of points in space
+ * @param dimensions		number of spacial dimensions
+ * @return 					a new worley context
  */
-API RandomWorleyCtx* createWorleyCtx(unsigned int count, unsigned int dimensions)
+API RandomWorleyContext* createWorleyContext(unsigned int count, unsigned int dimensions)
 {
-	RandomWorleyCtx* ctx = g_malloc(sizeof(RandomWorleyCtx));
-	ctx->points = NULL;
-	ctx->point_count = 0;
+	RandomWorleyContext* context = ALLOCATE_OBJECT(RandomWorleyContext);
+	context->points = g_ptr_array_new();
+	context->count = count;
+	context->dimensions = dimensions;
 
-	updateWorleyCtx(ctx, count, dimensions);
+	for(unsigned int i = 0; i < count; i++) {
+		Vector *point = $(Vector *, linalg, createVector)(dimensions);
+		float *pointData = $(float *, linalg, getVectorData)(point);
 
-	return ctx;
+		for(unsigned int d = 0; d < dimensions; d++) {
+			pointData[d] = randomUniform();
+		}
+	}
+
+	return context;
 }
 
 /**
  * Frees a Worley noise context
- */
-API void freeWorleyCtx(RandomWorleyCtx* ctx)
-{
-	assert(ctx != NULL);
-
-	if(ctx->points != NULL) {
-		g_free(ctx->points);
-	}
-
-	g_free(ctx);
-}
-
-/**
- * Updates a Worley noise context
  *
- * @param ctx			a pointer to a Worley noise contex
- * @param count			number of points in space
- * @param dimensions	number of spacial dimensions
+ * @param context			the Worley noise context to free
  */
-API void updateWorleyCtx(RandomWorleyCtx* ctx, unsigned int count, unsigned int dimensions)
+API void freeWorleyContext(RandomWorleyContext *context)
 {
-	if(ctx->points != NULL) {
-		g_free(ctx->points);
+	assert(context != NULL);
+
+	for(unsigned int i = 0; i < context->points->len; i++) {
+		$(void, linalg, freeVector)(context->points->pdata[i]);
 	}
-
-	ctx->points = g_malloc(count * sizeof(Point));
-	ctx->point_count = count;
-	ctx->dimensions = dimensions;
-
-	for(int i=0; i<ctx->point_count; i++) {
-		if(dimensions == 1) {
-			ctx->points[i].x = randomUniform();
-			ctx->points[i].y = 0.f;
-			ctx->points[i].z = 0.f;
-		} else if(dimensions == 2) {
-			ctx->points[i].x = randomUniform();
-			ctx->points[i].y = randomUniform();
-			ctx->points[i].z = 0.f;
-		} else if(dimensions > 2) {
-			ctx->points[i].x = randomUniform();
-			ctx->points[i].y = randomUniform();
-			ctx->points[i].z = randomUniform();
-		}
-	}
-}
-
-static int compare(const void *a, const void *b)
-{
-	if(*(const float*)a < *(const float*)b)
-		return -1;
-	return *(const float*)a > *(const float*)b;
+	g_ptr_array_free(context->points, true);
+	free(context);
 }
 
 /**
  * Computes a sample in a Worley / Voronoi noise pattern
  *
  * @param ctx			a pointer to a Woley noise context
- * @param x				the x coordinate
- * @param y				the y coordinate
- * @param z				the z coordinate
- * @param method		distance measurement method
+ * @param query			the query point to lookup
  * @param neighbours	number of points that have influence
+ * @param method		distance measurement method
  * @return				Worley noise (> 0.0)
  */
-API float randomWorley(RandomWorleyCtx* ctx, double x, double y, double z, unsigned int neighbours, RandomDistanceMethod method)
+API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbours, RandomWorleyDistance method)
 {
-	float d[ctx->point_count];
-	float result = 0.f;
+	float distances[context->count];
+	float result = 0.0f;
 
 	// compute all distances to the sample point
-	for(int i=0; i<ctx->point_count; i++) {
-		Point p = ctx->points[i];
-		float tx = p.x - x;
-		float ty = p.y - y;
-		float tz = p.z - z;
+	for(unsigned int i = 0; i < context->count; i++) {
+		Vector *point = context->points->pdata[i];
+		Vector *diff = $(Vector *, linalg, diffVectors)(point, query);
 
 		switch(method) {
-			case RANDOM_DIST_EUCLIDEAN:
-				d[i] = sqrt(tx*tx + ty*ty + tz*tz);
-				break;
-			case RANDOM_DIST_EUCLIDEAN_SQUARED:
-				d[i] = tx*tx + ty*ty + tz*tz;
-				break;
+			case RANDOM_WORLEY_DISTANCE_EUCLIDEAN:
+				distances[i] = $(float, linalg, getVectorLength)(diff);
+			break;
+			case RANDOM_WORLEY_DISTANCE_EUCLIDEAN_SQUARED:
+				distances[i] = $(float, linalg, getVectorLength2)(diff);
+			break;
 			default:
-				assert(0); // invalid method
+				LOG_ERROR("Tried to compute Worley noise with invalid distance method '%d', aborting", method);
+				return 0.0f;
+			break;
 		}
+
+		$(void, linalg, freeVector)(diff);
 	}
 
 	// sum up the 'neighbours' closest distances
-	qsort(d, ctx->point_count, sizeof(float), &compare);
+	qsort(distances, context->count, sizeof(float), &compareDistances);
 
-	for(int i=0; i<neighbours; i++) {
-		result += d[i];
+	for(unsigned int i = 0; i < neighbours; i++) {
+		result += distances[i];
 	}
 
 	return result;

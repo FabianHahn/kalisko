@@ -21,17 +21,24 @@
 #ifndef RANDOM_WORLEY_H
 #define RANDOM_WORLEY_H
 
+#include "modules/linalg/Vector.h"
+
+/**
+ * Enum listing possible distance functions for worley noise
+ */
 typedef enum {
-	RANDOM_DIST_EUCLIDEAN,
-	RANDOM_DIST_EUCLIDEAN_SQUARED
-} RandomDistanceMethod;
+	/** Standard Euclidean (L2 norm) distance function */
+	RANDOM_WORLEY_DISTANCE_EUCLIDEAN,
+	/** Standard squared Euclidean distance function */
+	RANDOM_WORLEY_DISTANCE_EUCLIDEAN_SQUARED
+} RandomWorleyDistance;
 
-struct RandomWorleyCtxImpl; /* private struct */
-typedef struct RandomWorleyCtxImpl RandomWorleyCtx;
+/** Forward declaration of private struct for Worley noise context */
+struct RandomWorleyContextStruct;
+typedef struct RandomWorleyContextStruct RandomWorleyContext;
 
-API RandomWorleyCtx* createWorleyCtx(unsigned int count, unsigned int dimensions);
-API void updateWorleyCtx(RandomWorleyCtx* ctx, unsigned int count, unsigned int dimensions);
-API void freeWorleyCtx(RandomWorleyCtx* ctx);
-API float randomWorley(RandomWorleyCtx* ctx, double x, double y, double z, unsigned int neighbours, RandomDistanceMethod method);
+API RandomWorleyContext* createWorleyContext(unsigned int count, unsigned int dimensions);
+API void freeWorleyContext(RandomWorleyContext *context);
+API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbours, RandomWorleyDistance method);
 
 #endif

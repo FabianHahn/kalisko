@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <glib.h>
+#include <limits.h>
 #include "dll.h"
 #include "api.h"
 #include "io.h"
@@ -28,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 7);
+MODULE_VERSION(0, 5, 8);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -118,6 +119,49 @@ API Image *copyImage(Image *source, ImageType targetType)
 	}
 
 	return target;
+}
+
+/**
+ * Normalize an image channel by shifting it linearly to the [0,1] range. Note that this only affects float images
+ *
+ * @param image			the image to normalize
+ * @param channel		the image channel to normalize
+ */
+API void normalizeImageChannel(Image *image, unsigned int channel)
+{
+	if(image->type != IMAGE_TYPE_FLOAT) {
+		return;
+	}
+
+	if(channel >= image->channels) {
+		return;
+	}
+
+
+	// determine min / max values
+	float minValue = FLT_MAX;
+	float maxValue = FLT_MIN;
+
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			float value = getImageFloat(image, x, y, channel);
+
+			if(value > maxValue) {
+				maxValue = value;
+			}
+
+			if(value < minValue) {
+				minValue = value;
+			}
+		}
+	}
+
+	// shift the whole image
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			setImage(image, x, y, channel, minValue + (maxValue - minValue) * getImageFloat(image, x, y, channel));
+		}
+	}
 }
 
 /**

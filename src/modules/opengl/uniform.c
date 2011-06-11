@@ -283,6 +283,18 @@ API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *na
 }
 
 /**
+ * Retrieves an OpenGL uniform from an OpenGL uniform attachment point
+ *
+ * @param attachment		the OpenGL uniform attachment point from which to retrieve an OpenGL uniform
+ * @param name				the name of the OpenGL uniform to retrieve
+ * @result					the retrieved OpenGL uniform or NULL if no such uniform could be found attached to the attachment point
+ */
+API OpenGLUniform *getOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name)
+{
+	return g_hash_table_lookup(attachment->uniforms, name);
+}
+
+/**
  * Detaches an OpeNGL uniform from a uniform attachment point
  *
  * @param attachment			the OpenGL uniform attachment point to detach the uniform from

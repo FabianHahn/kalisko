@@ -29,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 12);
+MODULE_VERSION(0, 5, 13);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -184,6 +184,27 @@ API void invertImageChannel(Image *image, unsigned int channel)
 	for(unsigned int y = 0; y < image->height; y++) {
 		for(unsigned int x = 0; x < image->width; x++) {
 			setImage(image, x, y, channel, 1.0f - getImage(image, x, y, channel));
+		}
+	}
+}
+
+/**
+ * Scales an image channel by multiplying it with a factor
+ *
+ * @param image			the image to scale
+ * @param channel		the channel of the image to scale
+ * @param factor		the factor to scale the image with
+ */
+API void scaleImageChannel(Image *image, unsigned int channel, float factor)
+{
+	if(channel >= image->channels) {
+		return;
+	}
+
+	// scale the image
+	for(unsigned int y = 0; y < image->height; y++) {
+		for(unsigned int x = 0; x < image->width; x++) {
+			setImage(image, x, y, channel, factor * getImage(image, x, y, channel));
 		}
 	}
 }

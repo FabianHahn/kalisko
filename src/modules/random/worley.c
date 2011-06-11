@@ -105,16 +105,20 @@ API void freeWorleyContext(RandomWorleyContext *context)
 /**
  * Computes a sample in a Worley / Voronoi noise pattern
  *
- * @param ctx			a pointer to a Woley noise context
+ * Returns the distance to the n'th closest neighbour.
+ *
+ * @param context		a pointer to a Woley noise context
  * @param query			the query point to lookup
- * @param neighbours	number of points that have influence
+ * @param neighbour		n'th closest neighbour that has influence
  * @param method		distance measurement method
  * @return				Worley noise (> 0.0)
  */
-API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbours, RandomWorleyDistance method)
+API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbour, RandomWorleyDistance method)
 {
+	assert(context != NULL);
+	assert(neighbour > 0 && neighbour <= context->count);
+
 	float distances[context->count];
-	float result = 0.0f;
 
 	// compute all distances to the sample point
 	for(unsigned int i = 0; i < context->count; i++) {
@@ -137,12 +141,27 @@ API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int
 		$(void, linalg, freeVector)(diff);
 	}
 
-	// sum up the 'neighbours' closest distances
+	// sort neighbours by the distance
 	qsort(distances, context->count, sizeof(float), &compareDistances);
 
-	for(unsigned int i = 0; i < neighbours; i++) {
-		result += distances[i];
-	}
+	return distances[neighbour-1];
+}
 
-	return result;
+/**
+ * Computes the difference of F2 and F1 Worley / Voronoi noise
+ *
+ * This function creates crystal shaped areas.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
+API float randomWorleyDifference21(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method)
+{
+	assert(context != NULL);
+
+	float F1 = randomWorley(context, query, 1, method);
+	float F2 = randomWorley(context, query, 2, method);
+	return F2 - F1;
 }

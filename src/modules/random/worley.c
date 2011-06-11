@@ -105,7 +105,7 @@ API void freeWorleyContext(RandomWorleyContext *context)
 /**
  * Computes a sample in a Worley / Voronoi noise pattern
  *
- * @param ctx			a pointer to a Woley noise context
+ * @param context		a pointer to a Woley noise context
  * @param query			the query point to lookup
  * @param neighbours	number of points that have influence
  * @param method		distance measurement method

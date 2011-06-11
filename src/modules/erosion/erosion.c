@@ -30,9 +30,9 @@
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Erosion functions");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6), MODULE_DEPENDENCY("image_pnm", 0, 1, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 13), MODULE_DEPENDENCY("image_pnm", 0, 1, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2));
 
 MODULE_INIT
 {
@@ -129,24 +129,12 @@ API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
 	if(steps == 0)
 		return;
 
-	Image* heightMap;
 	unsigned int width, height;
 	width = hMap->width;
 	height = hMap->height;
 
 	// ensure floating point precission
-	if(hMap->type != IMAGE_TYPE_FLOAT) {
-		heightMap = $(Image *, image, createImageFloat)(width, height, 1);
-		assert(heightMap != NULL);
-
-		for(unsigned int y = 0; y < height; y++) {
-			for(unsigned int x = 0; x < width; x++) {
-				setImage(heightMap, x, y, 0, getImage(hMap, x, y, 0));
-			}
-		}
-	} else {
-		heightMap = hMap;
-	}
+	Image *heightMap = $(Image *, image, copyImage)(hMap, IMAGE_TYPE_FLOAT);
 
 	for(int k=0; k<steps; k++) {
 		// erode one time step
@@ -169,9 +157,7 @@ API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
 	}
 
 	// cleanup
-	if(hMap->type != IMAGE_TYPE_FLOAT) {
-		$(void, Image*, freeImage)(heightMap);
-	}
+	$(void, Image*, freeImage)(heightMap);
 }
 
 static inline void waterFlowCell(Image* hMap, Image* waterMap, Image* sedimentMap, unsigned int x, unsigned int y)
@@ -249,7 +235,7 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	if(steps == 0)
 		return;
 
-	Image *waterMap, *sedimentMap, *heightMap;
+	Image *waterMap, *sedimentMap;
 	unsigned int width, height;
 	const float K_rain = 0.01; // amount of new water per cell
 	const float K_solubility = 0.01; // (German: lösbarkeit)
@@ -260,27 +246,9 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	width = hMap->width;
 	height = hMap->height;
 
-	// create a float image copy and rescale it
-	if(hMap->type != IMAGE_TYPE_FLOAT) {
-		heightMap = $(Image *, image, createImageFloat)(width, height, 1);
-		assert(heightMap != NULL);
-
-		for(unsigned int y = 0; y < height; y++) {
-			for(unsigned int x = 0; x < width; x++) {
-				setImage(heightMap, x, y, 0, hScale*getImage(hMap, x, y, 0));
-			}
-		}
-	} else {
-		heightMap = hMap;
-
-		if (hScale != 1.0) {
-			for(unsigned int y = 0; y < height; y++) {
-				for(unsigned int x = 0; x < width; x++) {
-					setImage(heightMap, x, y, 0, hScale*getImage(heightMap, x, y, 0));
-				}
-			}
-		}
-	}
+	// ensure floating point precission
+	Image *heightMap = $(Image *, image, copyImage)(hMap, IMAGE_TYPE_FLOAT);
+	$(void, image, scaleImageChannel)(heightMap, 0, hScale);
 
 	// create water map
 	waterMap = $(Image *, image, createImageFloat)(width, height, 1);
@@ -363,9 +331,7 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	}
 
 	// cleanup
-	if(hMap->type != IMAGE_TYPE_FLOAT) {
-		$(void, Image*, freeImage)(heightMap);
-	}
+	$(void, Image*, freeImage)(heightMap);
 	$(void, Image*, freeImage)(waterMap);
 	$(void, Image*, freeImage)(sedimentMap);
 }

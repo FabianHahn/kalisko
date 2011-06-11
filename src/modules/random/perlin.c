@@ -87,7 +87,7 @@ API void freePerlin()
  * @param x		the x coordinate
  * @param y		the y coordinate
  * @param z		the z coordinate
- * @return		FIXME
+ * @return		returns a random perlin noise value within the bounds of [-sqrt(2), sqrt(2)]
  */
 API float randomPerlin(double x, double y, double z)
 {
@@ -182,26 +182,49 @@ static float gradientProduct(unsigned int corner, float dx, float dy, float dz)
  * Generates fractional Brownian motion (fBm) noise
  * Reference: http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
  *
- * @param x		the x coordinate
- * @param y		the y coordinate
- * @param z		the z coordinate
- * @param fx	frequency in x direction
- * @param fy	frequency in y direction
- * @param fz	frequency in z direction
- * @param persistence	...
- * @param depth			...
- * @return				...
+ * @param x					the x coordinate
+ * @param y					the y coordinate
+ * @param z					the z coordinate
+ * @param persistence		the persistence of the franctional Brownian noise to generate, should lie in (0,1) and specifies how much further octave levels contribute to the noise value
+ * @param depth				the number of octaves to overlay for the fractional Brownian noise
+ * @return					a random fractional Brownian motion noise value
  */
-API float noiseFBm(double x, double y, double z, double fx, double fy, double fz, double persistence, unsigned int depth)
+API float noiseFBm(double x, double y, double z, double persistence, unsigned int depth)
 {
-	float res = 0.f;
+	float ret = 0.0f;
 
 	for(unsigned int i = 0; i < depth; i++) {
-		res += pow(persistence, (double) i) * randomPerlin(
-				fx * pow(2.0, (double) i) * x,
-				fy * pow(2.0, (double) i) * y,
-				fz * pow(2.0, (double) i) * z);
+		float contribution = pow(persistence, (double) i);
+		float frequency = pow(2.0, (double) i);
+		float octave = randomPerlin(frequency * x, frequency * y, frequency * z);
+
+		ret += contribution * octave;
 	}
 
-	return res;
+	return ret;
+}
+
+/**
+ * Generates turbulence noise
+ *
+ * @param x					the x coordinate
+ * @param y					the y coordinate
+ * @param z					the z coordinate
+ * @param persistence		the persistence of the turbulence noise to generate, should lie in (0,1) and specifies how much further octave levels contribute to the noise value
+ * @param depth				the number of octaves to overlay for the fractional Brownian noise
+ * @return					a random turbulence noise value
+ */
+API float noiseTurbulence(double x, double y, double z, double persistence, unsigned int depth)
+{
+	float ret = 0.0f;
+
+	for(unsigned int i = 0; i < depth; i++) {
+		float contribution = pow(persistence, (double) i);
+		float frequency = pow(2.0, (double) i);
+		float octave = abs(randomPerlin(frequency * x, frequency * y, frequency * z));
+
+		ret += contribution * octave;
+	}
+
+	return ret;
 }

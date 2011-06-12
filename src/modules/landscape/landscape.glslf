@@ -43,10 +43,10 @@ vec4 getColor(float x)
 	int next = prev + 1;
 	float diff = scaled - prev;
 	
-	vec4 lower = texture2DArray(texture, vec3(world_uv, prev));
-	vec4 higher = texture2DArray(texture, vec3(world_uv, next));
+	vec3 lower = texture2DArray(texture, vec3(world_uv, prev)).xyz;
+	vec3 higher = texture2DArray(texture, vec3(world_uv, next)).xyz;
 
-	return mix(lower, higher, diff);
+	return vec4(mix(lower, higher, diff), 1.0);
 }
 
 vec4 phongAmbient(in vec4 textureColor)
@@ -82,11 +82,7 @@ void main()
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
 	
-	if(dot(normal, pos2cam) < 0) {
-		normal = -normal;
-	}
-	
-	vec4 textureColor = getColor(pow(dot(up, normal), 2.5));
+	vec4 textureColor = getColor(clamp(pow(dot(up, normal), 2.5), 0, 1));
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);

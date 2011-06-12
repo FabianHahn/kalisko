@@ -27,5 +27,7 @@ module = conf.Finish()
 
 if check:
 	module.SharedLibrary('../kalisko_landscape', Glob('*.c'))
+	module.Command("landscape.glslv", File("landscape.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("landscape.glslf", File("landscape.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))	
 else:
 	print('A required library for the \'landscape\' module is not available, skipping build...')

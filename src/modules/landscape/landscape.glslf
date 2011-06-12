@@ -28,6 +28,7 @@ uniform float ambient;
 uniform float specular;
 uniform sampler2DArray texture;
 uniform int textureCount;
+uniform float slopeExponent;
 
 varying vec3 world_position;
 varying vec3 world_normal;
@@ -82,7 +83,7 @@ void main()
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
 	
-	vec4 textureColor = getColor(clamp(pow(dot(up, normal), 2.5), 0, 1));
+	vec4 textureColor = getColor(clamp(pow(dot(up, normal), slopeExponent), 0, 1));
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);

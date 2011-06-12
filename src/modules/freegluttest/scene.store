@@ -77,6 +77,18 @@ scene = {
 				texture = multi
 			}
 		}
+		
+		landscape = {
+			vertex_shader = "/modules/landscape/landscape.glslv"
+			fragment_shader = "/modules/landscape/landscape.glslf"
+			uniforms = {
+				lightPosition = lightPosition
+				lightColor = lightColor
+				ambient = ambient
+				specular = specular
+				texture = multi
+			}
+		}		
 
 		particle = {
 			vertex_shader = "/modules/particle/particle.glslv"
@@ -119,7 +131,7 @@ scene = {
 
 		landscape = {
 			primitive = landscape
-			material = heightmap
+			material = landscape
 			translation = (-2.0, -1.0, 2.0)
 			scaleY = 0.2
 		}

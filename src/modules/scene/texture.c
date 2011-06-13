@@ -29,6 +29,7 @@
 #include "modules/opengl/texture.h"
 #include "api.h"
 #include "texture.h"
+#include "texture_parsers.h"
 
 /**
  * A table of strings associated with OpenGLTextureSceneParser callbacks
@@ -42,6 +43,7 @@ API void initOpenGLTextureSceneParsers()
 {
 	assert(parsers == NULL);
 	parsers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	registerOpenGLTextureSceneParser("array", &parseOpenGLSceneTextureArray);
 }
 
 /**

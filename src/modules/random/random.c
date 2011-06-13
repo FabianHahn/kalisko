@@ -29,7 +29,7 @@
 MODULE_NAME("random");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Randomness functions");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 6, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 3, 4));
 

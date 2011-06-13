@@ -221,7 +221,7 @@ API float noiseTurbulence(double x, double y, double z, double persistence, unsi
 	for(unsigned int i = 0; i < depth; i++) {
 		float contribution = pow(persistence, (double) i);
 		float frequency = pow(2.0, (double) i);
-		float octave = abs(randomPerlin(frequency * x, frequency * y, frequency * z));
+		float octave = ABS(randomPerlin(frequency * x, frequency * y, frequency * z));
 
 		ret += contribution * octave;
 	}

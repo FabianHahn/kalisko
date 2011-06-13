@@ -18,24 +18,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SCENE_PRIMITIVE_H
-#define SCENE_PRIMITIVE_H
+#ifndef SCENE_TEXTURE_H
+#define SCENE_TEXTURE_H
 
 #include <glib.h>
 #include <GL/glew.h>
 #include "modules/store/store.h"
-#include "modules/opengl/primitive.h"
+#include "modules/opengl/texture.h"
 #include "scene.h"
 
 /**
- * Function pointer type for an OpenGLPrimitive scene parser
+ * Function pointer type for an OpenGLTexture scene parser
  */
-typedef OpenGLPrimitive *(OpenGLPrimitiveSceneParser)(Scene *scene, const char *path_prefix, const char *name, Store *store);
+typedef OpenGLTexture *(OpenGLTextureSceneParser)(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
-API void initOpenGLPrimitiveSceneParsers();
-API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser);
-API bool unregisterOpenGLPrimitiveSceneParser(const char *type);
-API OpenGLPrimitive *parseOpenGLScenePrimitive(Scene *scene, const char *path_prefix, const char *name, Store *store);
-API void freeOpenGLPrimitiveSceneParsers();
+API void initOpenGLTextureSceneParsers();
+API bool registerOpenGLTextureSceneParser(const char *type, OpenGLTextureSceneParser *parser);
+API bool unregisterOpenGLTextureSceneParser(const char *type);
+API OpenGLTexture *parseOpenGLSceneTexture(Scene *scene, const char *path_prefix, const char *name, Store *store);
+API void freeOpenGLTextureSceneParsers();
 
 #endif

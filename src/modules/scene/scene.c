@@ -41,11 +41,12 @@
 #include "api.h"
 #include "scene.h"
 #include "primitive.h"
+#include "texture.h"
 
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 6, 3);
+MODULE_VERSION(0, 7, 0);
 MODULE_BCVERSION(0, 5, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -55,6 +56,7 @@ static void freeSceneParameterByPointer(void *parameter_p);
 MODULE_INIT
 {
 	initOpenGLPrimitiveSceneParsers();
+	initOpenGLTextureSceneParsers();
 
 	return true;
 }
@@ -62,6 +64,7 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	freeOpenGLPrimitiveSceneParsers();
+	freeOpenGLTextureSceneParsers();
 }
 
 /**
@@ -109,6 +112,23 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		Store *value;
 		g_hash_table_iter_init(&iter, textures->content.array);
 		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
+			if(value->type == STORE_ARRAY) {
+				OpenGLTexture *texture;
+
+				if((texture = parseOpenGLSceneTexture(scene, path_prefix, key, value)) != NULL) {
+					if(addSceneTexture(scene, key, texture)) {
+						LOG_DEBUG("Added texture '%s' to scene", key);
+					}
+				} else {
+					LOG_WARNING("Failed to parse texture in 'texture/%s' for scene, skipping", key);
+					continue;
+				}
+			} else {
+				LOG_WARNING("Expected array store value in 'texture/%s' when parsing scene texture, skipping", key);
+				continue;
+			}
+
+			/*
 			if(value->type == STORE_STRING) { // 2D texture
 				GString *texturepath = g_string_new(path_prefix);
 				g_string_append(texturepath, value->content.string);
@@ -143,6 +163,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				LOG_WARNING("Failed to read texture path for '%s' when creating scene by store, skipping", key);
 				continue;
 			}
+			*/
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'textures' when creating scene by store, skipping texture loading");

@@ -46,7 +46,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 7, 2);
 MODULE_BCVERSION(0, 5, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 0), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -127,43 +127,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 				LOG_WARNING("Expected array store value in 'texture/%s' when parsing scene texture, skipping", key);
 				continue;
 			}
-
-			/*
-			if(value->type == STORE_STRING) { // 2D texture
-				GString *texturepath = g_string_new(path_prefix);
-				g_string_append(texturepath, value->content.string);
-				if(addSceneTexture2DFromFile(scene, key, texturepath->str)) {
-					LOG_DEBUG("Added texture '%s' to scene", key);
-				}
-				g_string_free(texturepath, true);
-			} else if(value->type == STORE_LIST) { // 2D texture array
-				GPtrArray *files = g_ptr_array_new();
-				for(GList *iter = value->content.list->head; iter != NULL; iter = iter->next) {
-					Store *listvalue = iter->data;
-					if(listvalue->type == STORE_STRING) {
-						GString *texturepath = g_string_new(path_prefix);
-						g_string_append(texturepath, listvalue->content.string);
-						g_ptr_array_add(files, texturepath->str);
-						g_string_free(texturepath, false);
-					} else {
-						LOG_WARNING("Expected string filename as texture array element, skpping");
-					}
-				}
-
-				if(addSceneTexture2DArrayFromFiles(scene, key, (char **) files->pdata, files->len)) {
-					LOG_DEBUG("Added texture array '%s' to scene", key);
-				}
-
-				for(unsigned int i = 0; i < files->len; i++) {
-					free(files->pdata[i]);
-				}
-
-				g_ptr_array_free(files, true);
-			} else {
-				LOG_WARNING("Failed to read texture path for '%s' when creating scene by store, skipping", key);
-				continue;
-			}
-			*/
 		}
 	} else {
 		LOG_WARNING("Expected array store value in 'textures' when creating scene by store, skipping texture loading");

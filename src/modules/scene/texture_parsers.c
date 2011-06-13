@@ -28,10 +28,48 @@
 #include "modules/store/path.h"
 #include "modules/opengl/texture.h"
 #include "modules/image/image.h"
+#include "modules/image/io.h"
 #include "api.h"
 #include "texture.h"
 #include "texture_parsers.h"
 
+/**
+ * OpenGLTextureScene parser for 2D textures read from files
+ *
+ * @param scene			the scene to parse the OpenGL texture for
+ * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param name			the name of the primitive to parse
+ * @param store			the store representation of the OpenGLTexture to parse
+ * @result				the parsed OpenGLTexture or NULL on failure
+ */
+API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_prefix, const char *name, Store *store)
+{
+	// Parse filename parameter
+	Store *filenameParam;
+	if((filenameParam = $(Store *, store, getStorePath)(store, "filename")) == NULL || filenameParam->type != STORE_STRING) {
+		LOG_ERROR("Failed to parse OpenGL scene texture file '%s' - string parameter 'filename' not found", name);
+		return NULL;
+	}
+
+	GString *filename = g_string_new(path_prefix);
+	g_string_append(filename, filenameParam->content.string);
+	Image *image = $(Image *, image, readImageFromFile)(filename->str);
+	g_string_free(filename, true);
+
+	if(image == NULL) {
+		LOG_ERROR("Failed to read image file from '%s' for texture '%s'", filename->str, name);
+		return NULL;
+	}
+
+	OpenGLTexture *texture;
+	if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(image, true)) == NULL) {
+		LOG_ERROR("Failed to create OpenGL texture '%s' for scene", name);
+		$(void, image, freeImage)(image);
+		return NULL;
+	}
+
+	return texture;
+}
 
 /**
  * OpenGLTextureScene parser for texture arrays
@@ -47,7 +85,7 @@ API OpenGLTexture *parseOpenGLSceneTextureArray(Scene *scene, const char *path_p
 	// Parse textures parameter
 	Store *texturesParam;
 	if((texturesParam = $(Store *, store, getStorePath)(store, "textures")) == NULL || texturesParam->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' - list parameter 'textures' not found", name);
+		LOG_ERROR("Failed to parse OpenGL scene texture array '%s' - list parameter 'textures' not found", name);
 		return NULL;
 	}
 

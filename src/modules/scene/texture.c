@@ -43,6 +43,7 @@ API void initOpenGLTextureSceneParsers()
 {
 	assert(parsers == NULL);
 	parsers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	registerOpenGLTextureSceneParser("file", &parseOpenGLSceneTextureFile);
 	registerOpenGLTextureSceneParser("array", &parseOpenGLSceneTextureArray);
 }
 

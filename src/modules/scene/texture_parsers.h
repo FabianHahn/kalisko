@@ -27,6 +27,7 @@
 #include "modules/opengl/texture.h"
 #include "scene.h"
 
+API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_prefix, const char *name, Store *store);
 API OpenGLTexture *parseOpenGLSceneTextureArray(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
 #endif

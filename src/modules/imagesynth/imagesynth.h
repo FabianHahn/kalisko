@@ -24,7 +24,7 @@
 #include "modules/image/image.h"
 #include "modules/store/store.h"
 
-typedef Image *(ImageSynthesizer)(unsigned int width, unsigned int height, unsigned int channels, Store *parameters);
+typedef Image *(ImageSynthesizer)(const char *name, unsigned int width, unsigned int height, unsigned int channels, Store *parameters);
 
 API bool registerImageSynthesizer(const char *name, ImageSynthesizer *synthesizer);
 API bool unregisterImageSynthesizer(const char *name);

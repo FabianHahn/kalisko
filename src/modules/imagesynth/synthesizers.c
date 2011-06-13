@@ -42,14 +42,17 @@
  *  * vector colorLow		the low color to use for the noise image (dimensions must equal channel value)
  *  * vector colorHigh		the high color to use for the noise image (dimensions must equal channel value)
  *
+ * @param name				the name of the synthesizer to use
  * @param width				the width of the image to synthesize
  * @param height			the height of the image to synthesize
  * @param channels			the number of channels of the image to synthesize
  * @param parameters		store representation of optional parameters for the synthesizer as described above
  * @result					the synthesized image or NULL on failure
  */
-API Image *synthesizeImageFBm(unsigned int width, unsigned int height, unsigned int channels, Store *parameters)
+API Image *synthesizeImagePerlin(const char *name, unsigned int width, unsigned int height, unsigned int channels, Store *parameters)
 {
+	bool useFBm = g_strcmp0(name, "fBm") == 0;
+
 	// parse persistence
 	float persistence = 0.5f;
 	Store *persistenceParam;
@@ -104,10 +107,18 @@ API Image *synthesizeImageFBm(unsigned int width, unsigned int height, unsigned 
 	float *highData = $(float *, linalg, getVectorData)(colorHigh);
 	float z = 255 * randomUniform();
 
-	// generate fBm image
+	// generate fBm/turbulence image
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			setImage(image, x, y, 0, $(float, random, noiseFBm)((double) y * frequencyY / height, (double) x * frequencyX / width, z, persistence, depth));
+			float value = 0.0f;
+
+			if(useFBm) {
+				value = $(float, random, noiseFBm)((double) y * frequencyY / height, (double) x * frequencyX / width, z, persistence, depth);
+			} else { // otherwise use turbulence
+				value = $(float, random, noiseTurbulence)((double) y * frequencyY / height, (double) x * frequencyX / width, z, persistence, depth);
+			}
+
+			setImage(image, x, y, 0, value);
 		}
 	}
 

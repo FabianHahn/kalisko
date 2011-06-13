@@ -29,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 13);
+MODULE_VERSION(0, 5, 14);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -87,6 +87,34 @@ API Image *createImageFloat(unsigned int width, unsigned int height, unsigned in
 	image->data.float_data = ALLOCATE_OBJECTS(float, width * height * channels);
 
 	return image;
+}
+
+/**
+ * Creates a new image
+ *
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @param type			the type of the image to create
+ * @result				the created image or NULL on failure
+ */
+API Image *createImage(unsigned int width, unsigned int height, unsigned int channels, ImageType type)
+{
+	Image *result = NULL;
+
+	switch(type) {
+		case IMAGE_TYPE_BYTE:
+			result = createImageByte(width, height, channels);
+		break;
+		case IMAGE_TYPE_FLOAT:
+			result = createImageFloat(width, height, channels);
+		break;
+		default:
+			LOG_ERROR("Failed to create image: unsupported image type '%d'", type);
+		break;
+	}
+
+	return result;
 }
 
 /**
@@ -207,6 +235,35 @@ API void scaleImageChannel(Image *image, unsigned int channel, float factor)
 			setImage(image, x, y, channel, factor * getImage(image, x, y, channel));
 		}
 	}
+}
+
+/**
+ * Blends two images with a specified factor
+ *
+ * @param a			the first image to blend
+ * @param b			the second image to blend
+ * @param factor	the blending factor to use (i.e. the contribution of the first image)
+ * @result			a new blended image using a's image type
+ */
+API Image *blendImages(Image *a, Image *b, double factor)
+{
+	if(a->channels != b->channels || a->width != b->width || a->height != b->height) {
+		LOG_ERROR("Failed to blend images: Dimensions and channel counts must agree");
+		return NULL;
+	}
+
+	Image *blend = createImage(a->width, a->height, a->channels, a->type);
+
+	// blend the images
+	for(unsigned int y = 0; y < a->height; y++) {
+		for(unsigned int x = 0; x < a->width; x++) {
+			for(unsigned int c = 0; c < a->channels; c++) {
+				setImage(blend, x, y, c, factor * getImage(a, x, y, c) + (1.0 - factor) * getImage(b, x, y, c));
+			}
+		}
+	}
+
+	return blend;
 }
 
 /**

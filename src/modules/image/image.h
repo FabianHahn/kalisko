@@ -56,10 +56,12 @@ typedef struct {
 
 API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels);
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
+API Image *createImage(unsigned int width, unsigned int height, unsigned int channels, ImageType type);
 API Image *copyImage(Image *source, ImageType targetType);
 API void normalizeImageChannel(Image *image, unsigned int channel);
 API void invertImageChannel(Image *image, unsigned int channel);
 API void scaleImageChannel(Image *image, unsigned int channel, float factor);
+API Image *blendImages(Image *a, Image *b, double factor);
 API void freeImage(Image *image);
 
 /**

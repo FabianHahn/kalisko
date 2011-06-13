@@ -82,11 +82,12 @@ void main()
 	vec3 up = normalize(world_up);
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
+	float slope = clamp(pow(dot(up, normal), slopeExponent), 0.0, 1.0);
 	
-	vec4 textureColor = getColor(clamp(pow(dot(up, normal), slopeExponent), 0, 1));
+	vec4 textureColor = getColor(slope);
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	gl_FragColor = clamp(ac + dc + slope * sc, 0.0, 1.0);
 }

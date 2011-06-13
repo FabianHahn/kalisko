@@ -32,14 +32,45 @@ scene = {
 			type = file
 			filename = "/modules/freegluttest/texture.png"
 		}
+		flames = {
+			type = imagesynth
+			width = 256
+			height = 256
+			channels = 3
+			synthesizer = fBm
+			parameters = {
+				colorLow = (1.0, 0.0, 0.0)
+				colorHigh = (1.0, 1.0, 0.0)
+			}
+		}		
 		multi = {
 			type = array
 			textures = ({
-					type = file
-					filename = "/modules/freegluttest/green.png",
-				}, {
-					type = file
-					filename = "/modules/freegluttest/texture.png" 
+					type = imagesynth
+					width = 1024
+					height = 1024
+					channels = 3
+					synthesizer = fBm
+					parameters = {
+						frequencyX = 2.5
+						frequencyY = 2.5
+						persistence = 0.75
+						depth = 6
+						colorLow = (0.325, 0.29, 0.224)
+						colorHigh = (0.376, 0.341, 0.325)
+					}
+				},{
+					type = imagesynth
+					width = 1024
+					height = 1024
+					channels = 3
+					synthesizer = fBm
+					parameters = {
+						frequencyX = 5
+						frequencyY = 5
+						colorLow = (0.9, 0.9, 0.9)
+						colorHigh = (1.0, 1.0, 1.0)
+					}
 				}
 			)
 		}
@@ -73,7 +104,7 @@ scene = {
 				lightColor = lightColor
 				ambient = ambient
 				specular = specular
-				texture = checkerboard
+				texture = flames
 			}
 		}
 

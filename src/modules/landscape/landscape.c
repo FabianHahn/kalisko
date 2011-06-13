@@ -36,9 +36,9 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 1, 13);
+MODULE_VERSION(0, 1, 14);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 9), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
@@ -61,11 +61,8 @@ MODULE_FINALIZE
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, double frequency)
 {
 #define DEBUGIMAGES
-	// inefficent but useful for debugging
-	Image *map, *worley, *fBm;
-	map =		$(Image *, image, createImageFloat)(width, height, 1);
-	worley = 	$(Image *, image, createImageFloat)(width, height, 1);
-	fBm =		$(Image *, image, createImageFloat)(width, height, 1);
+	Image *worley =	$(Image *, image, createImageFloat)(width, height, 1);
+	Image *fBm =	$(Image *, image, createImageFloat)(width, height, 1);
 
     // possible parameters (we should not expose all of them!)
     const unsigned int worleyPoints = 16;
@@ -110,13 +107,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 #endif
 
 	// 3. combine worley noise and fBm
-	for(unsigned int y = 0; y < height; y++) {
-		for(unsigned int x = 0; x < width; x++) {
-			float value = mixRatio * getImage(worley, x, y, 0) + (1.f - mixRatio) * getImage(fBm, x, y, 0);
-			setImage(map, x, y, 0, value);
-		}
-	}
-
+	Image *map = $(Image *, image, blendImages)(worley, fBm, mixRatio);
 	$(void, image, normalizeImageChannel)(map, 0);
 
 #ifdef DEBUGIMAGES

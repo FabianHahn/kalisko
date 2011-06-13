@@ -45,21 +45,21 @@ scene = {
 		}		
 		multi = {
 			type = array
-			textures = ({
+			textures = ({ // ground texture
 					type = imagesynth
 					width = 1024
 					height = 1024
 					channels = 3
-					synthesizer = fBm
+					synthesizer = turbulence
 					parameters = {
 						frequencyX = 2.5
 						frequencyY = 2.5
 						persistence = 0.75
 						depth = 6
-						colorLow = (0.325, 0.29, 0.224)
+						colorLow = (0.3, 0.25, 0.2)
 						colorHigh = (0.376, 0.341, 0.325)
 					}
-				},{
+				},{ // snow texture
 					type = imagesynth
 					width = 1024
 					height = 1024

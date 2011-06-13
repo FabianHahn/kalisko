@@ -28,7 +28,7 @@
 MODULE_NAME("imagesynth");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to synthesize procedural images");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 

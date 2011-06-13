@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <glib.h>
 #include "dll.h"
+#include "modules/random/random.h"
 #include "modules/random/perlin.h"
 #include "modules/image/image.h"
 #include "modules/store/store.h"
@@ -101,11 +102,12 @@ API Image *synthesizeImageFBm(unsigned int width, unsigned int height, unsigned 
 	float *lowData = $(float *, linalg, getVectorData)(colorLow);
 	unsigned int highSize = $(unsigned int, linalg, getVectorSize)(colorHigh);
 	float *highData = $(float *, linalg, getVectorData)(colorHigh);
+	float z = 255 * randomUniform();
 
 	// generate fBm image
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			setImage(image, x, y, 0, $(float, random, noiseFBm)((double) y * frequencyY / height, (double) x * frequencyX / width, 0.0, persistence, depth));
+			setImage(image, x, y, 0, $(float, random, noiseFBm)((double) y * frequencyY / height, (double) x * frequencyX / width, z, persistence, depth));
 		}
 	}
 

@@ -28,7 +28,7 @@
 MODULE_NAME("imagesynth");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to synthesize procedural images");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -40,8 +40,8 @@ static GHashTable *synthesizers;
 MODULE_INIT
 {
 	synthesizers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
-	registerImageSynthesizer("fBm", &synthesizeImageFBm);
-	registerImageSynthesizer("turbulence", &synthesizeImageFBm);
+	registerImageSynthesizer("fBm", &synthesizeImagePerlin);
+	registerImageSynthesizer("turbulence", &synthesizeImagePerlin);
 
 	return true;
 }

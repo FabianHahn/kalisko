@@ -24,6 +24,6 @@
 #include "modules/image/image.h"
 #include "modules/store/store.h"
 
-API Image *synthesizeImagePerlin(unsigned int width, unsigned int height, unsigned int channels, Store *parameters);
+API Image *synthesizeImagePerlin(const char *name, unsigned int width, unsigned int height, unsigned int channels, Store *parameters);
 
 #endif

@@ -28,11 +28,21 @@ scene = {
 	}
 
 	textures = {
-		checkerboard = "/modules/freegluttest/texture.png"
-		multi = (
-			"/modules/freegluttest/green.png",
-			"/modules/freegluttest/texture.png"
-		)
+		checkerboard = {
+			type = file
+			filename = "/modules/freegluttest/texture.png"
+		}
+		multi = {
+			type = array
+			textures = ({
+					type = file
+					filename = "/modules/freegluttest/green.png",
+				}, {
+					type = file
+					filename = "/modules/freegluttest/texture.png" 
+				}
+			)
+		}
 	}
 
 	parameters = {

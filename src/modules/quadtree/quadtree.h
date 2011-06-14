@@ -21,11 +21,14 @@
 #ifndef QUADTREE_QUADTREE_H
 #define QUADTREE_QUADTREE_H
 
+#include <math.h>
+#include <assert.h>
+
 struct QuadtreeNodeStruct{
 	/** The x position of the bottom left corner of the quadtree node */
-	int x;
+	double x;
 	/** The y position of the bottom left corner of the quadtree node */
-	int y;
+	double y;
 	/** The level of the quad tree node (level 0 means it's a leaf) */
 	unsigned int level;
 	/** Union containing either the child nodes or the leaf data */
@@ -43,10 +46,11 @@ typedef struct {
 	/** The root node of the quad tree */
 	QuadtreeNode *root;
 	/** The size of a leaf in the quad tree */
-	unsigned int leafSize;
+	double leafSize;
 } Quadtree;
 
-API Quadtree *createQuadtree(unsigned int leafSize);
+API Quadtree *createQuadtree(double leafSize);
+API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y);
 
 /**
  * Checks whether a quadtree node is a leaf
@@ -65,8 +69,43 @@ static inline bool quadtreeNodeIsLeaf(QuadtreeNode *node) {
  * @param node		the quadtree node to check
  * @result			the side length of the spanned square of the provided quadtree node
  */
-static inline int quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node) {
-	return tree->leafSize * (node->level + 1);
+static inline double quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node) {
+	return tree->leafSize * (1 << node->level);
+}
+
+/**
+ * Checks whether a quadtree node contains a point
+ *
+ * @param tree		the quadtree to which the node belongs
+ * @param node		the quadtree node to check
+ * @param x			the x coordinate of the point to check
+ * @param y			the y coordinate of the point to check
+ * @result			true if the quadtree node contains the point
+ */
+static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node, double x, double y)
+{
+	double span = quadtreeNodeSpan(tree, node);
+	return x >= node->x && x < (node->x + span) && y >= node->y && y < (node->y + span);
+}
+
+/**
+ * Retrieves the child index of the node that contains a specified point
+ *
+ * @param tree		the quadtree to which the node belongs
+ * @param node		the quadtree node to check
+ * @param x			the x coordinate of the point to check
+ * @param y			the y coordinate of the point to check
+ * @result			the index of the child node
+ */
+static inline int quadtreeNodeGetContainingChildIndex(Quadtree *tree, QuadtreeNode *node, double x, double y)
+{
+	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+
+	double span = quadtreeNodeSpan(tree, node);
+	bool isLowerX = x < (node->x + 0.5 * span);
+	bool isLowerY = y < (node->y + 0.5 * span);
+
+	return (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
 }
 
 #endif

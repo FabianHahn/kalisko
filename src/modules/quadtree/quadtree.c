@@ -30,6 +30,8 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
+static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);
+
 MODULE_INIT
 {
 	return true;
@@ -45,7 +47,7 @@ MODULE_FINALIZE
  * @param leafSize			the leaf size of the quadtree
  * @result					the created quadtree
  */
-API Quadtree *createQuadtree(unsigned int leafSize)
+API Quadtree *createQuadtree(double leafSize)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
 	quadtree->leafSize = leafSize;
@@ -56,4 +58,41 @@ API Quadtree *createQuadtree(unsigned int leafSize)
 	quadtree->root->content.data = NULL;
 
 	return quadtree;
+}
+
+/**
+ * Lookup a leaf node in the quadtree
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @result				the looked up quadtree node
+ */
+API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y)
+{
+	return lookupQuadtreeNode(tree, tree->root, x, y);
+}
+
+/**
+ * Recursively lookup a leaf node in a quadtree
+ *
+ * @param tree			the quadtree to lookup
+ * @param node			the current node we're traversing
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @result				the looked up quadtree node
+ */
+static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y)
+{
+	if(quadtreeNodeContainsPoint(tree, node, x, y)) {
+		if(quadtreeNodeIsLeaf(node)) {
+			return node;
+		} else {
+			int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+			QuadtreeNode *child = node->content.children[index];
+			return lookupQuadtreeNode(tree, child, x, y);
+		}
+	}
+
+	return NULL;
 }

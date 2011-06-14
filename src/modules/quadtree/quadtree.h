@@ -50,6 +50,7 @@ typedef struct {
 } Quadtree;
 
 API Quadtree *createQuadtree(double leafSize);
+API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y);
 API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y);
 
 /**
@@ -86,6 +87,19 @@ static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node,
 {
 	double span = quadtreeNodeSpan(tree, node);
 	return x >= node->x && x < (node->x + span) && y >= node->y && y < (node->y + span);
+}
+
+/**
+ * Checks whether a quadtree contains a point
+ *
+ * @param tree		the quadtree to which the node belongs
+ * @param x			the x coordinate of the point to check
+ * @param y			the y coordinate of the point to check
+ * @result			true if the quadtree contains the point
+ */
+static inline bool quadtreeContainsPoint(Quadtree *tree, double x, double y)
+{
+	return quadtreeNodeContainsPoint(tree, tree->root, x, y);
 }
 
 /**

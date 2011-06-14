@@ -31,6 +31,7 @@ MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
 static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node);
 
 MODULE_INIT
 {
@@ -61,6 +62,55 @@ API Quadtree *createQuadtree(double leafSize)
 }
 
 /**
+ * Expands a quad tree to cover a specific point
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @result				the freshly created quadtree node containing the point
+ */
+API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
+{
+	if(quadtreeContainsPoint(tree, x, y)) { // nothing to do
+		return lookupQuadtree(tree, x, y);
+	}
+
+	double span = quadtreeNodeSpan(tree, tree->root);
+	bool isLowerX = x < tree->root->x;
+	bool isLowerY = y < tree->root->y;
+
+	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
+	newRoot->level = tree->root->level + 1;
+	newRoot->content.children[0] = NULL;
+	newRoot->content.children[1] = NULL;
+	newRoot->content.children[2] = NULL;
+	newRoot->content.children[3] = NULL;
+
+	if(isLowerX && isLowerY) { // old node becomes top right node of new root
+		newRoot->x = tree->root->x - span;
+		newRoot->y = tree->root->y - span;
+		newRoot->content.children[3] = tree->root;
+	} else if(isLowerX && !isLowerY) { // old node becomes bottom right node of new root
+		newRoot->x = tree->root->x - span;
+		newRoot->y = tree->root->y;
+		newRoot->content.children[1] = tree->root;
+	} else if(!isLowerX && isLowerY) { // old node becomes top left node of new root
+		newRoot->x = tree->root->x;
+		newRoot->y = tree->root->y - span;
+		newRoot->content.children[2] = tree->root;
+	} else { // old node becomes bottom left node of new root
+		newRoot->x = tree->root->x;
+		newRoot->y = tree->root->y;
+		newRoot->content.children[0] = tree->root;
+	}
+
+	tree->root = newRoot;
+	fillTreeNodes(tree, tree->root);
+
+	return expandQuadtree(tree, x, y); // recursively expand to make sure we include the point
+}
+
+/**
  * Lookup a leaf node in the quadtree
  *
  * @param tree			the quadtree to lookup
@@ -70,7 +120,11 @@ API Quadtree *createQuadtree(double leafSize)
  */
 API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y)
 {
-	return lookupQuadtreeNode(tree, tree->root, x, y);
+	if(quadtreeContainsPoint(tree, x, y)) {
+		return lookupQuadtreeNode(tree, tree->root, x, y);
+	} else {
+		return expandQuadtree(tree, x, y);
+	}
 }
 
 /**
@@ -84,15 +138,49 @@ API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y)
  */
 static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y)
 {
-	if(quadtreeNodeContainsPoint(tree, node, x, y)) {
-		if(quadtreeNodeIsLeaf(node)) {
-			return node;
-		} else {
-			int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
-			QuadtreeNode *child = node->content.children[index];
-			return lookupQuadtreeNode(tree, child, x, y);
-		}
+	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+
+	if(quadtreeNodeIsLeaf(node)) {
+		return node;
+	} else {
+		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+		QuadtreeNode *child = node->content.children[index];
+		return lookupQuadtreeNode(tree, child, x, y);
+	}
+}
+
+/**
+ * Recursively fill the tree with nodes
+ *
+ * @param tree			the tree to fill with nodes
+ * @param node			the current node we're traversing
+ */
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
+{
+	if(quadtreeNodeIsLeaf(node)) { // exit condition, reached leaf
+		return;
 	}
 
-	return NULL;
+	double span = quadtreeNodeSpan(tree, node);
+
+	for(int i = 0; i < 4; i++) {
+		if(node->content.children[i] == NULL) { // if child node doesn't exist yet, create it
+			node->content.children[i] = ALLOCATE_OBJECT(QuadtreeNode);
+			node->content.children[i]->level = node->level - 1;
+			node->content.children[i]->x = node->x + (i % 2) * 0.5 * span;
+			node->content.children[i]->y = node->y + (i & 2) * 0.5 * span;
+
+			// set content to null
+			if(quadtreeNodeIsLeaf(node->content.children[i])) {
+				node->content.children[i]->content.data = NULL;
+			} else {
+				node->content.children[i]->content.children[0] = NULL;
+				node->content.children[i]->content.children[1] = NULL;
+				node->content.children[i]->content.children[2] = NULL;
+				node->content.children[i]->content.children[3] = NULL;
+			}
+		}
+
+		fillTreeNodes(tree, node->content.children[i]); // recursively fill the child nodes
+	}
 }

@@ -41,5 +41,6 @@ API RandomWorleyContext* createWorleyContext(unsigned int count, unsigned int di
 API void freeWorleyContext(RandomWorleyContext *context);
 API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbour, RandomWorleyDistance method);
 API float randomWorleyDifference21(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method);
+API float randomWorleyDifference32(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method);
 
 #endif

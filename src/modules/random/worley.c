@@ -109,14 +109,14 @@ API void freeWorleyContext(RandomWorleyContext *context)
  *
  * @param context		a pointer to a Woley noise context
  * @param query			the query point to lookup
- * @param neighbour		n'th closest neighbour that has influence
+ * @param weights		array of neighbour weights
+ * @param weight_count	length of the weight array
  * @param method		distance measurement method
  * @return				Worley noise (> 0.0)
  */
-API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbour, RandomWorleyDistance method)
+static float randomWorleyArray(RandomWorleyContext *context, Vector *query, int* weights, unsigned int weight_count, RandomWorleyDistance method)
 {
-	assert(context != NULL);
-	assert(neighbour > 0 && neighbour <= context->count);
+	assert(weight_count <= context->count);
 
 	float distances[context->count];
 
@@ -144,7 +144,39 @@ API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int
 	// sort neighbours by the distance
 	qsort(distances, context->count, sizeof(float), &compareDistances);
 
-	return distances[neighbour-1];
+	// sum weighted neighbour distances
+	float result = 0;
+	for(unsigned int i=0; i<weight_count; i++) {
+		result += weights[i]*distances[i];
+	}
+
+	return result;
+}
+
+/**
+ * Computes a sample in a Worley / Voronoi noise pattern
+ *
+ * Returns the distance to the n'th closest neighbour.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param neighbour		n'th closest neighbour that has influence
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
+API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbour, RandomWorleyDistance method)
+{
+	assert(context != NULL);
+	assert(neighbour > 0 && neighbour <= context->count);
+
+	int weights[neighbour];
+
+	for(unsigned int i=0; i<neighbour-1; i++) {
+			weights[i] = 0;
+	}
+	weights[neighbour-1] = 1;
+
+	return randomWorleyArray(context, query, weights, neighbour, method);
 }
 
 /**
@@ -161,7 +193,26 @@ API float randomWorleyDifference21(RandomWorleyContext *context, Vector *query, 
 {
 	assert(context != NULL);
 
-	float F1 = randomWorley(context, query, 1, method);
-	float F2 = randomWorley(context, query, 2, method);
-	return F2 - F1;
+	int weights[2] = {-1, 1};
+
+	return randomWorleyArray(context, query, weights, 2, method);
+}
+
+/**
+ * Computes the difference of F3 and F2 Worley / Voronoi noise
+ *
+ * This function creates crystal shaped areas.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
+API float randomWorleyDifference32(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method)
+{
+	assert(context != NULL);
+
+	int weights[3] = {0, -1, 1};
+
+	return randomWorleyArray(context, query, weights, 3, method);
 }

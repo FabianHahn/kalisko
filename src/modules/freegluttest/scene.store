@@ -23,7 +23,13 @@ scene = {
 			type = landscape
 			width = 512
 			height = 512
-			frequency = 4
+			worleyPoints = 16
+			fbmFrequency = 4
+			fbmPersistance = 0.5
+			fbmDepth = 6
+			erosionThermalIterations = 0
+			erosionThermalTalusAngle = 40
+			erosionHydraulicIterations = 100
 		}
 	}
 

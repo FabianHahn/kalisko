@@ -36,8 +36,8 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 1, 15);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
@@ -53,26 +53,35 @@ MODULE_FINALIZE
 /**
  * Generates a random landscape heightmap from procedural noise
  *
- * @param width			the width of the heightmap to generate
- * @param height		the height of the heightmap to generate
- * @param frequency		the frequency to be used for the noise function
- * @return				the created landscape heightmap or NULL on error
+ * A reasonable value for each parameter is provided in brackets.
+ *
+ * @param width				the width of the heightmap to generate
+ * @param height			the height of the heightmap to generate
+ * @param worleyPoints		number of worley points (16)
+ * @param fbmFrequency		the frequency of the franctional Brownian noise (4)
+ * @param fbmPersistance	the persistence of the franctional Brownian noise (0.5)
+ * @param fbmDepth			the number of octaves to overlay for the fractional Brownian noise (6)
+ * @param erosionThermalIterations		number of thermal iterations (50)
+ * @param erosionThermalTalusAngle		the angle of response in degrees (40)
+ * @param erosionHydraulicIterations	number of hydraulic iterations (80)
+ * @return					the created landscape heightmap or NULL on error
  */
-API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, double frequency)
+API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height,
+	unsigned int worleyPoints,
+	float fbmFrequency, float fbmPersistance, unsigned int fbmDepth,
+	unsigned int erosionThermalIterations, float erosionThermalTalusAngle,
+	unsigned int erosionHydraulicIterations)
 {
 #define DEBUGIMAGES
 	Image *worley =	$(Image *, image, createImageFloat)(width, height, 1);
 	Image *fBm =	$(Image *, image, createImageFloat)(width, height, 1);
 
-    // possible parameters (we should not expose all of them!)
-    const unsigned int worleyPoints = 16;
-    const float fbmPersistance = 0.5;
-    const unsigned int fbmDepth = 6;
-    const float mixRatio = 1/3.f; // internal
-    const unsigned int erosionThermalIterations = 0; // 50
-    const float erosionThermalTalusAngle = M_PI/4.5; // 40 deg
-    const unsigned int erosionHydraulicIterations = 80; // 100
-    // TODO: expose more hydraulic erosion parameters if needed
+	// internal parameters
+	// blending ratio between worley noise and fBm
+    const float mixRatio = 1/3.f;
+
+    // convert the talus angle from degrees to radians
+    erosionThermalTalusAngle = erosionThermalTalusAngle / 180.f * M_PI;
 
 	// 1. create worley noise for the overall map structure (valleys, peaks and ridges)
 	RandomWorleyContext* worleyContext = $(RandomWorleyContext *, random, createWorleyContext)(worleyPoints, 2);
@@ -95,7 +104,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			float value = $(float, random, noiseFBm)((double) x * frequency / width, (double) y * frequency / height, 0.0, fbmPersistance, fbmDepth);
+			float value = $(float, random, noiseFBm)((double) x * fbmFrequency / width, (double) y * fbmFrequency / height, 0.0, fbmPersistance, fbmDepth);
 			setImage(fBm, x, y, 0, value);
 		}
 	}
@@ -110,12 +119,17 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, d
 	Image *map = $(Image *, image, blendImages)(worley, fBm, mixRatio);
 	$(void, image, normalizeImageChannel)(map, 0);
 
+
 #ifdef DEBUGIMAGES
 	assert($(bool, image, writeImageToFile)("03_mix.pgm", map));
 #endif
 
 	// 4. apply a perturbation filter to remove straight lines
 	// TODO
+
+#ifdef DEBUGIMAGES
+	//assert($(bool, image, writeImageToFile)("04_perturbed.pgm", map));
+#endif
 
 	// 5. apply erosion to make the appearance physically-based
     erodeThermal(map, erosionThermalTalusAngle, erosionThermalIterations);

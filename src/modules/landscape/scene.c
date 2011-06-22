@@ -63,18 +63,78 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 
 	unsigned int height = heightParam->content.integer;
 
-	// Parse frequency parameter
-	Store *frequencyParam;
+	// Parse worleyPoints parameter
+	Store *worleyPointsParam;
 
-	if((frequencyParam = $(Store *, store, getStorePath)(store, "frequency")) == NULL || !(frequencyParam->type == STORE_FLOAT_NUMBER || frequencyParam->type == STORE_INTEGER)) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'frequency' not found", name);
+	if((worleyPointsParam = $(Store *, store, getStorePath)(store, "worleyPoints")) == NULL || worleyPointsParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'worleyPoints' not found", name);
 		return NULL;
 	}
 
-	double frequency = frequencyParam->type == STORE_FLOAT_NUMBER ? frequencyParam->content.float_number : frequencyParam->content.integer;
+	unsigned int worleyPoints = worleyPointsParam->content.integer;
+
+	// Parse fbmFrequency parameter
+	Store *fbmFrequencyParam;
+
+	if((fbmFrequencyParam = $(Store *, store, getStorePath)(store, "fbmFrequency")) == NULL || !(fbmFrequencyParam->type == STORE_FLOAT_NUMBER || fbmFrequencyParam->type == STORE_INTEGER)) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmFrequency' not found", name);
+		return NULL;
+	}
+
+	float fbmFrequency = fbmFrequencyParam->type == STORE_FLOAT_NUMBER ? fbmFrequencyParam->content.float_number : fbmFrequencyParam->content.integer;
+
+	// Parse fbmPersistance parameter
+	Store *fbmPersistanceParam;
+
+	if((fbmPersistanceParam = $(Store *, store, getStorePath)(store, "fbmPersistance")) == NULL || !(fbmPersistanceParam->type == STORE_FLOAT_NUMBER || fbmPersistanceParam->type == STORE_INTEGER)) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmPersistance' not found", name);
+		return NULL;
+	}
+
+	float fbmPersistance = fbmPersistanceParam->type == STORE_FLOAT_NUMBER ? fbmPersistanceParam->content.float_number : fbmPersistanceParam->content.integer;
+
+	// Parse fbmDepth parameter
+	Store *fbmDepthParam;
+
+	if((fbmDepthParam = $(Store *, store, getStorePath)(store, "fbmDepth")) == NULL || fbmDepthParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'fbmDepth' not found", name);
+		return NULL;
+	}
+
+	unsigned int fbmDepth = fbmDepthParam->content.integer;
+
+	// Parse erosionThermalIterations parameter
+	Store *erosionThermalIterationsParam;
+
+	if((erosionThermalIterationsParam = $(Store *, store, getStorePath)(store, "erosionThermalIterations")) == NULL || erosionThermalIterationsParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionThermalIterations' not found", name);
+		return NULL;
+	}
+
+	unsigned int erosionThermalIterations = erosionThermalIterationsParam->content.integer;
+
+	// Parse erosionThermalTalusAngle parameter
+	Store *erosionThermalTalusAngleParam;
+
+	if((erosionThermalTalusAngleParam = $(Store *, store, getStorePath)(store, "erosionThermalTalusAngle")) == NULL || !(erosionThermalTalusAngleParam->type == STORE_FLOAT_NUMBER || erosionThermalTalusAngleParam->type == STORE_INTEGER)) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'erosionThermalTalusAngle' not found", name);
+		return NULL;
+	}
+
+	float erosionThermalTalusAngle = erosionThermalTalusAngleParam->type == STORE_FLOAT_NUMBER ? erosionThermalTalusAngleParam->content.float_number : erosionThermalTalusAngleParam->content.integer;
+
+	// Parse erosionHydraulicIterations parameter
+	Store *erosionHydraulicIterationsParam;
+
+	if((erosionHydraulicIterationsParam = $(Store *, store, getStorePath)(store, "erosionHydraulicIterations")) == NULL || erosionHydraulicIterationsParam->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionHydraulicIterations' not found", name);
+		return NULL;
+	}
+
+	unsigned int erosionHydraulicIterations = erosionHydraulicIterationsParam->content.integer;
 
 	// Generate heightmap
-	Image *image = generateLandscapeHeightmap(width, height, frequency);
+	Image *image = generateLandscapeHeightmap(width, height, worleyPoints, fbmFrequency, fbmPersistance, fbmDepth, erosionThermalIterations, erosionThermalTalusAngle, erosionHydraulicIterations);
 
 	// Create heightmap
 	OpenGLPrimitive *primitive;

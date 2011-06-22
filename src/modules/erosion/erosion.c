@@ -241,14 +241,12 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	const float K_solubility = 0.01; // (German: lösbarkeit)
 	const float K_evaporation = 0.5;
 	const float K_capacity = 0.3;
-	const float hScale = 1.0;
 
 	width = hMap->width;
 	height = hMap->height;
 
 	// ensure floating point precission
 	Image *heightMap = $(Image *, image, copyImage)(hMap, IMAGE_TYPE_FLOAT);
-	$(void, image, scaleImageChannel)(heightMap, 0, hScale);
 
 	// create water map
 	waterMap = $(Image *, image, createImageFloat)(width, height, 1);
@@ -322,7 +320,7 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	// copy values to the original height map channels
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			double value = getImage(heightMap, x, y, 0)/hScale;
+			double value = getImage(heightMap, x, y, 0);
 			assert(value <= 1.0 && value >= 0.0);
 			for(unsigned int c = 0; c < MIN(hMap->channels, 4); c++) {
 				setImage(hMap, x, y, c, value);

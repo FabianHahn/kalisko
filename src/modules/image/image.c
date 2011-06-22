@@ -225,7 +225,7 @@ API void invertImageChannel(Image *image, unsigned int channel)
  */
 API void scaleImageChannel(Image *image, unsigned int channel, float factor)
 {
-	if(channel >= image->channels) {
+	if(channel >= image->channels || factor == 1.f) {
 		return;
 	}
 

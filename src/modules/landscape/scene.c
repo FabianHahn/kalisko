@@ -20,7 +20,6 @@
 
 #include <assert.h>
 #include <glib.h>
-#include <GL/glew.h>
 #include "dll.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"

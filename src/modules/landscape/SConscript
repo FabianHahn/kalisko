@@ -23,9 +23,20 @@ check = True
 
 check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
 
+if module['PLATFORM'] != 'win32':
+	check = check and conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C')
+	check = check and conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C')
+else:
+	check = check and conf.CheckPKGConfig('glew')
+	check = check and conf.CheckLib('opengl32')
+	check = check and conf.CheckLib('glu32')
+
 module = conf.Finish()
 
 if check:
+	if module['PLATFORM'] == 'win32':
+		module.ParseConfig('pkg-config --libs --cflags glew')
+
 	module.SharedLibrary('../kalisko_landscape', Glob('*.c'))
 	module.Command("landscape.glslv", File("landscape.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
 	module.Command("landscape.glslf", File("landscape.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))	

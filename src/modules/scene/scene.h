@@ -26,7 +26,6 @@
 #include "modules/opengl/shader.h"
 #include "modules/opengl/primitive.h"
 #include "modules/store/store.h"
-#include "modules/mesh/mesh.h"
 
 /**
  * Struct that represents a scene parameter which can then be used in OpenGL uniforms

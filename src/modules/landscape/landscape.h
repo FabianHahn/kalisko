@@ -23,9 +23,6 @@
 
 #include "modules/image/image.h"
 
-API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height,
-		unsigned int worleyPoints, float fbmFrequency, float fbmPersistance,
-		unsigned int fbmDepth, unsigned int erosionThermalIterations,
-		float erosionThermalTalusAngle, unsigned int erosionHydraulicIterations);
+API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, unsigned int worleyPoints, double fbmFrequency, double fbmPersistance, unsigned int fbmDepth, unsigned int erosionThermalIterations, double erosionThermalTalusAngle, unsigned int erosionHydraulicIterations);
 
 #endif

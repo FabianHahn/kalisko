@@ -36,7 +36,7 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
@@ -55,22 +55,18 @@ MODULE_FINALIZE
  *
  * A reasonable value for each parameter is provided in brackets.
  *
- * @param width				the width of the heightmap to generate
- * @param height			the height of the heightmap to generate
- * @param worleyPoints		number of worley points (16)
- * @param fbmFrequency		the frequency of the franctional Brownian noise (4)
- * @param fbmPersistance	the persistence of the franctional Brownian noise (0.5)
- * @param fbmDepth			the number of octaves to overlay for the fractional Brownian noise (6)
+ * @param width							the width of the heightmap to generate
+ * @param height						the height of the heightmap to generate
+ * @param worleyPoints					number of worley points (16)
+ * @param fbmFrequency					the frequency of the franctional Brownian noise (4)
+ * @param fbmPersistance				the persistence of the franctional Brownian noise (0.5)
+ * @param fbmDepth						the number of octaves to overlay for the fractional Brownian noise (6)
  * @param erosionThermalIterations		number of thermal iterations (50)
  * @param erosionThermalTalusAngle		the angle of response in degrees (40)
  * @param erosionHydraulicIterations	number of hydraulic iterations (80)
- * @return					the created landscape heightmap or NULL on error
+ * @return								the created landscape heightmap or NULL on error
  */
-API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height,
-	unsigned int worleyPoints,
-	float fbmFrequency, float fbmPersistance, unsigned int fbmDepth,
-	unsigned int erosionThermalIterations, float erosionThermalTalusAngle,
-	unsigned int erosionHydraulicIterations)
+API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, unsigned int worleyPoints, double fbmFrequency, double fbmPersistance, unsigned int fbmDepth, unsigned int erosionThermalIterations, double erosionThermalTalusAngle, unsigned int erosionHydraulicIterations)
 {
 #define DEBUGIMAGES
 	Image *worley =	$(Image *, image, createImageFloat)(width, height, 1);

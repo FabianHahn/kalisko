@@ -132,8 +132,8 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height,
 #endif
 
 	// 5. apply erosion to make the appearance physically-based
-    $(void, landscape, erodeThermal)(map, erosionThermalTalusAngle, erosionThermalIterations);
-    $(void, landscape, erodeHydraulic)(map, erosionHydraulicIterations);
+    $(void, erosion, erodeThermal)(map, erosionThermalTalusAngle, erosionThermalIterations);
+    $(void, erosion, erodeHydraulic)(map, erosionHydraulicIterations);
 
 #ifdef DEBUGIMAGES
 	assert($(bool, image, writeImageToFile)("05_erosion.pgm", map));

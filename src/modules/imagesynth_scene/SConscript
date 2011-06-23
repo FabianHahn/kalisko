@@ -16,5 +16,27 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('module')
+Import('custom_tests')
 
-module.SharedLibrary('../kalisko_imagesynth_scene', Glob('*.c'))
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
+	
+if module['PLATFORM'] != 'win32':
+	check = check and conf.CheckLibWithHeader('GLU', 'GL/glu.h', 'C')
+	check = check and conf.CheckLibWithHeader('GLEW', 'GL/glew.h', 'C')
+else:
+	check = check and conf.CheckPKGConfig('glew')
+	check = check and conf.CheckLib('opengl32')
+	check = check and conf.CheckLib('glu32')
+
+module = conf.Finish()
+
+if check:
+	if module['PLATFORM'] == 'win32':
+		module.ParseConfig('pkg-config --libs --cflags glew')
+		
+	module.SharedLibrary('../kalisko_imagesynth_scene', Glob('*.c'))
+else:
+	print('A required library for the \'imagesynth_scene\' module is not available, skipping build...')

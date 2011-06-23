@@ -157,7 +157,7 @@ API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
 	}
 
 	// cleanup
-	$(void, Image*, freeImage)(heightMap);
+	$(void, image, freeImage)(heightMap);
 }
 
 static inline void waterFlowCell(Image* hMap, Image* waterMap, Image* sedimentMap, unsigned int x, unsigned int y)

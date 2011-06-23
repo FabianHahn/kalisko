@@ -30,7 +30,7 @@
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Erosion functions");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 13));
 
@@ -329,7 +329,7 @@ API void erodeHydraulic(Image* hMap, unsigned int steps)
 	}
 
 	// cleanup
-	$(void, Image*, freeImage)(heightMap);
-	$(void, Image*, freeImage)(waterMap);
-	$(void, Image*, freeImage)(sedimentMap);
+	$(void, image, freeImage)(heightMap);
+	$(void, image, freeImage)(waterMap);
+	$(void, image, freeImage)(sedimentMap);
 }

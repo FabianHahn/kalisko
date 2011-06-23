@@ -30,7 +30,7 @@
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Erosion functions");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 13));
 
@@ -122,7 +122,7 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
  * @param talusAngle	critical angle of response
  * @param steps			number of iteration steps
  */
-API void erodeThermal(Image* hMap, float talusAngle, unsigned int steps)
+API void erodeThermal(Image* hMap, double talusAngle, unsigned int steps)
 {
 	assert(hMap != NULL);
 

@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include "modules/image/image.h"
 
-API void erodeThermal(Image* heightMap, float talusAngle, unsigned int steps);
+API void erodeThermal(Image* hMap, double talusAngle, unsigned int steps);
 API void erodeHydraulic(Image* heightMap, unsigned int steps);
 
 #endif

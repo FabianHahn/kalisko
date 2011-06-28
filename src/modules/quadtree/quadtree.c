@@ -141,7 +141,7 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
- * Recursively lookup a leaf node in a quadtree
+ * Recursively lookup a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
  *
  * @param tree			the quadtree to lookup
  * @param node			the current node we're traversing

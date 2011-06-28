@@ -26,7 +26,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_NODEPS;
 
@@ -76,6 +76,10 @@ API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, Qu
  */
 API void expandQuadtree(Quadtree *tree, double x, double y)
 {
+	if(quadtreeContainsPoint(tree, x, y)) {
+		return; // nothing to do
+	}
+
 	double span = quadtreeNodeSpan(tree, tree->root);
 	bool isLowerX = x < tree->root->x;
 	bool isLowerY = y < tree->root->y;

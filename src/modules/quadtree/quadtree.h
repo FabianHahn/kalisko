@@ -42,16 +42,25 @@ struct QuadtreeNodeStruct{
 
 typedef struct QuadtreeNodeStruct QuadtreeNode;
 
+typedef void *(QuadtreeDataLoadFunction)(double x, double y, double span);
+typedef void (QuadtreeDataFreeFunction)(void *data);
+
 typedef struct {
 	/** The root node of the quad tree */
 	QuadtreeNode *root;
 	/** The size of a leaf in the quad tree */
 	double leafSize;
+	/** The loader function for quadtree data */
+	QuadtreeDataLoadFunction *load;
+	/** The free function for quadtree data */
+	QuadtreeDataFreeFunction *free;
 } Quadtree;
 
 API Quadtree *createQuadtree(double leafSize);
 API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y);
-API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y);
+API void *lookupQuadtree(Quadtree *tree, double x, double y);
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);
+API void freeQuadtree(Quadtree *tree);
 
 /**
  * Checks whether a quadtree node is a leaf
@@ -61,6 +70,17 @@ API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y);
  */
 static inline bool quadtreeNodeIsLeaf(QuadtreeNode *node) {
 	return node->level == 0;
+}
+
+/**
+ * Checks whether a quadtree node's data is loaded
+ *
+ * @param node		the quadtree node to check
+ * @result			true if the node is indeed a leaf
+ */
+static inline bool quadtreeNodeDataIsLoaded(QuadtreeNode *node) {
+	assert(quadtreeNodeIsLeaf(node));
+	return node->content.data != NULL;
 }
 
 /**

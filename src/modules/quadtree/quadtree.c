@@ -26,12 +26,12 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
-static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node);
+static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
 MODULE_INIT
 {
@@ -111,20 +111,29 @@ API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
- * Lookup a leaf node in the quadtree
+ * Lookup a leaf node's data in the quadtree
  *
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
  * @result				the looked up quadtree node
  */
-API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y)
+API void *lookupQuadtree(Quadtree *tree, double x, double y)
 {
+	QuadtreeNode *leaf;
 	if(quadtreeContainsPoint(tree, x, y)) {
-		return lookupQuadtreeNode(tree, tree->root, x, y);
+		leaf = lookupQuadtreeNode(tree, tree->root, x, y);
 	} else {
-		return expandQuadtree(tree, x, y);
+		leaf = expandQuadtree(tree, x, y);
 	}
+
+	assert(quadtreeNodeIsLeaf(leaf));
+	if(!quadtreeNodeDataIsLoaded(leaf)) {
+		double span = quadtreeNodeSpan(tree, leaf);
+		leaf->content.data = tree->load(x, y, span);
+	}
+
+	return leaf->content.data;
 }
 
 /**
@@ -136,7 +145,7 @@ API QuadtreeNode *lookupQuadtree(Quadtree *tree, double x, double y)
  * @param y				the y coordinate to lookup
  * @result				the looked up quadtree node
  */
-static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y)
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y)
 {
 	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
@@ -147,6 +156,20 @@ static QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, doub
 		QuadtreeNode *child = node->content.children[index];
 		return lookupQuadtreeNode(tree, child, x, y);
 	}
+}
+
+/**
+ * Frees a quadtree including all it's nodes and their loaded data
+ *
+ * @param tree			the quadtree to free
+ */
+API void freeQuadtree(Quadtree *tree)
+{
+	// free all the nodes first
+	freeQuadtreeNode(tree, tree->root);
+
+	// if all the nodes are freed, free the tree itself as well
+	free(tree);
 }
 
 /**
@@ -183,4 +206,26 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
 
 		fillTreeNodes(tree, node->content.children[i]); // recursively fill the child nodes
 	}
+}
+
+/**
+ * Recursively frees a quadtree node and the leaf nodes' loaded data
+ *
+ * @param tree			the tree to which the node belongs
+ * @param node			the current node we're traversing to free
+ */
+static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
+{
+	if(quadtreeNodeIsLeaf(node)) {
+		if(quadtreeNodeDataIsLoaded(node)) {
+			tree->free(node->content.data); // free this node's data
+		}
+	} else {
+		for(int i = 0; i < 4; i++) {
+			freeQuadtreeNode(tree, node->content.children[i]);
+		}
+	}
+
+	// free the node if all the children are or the data is freed
+	free(node);
 }

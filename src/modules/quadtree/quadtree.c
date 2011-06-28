@@ -26,7 +26,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -46,12 +46,16 @@ MODULE_FINALIZE
  * Creates a new quadtree
  *
  * @param leafSize			the leaf size of the quadtree
+ * @param load				the load function to use for the quadtree data
+ * @param free				the free function to use for the quadtree data
  * @result					the created quadtree
  */
-API Quadtree *createQuadtree(double leafSize)
+API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
 	quadtree->leafSize = leafSize;
+	quadtree->load = load;
+	quadtree->free = free;
 	quadtree->root = ALLOCATE_OBJECT(QuadtreeNode);
 	quadtree->root->x = 0;
 	quadtree->root->y = 0;

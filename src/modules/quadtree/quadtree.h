@@ -56,7 +56,7 @@ typedef struct {
 	QuadtreeDataFreeFunction *free;
 } Quadtree;
 
-API Quadtree *createQuadtree(double leafSize);
+API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);

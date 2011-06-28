@@ -42,10 +42,12 @@ struct QuadtreeNodeStruct{
 
 typedef struct QuadtreeNodeStruct QuadtreeNode;
 
-typedef void *(QuadtreeDataLoadFunction)(double x, double y, double span);
-typedef void (QuadtreeDataFreeFunction)(void *data);
+struct QuadtreeStruct; // forward declaration
 
-typedef struct {
+typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, double x, double y);
+typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data);
+
+struct QuadtreeStruct {
 	/** The root node of the quad tree */
 	QuadtreeNode *root;
 	/** The size of a leaf in the quad tree */
@@ -54,7 +56,9 @@ typedef struct {
 	QuadtreeDataLoadFunction *load;
 	/** The free function for quadtree data */
 	QuadtreeDataFreeFunction *free;
-} Quadtree;
+};
+
+typedef struct QuadtreeStruct Quadtree;
 
 API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y);

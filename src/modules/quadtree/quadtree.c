@@ -26,7 +26,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -133,8 +133,7 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y)
 
 	assert(quadtreeNodeIsLeaf(leaf));
 	if(!quadtreeNodeDataIsLoaded(leaf)) {
-		double span = quadtreeNodeSpan(tree, leaf);
-		leaf->content.data = tree->load(x, y, span);
+		leaf->content.data = tree->load(tree, x, y);
 	}
 
 	return leaf->content.data;
@@ -221,7 +220,7 @@ static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
 {
 	if(quadtreeNodeIsLeaf(node)) {
 		if(quadtreeNodeDataIsLoaded(node)) {
-			tree->free(node->content.data); // free this node's data
+			tree->free(tree, node->content.data); // free this node's data
 		}
 	} else {
 		for(int i = 0; i < 4; i++) {

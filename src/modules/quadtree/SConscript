@@ -21,6 +21,8 @@ Import('custom_tests')
 conf = Configure(module, custom_tests)
 check = True
 	
+check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')	
+	
 module = conf.Finish()
 
 if check:

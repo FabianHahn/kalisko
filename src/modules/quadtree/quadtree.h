@@ -60,14 +60,19 @@ struct QuadtreeStruct {
 	QuadtreeDataLoadFunction *load;
 	/** The free function for quadtree data */
 	QuadtreeDataFreeFunction *free;
+	/** The capacity of the quadtree's data cache */
+	unsigned int capacity;
+	/** The usage factor to which prune will reduce the quadtree's data cache */
+	float pruneFactor;
 };
 
 typedef struct QuadtreeStruct Quadtree;
 
-API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
+API Quadtree *createQuadtree(double leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y);
+API void pruneQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);
 
 /**

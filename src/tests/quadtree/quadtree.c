@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 3, 0));
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 4, 0));
 
 typedef struct {
 	Quadtree *tree;
@@ -49,7 +49,7 @@ TEST_SUITE_END
 
 TEST_CASE(expand)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, NULL, NULL);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, 100, NULL, NULL);
 	QuadtreeNode *origRoot = tree->root;
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
@@ -90,7 +90,7 @@ TEST_CASE(expand)
 
 TEST_CASE(data)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, &testDataLoadFunction, &testDataFreeFunction);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, 100, &testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);
 
 	TestData *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);

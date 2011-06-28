@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 0);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 4, 0));
+MODULE_VERSION(0, 2, 1);
+MODULE_BCVERSION(0, 2, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 4, 2));
 
 typedef struct {
 	Quadtree *tree;
@@ -135,12 +135,12 @@ TEST_CASE(cache)
 	QuadtreeNode *node2 = $(void *, quadtree, lookupQuadtreeNode)(tree, 1.0, 0.0);
 	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node2));
 	TEST_ASSERT(tree->root->weight == 1);
-	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
+	$(void *, quadtree, lookupQuadtree)(tree, 1.0, 0.0);
 	TEST_ASSERT(quadtreeNodeDataIsLoaded(node2));
 	TEST_ASSERT(tree->root->weight == 1);
 
 	// original node should be unloaded now
-	TEST_ASSERT(quadtreeNodeDataIsLoaded(node));
+	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node));
 
 	// do the reverse
 	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);

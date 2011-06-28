@@ -27,13 +27,13 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 4, 0);
 MODULE_NODEPS;
 
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y);
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y);
-static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node);
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
 static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
@@ -87,11 +87,13 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 		return; // nothing to do
 	}
 
+	double time = $$(double, getMicroTime)();
 	double span = quadtreeNodeSpan(tree, tree->root);
 	bool isLowerX = x < tree->root->x;
 	bool isLowerY = y < tree->root->y;
 
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
+	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
 	newRoot->content.children[0] = NULL;
 	newRoot->content.children[1] = NULL;
@@ -117,7 +119,10 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	}
 
 	tree->root = newRoot;
-	fillTreeNodes(tree, tree->root);
+	fillTreeNodes(tree, tree->root, time);
+
+	// update node weight
+	newRoot->weight = newRoot->content.children[0]->weight + newRoot->content.children[1]->weight + newRoot->content.children[2]->weight + newRoot->content.children[3]->weight;
 
 	// recursively expand to make sure we include the point
 	expandQuadtree(tree, x, y);
@@ -175,6 +180,8 @@ API void pruneQuadtree(Quadtree *tree)
 	if(tree->root->weight <= tree->capacity) {
 		return; // nothing to do
 	}
+
+	$$(void, breakpoint)();
 
 	unsigned int target = ceil(tree->root->weight - tree->capacity * tree->pruneFactor);
 
@@ -263,8 +270,9 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
  *
  * @param tree			the tree to fill with nodes
  * @param node			the current node we're traversing
+ * @param time			the current timestamp used for caching
  */
-static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 {
 	if(quadtreeNodeIsLeaf(node)) { // exit condition, reached leaf
 		return;
@@ -274,6 +282,8 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
 		if(node->content.children[i] == NULL) { // if child node doesn't exist yet, create it
 			node->content.children[i] = ALLOCATE_OBJECT(QuadtreeNode);
 			node->content.children[i]->level = node->level - 1;
+			node->content.children[i]->weight = 0;
+			node->content.children[i]->time = time;
 			double span = quadtreeNodeSpan(tree, node->content.children[i]);
 			node->content.children[i]->x = node->x + (i % 2) * span;
 			node->content.children[i]->y = node->y + ((i & 2) >> 1) * span;
@@ -289,7 +299,7 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
 			}
 		}
 
-		fillTreeNodes(tree, node->content.children[i]); // recursively fill the child nodes
+		fillTreeNodes(tree, node->content.children[i], time); // recursively fill the child nodes
 	}
 }
 

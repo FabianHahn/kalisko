@@ -31,6 +31,10 @@ struct QuadtreeNodeStruct{
 	double y;
 	/** The level of the quad tree node (level 0 means it's a leaf) */
 	unsigned int level;
+	/** The weight of the node, i.e. how much data is loaded in its children */
+	unsigned int weight;
+	/** The last access time (used for caching) */
+	double time;
 	/** Union containing either the child nodes or the leaf data */
 	union {
 		/** The child nodes of the quadtree node */
@@ -61,9 +65,9 @@ struct QuadtreeStruct {
 typedef struct QuadtreeStruct Quadtree;
 
 API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
-API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y);
+API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y);
-API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y);
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y);
 API void freeQuadtree(Quadtree *tree);
 
 /**

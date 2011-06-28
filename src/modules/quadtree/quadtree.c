@@ -26,10 +26,12 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 2, 3);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
 MODULE_NODEPS;
 
+static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double x, double y);
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double x, double y);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
@@ -66,19 +68,14 @@ API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, Qu
 }
 
 /**
- * Expands a quad tree to cover a specific point
+ * Expands a quad tree to cover a specific point by adding new tree nodes
  *
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
- * @result				the freshly created quadtree node containing the point
  */
-API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
+API void expandQuadtree(Quadtree *tree, double x, double y)
 {
-	if(quadtreeContainsPoint(tree, x, y)) { // nothing to do
-		return lookupQuadtreeNode(tree, tree->root, x, y);
-	}
-
 	double span = quadtreeNodeSpan(tree, tree->root);
 	bool isLowerX = x < tree->root->x;
 	bool isLowerY = y < tree->root->y;
@@ -111,7 +108,8 @@ API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
 	tree->root = newRoot;
 	fillTreeNodes(tree, tree->root);
 
-	return expandQuadtree(tree, x, y); // recursively expand to make sure we include the point
+	// recursively expand to make sure we include the point
+	expandQuadtree(tree, x, y);
 }
 
 /**
@@ -120,45 +118,32 @@ API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
- * @result				the looked up quadtree node
+ * @result				the looked up quadtree node's data
  */
 API void *lookupQuadtree(Quadtree *tree, double x, double y)
 {
-	QuadtreeNode *leaf;
-	if(quadtreeContainsPoint(tree, x, y)) {
-		leaf = lookupQuadtreeNode(tree, tree->root, x, y);
-	} else {
-		leaf = expandQuadtree(tree, x, y);
+	if(!quadtreeContainsPoint(tree, x, y)) {
+		expandQuadtree(tree, x, y);
 	}
 
-	assert(quadtreeNodeIsLeaf(leaf));
-	if(!quadtreeNodeDataIsLoaded(leaf)) {
-		leaf->content.data = tree->load(tree, x, y);
-	}
-
-	return leaf->content.data;
+	return lookupQuadtreeRec(tree, tree->root, x, y);
 }
 
 /**
- * Recursively lookup a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
+ * Lookup a leaf node in the quadtree
  *
  * @param tree			the quadtree to lookup
- * @param node			the current node we're traversing
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
  * @result				the looked up quadtree node
  */
-API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double x, double y)
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y)
 {
-	assert(quadtreeNodeContainsPoint(tree, node, x, y));
-
-	if(quadtreeNodeIsLeaf(node)) {
-		return node;
-	} else {
-		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
-		QuadtreeNode *child = node->content.children[index];
-		return lookupQuadtreeNode(tree, child, x, y);
+	if(!quadtreeContainsPoint(tree, x, y)) {
+		expandQuadtree(tree, x, y);
 	}
+
+	return lookupQuadtreeNodeRec(tree, tree->root, x, y);
 }
 
 /**
@@ -173,6 +158,53 @@ API void freeQuadtree(Quadtree *tree)
 
 	// if all the nodes are freed, free the tree itself as well
 	free(tree);
+}
+
+/**
+ * Recursively lookup the data of a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
+ *
+ * @param tree			the quadtree to lookup
+ * @param node			the current node we're traversing
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @result				the looked up quadtree node data
+ */
+static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double x, double y)
+{
+	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+
+	if(quadtreeNodeIsLeaf(node)) {
+		if(!quadtreeNodeDataIsLoaded(node)) {
+			node->content.data = tree->load(tree, x, y);
+		}
+		return node->content.data;
+	} else {
+		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+		QuadtreeNode *child = node->content.children[index];
+		return lookupQuadtreeRec(tree, child, x, y);
+	}
+}
+
+/**
+ * Recursively lookup a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
+ *
+ * @param tree			the quadtree to lookup
+ * @param node			the current node we're traversing
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @result				the looked up quadtree node
+ */
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double x, double y)
+{
+	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+
+	if(quadtreeNodeIsLeaf(node)) {
+		return node;
+	} else {
+		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+		QuadtreeNode *child = node->content.children[index];
+		return lookupQuadtreeNodeRec(tree, child, x, y);
+	}
 }
 
 /**

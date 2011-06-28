@@ -26,7 +26,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -76,7 +76,7 @@ API Quadtree *createQuadtree(double leafSize, QuadtreeDataLoadFunction *load, Qu
 API QuadtreeNode *expandQuadtree(Quadtree *tree, double x, double y)
 {
 	if(quadtreeContainsPoint(tree, x, y)) { // nothing to do
-		return lookupQuadtree(tree, x, y);
+		return lookupQuadtreeNode(tree, tree->root, x, y);
 	}
 
 	double span = quadtreeNodeSpan(tree, tree->root);
@@ -188,14 +188,13 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
 		return;
 	}
 
-	double span = quadtreeNodeSpan(tree, node);
-
 	for(int i = 0; i < 4; i++) {
 		if(node->content.children[i] == NULL) { // if child node doesn't exist yet, create it
 			node->content.children[i] = ALLOCATE_OBJECT(QuadtreeNode);
 			node->content.children[i]->level = node->level - 1;
-			node->content.children[i]->x = node->x + (i % 2) * 0.5 * span;
-			node->content.children[i]->y = node->y + (i & 2) * 0.5 * span;
+			double span = quadtreeNodeSpan(tree, node->content.children[i]);
+			node->content.children[i]->x = node->x + (i % 2) * span;
+			node->content.children[i]->y = node->y + ((i & 2) >> 1) * span;
 
 			// set content to null
 			if(quadtreeNodeIsLeaf(node->content.children[i])) {

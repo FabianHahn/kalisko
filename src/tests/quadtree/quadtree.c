@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 2, 0));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 3, 0));
 
 typedef struct {
 	Quadtree *tree;
@@ -54,7 +54,7 @@ TEST_CASE(expand)
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
 
-	QuadtreeNode *node = $(QuadtreeNode *, quadtree, expandQuadtree)(tree, 1.0, 1.0);
+	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, 1.0, 1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, 1.0, 1.0));
 	TEST_ASSERT(node->x == 1.0);
@@ -67,13 +67,13 @@ TEST_CASE(expand)
 	TEST_ASSERT(tree->root->content.children[2]->x == 0.0);
 	TEST_ASSERT(tree->root->content.children[2]->y == 1.0);
 
-	QuadtreeNode *node2 = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, tree->root, 1.0, 1.0);
+	QuadtreeNode *node2 = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0);
 	TEST_ASSERT(node == node2);
 
 	TEST_ASSERT(!quadtreeContainsPoint(tree, -1.0, -1.0));
 	origRoot = tree->root;
 
-	node = $(QuadtreeNode *, quadtree, expandQuadtree)(tree, -1.0, -1.0);
+	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, -1.0, -1.0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, -1.0, -1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, -1.0, -1.0));
 	TEST_ASSERT(node->x == -1.0);

@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 4, 0);
 MODULE_NODEPS;
 
@@ -181,9 +181,7 @@ API void pruneQuadtree(Quadtree *tree)
 		return; // nothing to do
 	}
 
-	$$(void, breakpoint)();
-
-	unsigned int target = ceil(tree->root->weight - tree->capacity * tree->pruneFactor);
+	unsigned int target = tree->root->weight - ceil(tree->capacity * tree->pruneFactor);
 
 	LOG_DEBUG("Pruning %u quadtree nodes", target);
 

@@ -23,17 +23,28 @@
 #include "modules/quadtree/quadtree.h"
 #include "api.h"
 
-TEST_CASE(expand);
-
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 2, 0));
+
+typedef struct {
+	Quadtree *tree;
+	double x;
+	double y;
+} TestData;
+
+static void *testDataLoadFunction(Quadtree *tree, double x, double y);
+static void testDataFreeFunction(Quadtree *tree, void *data);
+
+TEST_CASE(expand);
+TEST_CASE(data);
 
 TEST_SUITE_BEGIN(quadtree)
 	TEST_CASE_ADD(expand);
+	TEST_CASE_ADD(data);
 TEST_SUITE_END
 
 TEST_CASE(expand)
@@ -75,4 +86,44 @@ TEST_CASE(expand)
 	$(void, quadtree, freeQuadtree)(tree);
 
 	TEST_PASS;
+}
+
+TEST_CASE(data)
+{
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, &testDataLoadFunction, &testDataFreeFunction);
+	TEST_ASSERT(tree != NULL);
+
+	TestData *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
+	TEST_ASSERT(data->tree == tree);
+	TEST_ASSERT(data->x == 0.0);
+	TEST_ASSERT(data->y == 0.0);
+
+	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 1.0);
+	TEST_ASSERT(data->tree == tree);
+	TEST_ASSERT(data->x == 0.0);
+	TEST_ASSERT(data->y == 1.0);
+
+	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
+	TEST_ASSERT(data->tree == tree);
+	TEST_ASSERT(data->x == 0.0);
+	TEST_ASSERT(data->y == 0.0);
+
+	$(void, quadtree, freeQuadtree)(tree);
+
+	TEST_PASS;
+}
+
+static void *testDataLoadFunction(Quadtree *tree, double x, double y)
+{
+	// store values as they're passed
+	TestData *data = ALLOCATE_OBJECT(TestData);
+	data->tree = tree;
+	data->x = x;
+	data->y = y;
+	return data;
+}
+
+static void testDataFreeFunction(Quadtree *tree, void *data)
+{
+	free(data); // just free the struct
 }

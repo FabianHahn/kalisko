@@ -29,7 +29,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 14);
+MODULE_VERSION(0, 5, 15);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -147,6 +147,31 @@ API Image *copyImage(Image *source, ImageType targetType)
 	}
 
 	return target;
+}
+
+/**
+ * Clears an image by setting all its values to zero
+ *
+ * @param image			the image to clear
+ */
+API void clearImage(Image *image)
+{
+	unsigned int pixelSize = getImagePixelSize(image);
+	void *data = getImageData(image);
+	memset(data, 0, image->channels * image->height * image->width * pixelSize);
+}
+
+/**
+ * Clears an image channel by setting its values to zero
+ *
+ * @param image			the image in which to clear a channel
+ * @param channel		the channel that should be cleared
+ */
+API void clearImageChannel(Image *image, unsigned int channel)
+{
+	unsigned int pixelSize = getImagePixelSize(image);
+	void *data = getImageData(image);
+	memset(data + channel * image->height * image->width * pixelSize, 0, image->height * image->width * pixelSize);
 }
 
 /**

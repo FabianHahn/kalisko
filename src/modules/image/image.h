@@ -58,6 +58,8 @@ API Image *createImageByte(unsigned int width, unsigned int height, unsigned int
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
 API Image *createImage(unsigned int width, unsigned int height, unsigned int channels, ImageType type);
 API Image *copyImage(Image *source, ImageType targetType);
+API void clearImage(Image *image);
+API void clearImageChannel(Image *image, unsigned int channel);
 API void normalizeImageChannel(Image *image, unsigned int channel);
 API void invertImageChannel(Image *image, unsigned int channel);
 API void scaleImageChannel(Image *image, unsigned int channel, float factor);
@@ -223,6 +225,50 @@ static inline void setImage(Image *image, unsigned int x, unsigned int y, unsign
 			image->data.float_data[y * image->width * image->channels + x * image->channels + c] = value;
 		break;
 	}
+}
+
+/**
+ * Returns the size of one image pixel in an image
+ *
+ * @param image			the image for which to lookup the size
+ * @result				the looked up image pixel size
+ */
+static inline unsigned int getImagePixelSize(Image *image)
+{
+	unsigned int pixelSize = 0;
+
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			pixelSize = sizeof(unsigned char);
+		break;
+		case IMAGE_TYPE_FLOAT:
+			pixelSize = sizeof(float);
+		break;
+	}
+
+	return pixelSize;
+}
+
+/**
+ * Returns a pointer to the raw data of an image
+ *
+ * @param image			the image for which to lookup the raw data pointer
+ * @result				a pointer to the raw data of the image
+ */
+static inline void *getImageData(Image *image)
+{
+	void *data = NULL;
+
+	switch(image->type) {
+		case IMAGE_TYPE_BYTE:
+			data = image->data.byte_data;
+		break;
+		case IMAGE_TYPE_FLOAT:
+			data = image->data.float_data;
+		break;
+	}
+
+	return data;
 }
 
 #endif

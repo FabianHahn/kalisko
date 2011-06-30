@@ -23,8 +23,6 @@
 #include "modules/linalg/Matrix.h"
 extern "C" {
 #include "modules/image/image.h"
-#include "modules/opengl/primitive.h"
-#include "modules/opengl/texture.h"
 }
 #include "api.h"
 
@@ -39,23 +37,20 @@ static inline Vector getHeightmapVector(Image *heights, int x, int y)
 }
 
 /**
- * Computes the heightmap normals for an OpenGL heightmap primitive and synchronizes them to their texture
+ * Computes the heightmap normals for a heightfield image
  *
- * @param primitive		the OpenGL heightmap primitive to compute the normals for
- * @result				true if successful
+ * @param heights			the heightfield for which to compute the normal vectors
+ * @param normals			the normal map in which to write the computed normals
  */
-API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
+API void computeHeightmapNormals(Image *heights, Image *normals)
 {
-	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to compute OpenGL heightmap normals: Primitive is not a heightmap");
-		return false;
-	}
-
-	OpenGLHeightmap *heightmap = (OpenGLHeightmap *) primitive->data;
+	assert(heights->height == normals->height);
+	assert(heights->width == normals->width);
+	assert(normals->channels >= 3);
 
 	Vector up = Vector3(0.0f, 1.0f, 0.0f);
-	int height = heightmap->heights->height;
-	int width = heightmap->heights->width;
+	int height = heights->height;
+	int width = heights->width;
 
 	for(int y = 0; y < height; y++) {
 		int ym1 = y - 1 < 0 ? 0 : y - 1;
@@ -66,13 +61,13 @@ API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
 			int xp1 = x + 1 >= width ? width - 1 : x + 1;
 
 			Vector normal = Vector3(0.0f, 0.0f, 0.0f);
-			Vector current = getHeightmapVector(heightmap->heights, x, y);
-			Vector exp1yp0 = getHeightmapVector(heightmap->heights, xp1, y) - current;
-			Vector exp1ym1 = getHeightmapVector(heightmap->heights, xp1, ym1) - current;
-			Vector exp0yp1 = getHeightmapVector(heightmap->heights, x, yp1) - current;
-			Vector exp0ym1 = getHeightmapVector(heightmap->heights, x, ym1) - current;
-			Vector exm1yp1 = getHeightmapVector(heightmap->heights, xm1, yp1) - current;
-			Vector exm1yp0 = getHeightmapVector(heightmap->heights, xm1, y) - current;
+			Vector current = getHeightmapVector(heights, x, y);
+			Vector exp1yp0 = getHeightmapVector(heights, xp1, y) - current;
+			Vector exp1ym1 = getHeightmapVector(heights, xp1, ym1) - current;
+			Vector exp0yp1 = getHeightmapVector(heights, x, yp1) - current;
+			Vector exp0ym1 = getHeightmapVector(heights, x, ym1) - current;
+			Vector exm1yp1 = getHeightmapVector(heights, xm1, yp1) - current;
+			Vector exm1yp0 = getHeightmapVector(heights, xm1, y) - current;
 
 			// add contributions from neighboring triangles
 			normal += (exp1yp0 % exp1ym1).normalize();
@@ -83,15 +78,9 @@ API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive)
 			normal += 2.0f * (exp0yp1 % exp1yp0).normalize();
 			normal.normalize(); // normalize it
 
-			setImage(heightmap->normals, x, y, 0, normal[0]);
-			setImage(heightmap->normals, x, y, 1, normal[1]);
-			setImage(heightmap->normals, x, y, 2, normal[2]);
+			setImage(normals, x, y, 0, normal[0]);
+			setImage(normals, x, y, 1, normal[1]);
+			setImage(normals, x, y, 2, normal[2]);
 		}
 	}
-
-	if(!$(bool, opengl, synchronizeOpenGLTexture)(heightmap->normalsTexture)) {
-		return false;
-	}
-
-	return true;
 }

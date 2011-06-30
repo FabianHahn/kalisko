@@ -25,7 +25,9 @@
 extern "C" {
 #endif
 
-API bool computeOpenGLPrimitiveHeightmapNormals(OpenGLPrimitive *primitive);
+#include "modules/image/image.h"
+
+API void computeHeightmapNormals(Image *heights, Image *normals);
 
 #ifdef __cplusplus
 }

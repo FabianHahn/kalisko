@@ -42,8 +42,8 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 2, 12);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 2, 13);
+MODULE_BCVERSION(0, 2, 13);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 0));
 
 MODULE_INIT
@@ -104,12 +104,13 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 		return false;
 	}
 
-	if(!computeOpenGLPrimitiveHeightmapNormals(primitive)) {
-		LOG_ERROR("Failed to initialize OpenGL heightmap: Could not compute normals");
+	OpenGLHeightmap *heightmap = primitive->data;
+	computeHeightmapNormals(heightmap->heights, heightmap->normals);
+
+	if(!$(bool, opengl, synchronizeOpenGLTexture)(heightmap->normalsTexture)) {
+		LOG_ERROR("Failed to initialize OpenGL heightmap: Could synchronize normals texture");
 		return false;
 	}
-
-	OpenGLHeightmap *heightmap = primitive->data;
 
 	for(unsigned int y = 0; y < heightmap->heights->height - 1; y++) {
 		for(unsigned int x = 0; x < heightmap->heights->width - 1; x++) {

@@ -47,6 +47,10 @@ typedef struct {
 	HeightmapTile *tiles;
 	/** The quadtree from which to obtain the data */
 	Quadtree *quadtree;
+	/** The data prefix to prepend to file names on map loading */
+	char *dataPrefix;
+	/** The data suffix to append to file names on map loading */
+	char *dataSuffix;
 	/** The texture array with the height data */
 	OpenGLTexture *heights;
 	/** The texture array with the normal data */

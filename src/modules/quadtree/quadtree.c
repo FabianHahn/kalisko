@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 2);
+MODULE_VERSION(0, 6, 3);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -229,7 +229,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	node->time = time; // update access time
 
-	if(node->level >= level) { // we hit the desired level
+	if(node->level <= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
 			node->data = tree->load(tree, node);
 
@@ -242,7 +242,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 		}
 		return node->data;
 	} else {
-		assert(quadtreeNodeIsLeaf(node));
+		assert(!quadtreeNodeIsLeaf(node));
 
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];
@@ -273,10 +273,10 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
 
 	node->time = time; // update access time
 
-	if(node->level >= level) { // we hit the desired level
+	if(node->level <= level) { // we hit the desired level
 		return node;
 	} else {
-		assert(quadtreeNodeIsLeaf(node));
+		assert(!quadtreeNodeIsLeaf(node));
 
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];

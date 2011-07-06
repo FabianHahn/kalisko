@@ -85,7 +85,7 @@ typedef struct {
 	int maxY;
 } QuadtreeAABB;
 
-API Quadtree *createQuadtree(double leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
+API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y);

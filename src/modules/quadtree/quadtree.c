@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 1);
+MODULE_VERSION(0, 6, 2);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -96,6 +96,8 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	bool isLowerX = x < box.minX;
 	bool isLowerY = y < box.minY;
 
+	LOG_DEBUG("Expanding quadtree from range [%d,%d]x[%d,%d] to cover point (%f,%f)", box.minX, box.maxX, box.minY, box.maxY, x, y);
+
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
 	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
@@ -126,7 +128,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	fillTreeNodes(tree, tree->root, time);
 
 	// update node weight
-	newRoot->weight = newRoot->children[0]->weight + newRoot->children[1]->weight + newRoot->children[2]->weight + newRoot->children[3]->weight;
+	newRoot->weight = newRoot->children[0]->weight + newRoot->children[1]->weight + newRoot->children[2]->weight + newRoot->children[3]->weight + (quadtreeNodeDataIsLoaded(newRoot) ? 1 : 0);
 
 	// recursively expand to make sure we include the point
 	expandQuadtree(tree, x, y);
@@ -230,16 +232,24 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 	if(node->level >= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
 			node->data = tree->load(tree, node);
-			node->weight = 1;
+
+			// update node weight
+			if(quadtreeNodeIsLeaf(node)) {
+				node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
+			} else {
+				node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+			}
 		}
 		return node->data;
 	} else {
+		assert(quadtreeNodeIsLeaf(node));
+
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];
 		void *data = lookupQuadtreeRec(tree, child, time, x, y, level);
 
 		// update node weight
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight;
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 
 		// return looked up data
 		return data;
@@ -266,6 +276,8 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
 	if(node->level >= level) { // we hit the desired level
 		return node;
 	} else {
+		assert(quadtreeNodeIsLeaf(node));
+
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];
 		return lookupQuadtreeNodeRec(tree, child, time, x, y, level);

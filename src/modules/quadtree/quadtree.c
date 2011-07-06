@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 4, 2);
-MODULE_BCVERSION(0, 4, 0);
+MODULE_VERSION(0, 5, 0);
+MODULE_BCVERSION(0, 5, 0);
 MODULE_NODEPS;
 
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y);
@@ -69,7 +69,11 @@ API Quadtree *createQuadtree(double leafSize, unsigned int capacity, QuadtreeDat
 	quadtree->root->weight = 0;
 	quadtree->root->time = $$(double, getMicroTime)();
 	quadtree->root->level = 0;
-	quadtree->root->content.data = NULL;
+	quadtree->root->children[0] = NULL;
+	quadtree->root->children[1] = NULL;
+	quadtree->root->children[2] = NULL;
+	quadtree->root->children[3] = NULL;
+	quadtree->root->data = NULL;
 
 	return quadtree;
 }
@@ -88,41 +92,41 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	}
 
 	double time = $$(double, getMicroTime)();
-	double span = quadtreeNodeSpan(tree, tree->root);
-	bool isLowerX = x < tree->root->x;
-	bool isLowerY = y < tree->root->y;
+	QuadtreeAABB box = quadtreeNodeAABB(tree, tree->root);
+	bool isLowerX = x < box.minX;
+	bool isLowerY = y < box.minY;
 
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
 	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
-	newRoot->content.children[0] = NULL;
-	newRoot->content.children[1] = NULL;
-	newRoot->content.children[2] = NULL;
-	newRoot->content.children[3] = NULL;
+	newRoot->children[0] = NULL;
+	newRoot->children[1] = NULL;
+	newRoot->children[2] = NULL;
+	newRoot->children[3] = NULL;
 
 	if(isLowerX && isLowerY) { // old node becomes top right node of new root
-		newRoot->x = tree->root->x - span;
-		newRoot->y = tree->root->y - span;
-		newRoot->content.children[3] = tree->root;
+		newRoot->x = tree->root->x - 1;
+		newRoot->y = tree->root->y - 1;
+		newRoot->children[3] = tree->root;
 	} else if(isLowerX && !isLowerY) { // old node becomes bottom right node of new root
-		newRoot->x = tree->root->x - span;
+		newRoot->x = tree->root->x - 1;
 		newRoot->y = tree->root->y;
-		newRoot->content.children[1] = tree->root;
+		newRoot->children[1] = tree->root;
 	} else if(!isLowerX && isLowerY) { // old node becomes top left node of new root
 		newRoot->x = tree->root->x;
-		newRoot->y = tree->root->y - span;
-		newRoot->content.children[2] = tree->root;
+		newRoot->y = tree->root->y - 1;
+		newRoot->children[2] = tree->root;
 	} else { // old node becomes bottom left node of new root
 		newRoot->x = tree->root->x;
 		newRoot->y = tree->root->y;
-		newRoot->content.children[0] = tree->root;
+		newRoot->children[0] = tree->root;
 	}
 
 	tree->root = newRoot;
 	fillTreeNodes(tree, tree->root, time);
 
 	// update node weight
-	newRoot->weight = newRoot->content.children[0]->weight + newRoot->content.children[1]->weight + newRoot->content.children[2]->weight + newRoot->content.children[3]->weight;
+	newRoot->weight = newRoot->children[0]->weight + newRoot->children[1]->weight + newRoot->children[2]->weight + newRoot->children[3]->weight;
 
 	// recursively expand to make sure we include the point
 	expandQuadtree(tree, x, y);
@@ -221,17 +225,17 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	if(quadtreeNodeIsLeaf(node)) {
 		if(!quadtreeNodeDataIsLoaded(node)) {
-			node->content.data = tree->load(tree, x, y);
+			node->data = tree->load(tree, x, y);
 			node->weight = 1;
 		}
-		return node->content.data;
+		return node->data;
 	} else {
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
-		QuadtreeNode *child = node->content.children[index];
+		QuadtreeNode *child = node->children[index];
 		void *data = lookupQuadtreeRec(tree, child, time, x, y);
 
 		// update node weight
-		node->weight = node->content.children[0]->weight + node->content.children[1]->weight + node->content.children[2]->weight + node->content.children[3]->weight;
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight;
 
 		// return looked up data
 		return data;
@@ -258,7 +262,7 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
 		return node;
 	} else {
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
-		QuadtreeNode *child = node->content.children[index];
+		QuadtreeNode *child = node->children[index];
 		return lookupQuadtreeNodeRec(tree, child, time, x, y);
 	}
 }
@@ -277,27 +281,26 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 	}
 
 	for(int i = 0; i < 4; i++) {
-		if(node->content.children[i] == NULL) { // if child node doesn't exist yet, create it
-			node->content.children[i] = ALLOCATE_OBJECT(QuadtreeNode);
-			node->content.children[i]->level = node->level - 1;
-			node->content.children[i]->weight = 0;
-			node->content.children[i]->time = time;
-			double span = quadtreeNodeSpan(tree, node->content.children[i]);
-			node->content.children[i]->x = node->x + (i % 2) * span;
-			node->content.children[i]->y = node->y + ((i & 2) >> 1) * span;
+		if(node->children[i] == NULL) { // if child node doesn't exist yet, create it
+			node->children[i] = ALLOCATE_OBJECT(QuadtreeNode);
+			node->children[i]->level = node->level - 1;
+			node->children[i]->weight = 0;
+			node->children[i]->time = time;
+			node->children[i]->x = node->x + (i % 2);
+			node->children[i]->y = node->y + ((i & 2) >> 1);
 
 			// set content to null
-			if(quadtreeNodeIsLeaf(node->content.children[i])) {
-				node->content.children[i]->content.data = NULL;
+			if(quadtreeNodeIsLeaf(node->children[i])) {
+				node->children[i]->data = NULL;
 			} else {
-				node->content.children[i]->content.children[0] = NULL;
-				node->content.children[i]->content.children[1] = NULL;
-				node->content.children[i]->content.children[2] = NULL;
-				node->content.children[i]->content.children[3] = NULL;
+				node->children[i]->children[0] = NULL;
+				node->children[i]->children[1] = NULL;
+				node->children[i]->children[2] = NULL;
+				node->children[i]->children[3] = NULL;
 			}
 		}
 
-		fillTreeNodes(tree, node->content.children[i], time); // recursively fill the child nodes
+		fillTreeNodes(tree, node->children[i], time); // recursively fill the child nodes
 	}
 }
 
@@ -313,8 +316,8 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 {
 	if(quadtreeNodeIsLeaf(node)) {
 		if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
-			tree->free(tree, node->content.data);
-			node->content.data = NULL;
+			tree->free(tree, node->data);
+			node->data = NULL;
 			node->weight = 0;
 			*target = *target - 1;
 		}
@@ -324,9 +327,9 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 			int minChild = -1;
 			double minTime = time;
 			for(int i = 0; i < 4; i++) {
-				if(node->content.children[i]->weight > 0 && node->content.children[i]->time < minTime) {
+				if(node->children[i]->weight > 0 && node->children[i]->time < minTime) {
 					minChild = i;
-					minTime = node->content.children[i]->time;
+					minTime = node->children[i]->time;
 				}
 			}
 
@@ -335,11 +338,11 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 			}
 
 			// prune the child with the oldest access time
-			pruneQuadtreeNode(tree, node->content.children[minChild], time, target);
+			pruneQuadtreeNode(tree, node->children[minChild], time, target);
 		}
 
 		// update node weight
-		node->weight = node->content.children[0]->weight + node->content.children[1]->weight + node->content.children[2]->weight + node->content.children[3]->weight;
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight;
 	}
 }
 
@@ -353,11 +356,11 @@ static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
 {
 	if(quadtreeNodeIsLeaf(node)) {
 		if(quadtreeNodeDataIsLoaded(node)) {
-			tree->free(tree, node->content.data); // free this node's data
+			tree->free(tree, node->data); // free this node's data
 		}
 	} else {
 		for(int i = 0; i < 4; i++) {
-			freeQuadtreeNode(tree, node->content.children[i]);
+			freeQuadtreeNode(tree, node->children[i]);
 		}
 	}
 

@@ -24,24 +24,24 @@
 #include <math.h>
 #include <assert.h>
 
+/**
+ * Quadtree node struct
+ */
 struct QuadtreeNodeStruct{
 	/** The x position of the bottom left corner of the quadtree node */
-	double x;
+	short x;
 	/** The y position of the bottom left corner of the quadtree node */
-	double y;
+	short y;
 	/** The level of the quad tree node (level 0 means it's a leaf) */
-	unsigned int level;
+	unsigned short level;
 	/** The weight of the node, i.e. how much data is loaded in its children */
-	unsigned int weight;
+	unsigned short weight;
 	/** The last access time (used for caching) */
-	double time;
-	/** Union containing either the child nodes or the leaf data */
-	union {
-		/** The child nodes of the quadtree node */
-		struct QuadtreeNodeStruct *children[4];
-		/** The leaf data of the quadtree node */
-		void *data;
-	} content;
+	float time;
+	/** The child nodes of the quadtree node */
+	struct QuadtreeNodeStruct *children[4];
+	/** The data of the quadtree node */
+	void *data;
 };
 
 typedef struct QuadtreeNodeStruct QuadtreeNode;
@@ -51,11 +51,14 @@ struct QuadtreeStruct; // forward declaration
 typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, double x, double y);
 typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data);
 
+/**
+ * Quadtree struct
+ */
 struct QuadtreeStruct {
 	/** The root node of the quad tree */
 	QuadtreeNode *root;
 	/** The size of a leaf in the quad tree */
-	double leafSize;
+	unsigned short leafSize;
 	/** The loader function for quadtree data */
 	QuadtreeDataLoadFunction *load;
 	/** The free function for quadtree data */
@@ -67,6 +70,20 @@ struct QuadtreeStruct {
 };
 
 typedef struct QuadtreeStruct Quadtree;
+
+/**
+ * Struct for 2D axis aligned bounding boxes used for quadtrees
+ */
+typedef struct {
+	/** The minimum X coordinate of the bounding box */
+	int minX;
+	/** The minimum Y coordinate of the bounding box */
+	int minY;
+	/** The maximum X coordinate of the bounding box */
+	int maxX;
+	/** The maximum Y coordinate of the bounding box */
+	int maxY;
+} QuadtreeAABB;
 
 API Quadtree *createQuadtree(double leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API void expandQuadtree(Quadtree *tree, double x, double y);
@@ -81,7 +98,8 @@ API void freeQuadtree(Quadtree *tree);
  * @param node		the quadtree node to check
  * @result			true if the node is indeed a leaf
  */
-static inline bool quadtreeNodeIsLeaf(QuadtreeNode *node) {
+static inline bool quadtreeNodeIsLeaf(QuadtreeNode *node)
+{
 	return node->level == 0;
 }
 
@@ -89,22 +107,55 @@ static inline bool quadtreeNodeIsLeaf(QuadtreeNode *node) {
  * Checks whether a quadtree node's data is loaded
  *
  * @param node		the quadtree node to check
- * @result			true if the node is indeed a leaf
+ * @result			true if the node data is loaded
  */
-static inline bool quadtreeNodeDataIsLoaded(QuadtreeNode *node) {
-	assert(quadtreeNodeIsLeaf(node));
-	return node->content.data != NULL;
+static inline bool quadtreeNodeDataIsLoaded(QuadtreeNode *node)
+{
+	return node->data != NULL;
 }
 
 /**
- * Returns the side length of the spanned square of the quadtree node
+ * Returns the world scale of a quadtree node determined by its level
+ *
+ * @param node		the quadtree node of which to determine the scale
+ * @result			the world scale of the quadtree node
+ */
+static inline unsigned int quadtreeNodeScale(QuadtreeNode *node)
+{
+	return (1 << node->level);
+}
+
+/**
+ * Returns the side length of the spanned square of a quadtree node
  *
  * @param tree		the quadtree to which the node belongs
  * @param node		the quadtree node to check
  * @result			the side length of the spanned square of the provided quadtree node
  */
-static inline double quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node) {
-	return tree->leafSize * (1 << node->level);
+static inline unsigned int quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node)
+{
+	unsigned int scale = quadtreeNodeScale(node);
+	return tree->leafSize * scale;
+}
+
+/**
+ * Returns the 2D axis aligned bounding box of the spanned square of a quadtree node
+ *
+ * @param tree		the quadtree to which the node belongs
+ * @param node		the quadtree node to check
+ * @result			the 2D axis aligned bounding box of the spanned square of the provided quadtree node
+ */
+static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
+{
+	unsigned int span = quadtreeNodeSpan(tree, node);
+
+	QuadtreeAABB box;
+	box.minX = node->x * span;
+	box.maxX = (node->x + 1) * span;
+	box.minY = node->y * span;
+	box.maxY = (node->y + 1) * span;
+
+	return box;
 }
 
 /**
@@ -118,8 +169,8 @@ static inline double quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node) {
  */
 static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node, double x, double y)
 {
-	double span = quadtreeNodeSpan(tree, node);
-	return x >= node->x && x < (node->x + span) && y >= node->y && y < (node->y + span);
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	return x >= box.minX && x < box.maxX && y >= box.minY && y < box.maxY;
 }
 
 /**
@@ -148,9 +199,11 @@ static inline int quadtreeNodeGetContainingChildIndex(Quadtree *tree, QuadtreeNo
 {
 	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
-	double span = quadtreeNodeSpan(tree, node);
-	bool isLowerX = x < (node->x + 0.5 * span);
-	bool isLowerY = y < (node->y + 0.5 * span);
+	unsigned int span = quadtreeNodeSpan(tree, node);
+	unsigned int halfspan = span / 2;
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	bool isLowerX = x < (box.minX + halfspan);
+	bool isLowerY = y < (box.minY + halfspan);
 
 	return (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
 }

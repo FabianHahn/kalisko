@@ -26,17 +26,11 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 2);
-MODULE_BCVERSION(0, 2, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 5, 0));
+MODULE_VERSION(0, 2, 3);
+MODULE_BCVERSION(0, 2, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 6, 1));
 
-typedef struct {
-	Quadtree *tree;
-	double x;
-	double y;
-} TestData;
-
-static void *testDataLoadFunction(Quadtree *tree, double x, double y);
+static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
 
 TEST_CASE(expand);
@@ -56,7 +50,7 @@ TEST_CASE(expand)
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
 
-	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0);
+	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, 1.0, 1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, 1.0, 1.0));
 	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
@@ -78,13 +72,13 @@ TEST_CASE(expand)
 	TEST_ASSERT(box2.minY == 1);
 	TEST_ASSERT(box2.maxY == 2);
 
-	QuadtreeNode *node2 = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0);
+	QuadtreeNode *node2 = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0, 0);
 	TEST_ASSERT(node == node2);
 
 	TEST_ASSERT(!quadtreeContainsPoint(tree, -1.0, -1.0));
 	origRoot = tree->root;
 
-	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, -1.0, -1.0);
+	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, -1.0, -1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, -1.0, -1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, -1.0, -1.0));
 	box = quadtreeNodeAABB(tree, node);
@@ -108,23 +102,20 @@ TEST_CASE(expand)
 
 TEST_CASE(data)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, 100, &testDataLoadFunction, &testDataFreeFunction);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, &testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);
 
-	TestData *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
-	TEST_ASSERT(data->tree == tree);
-	TEST_ASSERT(data->x == 0.0);
-	TEST_ASSERT(data->y == 0.0);
+	QuadtreeNode *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
+	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
+	TEST_ASSERT(data == node);
 
-	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 1.0);
-	TEST_ASSERT(data->tree == tree);
-	TEST_ASSERT(data->x == 0.0);
-	TEST_ASSERT(data->y == 1.0);
+	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 1.0, 0);
+	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 1.0, 0);
+	TEST_ASSERT(data == node);
 
-	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
-	TEST_ASSERT(data->tree == tree);
-	TEST_ASSERT(data->x == 0.0);
-	TEST_ASSERT(data->y == 0.0);
+	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
+	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
+	TEST_ASSERT(data == node);
 
 	// cleanup
 	$(void, quadtree, freeQuadtree)(tree);
@@ -134,23 +125,23 @@ TEST_CASE(data)
 
 TEST_CASE(cache)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1.0, 1, &testDataLoadFunction, &testDataFreeFunction);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 1, &testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(tree->root->weight == 0);
 
 	// just load a node
-	QuadtreeNode *node = $(void *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0);
+	QuadtreeNode *node = $(void *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
 	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node));
 	TEST_ASSERT(tree->root->weight == 0);
-	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
+	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
 	TEST_ASSERT(quadtreeNodeDataIsLoaded(node));
 	TEST_ASSERT(tree->root->weight == 1);
 
 	// now load another one and prune the first one
-	QuadtreeNode *node2 = $(void *, quadtree, lookupQuadtreeNode)(tree, 1.0, 0.0);
+	QuadtreeNode *node2 = $(void *, quadtree, lookupQuadtreeNode)(tree, 1.0, 0.0, 0);
 	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node2));
 	TEST_ASSERT(tree->root->weight == 1);
-	$(void *, quadtree, lookupQuadtree)(tree, 1.0, 0.0);
+	$(void *, quadtree, lookupQuadtree)(tree, 1.0, 0.0, 0);
 	TEST_ASSERT(quadtreeNodeDataIsLoaded(node2));
 	TEST_ASSERT(tree->root->weight == 1);
 
@@ -158,7 +149,7 @@ TEST_CASE(cache)
 	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node));
 
 	// do the reverse
-	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0);
+	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
 	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node2));
 	TEST_ASSERT(quadtreeNodeDataIsLoaded(node));
 	TEST_ASSERT(tree->root->weight == 1);
@@ -169,17 +160,13 @@ TEST_CASE(cache)
 	TEST_PASS;
 }
 
-static void *testDataLoadFunction(Quadtree *tree, double x, double y)
+static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node)
 {
-	// store values as they're passed
-	TestData *data = ALLOCATE_OBJECT(TestData);
-	data->tree = tree;
-	data->x = x;
-	data->y = y;
-	return data;
+	// store the node itself as data
+	return node;
 }
 
 static void testDataFreeFunction(Quadtree *tree, void *data)
 {
-	free(data); // just free the struct
+	// don't do anything...
 }

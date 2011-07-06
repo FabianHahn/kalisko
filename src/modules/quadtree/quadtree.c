@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 3);
+MODULE_VERSION(0, 6, 4);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -101,6 +101,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
 	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
+	newRoot->data = NULL;
 	newRoot->children[0] = NULL;
 	newRoot->children[1] = NULL;
 	newRoot->children[2] = NULL;

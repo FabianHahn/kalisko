@@ -48,7 +48,7 @@ typedef struct QuadtreeNodeStruct QuadtreeNode;
 
 struct QuadtreeStruct; // forward declaration
 
-typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, int x, int y, unsigned int level);
+typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, QuadtreeNode *node);
 typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data);
 
 /**

@@ -27,12 +27,12 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 5, 1);
-MODULE_BCVERSION(0, 5, 0);
+MODULE_VERSION(0, 6, 0);
+MODULE_BCVERSION(0, 6, 0);
 MODULE_NODEPS;
 
-static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y);
-static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y);
+static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
 static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
@@ -133,21 +133,23 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
- * Lookup a leaf node's data in the quadtree
+ * Lookup a node's data in the quadtree
  *
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
+ * @param level			the depth level at which to lookup the node data
  * @result				the looked up quadtree node's data
  */
-API void *lookupQuadtree(Quadtree *tree, double x, double y)
+API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
 {
 	if(!quadtreeContainsPoint(tree, x, y)) {
+		// tree doesn't contain this part yet, so expand first...
 		expandQuadtree(tree, x, y);
 	}
 
 	double time = $$(double, getMicroTime)();
-	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y);
+	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y, level);
 
 	// Prune the quadtree if necessary
 	pruneQuadtree(tree);
@@ -157,21 +159,22 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
- * Lookup a leaf node in the quadtree
+ * Lookup a node in the quadtree
  *
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
+ * @param level			the depth level at which to lookup the node
  * @result				the looked up quadtree node
  */
-API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y)
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level)
 {
 	if(!quadtreeContainsPoint(tree, x, y)) {
 		expandQuadtree(tree, x, y);
 	}
 
 	double time = $$(double, getMicroTime)();
-	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y);
+	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y, level);
 }
 
 /**
@@ -208,31 +211,32 @@ API void freeQuadtree(Quadtree *tree)
 }
 
 /**
- * Recursively lookup the data of a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
+ * Recursively lookup the data of a node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
  *
  * @param tree			the quadtree to lookup
  * @param node			the current node we're traversing
  * @param time			the current timestamp to set for caching
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
+ * @param level			the depth level at which to lookup the node data
  * @result				the looked up quadtree node data
  */
-static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y)
+static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
 {
 	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
 	node->time = time; // update access time
 
-	if(quadtreeNodeIsLeaf(node)) {
-		if(!quadtreeNodeDataIsLoaded(node)) {
-			node->data = tree->load(tree, x, y);
+	if(node->level >= level) { // we hit the desired level
+		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
+			node->data = tree->load(tree, node->x, node->y, node->level);
 			node->weight = 1;
 		}
 		return node->data;
 	} else {
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];
-		void *data = lookupQuadtreeRec(tree, child, time, x, y);
+		void *data = lookupQuadtreeRec(tree, child, time, x, y, level);
 
 		// update node weight
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight;
@@ -243,27 +247,28 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 }
 
 /**
- * Recursively lookup a leaf node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
+ * Recursively lookup a node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
  *
  * @param tree			the quadtree to lookup
  * @param node			the current node we're traversing
  * @param time			the current timestamp to set for caching
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
+ * @param level			the depth level at which to lookup the node
  * @result				the looked up quadtree node
  */
-static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y)
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
 {
 	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
 	node->time = time; // update access time
 
-	if(quadtreeNodeIsLeaf(node)) {
+	if(node->level >= level) { // we hit the desired level
 		return node;
 	} else {
 		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
 		QuadtreeNode *child = node->children[index];
-		return lookupQuadtreeNodeRec(tree, child, time, x, y);
+		return lookupQuadtreeNodeRec(tree, child, time, x, y, level);
 	}
 }
 
@@ -290,14 +295,11 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->y = node->y + ((i & 2) >> 1);
 
 			// set content to null
-			if(quadtreeNodeIsLeaf(node->children[i])) {
-				node->children[i]->data = NULL;
-			} else {
-				node->children[i]->children[0] = NULL;
-				node->children[i]->children[1] = NULL;
-				node->children[i]->children[2] = NULL;
-				node->children[i]->children[3] = NULL;
-			}
+			node->children[i]->data = NULL;
+			node->children[i]->children[0] = NULL;
+			node->children[i]->children[1] = NULL;
+			node->children[i]->children[2] = NULL;
+			node->children[i]->children[3] = NULL;
 		}
 
 		fillTreeNodes(tree, node->children[i], time); // recursively fill the child nodes
@@ -314,14 +316,7 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
  */
 static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target)
 {
-	if(quadtreeNodeIsLeaf(node)) {
-		if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
-			tree->free(tree, node->data);
-			node->data = NULL;
-			node->weight = 0;
-			*target = *target - 1;
-		}
-	} else {
+	if(!quadtreeNodeIsLeaf(node)) { // prune lower levels first
 		while(*target > 0) {
 			// determine child that wasn't accessed the longest
 			int minChild = -1;
@@ -340,9 +335,20 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 			// prune the child with the oldest access time
 			pruneQuadtreeNode(tree, node->children[minChild], time, target);
 		}
+	}
 
-		// update node weight
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight;
+	// prune ourselves
+	if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
+		tree->free(tree, node->data);
+		node->data = NULL;
+		*target = *target - 1;
+	}
+
+	// update node weight
+	if(quadtreeNodeIsLeaf(node)) {
+		node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
+	} else {
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 	}
 }
 

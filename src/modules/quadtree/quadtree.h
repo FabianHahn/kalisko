@@ -48,7 +48,7 @@ typedef struct QuadtreeNodeStruct QuadtreeNode;
 
 struct QuadtreeStruct; // forward declaration
 
-typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, double x, double y);
+typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, int x, int y, unsigned int level);
 typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data);
 
 /**
@@ -87,8 +87,8 @@ typedef struct {
 
 API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
 API void expandQuadtree(Quadtree *tree, double x, double y);
-API void *lookupQuadtree(Quadtree *tree, double x, double y);
-API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y);
+API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
+API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
 API void pruneQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);
 

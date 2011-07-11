@@ -37,7 +37,7 @@ struct QuadtreeNodeStruct{
 	/** The weight of the node, i.e. how much data is loaded in its children */
 	unsigned short weight;
 	/** The last access time (used for caching) */
-	float time;
+	double time;
 	/** The child nodes of the quadtree node */
 	struct QuadtreeNodeStruct *children[4];
 	/** The data of the quadtree node */

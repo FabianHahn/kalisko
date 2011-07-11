@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 6);
+MODULE_VERSION(0, 6, 7);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -152,11 +152,12 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
 		expandQuadtree(tree, x, y);
 	}
 
-	double time = $$(double, getMicroTime)();
-	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y, level);
-
 	// Prune the quadtree if necessary
 	pruneQuadtree(tree);
+
+	// Perform the lookup
+	double time = $$(double, getMicroTime)();
+	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y, level);
 
 	// Return the looked up data
 	return data;
@@ -188,11 +189,11 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
  */
 API void pruneQuadtree(Quadtree *tree)
 {
-	if(tree->root->weight <= tree->capacity) {
+	if(tree->root->weight <= (tree->capacity - 1)) { // make sure to prune already at capacity - 1 elements since we could lookup one more in a subsequent lookup
 		return; // nothing to do
 	}
 
-	unsigned int target = tree->root->weight - ceil(tree->capacity * tree->pruneFactor);
+	unsigned int target = tree->root->weight - floor(tree->capacity * tree->pruneFactor);
 
 	LOG_DEBUG("Pruning %u quadtree nodes", target);
 

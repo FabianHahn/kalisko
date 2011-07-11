@@ -90,6 +90,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
 API void pruneQuadtree(Quadtree *tree);
+API char *dumpQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);
 
 /**

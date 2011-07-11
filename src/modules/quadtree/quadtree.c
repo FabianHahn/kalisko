@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 5);
+MODULE_VERSION(0, 6, 6);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -35,6 +35,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
 static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target);
+static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
 MODULE_INIT
@@ -202,6 +203,27 @@ API void pruneQuadtree(Quadtree *tree)
 }
 
 /**
+ * Dumps the contents of a quadtree into a string
+ *
+ * @param tree			the tree to dump
+ * @result				the string representation of the quadtree, must be freed after use
+ */
+API char *dumpQuadtree(Quadtree *tree)
+{
+	GString *string = g_string_new("");
+	g_string_append_printf(string, "Quadtree: capacity = %u, leafsize = %u", tree->capacity, tree->leafSize);
+
+	// dump all the nodes
+	dumpQuadtreeNode(tree, tree->root, string);
+
+	// Free the gstring, but not the result
+	char *result = string->str;
+	g_string_free(string, false);
+
+	return result;
+}
+
+/**
  * Frees a quadtree including all it's nodes and their loaded data
  *
  * @param tree			the quadtree to free
@@ -354,6 +376,8 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 
 	// prune ourselves
 	if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
+		QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+		LOG_DEBUG("Pruning quadtree node covering range [%d,%d]x[%d,%d] with access time %f", box.minX, box.maxX, box.minY, box.maxY, node->time);
 		tree->free(tree, node->data);
 		node->data = NULL;
 		*target = *target - 1;
@@ -364,6 +388,29 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 		node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
 	} else {
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+	}
+}
+
+/**
+ * Recursively dumps a quadtree node to a string
+ *
+ * @param tree			the tree to which the node belongs
+ * @param node			the node we're currently traversing
+ * @param string		the string to which the contents should be dumped
+ */
+static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string)
+{
+	for(unsigned int i = 0; i < node->level; i++) { // indentation
+		g_string_append_c(string, '\t');
+	}
+
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d], weight = %u, time = %f, loaded = %s", box.minX, box.maxX, box.minY, box.maxY, node->weight, node->time, quadtreeNodeDataIsLoaded(node) ? "yes" : "no");
+
+	if(!quadtreeNodeIsLeaf(node)) {
+		for(unsigned int i = 0; i < 4; i++) {
+			dumpQuadtreeNode(tree, node->children[i], string);
+		}
 	}
 }
 

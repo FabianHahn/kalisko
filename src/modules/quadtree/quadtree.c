@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 4);
+MODULE_VERSION(0, 6, 5);
 MODULE_BCVERSION(0, 6, 1);
 MODULE_NODEPS;
 
@@ -197,6 +197,8 @@ API void pruneQuadtree(Quadtree *tree)
 
 	double time = $$(double, getMicroTime)();
 	pruneQuadtreeNode(tree, tree->root, time, &target);
+
+	assert(tree->root->weight <= tree->capacity);
 }
 
 /**
@@ -335,7 +337,7 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 			int minChild = -1;
 			double minTime = time;
 			for(int i = 0; i < 4; i++) {
-				if(node->children[i]->weight > 0 && node->children[i]->time < minTime) {
+				if(node->children[i]->weight > 0 && (minChild == -1 || node->children[i]->time <= minTime)) {
 					minChild = i;
 					minTime = node->children[i]->time;
 				}

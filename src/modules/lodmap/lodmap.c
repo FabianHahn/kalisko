@@ -34,11 +34,11 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 14));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 6, 7), MODULE_DEPENDENCY("image", 0, 5, 14));
 
-static void *loadLodMapTile(Quadtree *tree, double x, double y);
+static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
 /**
@@ -106,19 +106,16 @@ API void freeOpenGLPrimitiveLodMap(OpenGLPrimitive *primitive)
  * Loads an LOD map tile
  *
  * @param tree			the quadtree for which to load the map tile
- * @param x				the x coordinate of the LOD map tile to load
- * @parma y				the y coordinate of the LOD map tile to load
+ * @param node			the quadtree node for which to load the map data
  * @result				the loaded LOD map tile
  */
-static void *loadLodMapTile(Quadtree *tree, double x, double y)
+static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 {
 	OpenGLLodMap *lodmap = g_hash_table_lookup(maps, tree);
 	assert(lodmap != NULL);
 
 	GString *path = g_string_new(lodmap->dataPrefix);
-	int ix = x / tree->leafSize;
-	int iy = y / tree->leafSize;
-	g_string_append_printf(path, "%d.%d.%s", ix, iy, lodmap->dataSuffix);
+	g_string_append_printf(path, "%hd.%hd.%hu.%s", node->x, node->x, node->level, lodmap->dataSuffix);
 
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 	tile->heights = $(Image *, image, readImageFromFile)(path->str);

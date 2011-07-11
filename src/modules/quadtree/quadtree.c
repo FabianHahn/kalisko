@@ -35,7 +35,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
 static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target);
-static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string);
+static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string, unsigned int level);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
 MODULE_INIT
@@ -214,7 +214,7 @@ API char *dumpQuadtree(Quadtree *tree)
 	g_string_append_printf(string, "Quadtree: capacity = %u, leafsize = %u\n", tree->capacity, tree->leafSize);
 
 	// dump all the nodes
-	dumpQuadtreeNode(tree, tree->root, string);
+	dumpQuadtreeNode(tree, tree->root, string, 0);
 
 	// Free the gstring, but not the result
 	char *result = string->str;
@@ -397,10 +397,11 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
  * @param tree			the tree to which the node belongs
  * @param node			the node we're currently traversing
  * @param string		the string to which the contents should be dumped
+ * @param level			the current indentation level
  */
-static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string)
+static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string, unsigned int level)
 {
-	for(unsigned int i = 0; i < node->level; i++) { // indentation
+	for(unsigned int i = 0; i < level; i++) { // indentation
 		g_string_append_c(string, '\t');
 	}
 
@@ -409,7 +410,7 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
 
 	if(!quadtreeNodeIsLeaf(node)) {
 		for(unsigned int i = 0; i < 4; i++) {
-			dumpQuadtreeNode(tree, node->children[i], string);
+			dumpQuadtreeNode(tree, node->children[i], string, level + 1);
 		}
 	}
 }

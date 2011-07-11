@@ -211,7 +211,7 @@ API void pruneQuadtree(Quadtree *tree)
 API char *dumpQuadtree(Quadtree *tree)
 {
 	GString *string = g_string_new("");
-	g_string_append_printf(string, "Quadtree: capacity = %u, leafsize = %u", tree->capacity, tree->leafSize);
+	g_string_append_printf(string, "Quadtree: capacity = %u, leafsize = %u\n", tree->capacity, tree->leafSize);
 
 	// dump all the nodes
 	dumpQuadtreeNode(tree, tree->root, string);
@@ -405,7 +405,7 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
 	}
 
 	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
-	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d], weight = %u, time = %f, loaded = %s", box.minX, box.maxX, box.minY, box.maxY, node->weight, node->time, quadtreeNodeDataIsLoaded(node) ? "yes" : "no");
+	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d], weight = %u, time = %f, loaded = %s\n", box.minX, box.maxX, box.minY, box.maxY, node->weight, node->time, quadtreeNodeDataIsLoaded(node) ? "yes" : "no");
 
 	if(!quadtreeNodeIsLeaf(node)) {
 		for(unsigned int i = 0; i < 4; i++) {

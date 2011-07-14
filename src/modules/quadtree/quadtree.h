@@ -59,12 +59,14 @@ struct QuadtreeStruct {
 	QuadtreeNode *root;
 	/** The size of a leaf in the quad tree */
 	unsigned short leafSize;
+	/** The capacity of the quadtree's data cache */
+	unsigned int capacity;
 	/** The loader function for quadtree data */
 	QuadtreeDataLoadFunction *load;
 	/** The free function for quadtree data */
 	QuadtreeDataFreeFunction *free;
-	/** The capacity of the quadtree's data cache */
-	unsigned int capacity;
+	/** Specifies whether the load function expects its child nodes to be already loaded */
+	bool preloadChildData;
 	/** The usage factor to which prune will reduce the quadtree's data cache */
 	float pruneFactor;
 };
@@ -85,7 +87,7 @@ typedef struct {
 	int maxY;
 } QuadtreeAABB;
 
-API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free);
+API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
 API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);

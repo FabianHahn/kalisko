@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 6, 7);
-MODULE_BCVERSION(0, 6, 1);
+MODULE_VERSION(0, 7, 0);
+MODULE_BCVERSION(0, 7, 0);
 MODULE_NODEPS;
 
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
@@ -50,19 +50,21 @@ MODULE_FINALIZE
 /**
  * Creates a new quadtree
  *
- * @param leafSize			the leaf size of the quadtree
- * @param capacity			the caching capacity of the quadtree
- * @param load				the load function to use for the quadtree data
- * @param free				the free function to use for the quadtree data
- * @result					the created quadtree
+ * @param leafSize				the leaf size of the quadtree
+ * @param capacity				the caching capacity of the quadtree
+ * @param load					the load function to use for the quadtree data
+ * @param free					the free function to use for the quadtree data
+ * @param preloadChildData		specifies whether the load function expects its child nodes to be already loaded
+ * @result						the created quadtree
  */
-API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free)
+API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
 	quadtree->leafSize = leafSize;
+	quadtree->capacity = capacity;
 	quadtree->load = load;
 	quadtree->free = free;
-	quadtree->capacity = capacity;
+	quadtree->preloadChildData = preloadChildData;
 	quadtree->pruneFactor = 0.75f;
 	quadtree->root = ALLOCATE_OBJECT(QuadtreeNode);
 	quadtree->root->x = 0;
@@ -257,6 +259,17 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	if(node->level <= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
+			if(tree->preloadChildData) {
+				// Make sure the children are already loaded before loading this one
+				for(unsigned int i = 0; i < 4; i++) {
+					if(!quadtreeNodeDataIsLoaded(node->children[i])) {
+						lookupQuadtreeRec(tree, node->children[i], time, node->children[i]->x, node->children[i]->y, node->children[i]->level);
+					}
+				}
+			}
+
+			QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+			LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] to cover point (%f,%f) at level %u", box.minX, box.maxX, box.minY, box.maxY, x, y, level);
 			node->data = tree->load(tree, node);
 
 			// update node weight

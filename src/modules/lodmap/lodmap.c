@@ -34,7 +34,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 14));
 
@@ -118,7 +118,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	if(node->level == 0) { // load the lowest level from disk
 		GString *path = g_string_new(lodmap->dataPrefix);
-		g_string_append_printf(path, "%hd.%hd.%hu.%s", node->x, node->x, node->level, lodmap->dataSuffix);
+		g_string_append_printf(path, "%hd.%hd.%s", node->x, node->x, lodmap->dataSuffix);
 		tile->heights = $(Image *, image, readImageFromFile)(path->str);
 		g_string_free(path, true);
 

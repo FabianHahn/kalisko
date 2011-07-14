@@ -34,7 +34,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
 
@@ -130,10 +130,13 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 
 	if(node->level == 0) { // load the lowest level from disk
-		GString *path = g_string_new(lodmap->dataPrefix);
-		g_string_append_printf(path, ".%hd.%hd.%s", node->x, node->y, lodmap->dataSuffix);
+		int tileX = node->x / tree->leafSize;
+		int tileY = node->y / tree->leafSize;
 
-		LOG_DEBUG("Loading LOD map image tile (%hd,%hd) from %s", node->x, node->y, path->str);
+		GString *path = g_string_new(lodmap->dataPrefix);
+		g_string_append_printf(path, ".%d.%d.%s", tileX, tileY, lodmap->dataSuffix);
+
+		LOG_DEBUG("Loading LOD map image tile (%d,%d) from %s", tileX, tileY, path->str);
 		tile->heights = $(Image *, image, readImageFromFile)(path->str);
 		g_string_free(path, true);
 

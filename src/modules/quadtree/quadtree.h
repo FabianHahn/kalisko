@@ -153,10 +153,10 @@ static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
 	unsigned int span = quadtreeNodeSpan(tree, node);
 
 	QuadtreeAABB box;
-	box.minX = node->x * span;
-	box.maxX = (node->x + 1) * span;
-	box.minY = node->y * span;
-	box.maxY = (node->y + 1) * span;
+	box.minX = node->x;
+	box.maxX = node->x + span;
+	box.minY = node->y;
+	box.maxY = node->y + span;
 
 	return box;
 }
@@ -203,7 +203,7 @@ static inline int quadtreeNodeGetContainingChildIndex(Quadtree *tree, QuadtreeNo
 	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
 	unsigned int span = quadtreeNodeSpan(tree, node);
-	unsigned int halfspan = span / 2;
+	int halfspan = span / 2;
 	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
 	bool isLowerX = x < (box.minX + halfspan);
 	bool isLowerY = y < (box.minY + halfspan);

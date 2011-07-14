@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 2);
+MODULE_VERSION(0, 7, 3);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_NODEPS;
 
@@ -110,21 +110,22 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	newRoot->children[2] = NULL;
 	newRoot->children[3] = NULL;
 
+	unsigned int span = quadtreeNodeSpan(tree, tree->root);
 	if(isLowerX && isLowerY) { // old node becomes top right node of new root
-		newRoot->x = (tree->root->x - 1) / 2;
-		newRoot->y = (tree->root->y - 1) / 2;
+		newRoot->x = tree->root->x - span;
+		newRoot->y = tree->root->y - span;
 		newRoot->children[3] = tree->root;
 	} else if(isLowerX && !isLowerY) { // old node becomes bottom right node of new root
-		newRoot->x = (tree->root->x - 1) / 2;
-		newRoot->y = tree->root->y / 2;
+		newRoot->x = tree->root->x - span;
+		newRoot->y = tree->root->y;
 		newRoot->children[1] = tree->root;
 	} else if(!isLowerX && isLowerY) { // old node becomes top left node of new root
-		newRoot->x = tree->root->x / 2;
-		newRoot->y = (tree->root->y - 1) / 2;
+		newRoot->x = tree->root->x;
+		newRoot->y = tree->root->y - span;
 		newRoot->children[2] = tree->root;
 	} else { // old node becomes bottom left node of new root
-		newRoot->x = tree->root->x / 2;
-		newRoot->y = tree->root->y / 2;
+		newRoot->x = tree->root->x;
+		newRoot->y = tree->root->y;
 		newRoot->children[0] = tree->root;
 	}
 
@@ -346,8 +347,10 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->level = node->level - 1;
 			node->children[i]->weight = 0;
 			node->children[i]->time = time;
-			node->children[i]->x = 2 * node->x + (i % 2);
-			node->children[i]->y = 2 * node->y + ((i & 2) >> 1);
+
+			unsigned int span = quadtreeNodeSpan(tree, node->children[i]);
+			node->children[i]->x = node->x + (i % 2) * span;
+			node->children[i]->y = node->y + ((i & 2) >> 1) * span;
 
 			// set content to null
 			node->children[i]->data = NULL;

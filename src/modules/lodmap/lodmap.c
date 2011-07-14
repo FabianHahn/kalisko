@@ -34,9 +34,9 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 14));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
 
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
@@ -49,6 +49,19 @@ static GHashTable *maps;
 MODULE_INIT
 {
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
+
+#if 0 // test code
+	$$(void, breakpoint)();
+
+	OpenGLPrimitive *primitive = createOpenGLPrimitiveLodMap(128, "/home/smf68/kaliskomap/map", "png");
+	OpenGLLodMap *lodmap = primitive->data;
+	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
+	OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
+	$(bool, image, writeImageToFile)("/home/smf68/kaliskomap/topheights.pgm", tile->heights);
+	$(bool, image, writeImageToFile)("/home/smf68/kaliskomap/topnormals.ppm", tile->normals);
+
+	freeOpenGLPrimitiveLodMap(primitive);
+#endif
 
 	return true;
 }
@@ -118,7 +131,9 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	if(node->level == 0) { // load the lowest level from disk
 		GString *path = g_string_new(lodmap->dataPrefix);
-		g_string_append_printf(path, "%hd.%hd.%s", node->x, node->x, lodmap->dataSuffix);
+		g_string_append_printf(path, ".%hd.%hd.%s", node->x, node->y, lodmap->dataSuffix);
+
+		LOG_DEBUG("Loading LOD map image tile (%hd,%hd) from %s", node->x, node->y, path->str);
 		tile->heights = $(Image *, image, readImageFromFile)(path->str);
 		g_string_free(path, true);
 
@@ -138,6 +153,8 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 		assert(quadtreeNodeDataIsLoaded(node->children[2]));
 		assert(quadtreeNodeDataIsLoaded(node->children[3]));
 
+		LOG_DEBUG("Upsampling LOD map image tile (%hd,%hd) for level %hd", node->x, node->y, node->level);
+
 		// create the image to which we upsample
 		tile->heights = $(Image *, image, createImageFloat)(tree->leafSize, tree->leafSize, 1);
 
@@ -145,11 +162,11 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 		unsigned int halfsize = tree->leafSize / 2;
 		for(unsigned int y = 0; y < tree->leafSize; y++) {
 			bool isLowerY = y < halfsize;
-			int offsetY = isLowerY ? 0 : -halfsize;
+			int offsetY = isLowerY ? 0 : -tree->leafSize;
 
 			for(unsigned int x = 0; x < tree->leafSize; x++) {
 				bool isLowerX = x < halfsize;
-				int offsetX = isLowerX ? 0 : -halfsize;
+				int offsetX = isLowerX ? 0 : -tree->leafSize;
 
 				// determine correct sub image
 				unsigned int index = (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);

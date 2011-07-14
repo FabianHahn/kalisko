@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 7, 2);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_NODEPS;
 
@@ -111,20 +111,20 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	newRoot->children[3] = NULL;
 
 	if(isLowerX && isLowerY) { // old node becomes top right node of new root
-		newRoot->x = tree->root->x - 1;
-		newRoot->y = tree->root->y - 1;
+		newRoot->x = (tree->root->x - 1) / 2;
+		newRoot->y = (tree->root->y - 1) / 2;
 		newRoot->children[3] = tree->root;
 	} else if(isLowerX && !isLowerY) { // old node becomes bottom right node of new root
-		newRoot->x = tree->root->x - 1;
-		newRoot->y = tree->root->y;
+		newRoot->x = (tree->root->x - 1) / 2;
+		newRoot->y = tree->root->y / 2;
 		newRoot->children[1] = tree->root;
 	} else if(!isLowerX && isLowerY) { // old node becomes top left node of new root
-		newRoot->x = tree->root->x;
-		newRoot->y = tree->root->y - 1;
+		newRoot->x = tree->root->x / 2;
+		newRoot->y = (tree->root->y - 1) / 2;
 		newRoot->children[2] = tree->root;
 	} else { // old node becomes bottom left node of new root
-		newRoot->x = tree->root->x;
-		newRoot->y = tree->root->y;
+		newRoot->x = tree->root->x / 2;
+		newRoot->y = tree->root->y / 2;
 		newRoot->children[0] = tree->root;
 	}
 
@@ -259,16 +259,20 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	if(node->level <= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
+			QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+
 			if(node->level > 0 && tree->preloadChildData) {
+				LOG_DEBUG("Preloading quadtree children of node with range [%d,%d]x[%d,%d]...", box.minX, box.maxX, box.minY, box.maxY);
+
 				// Make sure the children are already loaded before loading this one
 				for(unsigned int i = 0; i < 4; i++) {
 					if(!quadtreeNodeDataIsLoaded(node->children[i])) {
-						lookupQuadtreeRec(tree, node->children[i], time, node->children[i]->x, node->children[i]->y, node->children[i]->level);
+						QuadtreeAABB box = quadtreeNodeAABB(tree, node->children[i]);
+						lookupQuadtreeRec(tree, node->children[i], time, box.minX, box.minY, node->children[i]->level);
 					}
 				}
 			}
 
-			QuadtreeAABB box = quadtreeNodeAABB(tree, node);
 			LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] to cover point (%f,%f) at level %u", box.minX, box.maxX, box.minY, box.maxY, x, y, level);
 			node->data = tree->load(tree, node);
 
@@ -342,8 +346,8 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->level = node->level - 1;
 			node->children[i]->weight = 0;
 			node->children[i]->time = time;
-			node->children[i]->x = node->x + (i % 2);
-			node->children[i]->y = node->y + ((i & 2) >> 1);
+			node->children[i]->x = 2 * node->x + (i % 2);
+			node->children[i]->y = 2 * node->y + ((i & 2) >> 1);
 
 			// set content to null
 			node->children[i]->data = NULL;

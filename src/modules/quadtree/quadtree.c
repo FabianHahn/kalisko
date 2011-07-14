@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 0);
+MODULE_VERSION(0, 7, 1);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_NODEPS;
 
@@ -259,7 +259,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	if(node->level <= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
-			if(tree->preloadChildData) {
+			if(node->level > 0 && tree->preloadChildData) {
 				// Make sure the children are already loaded before loading this one
 				for(unsigned int i = 0; i < 4; i++) {
 					if(!quadtreeNodeDataIsLoaded(node->children[i])) {

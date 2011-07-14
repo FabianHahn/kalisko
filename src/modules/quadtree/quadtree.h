@@ -29,9 +29,9 @@
  */
 struct QuadtreeNodeStruct{
 	/** The x position of the bottom left corner of the quadtree node */
-	short x;
+	int x;
 	/** The y position of the bottom left corner of the quadtree node */
-	short y;
+	int y;
 	/** The level of the quad tree node (level 0 means it's a leaf) */
 	unsigned short level;
 	/** The weight of the node, i.e. how much data is loaded in its children */

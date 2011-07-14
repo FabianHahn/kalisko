@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 3);
-MODULE_BCVERSION(0, 2, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 6, 1));
+MODULE_VERSION(0, 2, 4);
+MODULE_BCVERSION(0, 2, 4);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 7, 0));
 
 static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
@@ -45,7 +45,7 @@ TEST_SUITE_END
 
 TEST_CASE(expand)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, NULL, NULL);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, NULL, NULL, false);
 	QuadtreeNode *origRoot = tree->root;
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
@@ -102,7 +102,7 @@ TEST_CASE(expand)
 
 TEST_CASE(data)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, &testDataLoadFunction, &testDataFreeFunction);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, &testDataLoadFunction, &testDataFreeFunction, false);
 	TEST_ASSERT(tree != NULL);
 
 	QuadtreeNode *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
@@ -125,7 +125,7 @@ TEST_CASE(data)
 
 TEST_CASE(cache)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 1, &testDataLoadFunction, &testDataFreeFunction);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 1, &testDataLoadFunction, &testDataFreeFunction, false);
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(tree->root->weight == 0);
 

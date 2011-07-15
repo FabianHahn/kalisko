@@ -42,7 +42,7 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 2, 16);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 2, 13);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -59,7 +59,7 @@ MODULE_FINALIZE
 /**
  * Creates a new OpenGL heightmap primitive
  *
- * @param heights			the image from which the heightmap values will be read (the primitive takes control over this value, do not free it yourself)
+ * @param heights			the image from which the heightmap values will be read (the primitive takes control over this value, do not free it yourself) or NULL to create a heightmap that will be managed by e.g. another primitive
  * @result					the created OpenGL heightmap primitive object or NULL on failure
  */
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
@@ -68,15 +68,26 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
 	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
 	heightmap->heights = heights;
-	heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heights);
-	heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
-	heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heightmap->normals);
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;
 	heightmap->primitive.draw_function = &drawOpenGLPrimitiveHeightmap;
 	heightmap->primitive.update_function = NULL;
 	heightmap->primitive.free_function = &freeOpenGLPrimitiveHeightmap;
+
+	if(heights != NULL) { // we have to manage ourselves, so create textures and a normal field
+		heightmap->width = heightmap->heights->width;
+		heightmap->height = heightmap->heights->height;
+		heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heights);
+		heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
+		heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heightmap->normals);
+	} else {
+		heightmap->width = 0;
+		heightmap->height = 0;
+		heightmap->heightsTexture = NULL;
+		heightmap->normals = NULL;
+		heightmap->normalsTexture = NULL;
+	}
 
 	glGenBuffers(1, &heightmap->vertexBuffer);
 	glGenBuffers(1, &heightmap->indexBuffer);
@@ -105,11 +116,14 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	OpenGLHeightmap *heightmap = primitive->data;
-	computeHeightmapNormals(heightmap->heights, heightmap->normals);
 
-	if(!$(bool, opengl, synchronizeOpenGLTexture)(heightmap->normalsTexture)) {
-		LOG_ERROR("Failed to initialize OpenGL heightmap: Could synchronize normals texture");
-		return false;
+	if(heightmap->heights != NULL) { // there is a height field, so compute our normals and synchronize them
+		computeHeightmapNormals(heightmap->heights, heightmap->normals);
+
+		if(!$(bool, opengl, synchronizeOpenGLTexture)(heightmap->normalsTexture)) {
+			LOG_ERROR("Failed to initialize OpenGL heightmap: Could synchronize normals texture");
+			return false;
+		}
 	}
 
 	for(unsigned int y = 0; y < heightmap->heights->height - 1; y++) {
@@ -175,11 +189,11 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "heights", heightsUniform);
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "heightmapWidth");
-	OpenGLUniform *heightmapWidthUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->width);
+	OpenGLUniform *heightmapWidthUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->width);
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "heightmapWidth", heightmapWidthUniform);
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "heightmapHeight");
-	OpenGLUniform *heightmapHeightUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->heights->height);
+	OpenGLUniform *heightmapHeightUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(heightmap->height);
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "heightmapHeight", heightmapHeightUniform);
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "normals");
@@ -278,8 +292,11 @@ API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 
 	OpenGLHeightmap *heightmap = primitive->data;
 
-	$(void, opengl, freeOpenGLTexture)(heightmap->heightsTexture);
-	$(void, opengl, freeOpenGLTexture)(heightmap->normalsTexture);
+	if(heightmap->heights != NULL) { // only free the textures if we're not managed by elsewhere
+		$(void, opengl, freeOpenGLTexture)(heightmap->heightsTexture);
+		$(void, opengl, freeOpenGLTexture)(heightmap->normalsTexture);
+	}
+
 	glDeleteBuffers(1, &heightmap->vertexBuffer);
 	glDeleteBuffers(1, &heightmap->indexBuffer);
 	free(heightmap->vertices);

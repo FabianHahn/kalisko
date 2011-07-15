@@ -48,6 +48,10 @@ typedef struct {
  * Struct representing an OpenGL heightmap
  */
 typedef struct {
+	/** The width of the heightmap */
+	unsigned int width;
+	/** The height of the heightmap */
+	unsigned int height;
 	/** The vertices to render */
 	HeightmapVertex *vertices;
 	/** The tiles to render */

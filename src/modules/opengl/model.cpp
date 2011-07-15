@@ -109,6 +109,7 @@ API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name)
  * Draws an OpenGL model to the currently active context
  *
  * @param model			the OpenGL model to draw
+ * @param dt			the time in seconds that passed since the last update
  * @result				true if successful
  */
 API bool updateOpenGLModel(OpenGLModel *model, double dt)

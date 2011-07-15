@@ -42,9 +42,9 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 2, 15);
+MODULE_VERSION(0, 2, 16);
 MODULE_BCVERSION(0, 2, 13);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
 MODULE_INIT
 {
@@ -142,11 +142,11 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
  * Sets up an OpenGL heightmap primitive for a model
  *
  * @param primitive			the OpenGL heightmap primitive to setup
- * @param model_name		the model name to setup the heightmap primitive for
- * @param mesh_name			the mesh name to setup the heightmap primitive for
+ * @param model				the model to setup the heightmap primitive for
+ * @param material			the material name to setup the heightmap primitive for
  * @result					true if successful
  */
-API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *model_name, const char *material_name)
+API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
 		LOG_ERROR("Failed to setup OpenGL heightmap: Primitive is not a heightmap");
@@ -154,7 +154,7 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 	}
 
 	// make sure the attached material has a texture array and add a count uniform for it
-	OpenGLUniformAttachment *materialUniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material_name);
+	OpenGLUniformAttachment *materialUniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material);
 	OpenGLUniform *texture;
 
 	if((texture = $(OpenGLUniform *, opengl, getOpenGLUniform)(materialUniforms, "texture")) == NULL || texture->type != OPENGL_UNIFORM_TEXTURE || texture->content.texture_value->type != OPENGL_TEXTURE_TYPE_2D_ARRAY) {
@@ -168,7 +168,7 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *m
 
 	// add model specific uniforms for the heightmap
 	OpenGLHeightmap *heightmap = primitive->data;
-	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLModelUniforms)(model_name);
+	OpenGLUniformAttachment *uniforms = model->uniforms;
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "heights");
 	OpenGLUniform *heightsUniform = $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(heightmap->heightsTexture);

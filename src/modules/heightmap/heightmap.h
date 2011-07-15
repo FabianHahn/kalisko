@@ -23,6 +23,7 @@
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
+#include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/image/image.h"
@@ -69,7 +70,7 @@ typedef struct {
 
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *image);
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
-API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, const char *model_name, const char *material_name);
+API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material);
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive);
 API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);

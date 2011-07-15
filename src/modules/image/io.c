@@ -156,11 +156,11 @@ API bool deleteImageIOWriteHandler(const char *extension)
 /**
  * Writes an OpenGL image to a file by using the appropriate handler
  *
- * @param filename			the file into which the image should be written
  * @param image				the image to be written
+ * @param filename			the file into which the image should be written
  * @result					true if successful
  */
-API bool writeImageToFile(const char *filename, Image *image)
+API bool writeImageToFile(Image *image, const char *filename)
 {
 	char *ext;
 

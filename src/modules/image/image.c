@@ -18,6 +18,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef WIN32
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 #include <assert.h>
 #include <glib.h>
 #include <limits.h>
@@ -29,8 +33,8 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 15);
-MODULE_BCVERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 16);
+MODULE_BCVERSION(0, 5, 16);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
 MODULE_INIT
@@ -289,6 +293,44 @@ API Image *blendImages(Image *a, Image *b, double factor)
 	}
 
 	return blend;
+}
+
+/**
+ * Saves an image in a quick-and-dirty way without having to specify any parameters, especially useful for debugging
+ *
+ * @param image			the image to debug
+ */
+API void debugImage(Image *image)
+{
+	if(!$$(bool, isModuleLoaded)("image_pnm")) {
+		if(!$$(bool, requestModule)("image_pnm")) {
+			LOG_DEBUG("Failed to save debug image: Failed to load module 'image_pnm'");
+			return;
+		}
+	}
+
+	for(unsigned int c = 0; c < image->channels; c++) { // normalize all channels
+		normalizeImageChannel(image, c);
+	}
+
+	char *execpath = $$(char *, getExecutablePath)();
+	GString *filename = g_string_new(execpath);
+	g_string_append_printf(filename, "/debugimage.%d.%p.", getpid(), image);
+
+	switch(image->channels) {
+		case 1:
+			g_string_append(filename, ".pgm");
+		break;
+		case 3:
+			g_string_append(filename, ".ppm");
+		break;
+		default:
+			g_string_append(filename, ".store");
+		break;
+	}
+
+	LOG_DEBUG("Storing %u-channel debug image to '%s'", image->channels, filename->str);
+	writeImageToFile(image, filename->str);
 }
 
 /**

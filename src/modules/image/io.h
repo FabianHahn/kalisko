@@ -33,6 +33,6 @@ API bool deleteImageIOReadHandler(const char *extension);
 API Image *readImageFromFile(const char *filename);
 API bool addImageIOWriteHandler(const char *extension, ImageIOWriteHandler *handler);
 API bool deleteImageIOWriteHandler(const char *extension);
-API bool writeImageToFile(const char *filename, Image *image);
+API bool writeImageToFile(Image *image, const char *filename);
 
 #endif

@@ -64,6 +64,7 @@ API void normalizeImageChannel(Image *image, unsigned int channel);
 API void invertImageChannel(Image *image, unsigned int channel);
 API void scaleImageChannel(Image *image, unsigned int channel, float factor);
 API Image *blendImages(Image *a, Image *b, double factor);
+API void debugImage(Image *image);
 API void freeImage(Image *image);
 
 /**

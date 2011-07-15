@@ -41,9 +41,9 @@ static Image *createTestImage();
 MODULE_NAME("test_image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the image module");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 6));
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
 TEST_SUITE_BEGIN(image)
 	TEST_CASE_ADD(io);
@@ -55,7 +55,7 @@ TEST_CASE(io)
 	Image *image = createTestImage();
 	TEST_ASSERT(image != NULL);
 
-	TEST_ASSERT($(bool, image, writeImageToFile)(TMPFILE, image));
+	TEST_ASSERT($(bool, image, writeImageToFile)(image, TMPFILE));
 
 	Image *read;
 	TEST_ASSERT((read = $(Image *, image, readImageFromFile)(TMPFILE)) != NULL);

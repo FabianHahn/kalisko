@@ -36,7 +36,7 @@ MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
 MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
 
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
@@ -50,15 +50,15 @@ MODULE_INIT
 {
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
 
-#if 0 // test code
+#if 1 // test code
 	$$(void, breakpoint)();
 
 	OpenGLPrimitive *primitive = createOpenGLPrimitiveLodMap(128, "/home/smf68/kaliskomap/map", "png");
 	OpenGLLodMap *lodmap = primitive->data;
 	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
 	OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
-	$(bool, image, writeImageToFile)("/home/smf68/kaliskomap/topheights.pgm", tile->heights);
-	$(bool, image, writeImageToFile)("/home/smf68/kaliskomap/topnormals.ppm", tile->normals);
+	$(void, image, debugImage)(tile->heights);
+	$(void, image, debugImage)(tile->normals);
 
 	freeOpenGLPrimitiveLodMap(primitive);
 #endif

@@ -36,9 +36,9 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
@@ -95,7 +95,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, u
 	$(void, image, normalizeImageChannel)(worley, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("01_worley.pgm", worley));
+	assert($(bool, image, writeImageToFile)(worley, "01_worley.pgm"));
 #endif
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
@@ -108,7 +108,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, u
 	$(void, image, normalizeImageChannel)(fBm, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("02_fbm.pgm", fBm));
+	assert($(bool, image, writeImageToFile)(fBm, "02_fbm.pgm"));
 #endif
 
 	// 3. combine worley noise and fBm
@@ -117,7 +117,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, u
 
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("03_mix.pgm", map));
+	assert($(bool, image, writeImageToFile)(map, "03_mix.pgm"));
 #endif
 
 	// 4. apply a perturbation filter to remove straight lines
@@ -132,7 +132,7 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, u
     $(void, erosion, erodeHydraulic)(map, erosionHydraulicIterations);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)("05_erosion.pgm", map));
+	assert($(bool, image, writeImageToFile)(map, "05_erosion.pgm"));
 #endif
 
 	// 6. profit!

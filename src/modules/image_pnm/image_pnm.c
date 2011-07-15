@@ -27,9 +27,9 @@
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNM image data types");
-MODULE_VERSION(0, 2, 6);
+MODULE_VERSION(0, 2, 7);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
 static Image *readImageFilePPM(const char *fileName);
 static bool writeImageFilePPM(const char* fileName, Image* image);

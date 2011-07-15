@@ -28,9 +28,9 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
 static Image *readImageFilePng(const char *filename);
 

@@ -35,9 +35,9 @@ static Store *xcall_writeImageFile(Store *xcall);
 MODULE_NAME("xcall_image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for images");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("image", 0, 5, 14), MODULE_DEPENDENCY("xcall", 0, 2, 6));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("xcall", 0, 2, 6));
 
 MODULE_INIT
 {
@@ -144,7 +144,7 @@ static Store *xcall_writeImageFile(Store *xcall)
 		return ret;
 	}
 
-	$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)($(bool, imageio, writeImageToFile)(file->content.string, image)));
+	$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)($(bool, imageio, writeImageToFile)(image, file->content.string)));
 	$(void, opengl, freeImage)(image);
 
 	return ret;

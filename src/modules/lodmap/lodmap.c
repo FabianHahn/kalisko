@@ -34,7 +34,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
 
@@ -51,16 +51,12 @@ MODULE_INIT
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
 
 #if 1 // test code
-	$$(void, breakpoint)();
-
-	OpenGLPrimitive *primitive = createOpenGLPrimitiveLodMap(128, "/home/smf68/kaliskomap/map", "png");
-	OpenGLLodMap *lodmap = primitive->data;
+	OpenGLLodMap *lodmap = createOpenGLLodMap(128, "/home/smf68/kaliskomap/map", "png");
 	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
 	OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
 	$(void, image, debugImage)(tile->heights);
 	$(void, image, debugImage)(tile->normals);
-
-	freeOpenGLPrimitiveLodMap(primitive);
+	freeOpenGLLodMap(lodmap);
 #endif
 
 	return true;
@@ -72,42 +68,33 @@ MODULE_FINALIZE
 }
 
 /**
- * Creates an OpenGL LOD map primitive
+ * Creates an OpenGL LOD map
  *
- * @result			the created OpenGL LOD map primitve
+ * @param leafSize		the leaf size of the LOD map
+ * @param dataPrefix	the prefix that should be prepended to all loaded tiles
+ * @param dataSuffix	the suffix that should be appended to all loaded tiles
+ * @result				the created OpenGL LOD map
  */
-API OpenGLPrimitive *createOpenGLPrimitiveLodMap(unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
+	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 25, &loadLodMapTile, &freeLodMapTile, true);
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
-	lodmap->primitive.type = "lodmap";
-	lodmap->primitive.data = lodmap;
-	lodmap->primitive.setup_function = NULL;
-	lodmap->primitive.draw_function = NULL;
-	lodmap->primitive.update_function = NULL;
-	lodmap->primitive.free_function = &freeOpenGLPrimitiveLodMap;
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
-	return &lodmap->primitive;
+	return lodmap;
 }
 
 /**
- * Frees an OpenGL LOD map primitive
+ * Frees an OpenGL LOD map
  *
- * @param primitive				the OpenGL LOD map primitive to free
+ * @param lodmap				the OpenGL LOD map to free
  */
-API void freeOpenGLPrimitiveLodMap(OpenGLPrimitive *primitive)
+API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 {
-	if(g_strcmp0(primitive->type, "lodmap") != 0) {
-		LOG_ERROR("Failed to free OpenGL LOD map: Primitive is not a LOD map");
-		return;
-	}
-
-	OpenGLLodMap *lodmap = primitive->data;
-
 	g_hash_table_remove(maps, lodmap->quadtree);
 	$(void, quadtree, freeQuadtree)(lodmap->quadtree);
 	free(lodmap->dataPrefix);

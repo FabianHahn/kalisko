@@ -41,29 +41,17 @@ typedef struct {
  * Struct representing an OpenGL LOD map
  */
 typedef struct {
-	/** The vertices to render */
-	HeightmapVertex *vertices;
-	/** The tiles to render */
-	HeightmapTile *tiles;
+	/** The heightmap primitive used to render the LOD map */
+	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
 	Quadtree *quadtree;
 	/** The data prefix to prepend to file names on map loading */
 	char *dataPrefix;
 	/** The data suffix to append to file names on map loading */
 	char *dataSuffix;
-	/** The texture array with the height data */
-	OpenGLTexture *heights;
-	/** The texture array with the normal data */
-	OpenGLTexture *normals;
-	/** The OpenGL vertex buffer associated with this LOD map */
-	GLuint vertexBuffer;
-	/** The OpenGL index buffer associated with this LOD map */
-	GLuint indexBuffer;
-	/** The OpenGL primitive used to render the LOD map */
-	OpenGLPrimitive primitive;
 } OpenGLLodMap;
 
-API OpenGLPrimitive *createOpenGLPrimitiveLodMap();
-API void freeOpenGLPrimitiveLodMap(OpenGLPrimitive *primitive);
+API OpenGLLodMap *createOpenGLLodMap(unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 
 #endif

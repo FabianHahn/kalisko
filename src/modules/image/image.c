@@ -33,7 +33,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 17);
+MODULE_VERSION(0, 5, 18);
 MODULE_BCVERSION(0, 5, 16);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -318,13 +318,13 @@ API void debugImage(Image *image)
 
 	switch(image->channels) {
 		case 1:
-			g_string_append(filename, ".pgm");
+			g_string_append(filename, "pgm");
 		break;
 		case 3:
-			g_string_append(filename, ".ppm");
+			g_string_append(filename, "ppm");
 		break;
 		default:
-			g_string_append(filename, ".store");
+			g_string_append(filename, "store");
 		break;
 	}
 

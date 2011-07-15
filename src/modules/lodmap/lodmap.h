@@ -23,6 +23,7 @@
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
+#include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/heightmap/heightmap.h"
 #include "modules/quadtree/quadtree.h"
@@ -45,13 +46,17 @@ typedef struct {
 	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
 	Quadtree *quadtree;
+	/** The tile models used to render the LOD map */
+	OpenGLModel **tileModels;
+	/** The maximum number of tiles displayed simultaneously by the LOD map */
+	unsigned int maxTiles;
 	/** The data prefix to prepend to file names on map loading */
 	char *dataPrefix;
 	/** The data suffix to append to file names on map loading */
 	char *dataSuffix;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 
 #endif

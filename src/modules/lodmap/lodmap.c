@@ -34,7 +34,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 9);
+MODULE_VERSION(0, 1, 10);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
 
@@ -51,7 +51,7 @@ MODULE_INIT
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
 
 #if 1 // test code
-	OpenGLLodMap *lodmap = createOpenGLLodMap(128, "/home/smf68/kaliskomap/map", "png");
+	OpenGLLodMap *lodmap = createOpenGLLodMap(10, 128, "/home/smf68/kaliskomap/map", "png");
 	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
 	OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
 	$(void, image, debugImage)(tile->heights);
@@ -70,18 +70,26 @@ MODULE_FINALIZE
 /**
  * Creates an OpenGL LOD map
  *
+ * @param maxTiles		the maximum number of tiles displayed simultaneously by the LOD map
  * @param leafSize		the leaf size of the LOD map
  * @param dataPrefix	the prefix that should be prepended to all loaded tiles
  * @param dataSuffix	the suffix that should be appended to all loaded tiles
  * @result				the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 25, &loadLodMapTile, &freeLodMapTile, true);
+	lodmap->tileModels = ALLOCATE_OBJECTS(OpenGLModel *, maxTiles);
+	lodmap->maxTiles = maxTiles;
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
+
+	// initialize tile models
+	for(unsigned int i = 0; i < maxTiles; i++) {
+		lodmap->tileModels[i] = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
+	}
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
@@ -97,6 +105,13 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	g_hash_table_remove(maps, lodmap->quadtree);
 	$(void, quadtree, freeQuadtree)(lodmap->quadtree);
+
+	// free tile models
+	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
+		$(void, opengl, freeOpenGLModel)(lodmap->tileModels[i]);
+	}
+
+	free(lodmap->tileModels);
 	free(lodmap->dataPrefix);
 	free(lodmap->dataSuffix);
 	free(lodmap);

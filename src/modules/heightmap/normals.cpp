@@ -33,7 +33,7 @@ extern "C" {
 
 static inline Vector getHeightmapVector(Image *heights, int x, int y)
 {
-	return Vector3((float) x / (heights->width - 1.0f), getImage(heights, x, y, 0), (float) y / (heights->height - 1.0f));
+	return Vector3((float) x / heights->width, getImage(heights, x, y, 0), (float) y / heights->height);
 }
 
 /**

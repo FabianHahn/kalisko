@@ -33,7 +33,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 16);
+MODULE_VERSION(0, 5, 17);
 MODULE_BCVERSION(0, 5, 16);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -313,9 +313,8 @@ API void debugImage(Image *image)
 		normalizeImageChannel(image, c);
 	}
 
-	char *execpath = $$(char *, getExecutablePath)();
-	GString *filename = g_string_new(execpath);
-	g_string_append_printf(filename, "/debugimage.%d.%p.", getpid(), image);
+	GString *filename = g_string_new("debugimage");
+	g_string_append_printf(filename, ".%d.%p.", getpid(), image);
 
 	switch(image->channels) {
 		case 1:

@@ -31,22 +31,50 @@ extern "C" {
 #include "primitive.h"
 #include "uniform.h"
 
-API void initOpenGLModels();
-API void freeOpenGLModels();
-API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive);
-API bool deleteOpenGLModel(const char *name);
-API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name);
-API OpenGLUniformAttachment *getOpenGLModelUniforms(const char *name);
-API bool attachOpenGLModelMaterial(const char *model_name, const char *material_name);
-API bool setOpenGLModelTranslation(const char *model_name, Vector *translation);
-API bool setOpenGLModelRotationX(const char *model_name, double rotation);
-API bool setOpenGLModelRotationY(const char *model_name, double rotation);
-API bool setOpenGLModelRotationZ(const char *model_name, double rotation);
-API bool setOpenGLModelScaleX(const char *model_name, double scale);
-API bool setOpenGLModelScaleY(const char *model_name, double scale);
-API bool setOpenGLModelScaleZ(const char *model_name, double scale);
-API void drawOpenGLModels();
-API void updateOpenGLModels(double dt);
+/**
+ * Struct to represent an OpenGL model
+ */
+struct OpenGLModelStruct {
+	/** The primitive that belongs to this model */
+	OpenGLPrimitive *primitive;
+	/** True if the model should be drawn */
+	bool visible;
+	/** The material to use before drawing the model */
+	char *material;
+	/** The OpenGL uniform attachment point for model specific uniforms */
+	OpenGLUniformAttachment *uniforms;
+	/** The base model transformation to which all further modifications are applied */
+	Matrix *base_transform;
+	/** The inverse base model transformation to which all further modifications are applied */
+	Matrix *base_normal_transform;
+	/** The current model transformation */
+	Matrix *transform;
+	/** The current normal model transformation */
+	Matrix *normal_transform;
+	/** The translation of the model */
+	Vector *translation;
+	/** The x rotation to apply to the model */
+	float rotationX;
+	/** The y rotation to apply to the model */
+	float rotationY;
+	/** The z rotation to apply to the model */
+	float rotationZ;
+	/** The x scale to apply to the model */
+	float scaleX;
+	/** The y scale to apply to the model */
+	float scaleY;
+	/** The z scale to apply to the model */
+	float scaleZ;
+};
+
+typedef struct OpenGLModelStruct OpenGLModel;
+
+API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive);
+API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name);
+API void updateOpenGLModelTransform(OpenGLModel *model);
+API void updateOpenGLModel(OpenGLModel *model);
+API bool drawOpenGLModel(OpenGLModel *model);
+API void freeOpenGLModel(OpenGLModel *model);
 
 #ifdef __cplusplus
 }

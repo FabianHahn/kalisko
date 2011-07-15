@@ -39,84 +39,14 @@ extern "C" {
 #include "model.h"
 
 /**
- * Struct to represent an OpenGL model
- */
-typedef struct {
-	/** The name of the model */
-	char *name;
-	/** The primitive that belongs to this model */
-	OpenGLPrimitive *primitive;
-	/** True if the model should be drawn */
-	bool visible;
-	/** The material to use before drawing the model */
-	char *material;
-	/** The OpenGL uniform attachment point for model specific uniforms */
-	OpenGLUniformAttachment *uniforms;
-	/** The base model transformation to which all further modifications are applied */
-	Matrix *base_transform;
-	/** The inverse base model transformation to which all further modifications are applied */
-	Matrix *base_normal_transform;
-	/** The current model transformation */
-	Matrix *transform;
-	/** The current normal model transformation */
-	Matrix *normal_transform;
-	/** The translation of the model */
-	Vector *translation;
-	/** The x rotation to apply to the model */
-	float rotationX;
-	/** The y rotation to apply to the model */
-	float rotationY;
-	/** The z rotation to apply to the model */
-	float rotationZ;
-	/** The x scale to apply to the model */
-	float scaleX;
-	/** The y scale to apply to the model */
-	float scaleY;
-	/** The z scale to apply to the model */
-	float scaleZ;
-} OpenGLModel;
-
-/**
- * A hash table keeping track of all models
- */
-static GHashTable *models;
-
-static void updateOpenGLModelTransform(OpenGLModel *model);
-static void freeOpenGLModel(void *model_p);
-
-/**
- * Initializes the OpenGL models
- */
-API void initOpenGLModels()
-{
-	models = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOpenGLModel);
-}
-
-/**
- * Frees the OpenGL models
- */
-API void freeOpenGLModels()
-{
-	g_hash_table_destroy(models);
-}
-
-
-/**
  * Creates a new OpenGL model
  *
- * @param name			the name of the OpenGL model to create
  * @param primitive		the primitive for which to create the model
  * @result				true if successful
  */
-API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive)
+API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive)
 {
-	if(g_hash_table_lookup(models, name) != NULL) {
-		LOG_ERROR("Failed to create model '%s', a model with that name already exists!", name);
-		return false;
-	}
-
 	OpenGLModel *model = ALLOCATE_OBJECT(OpenGLModel);
-	model->name = strdup(name);
 	model->primitive = primitive;
 	model->visible = false;
 	model->material = NULL;
@@ -136,74 +66,20 @@ API bool createOpenGLModel(const char *name, OpenGLPrimitive *primitive)
 	model->transform = new Matrix(4, 4);
 	model->normal_transform = new Matrix(4, 4);
 
-	g_hash_table_insert(models, model->name, model);
-
-	return true;
-}
-
-/**
- * Deletes an OpenGL model
- *
- * @param name		the name of the OpenGL model to delete
- * @result			true if successful
- */
-API bool deleteOpenGLModel(const char *name)
-{
-	return g_hash_table_remove(models, name);
-}
-
-/**
- * Retrieves the OpenGL primitive for an OpenGL model
- *
- * @param name		the name of the OpenGL model to retrieve the primitive for
- * @result			the retrived OpenGL primitive or NULL on failure
- */
-API OpenGLPrimitive *getOpenGLModelPrimitive(const char *name)
-{
-	OpenGLModel *model;
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
-		LOG_ERROR("Failed to lookup primitive for non existing model '%s'", name);
-		return false;
-	}
-
-	return model->primitive;
-}
-
-/**
- * Retrieves the OpenGL uniform attachment point for an OpenGL model
- *
- * @param name		the name of the OpenGL model to retrieve the primitive for
- * @result			the retrived OpenGL primitive or NULL on failure
- */
-API OpenGLUniformAttachment *getOpenGLModelUniforms(const char *name)
-{
-	OpenGLModel *model;
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, name)) == NULL) {
-		LOG_ERROR("Failed to lookup uniform attachment point for non existing model '%s'", name);
-		return false;
-	}
-
-	return model->uniforms;
+	return model;
 }
 
 /**
  * Sets the material to be used before drawing an OpenGL model and makes the model visible
  *
- * @param model_name		the name of the OpenGL model to set the material for
- * @param material_name		the name of the material that should be set for the OpenGL model, or NULL if no material should be used
- * @result					true if successful
+ * @param model			the OpenGL model to set the material for
+ * @param name			the name of the material that should be set for the OpenGL model, or NULL if no material should be used
+ * @result				true if successful
  */
-API bool attachOpenGLModelMaterial(const char *model_name, const char *material_name)
+API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name)
 {
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to attach material '%s' to non existing model '%s'", material_name, model_name);
-		return false;
-	}
-
-	if(!checkOpenGLMaterialShader(material_name)) {
-		LOG_ERROR("Failed to attach material '%s' without a shader to model '%s'", material_name, model_name);
+	if(!checkOpenGLMaterialShader(name)) {
+		LOG_ERROR("Failed to attach material '%s' without a shader to OpenGL model", name);
 		return false;
 	}
 
@@ -212,7 +88,7 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 		freeOpenGLUniformAttachment(model->uniforms);
 	}
 
-	model->material = strdup(material_name);
+	model->material = strdup(name);
 	model->uniforms = createOpenGLUniformAttachment();
 	model->visible = true;
 
@@ -221,8 +97,8 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 	OpenGLUniform *modelNormalTransformUniform = createOpenGLUniformMatrix(model->normal_transform);
 	attachOpenGLUniform(model->uniforms, "modelNormal", modelNormalTransformUniform);
 
-	if(!setupOpenGLPrimitive(model->primitive, model_name, material_name)) {
-		LOG_WARNING("Setup for model '%s' with material '%s' failed", model_name, material_name);
+	if(!setupOpenGLPrimitive(model->primitive, model, name)) {
+		LOG_ERROR("Setup for OpenGL model with material '%s' failed", name);
 		return false;
 	}
 
@@ -230,214 +106,59 @@ API bool attachOpenGLModelMaterial(const char *model_name, const char *material_
 }
 
 /**
- * Sets the translation for an OpenGL model
+ * Draws an OpenGL model to the currently active context
  *
- * @param model_name		the name of the OpenGL model to set the translation for
- * @param translation		the translation to set for the OpenGL model
- * @result					true if successful
+ * @param model			the OpenGL model to draw
+ * @result				true if successful
  */
-API bool setOpenGLModelTranslation(const char *model_name, Vector *translation)
+API bool updateOpenGLModel(OpenGLModel *model, double dt)
 {
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set translation for non existing model '%s'", model_name);
+	if(model->primitive == NULL) {
+		LOG_ERROR("Failed to update OpenGL model without a primitive attached");
 		return false;
 	}
 
-	*model->translation = *translation;
-	updateOpenGLModelTransform(model);
+	if(!updateOpenGLPrimitive(model->primitive, dt)) {
+		LOG_ERROR("Failed to update primitive for OpenGL model");
+		return false;
+	}
 
 	return true;
 }
 
 /**
- * Sets the x axis rotation for an OpenGL model
+ * Draws an OpenGL model to the currently active context
  *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param rotation			the rotation in radians to set the model to
- * @result					true if successful
+ * @param model			the OpenGL model to draw
+ * @result				true if successful
  */
-API bool setOpenGLModelRotationX(const char *model_name, double rotation)
+API bool drawOpenGLModel(OpenGLModel *model)
 {
-	OpenGLModel *model;
+	if(!model->visible) {
+		return true; // no need to do anything if the model is invisible
+	}
 
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+	if(model->primitive == NULL) {
+		LOG_ERROR("Failed to draw visible OpenGL model without a primitive attached");
 		return false;
 	}
 
-	model->rotationX = rotation;
-	updateOpenGLModelTransform(model);
-
-	return true;
-}
-
-/**
- * Sets the y axis rotation for an OpenGL model
- *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param rotation			the rotation in radians to set the model to
- * @result					true if successful
- */
-API bool setOpenGLModelRotationY(const char *model_name, double rotation)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+	if(model->material == NULL) {
+		LOG_ERROR("Failed to draw visible OpenGL model without a material attached");
 		return false;
 	}
 
-	model->rotationY = rotation;
-	updateOpenGLModelTransform(model);
-
-	return true;
-}
-
-/**
- * Sets the z axis rotation for an OpenGL model
- *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param rotation			the rotation in radians to set the model to
- * @result					true if successful
- */
-API bool setOpenGLModelRotationZ(const char *model_name, double rotation)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set rotation for non existing model '%s'", model_name);
+	if(!useOpenGLMaterial(model->material, model->uniforms, model->transform, model->normal_transform)) {
+		LOG_ERROR("Failed to use material for OpenGL model");
 		return false;
 	}
 
-	model->rotationZ = rotation;
-	updateOpenGLModelTransform(model);
-
-	return true;
-}
-
-/**
- * Sets the x scale for an OpenGL model
- *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param scale				the x scale to apply to the model
- * @result					true if successful
- */
-API bool setOpenGLModelScaleX(const char *model_name, double scale)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
+	if(!drawOpenGLPrimitive(model->primitive)) {
+		LOG_ERROR("Failed to draw primitive for OpenGL model");
 		return false;
 	}
 
-	model->scaleX = scale;
-	updateOpenGLModelTransform(model);
-
 	return true;
-}
-
-/**
- * Sets the y scale for an OpenGL model
- *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param scale				the y scale to apply to the model
- * @result					true if successful
- */
-API bool setOpenGLModelScaleY(const char *model_name, double scale)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
-		return false;
-	}
-
-	model->scaleY = scale;
-	updateOpenGLModelTransform(model);
-
-	return true;
-}
-
-/**
- * Sets the z scale for an OpenGL model
- *
- * @param model_name		the name of the OpenGL model to set the rotation for
- * @param scale				the z scale to apply to the model
- * @result					true if successful
- */
-API bool setOpenGLModelScaleZ(const char *model_name, double scale)
-{
-	OpenGLModel *model;
-
-	if((model = (OpenGLModel *) g_hash_table_lookup(models, model_name)) == NULL) {
-		LOG_ERROR("Failed to set scale for non existing model '%s'", model_name);
-		return false;
-	}
-
-	model->scaleZ = scale;
-	updateOpenGLModelTransform(model);
-
-	return true;
-}
-
-/**
- * Draws all visible OpenGL models to the currently active context
- */
-API void drawOpenGLModels()
-{
-	GHashTableIter iter;
-	char *name;
-	OpenGLModel *model;
-	g_hash_table_iter_init(&iter, models);
-	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) {
-		if(!model->visible) {
-			continue;
-		}
-
-		if(model->primitive == NULL) {
-			LOG_WARNING("Trying to draw visible model '%s' without a primitive attached, skipping", name);
-			continue;
-		}
-
-		if(model->material == NULL) {
-			LOG_WARNING("Trying to draw visible model '%s' without a material attached, skipping", name);
-			continue;
-		}
-
-		if(!useOpenGLMaterial(model->material, model->uniforms, model->transform, model->normal_transform)) {
-			LOG_WARNING("Failed to use material for visible model '%s'", name);
-		}
-
-		if(!drawOpenGLPrimitive(model->primitive)) {
-			LOG_WARNING("Drawing of visible model '%s' failed", name);
-		}
-	}
-}
-
-/**
- * Updates all OpenGL models
- *
- * @param dt			the time passed in seconds
- */
-API void updateOpenGLModels(double dt)
-{
-	GHashTableIter iter;
-	char *name;
-	OpenGLModel *model;
-	g_hash_table_iter_init(&iter, models);
-	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) {
-		if(model->primitive == NULL) {
-			LOG_WARNING("Trying to update model '%s' without a primitive attached, skipping", name);
-			continue;
-		}
-
-		if(!updateOpenGLPrimitive(model->primitive, dt)) {
-			LOG_WARNING("Updating of model '%s' failed", name);
-		}
-	}
 }
 
 /**
@@ -445,7 +166,7 @@ API void updateOpenGLModels(double dt)
  *
  * @param model		the model for which to update the transformation matrix
  */
-static void updateOpenGLModelTransform(OpenGLModel *model)
+API void updateOpenGLModelTransform(OpenGLModel *model)
 {
 	*model->transform = Matrix(4, 4).identity();
 	*model->normal_transform = Matrix(4, 4).identity();
@@ -511,15 +232,12 @@ static void updateOpenGLModelTransform(OpenGLModel *model)
 }
 
 /**
- * A GDestroyNotify function to free an OpenGL model
+ * Frees an OpenGL model
  *
- * @param model_p		a pointer to the model to be freed
+ * @param model		the OpenGL model to be freed
  */
-static void freeOpenGLModel(void *model_p)
+API void freeOpenGLModel(OpenGLModel *model)
 {
-	OpenGLModel *model = (OpenGLModel *) model_p;
-
-	free(model->name);
 	free(model->material);
 	freeOpenGLUniformAttachment(model->uniforms);
 	delete model->transform;

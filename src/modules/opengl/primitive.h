@@ -23,11 +23,12 @@
 
 // Forward declaration
 struct OpenGLPrimitiveStruct;
+struct OpenGLModelStruct;
 
 /**
  * Function pointer type to setup OpenGL custom primitives
  */
-typedef bool (OpenGLPrimitiveSetupFunction)(struct OpenGLPrimitiveStruct *primitive, const char *model_name, const char *material_name);
+typedef bool (OpenGLPrimitiveSetupFunction)(struct OpenGLPrimitiveStruct *primitive, struct OpenGLModelStruct *model, const char *material);
 
 /**
  * Function pointer type to draw OpenGL custom primitives
@@ -68,14 +69,14 @@ typedef struct OpenGLPrimitiveStruct OpenGLPrimitive;
  * Sets up an OpenGL primitive for a model
  *
  * @param primitive			the primitive to setup
- * @param model_name		the model name to setup the primitive for
- * @param mesh_name			the mesh name to setup the primitive for
+ * @param model				the model to setup the primitive for
+ * @param material			the material name name to setup the primitive for
  * @result					true if successful
  */
-static inline bool setupOpenGLPrimitive(OpenGLPrimitive *primitive, const char *model_name, const char *mesh_name)
+static inline bool setupOpenGLPrimitive(OpenGLPrimitive *primitive, struct OpenGLModelStruct *model, const char *material)
 {
 	if(primitive->setup_function != NULL) {
-		return primitive->setup_function(primitive, model_name, mesh_name);
+		return primitive->setup_function(primitive, model, material);
 	} else {
 		return true;
 	}

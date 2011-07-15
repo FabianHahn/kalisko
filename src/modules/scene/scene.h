@@ -67,6 +67,8 @@ API bool addSceneMaterial(Scene *scene, const char *material);
 API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store);
 API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, const char *key);
 API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model);
+API void updateScene(Scene *scene, double dt);
+API void drawScene(Scene *scene);
 API void freeScene(Scene *scene);
 
 #endif

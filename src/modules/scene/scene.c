@@ -46,7 +46,7 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 8, 1);
+MODULE_VERSION(0, 8, 2);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -766,6 +766,9 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 			break;
 		}
 	}
+
+	// update the model transform of the model after parameter updates
+	$(void, opengl, updateOpenGLModelTransform)(model);
 
 	return true;
 }

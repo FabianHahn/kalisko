@@ -46,12 +46,13 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 7, 4);
-MODULE_BCVERSION(0, 5, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_VERSION(0, 8, 0);
+MODULE_BCVERSION(0, 8, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
 
-static void freeOpenGLPrimitiveByPointer(void *mesh_p);
+static void freeOpenGLPrimitiveByPointer(void *primitive_p);
 static void freeSceneParameterByPointer(void *parameter_p);
+static void freeOpenGLModelByPointer(void *model_p);
 
 MODULE_INIT
 {
@@ -102,7 +103,7 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	scene->parameters = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSceneParameterByPointer);
 	scene->primitives = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLPrimitiveByPointer);
 	scene->materials = g_queue_new();
-	scene->models = g_queue_new();
+	scene->models = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeOpenGLModelByPointer);
 
 	// read textures
 	Store *textures = $(Store *, store, getStorePath)(store, "scene/textures");
@@ -228,14 +229,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
  */
 API void freeScene(Scene *scene)
 {
-	// free models
-	for(GList *iter = scene->models->head; iter != NULL; iter = iter->next) {
-		char *model = iter->data;
-		$(void, opengl, deleteOpenGLModel)(model);
-		free(model);
-	}
-	g_queue_free(scene->models);
-
 	// free materials
 	for(GList *iter = scene->materials->head; iter != NULL; iter = iter->next) {
 		char *material = iter->data;
@@ -249,6 +242,9 @@ API void freeScene(Scene *scene)
 
 	// free meshes
 	g_hash_table_destroy(scene->primitives);
+
+	// free models
+	g_hash_table_destroy(scene->models);
 
 	free(scene);
 }
@@ -622,20 +618,21 @@ API bool addSceneMaterial(Scene *scene, const char *material)
  * Adds a model to a scene created from a store configuration
  *
  * @param scene			the scene to add the model to
- * @param model			the name of the model to create and add to the scene
+ * @param name			the name of the model to create and add to the scene
  * @param key			the name of the primitive to be used for the created model
  * @result				true if successful
  */
-API bool addSceneModelFromStore(Scene *scene, const char *model, Store *store)
+API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 {
 	// set primitive
 	Store *modelprimitive = $(Store *, store, getStorePath)(store, "primitive");
 	if(modelprimitive == NULL || modelprimitive->type != STORE_STRING) {
-		LOG_ERROR("Failed to read 'primitive' string store value for model '%s' to be added to scene", model);
+		LOG_ERROR("Failed to read 'primitive' string store value for model '%s' to be added to scene", name);
 		return false;
 	}
 
-	if(!addSceneModelFromPrimitive(scene, model, modelprimitive->content.string)) {
+	OpenGLModel *model;
+	if((model = addSceneModelFromPrimitive(scene, name, modelprimitive->content.string)) == NULL) {
 		return false;
 	}
 
@@ -645,84 +642,128 @@ API bool addSceneModelFromStore(Scene *scene, const char *model, Store *store)
 		char *materialname = modelmaterial->content.string;
 
 		if($(bool, opengl, attachOpenGLModelMaterial)(model, materialname)) {
-			LOG_DEBUG("Attached material '%s' to model '%s'", materialname, model);
+			LOG_DEBUG("Attached material '%s' to model '%s'", materialname, name);
 		} else {
-			LOG_WARNING("Failed to attach material '%s' to model '%s' to be added to scene, skipping", materialname, model);
+			LOG_WARNING("Failed to attach material '%s' to model '%s' to be added to scene, skipping", materialname, name);
 		}
 	} else {
-		LOG_WARNING("Failed to read material for model '%s' to be added to scene, skipping", model);
+		LOG_WARNING("Failed to read material for model '%s' to be added to scene, skipping", name);
 	}
 
 	// set translation
 	Store *modeltranslation = $(Store *, store, getStorePath)(store, "translation");
 	if(modeltranslation != NULL && modeltranslation->type == STORE_LIST) {
 		Vector *translation = $(Vector *, linalg, convertStoreToVector)(modeltranslation);
-		if($(bool, opengl, setOpenGLModelTranslation)(model, translation)) {
-			LOG_DEBUG("Set translation for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set translation for model '%s' to be added to scene, skipping", model);
-		}
-
+		$(void, linalg, assignVector)(model->translation, translation);
+		LOG_DEBUG("Set translation for model '%s'", name);
 		$(void, linalg, freeVector)(translation);
 	}
 
 	// set rotationX
 	Store *rotationX = $(Store *, store, getStorePath)(store, "rotationX");
 	if(rotationX != NULL) {
-		if((rotationX->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationX)(model, rotationX->content.float_number)) || (rotationX->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationX)(model, rotationX->content.integer))) {
-			LOG_DEBUG("Set X rotation for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set X rotation for model '%s' to be added to scene, skipping", model);
+		switch(rotationX->type) {
+			case STORE_FLOAT_NUMBER:
+				model->rotationX = rotationX->content.float_number;
+				LOG_DEBUG("Set X rotation for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->rotationX = rotationX->content.integer;
+				LOG_DEBUG("Set X rotation for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set X rotation for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
 	// set rotationY
 	Store *rotationY = $(Store *, store, getStorePath)(store, "rotationY");
 	if(rotationY != NULL) {
-		if((rotationY->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationY)(model, rotationY->content.float_number)) || (rotationY->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationY)(model, rotationY->content.integer))) {
-			LOG_DEBUG("Set Y rotation for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set Y rotation for model '%s' to be added to scene, skipping", model);
+		switch(rotationY->type) {
+			case STORE_FLOAT_NUMBER:
+				model->rotationX = rotationY->content.float_number;
+				LOG_DEBUG("Set Y rotation for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->rotationY = rotationY->content.integer;
+				LOG_DEBUG("Set Y rotation for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set Y rotation for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
 	// set rotationZ
 	Store *rotationZ = $(Store *, store, getStorePath)(store, "rotationZ");
 	if(rotationZ != NULL) {
-		if((rotationZ->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelRotationZ)(model, rotationZ->content.float_number)) || (rotationZ->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelRotationZ)(model, rotationZ->content.integer))) {
-			LOG_DEBUG("Set Z rotation for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set Z rotation for model '%s' to be added to scene, skipping", model);
+		switch(rotationZ->type) {
+			case STORE_FLOAT_NUMBER:
+				model->rotationZ = rotationZ->content.float_number;
+				LOG_DEBUG("Set Z rotation for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->rotationZ = rotationZ->content.integer;
+				LOG_DEBUG("Set Z rotation for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set Z rotation for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
 	// set scaleX
 	Store *scaleX = $(Store *, store, getStorePath)(store, "scaleX");
 	if(scaleX != NULL) {
-		if((scaleX->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleX)(model, scaleX->content.float_number)) || (scaleX->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleX)(model, scaleX->content.integer))) {
-			LOG_DEBUG("Set X scale for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set X scale for model '%s' to be added to scene, skipping", model);
+		switch(scaleX->type) {
+			case STORE_FLOAT_NUMBER:
+				model->scaleX = scaleX->content.float_number;
+				LOG_DEBUG("Set X scale for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->scaleX = scaleX->content.integer;
+				LOG_DEBUG("Set X scale for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set X scale for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
 	// set scaleY
 	Store *scaleY = $(Store *, store, getStorePath)(store, "scaleY");
 	if(scaleY != NULL) {
-		if((scaleY->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleY)(model, scaleY->content.float_number)) || (scaleY->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleY)(model, scaleY->content.integer))) {
-			LOG_DEBUG("Set Y scale for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set Y scale for model '%s' to be added to scene, skipping", model);
+		switch(scaleY->type) {
+			case STORE_FLOAT_NUMBER:
+				model->scaleY = scaleY->content.float_number;
+				LOG_DEBUG("Set Y scale for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->scaleY = scaleY->content.integer;
+				LOG_DEBUG("Set Y scale for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set Y scale for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
 	// set scaleZ
 	Store *scaleZ = $(Store *, store, getStorePath)(store, "scaleZ");
 	if(scaleZ != NULL) {
-		if((scaleZ->type == STORE_FLOAT_NUMBER && $(bool, opengl, setOpenGLModelScaleZ)(model, scaleZ->content.float_number)) || (scaleZ->type == STORE_INTEGER && $(bool, opengl, setOpenGLModelScaleZ)(model, scaleZ->content.integer))) {
-			LOG_DEBUG("Set Z scale for model '%s'", model);
-		} else {
-			LOG_WARNING("Failed to set Z scale for model '%s' to be added to scene, skipping", model);
+		switch(scaleZ->type) {
+			case STORE_FLOAT_NUMBER:
+				model->scaleZ = scaleZ->content.float_number;
+				LOG_DEBUG("Set Z scale for model '%s'", name);
+			break;
+			case STORE_INTEGER:
+				model->scaleZ = scaleZ->content.integer;
+				LOG_DEBUG("Set Z scale for model '%s'", name);
+			break;
+			default:
+				LOG_WARNING("Failed to set Z scale for model '%s' to be added to scene, skipping", name);
+			break;
 		}
 	}
 
@@ -733,27 +774,29 @@ API bool addSceneModelFromStore(Scene *scene, const char *model, Store *store)
  * Adds a model to a scene created from a primitive in the scene
  *
  * @param scene			the scene to add the model to
- * @param model			the name of the model to create and add to the scene
+ * @param name			the name of the model to create and add to the scene
  * @param key			the name of the primitive to be used for the created model
- * @result				true if successful
+ * @result				the created OpenGL model or NULL on failure
  */
-API bool addSceneModelFromPrimitive(Scene *scene, const char *model, const char *key)
+API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, const char *key)
 {
 	OpenGLPrimitive *primitive;
 	if((primitive = g_hash_table_lookup(scene->primitives, key)) == NULL) {
-		LOG_ERROR("Failed create model '%s' from primitive '%s' to be added to scene: No such primitive found in scene", model, key);
-		return false;
+		LOG_ERROR("Failed create model '%s' from primitive '%s' to be added to scene: No such primitive found in scene", name, key);
+		return NULL;
 	}
 
-	if(!$(bool, opengl, createOpenGLModel)(model, primitive)) {
-		return false;
+	OpenGLModel *model;
+	if((model = $(OpenGLModel *, opengl, createOpenGLModel)(primitive)) == NULL) {
+		return NULL;
 	}
 
-	if(!addSceneModel(scene, model)) {
-		$(bool, opengl, deleteOpenGLModel)(model);
+	if(!addSceneModel(scene, name, model)) {
+		$(void, opengl, freeOpenGLModel)(model);
+		return NULL;
 	}
 
-	return true;
+	return model;
 }
 
 /**
@@ -763,16 +806,16 @@ API bool addSceneModelFromPrimitive(Scene *scene, const char *model, const char 
  * @param model			the model to add to the scene
  * @result				true if successful
  */
-API bool addSceneModel(Scene *scene, const char *model)
+API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model)
 {
-	for(GList *iter = scene->models->head; iter != NULL; iter = iter->next) {
-		if(g_strcmp0(model, iter->data) == 0) {
-			LOG_ERROR("Failed to add model '%s' to scene: The scene already contains this model", model);
-			return false;
-		}
+	if(g_hash_table_lookup(scene->models, name) != NULL) {
+		LOG_ERROR("Failed to add model '%s' to scene: A model with that name already exists", name);
+		return false;
 	}
 
-	g_queue_push_tail(scene->models, strdup(model));
+	// Insert the model
+	g_hash_table_insert(scene->models, strdup(name), model);
+
 	return true;
 }
 
@@ -811,4 +854,15 @@ static void freeSceneParameterByPointer(void *parameter_p)
 	}
 
 	free(parameter);
+}
+
+/**
+ * Frees an OpenGL model
+ *
+ * @param model		a pointer to the OpenGL model to be freed
+ */
+static void freeOpenGLModelByPointer(void *model_p)
+{
+	OpenGLModel *model = model_p;
+	$(void, opengl, freeOpenGLModel)(model);
 }

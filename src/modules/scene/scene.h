@@ -25,6 +25,7 @@
 #include <GL/glew.h>
 #include "modules/opengl/shader.h"
 #include "modules/opengl/primitive.h"
+#include "modules/opengl/model.h"
 #include "modules/store/store.h"
 
 /**
@@ -48,7 +49,7 @@ typedef struct {
 	/**	The materials associated with this scene */
 	GQueue *materials;
 	/**	The models associated with this scene */
-	GQueue *models;
+	GHashTable *models;
 } Scene;
 
 API Scene *createScene(char *filename, char *path_prefix);
@@ -63,9 +64,9 @@ API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, co
 API bool addSceneMaterialFromStore(Scene *scene, const char *material, const char *path_prefix, Store *store);
 API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile);
 API bool addSceneMaterial(Scene *scene, const char *material);
-API bool addSceneModelFromStore(Scene *scene, const char *model, Store *store);
-API bool addSceneModelFromPrimitive(Scene *scene, const char *model, const char *key);
-API bool addSceneModel(Scene *scene, const char *model);
+API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store);
+API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, const char *key);
+API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model);
 API void freeScene(Scene *scene);
 
 #endif

@@ -72,7 +72,7 @@ typedef struct OpenGLModelStruct OpenGLModel;
 API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive);
 API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name);
 API void updateOpenGLModelTransform(OpenGLModel *model);
-API void updateOpenGLModel(OpenGLModel *model);
+API void updateOpenGLModel(OpenGLModel *model, double dt);
 API bool drawOpenGLModel(OpenGLModel *model);
 API void freeOpenGLModel(OpenGLModel *model);
 

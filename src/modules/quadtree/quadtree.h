@@ -153,10 +153,10 @@ static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
 	unsigned int span = quadtreeNodeSpan(tree, node);
 
 	QuadtreeAABB box;
-	box.minX = node->x;
-	box.maxX = node->x + span;
-	box.minY = node->y;
-	box.maxY = node->y + span;
+	box.minX = node->x * tree->leafSize;
+	box.maxX = node->x * tree->leafSize + span;
+	box.minY = node->y * tree->leafSize;
+	box.maxY = node->y * tree->leafSize + span;
 
 	return box;
 }

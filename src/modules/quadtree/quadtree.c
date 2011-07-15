@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 4);
+MODULE_VERSION(0, 7, 5);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_NODEPS;
 
@@ -110,18 +110,18 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	newRoot->children[2] = NULL;
 	newRoot->children[3] = NULL;
 
-	unsigned int span = quadtreeNodeSpan(tree, tree->root);
+	unsigned int scale = quadtreeNodeScale(tree->root);
 	if(isLowerX && isLowerY) { // old node becomes top right node of new root
-		newRoot->x = tree->root->x - span;
-		newRoot->y = tree->root->y - span;
+		newRoot->x = tree->root->x - scale;
+		newRoot->y = tree->root->y - scale;
 		newRoot->children[3] = tree->root;
 	} else if(isLowerX && !isLowerY) { // old node becomes bottom right node of new root
-		newRoot->x = tree->root->x - span;
+		newRoot->x = tree->root->x - scale;
 		newRoot->y = tree->root->y;
 		newRoot->children[1] = tree->root;
 	} else if(!isLowerX && isLowerY) { // old node becomes top left node of new root
 		newRoot->x = tree->root->x;
-		newRoot->y = tree->root->y - span;
+		newRoot->y = tree->root->y - scale;
 		newRoot->children[2] = tree->root;
 	} else { // old node becomes bottom left node of new root
 		newRoot->x = tree->root->x;
@@ -348,9 +348,9 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->weight = 0;
 			node->children[i]->time = time;
 
-			unsigned int span = quadtreeNodeSpan(tree, node->children[i]);
-			node->children[i]->x = node->x + (i % 2) * span;
-			node->children[i]->y = node->y + ((i & 2) >> 1) * span;
+			unsigned int scale = quadtreeNodeScale(node->children[i]);
+			node->children[i]->x = node->x + (i % 2) * scale;
+			node->children[i]->y = node->y + ((i & 2) >> 1) * scale;
 
 			// set content to null
 			node->children[i]->data = NULL;

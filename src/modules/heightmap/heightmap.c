@@ -42,7 +42,7 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 2, 13);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -207,7 +207,7 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
  * Returns the associated OpenGLHeightmap object for an OpenGL heightmap primitive
  *
  * @param primitive			the OpenGL heightmap primitive for which the OpenGLHeightmap object should be retrieved
- * @result					the OpenGLHeightmap object or NULL if the primitive is not an OpenGL particle effect primitive
+ * @result					the OpenGLHeightmap object or NULL if the primitive is not an OpenGL heightmap primitive
  */
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 {

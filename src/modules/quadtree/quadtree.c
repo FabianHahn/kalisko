@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 5);
-MODULE_BCVERSION(0, 7, 0);
+MODULE_VERSION(0, 7, 6);
+MODULE_BCVERSION(0, 7, 6);
 MODULE_NODEPS;
 
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);

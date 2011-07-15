@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 4);
-MODULE_BCVERSION(0, 2, 4);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 7, 0));
+MODULE_VERSION(0, 2, 5);
+MODULE_BCVERSION(0, 2, 5);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 7, 6));
 
 static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);

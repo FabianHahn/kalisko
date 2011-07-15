@@ -23,6 +23,7 @@
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
+#include "modules/opengl/model.h"
 #include "modules/linalg/Vector.h"
 
 /**
@@ -94,7 +95,7 @@ typedef struct {
 
 API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles);
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
-API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *model_name, const char *material_name);
+API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material);
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);

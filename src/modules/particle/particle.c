@@ -40,9 +40,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 14);
+MODULE_VERSION(0, 6, 15);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -136,11 +136,11 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  * Sets up an OpenGL particle effect primitive for a model
  *
  * @param primitive			the particle effect primitive to setup
- * @param model_name		the model name to setup the particle effect primitive for
- * @param mesh_name			the mesh name to setup the particle effect primitive for
+ * @param model				the model to setup the particle effect primitive for
+ * @param material			the material name to setup the particle effect primitive for
  * @result					true if successful
  */
-API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *model_name, const char *material_name)
+API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
 		LOG_ERROR("Failed to setup OpenGL particles: Primitive is not a particle effect");
@@ -148,7 +148,7 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, const char *m
 	}
 
 	OpenGLParticles *particles = primitive->data;
-	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLModelUniforms)(model_name);
+	OpenGLUniformAttachment *uniforms = model->uniforms;
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "time");
 	OpenGLUniform *timeUniform = $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&particles->time);

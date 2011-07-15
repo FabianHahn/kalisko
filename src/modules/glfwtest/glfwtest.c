@@ -47,9 +47,9 @@
 MODULE_NAME("glfwtest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The glfwtest module creates a simple OpenGL window sample using glfw");
-MODULE_VERSION(0, 2, 14);
+MODULE_VERSION(0, 2, 15);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 3), MODULE_DEPENDENCY("opengl", 0, 27, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 5, 2), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("landscape", 0, 2, 0), MODULE_DEPENDENCY("imagesynth_scene", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("glfw", 0, 2, 3), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("landscape", 0, 2, 0), MODULE_DEPENDENCY("imagesynth_scene", 0, 1, 0));
 
 static Scene *scene = NULL;
 static OpenGLCamera *camera = NULL;
@@ -112,9 +112,9 @@ MODULE_INIT
 	OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective", perspectiveUniform);
 
-	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	if(primitive != NULL) {
-		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
+	OpenGLModel *model = g_hash_table_lookup(scene->models, "particles");
+	if(model != NULL) {
+		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(model->primitive);
 		particles->properties.aspectRatio = 800.0f / 600.0f;
 	}
 
@@ -147,7 +147,7 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 {
 	glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	$(void, opengl, drawOpenGLModels)();
+	$(void, scene, drawScene)(scene);
 }
 
 static void listener_update(void *subject, const char *event, void *data, va_list args)
@@ -195,9 +195,13 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 	}
 
 	rotation += dt;
-	$(bool, opengl, setOpenGLModelRotationY)("tetrahedron", rotation);
+	OpenGLModel *model = g_hash_table_lookup(scene->models, "tetrahedron");
+	if(model != NULL) {
+		model->rotationY = rotation;
+		$(void, opengl, updateOpenGLModelTransform)(model);
+	}
 
-	$(void, opengl, updateOpenGLModels)(dt);
+	$(void, scene, updateScene)(scene, dt);
 }
 
 static void listener_reshape(void *subject, const char *event, void *data, va_list args)
@@ -210,9 +214,9 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
 	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
 
-	OpenGLPrimitive *primitive = $(OpenGLPrimitive *, opengl, getOpenGLModelPrimitive)("particles");
-	if(primitive != NULL) {
-		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(primitive);
+	OpenGLModel *model = g_hash_table_lookup(scene->models, "particles");
+	if(model != NULL) {
+		OpenGLParticles *particles = $(OpenGLParticles *, particle, getOpenGLParticles)(model->primitive);
 		particles->properties.aspectRatio = (float) w / h;
 	}
 }

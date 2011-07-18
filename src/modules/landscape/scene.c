@@ -138,7 +138,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	// Create heightmap
 	OpenGLPrimitive *primitive;
 
-	if((primitive = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(image)) == NULL) {
+	if((primitive = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(image, image->width, image->height)) == NULL) {
 		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Failed to create heightmap primitive from landscape heightmap image", name);
 		$(Image *, image, freeImage)(image);
 		return NULL;

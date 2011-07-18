@@ -36,7 +36,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 11);
+MODULE_VERSION(0, 1, 12);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -51,33 +51,6 @@ static GHashTable *maps;
 MODULE_INIT
 {
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
-
-	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
-	char *execpath = $$(char *, getExecutablePath());
-	GString *vertexShaderPath = g_string_new(execpath);
-	g_string_append_printf(vertexShaderPath, "/modules/lodmap/lodmap.glslv");
-	GString *fragmentShaderPath = g_string_new(execpath);
-	g_string_append_printf(fragmentShaderPath, "/modules/lodmap/lodmap.glslf");
-
-	bool result = $(bool, opengl, createOpenGLMaterialFromFiles)("lodmap", vertexShaderPath->str, fragmentShaderPath->str);
-
-	g_string_free(vertexShaderPath, true);
-	g_string_free(fragmentShaderPath, true);
-	free(execpath);
-
-	if(!result) {
-		LOG_ERROR("Failed to create lodmap material");
-		return false;
-	}
-
-#if 1 // test code
-	OpenGLLodMap *lodmap = createOpenGLLodMap(10, 128, "/home/smf68/kaliskomap/map", "png");
-	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
-	OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
-	$(void, image, debugImage)(tile->heights);
-	$(void, image, debugImage)(tile->normals);
-	freeOpenGLLodMap(lodmap);
-#endif
 
 	return true;
 }
@@ -106,12 +79,32 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSiz
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
 
+	// create lodmap material
+	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
+	char *execpath = $$(char *, getExecutablePath());
+	GString *vertexShaderPath = g_string_new(execpath);
+	g_string_append_printf(vertexShaderPath, "/modules/lodmap/lodmap.glslv");
+	GString *fragmentShaderPath = g_string_new(execpath);
+	g_string_append_printf(fragmentShaderPath, "/modules/lodmap/lodmap.glslf");
+
+	bool result = $(bool, opengl, createOpenGLMaterialFromFiles)("lodmap", vertexShaderPath->str, fragmentShaderPath->str);
+
+	g_string_free(vertexShaderPath, true);
+	g_string_free(fragmentShaderPath, true);
+	free(execpath);
+
 	// initialize tile models
 	for(unsigned int i = 0; i < maxTiles; i++) {
 		lodmap->tileModels[i] = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
+		result = result && $(bool, opengl, attachOpenGLModelMaterial)(lodmap->tileModels[i], "lodmap");
 	}
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
+
+	if(!result) {
+		freeOpenGLLodMap(lodmap);
+		return NULL;
+	}
 
 	return lodmap;
 }
@@ -164,7 +157,9 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 		$(void, opengl, freeOpenGLModel)(lodmap->tileModels[i]);
 	}
 
+	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
 	free(lodmap->tileModels);
+	freeOpenGLPrimitive(lodmap->heightmap);
 	free(lodmap->dataPrefix);
 	free(lodmap->dataSuffix);
 	free(lodmap);

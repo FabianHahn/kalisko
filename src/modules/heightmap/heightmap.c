@@ -42,7 +42,7 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -167,21 +167,24 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
 		return false;
 	}
 
-	// make sure the attached material has a texture array and add a count uniform for it
-	OpenGLUniformAttachment *materialUniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material);
-	OpenGLUniform *texture;
+	OpenGLHeightmap *heightmap = primitive->data;
 
-	if((texture = $(OpenGLUniform *, opengl, getOpenGLUniform)(materialUniforms, "texture")) == NULL || texture->type != OPENGL_UNIFORM_TEXTURE || texture->content.texture_value->type != OPENGL_TEXTURE_TYPE_2D_ARRAY) {
-		LOG_ERROR("Failed to lookup OpenGL 'texture' uniform for heightmap primitive, expected 2D texture array");
-		return false;
+	if(heightmap->heights != NULL) { // only require fragment texture when we're not managed
+		// make sure the attached material has a texture array and add a count uniform for it
+		OpenGLUniformAttachment *materialUniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material);
+		OpenGLUniform *texture;
+
+		if((texture = $(OpenGLUniform *, opengl, getOpenGLUniform)(materialUniforms, "texture")) == NULL || texture->type != OPENGL_UNIFORM_TEXTURE || texture->content.texture_value->type != OPENGL_TEXTURE_TYPE_2D_ARRAY) {
+			LOG_ERROR("Failed to lookup OpenGL 'texture' uniform for heightmap primitive, expected 2D texture array");
+			return false;
+		}
+
+		$(bool, opengl, detachOpenGLUniform)(materialUniforms, "textureCount");
+		OpenGLUniform *textureCountUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(texture->content.texture_value->arraySize);
+		$(bool, opengl, attachOpenGLUniform)(materialUniforms, "textureCount", textureCountUniform);
 	}
 
-	$(bool, opengl, detachOpenGLUniform)(materialUniforms, "textureCount");
-	OpenGLUniform *textureCountUniform = $(OpenGLUniform *, opengl, createOpenGLUniformInt)(texture->content.texture_value->arraySize);
-	$(bool, opengl, attachOpenGLUniform)(materialUniforms, "textureCount", textureCountUniform);
-
 	// add model specific uniforms for the heightmap
-	OpenGLHeightmap *heightmap = primitive->data;
 	OpenGLUniformAttachment *uniforms = model->uniforms;
 
 	$(bool, opengl, detachOpenGLUniform)(uniforms, "heights");

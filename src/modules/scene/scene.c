@@ -46,9 +46,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 8, 3);
+MODULE_VERSION(0, 8, 4);
 MODULE_BCVERSION(0, 8, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *primitive_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -543,44 +543,7 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
  */
 API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile)
 {
-	// create the material
-	if(!$(bool, opengl, createOpenGLMaterial)(material)) {
-		LOG_ERROR("Failed to create OpenGL material '%s' to be added to scene", material);
-		return false;
-	}
-
-	// load vertex shader
-	GLuint vertexShader;
-	if((vertexShader = $(GLuint, opengl, createOpenGLShaderFromFile)(vertexShaderFile, GL_VERTEX_SHADER)) == 0) {
-		LOG_ERROR("Failed to read vertex shader from '%s' for material '%s' to be added to scene", vertexShaderFile, material);
-		$(bool, opengl, deleteOpenGLMaterial)(material);
-		return false;
-	}
-
-	// load fragment shader
-	GLuint fragmentShader;
-	if((fragmentShader = $(GLuint, opengl, createOpenGLShaderFromFile)(fragmentShaderFile, GL_FRAGMENT_SHADER)) == 0) {
-		LOG_ERROR("Failed to read fragment shader from '%s' for material '%s' to be added to scene", fragmentShaderFile, material);
-		glDeleteShader(vertexShader);
-		$(bool, opengl, deleteOpenGLMaterial)(material);
-		return false;
-	}
-
-	// link them to a shader program
-	GLuint program;
-	if((program = $(GLuint, opengl, createOpenGLShaderProgram)(vertexShader, fragmentShader, false)) == 0) {
-		LOG_ERROR("Failed to create OpenGL shader program for material '%s' to be added to scene", material);
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
-		$(bool, opengl, deleteOpenGLMaterial)(material);
-		return false;
-	}
-
-	// attach shader program to material
-	if(!$(bool, opengl, attachOpenGLMaterialShaderProgram)(material, program)) {
-		LOG_ERROR("Failed to attach shader program to material '%s' to be added to scene", material);
-		glDeleteProgram(program);
-		$(bool, opengl, deleteOpenGLMaterial)(material);
+	if(!$(bool, opengl, createOpenGLMaterialFromFiles)(material, vertexShaderFile, fragmentShaderFile)) {
 		return false;
 	}
 

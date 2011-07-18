@@ -18,48 +18,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEIGHTMAP_LODMAP_H
-#define HEIGHTMAP_LODMAP_H
+#version 120
 
-#include <GL/glew.h>
-#include "modules/opengl/primitive.h"
-#include "modules/opengl/model.h"
-#include "modules/opengl/texture.h"
-#include "modules/heightmap/heightmap.h"
-#include "modules/quadtree/quadtree.h"
-#include "modules/linalg/Vector.h"
+uniform mat4 model;
+uniform mat4 modelNormal;
+uniform mat4 camera;
+uniform mat4 perspective;
+uniform sampler2D heights;
+uniform int heightmapWidth;
+uniform int heightmapHeight;
+uniform sampler2D normals;
 
-/**
- * Struct representing an OpenGL LOD map tile
- */
-typedef struct {
-	/** The height field of the tile */
-	Image *heights;
-	/** The normal field of the tile */
-	Image *normals;
-} OpenGLLodMapTile;
+attribute vec2 uv;
 
-/**
- * Struct representing an OpenGL LOD map
- */
-typedef struct {
-	/** The heightmap primitive used to render the LOD map */
-	OpenGLPrimitive *heightmap;
-	/** The quadtree from which to obtain the data */
-	Quadtree *quadtree;
-	/** The tile models used to render the LOD map */
-	OpenGLModel **tileModels;
-	/** The maximum number of tiles displayed simultaneously by the LOD map */
-	unsigned int maxTiles;
-	/** The data prefix to prepend to file names on map loading */
-	char *dataPrefix;
-	/** The data suffix to append to file names on map loading */
-	char *dataSuffix;
-} OpenGLLodMap;
+varying vec3 world_position;
+varying vec3 world_normal;
+varying vec4 world_color;
+varying vec2 world_uv;
+varying float world_height;
 
-API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position);
-API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
-API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
+void main()
+{
+	vec2 heightmapPosition = uv / vec2(heightmapWidth, heightmapHeight);
+	float height = texture2D(heights, heightmapPosition).x;
+	vec4 pos4 = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
+	vec4 norm4 = vec4(texture2D(normals, heightmapPosition).xyz, 1.0);
+	vec4 worldpos4 = model * pos4;
+	vec4 worldnorm4 = modelNormal * norm4;
 
-#endif
+	world_position = worldpos4.xyz / worldpos4.w;
+	world_normal = worldnorm4.xyz / worldnorm4.w;
+	world_color = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
+	world_uv = heightmapPosition;
+	world_height = height;
+		
+	gl_Position = perspective * camera * worldpos4;
+}

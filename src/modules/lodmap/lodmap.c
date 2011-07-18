@@ -28,15 +28,17 @@
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
+#include "modules/opengl/material.h"
+#include "modules/linalg/Vector.h"
 #include "api.h"
 #include "lodmap.h"
 
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 10);
+MODULE_VERSION(0, 1, 11);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 2, 13), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
@@ -49,6 +51,24 @@ static GHashTable *maps;
 MODULE_INIT
 {
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
+
+	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
+	char *execpath = $$(char *, getExecutablePath());
+	GString *vertexShaderPath = g_string_new(execpath);
+	g_string_append_printf(vertexShaderPath, "/modules/lodmap/lodmap.glslv");
+	GString *fragmentShaderPath = g_string_new(execpath);
+	g_string_append_printf(fragmentShaderPath, "/modules/lodmap/lodmap.glslf");
+
+	bool result = $(bool, opengl, createOpenGLMaterialFromFiles)("lodmap", vertexShaderPath->str, fragmentShaderPath->str);
+
+	g_string_free(vertexShaderPath, true);
+	g_string_free(fragmentShaderPath, true);
+	free(execpath);
+
+	if(!result) {
+		LOG_ERROR("Failed to create lodmap material");
+		return false;
+	}
 
 #if 1 // test code
 	OpenGLLodMap *lodmap = createOpenGLLodMap(10, 128, "/home/smf68/kaliskomap/map", "png");
@@ -94,6 +114,39 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSiz
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
 	return lodmap;
+}
+
+/**
+ * Updates an OpenGL LOD map
+ *
+ * @param lodmap		the LOD map to update
+ * @param position		the viewer position with respect to which the LOD map should be updated
+ */
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
+{
+	// reset all models
+	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
+		OpenGLModel *model = lodmap->tileModels[i];
+		model->visible = false;
+	}
+}
+
+/**
+ * Draws an OpenGL LOD map
+ *
+ * @param lodmap		the LOD map to draw
+ */
+API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
+{
+	// draw all visible models
+	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
+		OpenGLModel *model = lodmap->tileModels[i];
+		if(model->visible) {
+			if(!$(bool, opengl, drawOpenGLModel)(model)) {
+				LOG_WARNING("Failed to draw OpenGL LOD map tile model %u", i);
+			}
+		}
+	}
 }
 
 /**

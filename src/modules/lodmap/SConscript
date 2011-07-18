@@ -40,6 +40,8 @@ if check:
 	if module['PLATFORM'] == 'win32':
 		module.ParseConfig('pkg-config --libs --cflags glew')
 
+	module.Command("lodmap.glslv", File("lodmap.glslv").srcnode(), Copy("$TARGET", "$SOURCE"))
+	module.Command("lodmap.glslf", File("lodmap.glslf").srcnode(), Copy("$TARGET", "$SOURCE"))
 	module.SharedLibrary('../kalisko_lodmap', merge(Glob('*.c'), Glob('*.cpp')))
 else:
 	print('A required library for the \'lodmap\' module is not available, skipping build...')

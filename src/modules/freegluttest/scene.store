@@ -29,7 +29,7 @@ scene = {
 			fbmDepth = 6
 			erosionThermalIterations = 0
 			erosionThermalTalusAngle = 40
-			erosionHydraulicIterations = 100
+			erosionHydraulicIterations = 0
 		}
 	}
 
@@ -53,8 +53,8 @@ scene = {
 			type = array
 			textures = ({ // ground texture
 					type = imagesynth
-					width = 1024
-					height = 1024
+					width = 128
+					height = 128
 					channels = 3
 					synthesizer = turbulence
 					parameters = {
@@ -67,8 +67,8 @@ scene = {
 					}
 				},{ // snow texture
 					type = imagesynth
-					width = 1024
-					height = 1024
+					width = 128
+					height = 128
 					channels = 3
 					synthesizer = fBm
 					parameters = {

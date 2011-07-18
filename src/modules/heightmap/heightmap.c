@@ -42,7 +42,7 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -126,26 +126,26 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 		}
 	}
 
-	for(unsigned int y = 0; y < heightmap->heights->height - 1; y++) {
-		for(unsigned int x = 0; x < heightmap->heights->width - 1; x++) {
-			int lowerLeft = x + y * heightmap->heights->width;
-			int lowerRight = (x + 1) + y * heightmap->heights->width;
-			int topLeft = x + (y + 1) * heightmap->heights->width;
-			int topRight = (x + 1) + (y + 1) * heightmap->heights->width;
+	for(unsigned int y = 0; y < heightmap->height - 1; y++) {
+		for(unsigned int x = 0; x < heightmap->width - 1; x++) {
+			int lowerLeft = x + y * heightmap->width;
+			int lowerRight = (x + 1) + y * heightmap->width;
+			int topLeft = x + (y + 1) * heightmap->width;
+			int topRight = (x + 1) + (y + 1) * heightmap->width;
 
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[0] = topLeft;
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[1] = lowerRight;
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[2] = lowerLeft;
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[3] = topLeft;
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[4] = topRight;
-			heightmap->tiles[y * (heightmap->heights->width - 1) + x].indices[5] = lowerRight;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[0] = topLeft;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[1] = lowerRight;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[2] = lowerLeft;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[3] = topLeft;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[4] = topRight;
+			heightmap->tiles[y * (heightmap->width - 1) + x].indices[5] = lowerRight;
 		}
 	}
 
-	for(unsigned int y = 0; y < heightmap->heights->height; y++) {
-		for(unsigned int x = 0; x < heightmap->heights->width; x++) {
-			heightmap->vertices[y * heightmap->heights->width + x].position[0] = x;
-			heightmap->vertices[y * heightmap->heights->width + x].position[1] = y;
+	for(unsigned int y = 0; y < heightmap->height; y++) {
+		for(unsigned int x = 0; x < heightmap->width; x++) {
+			heightmap->vertices[y * heightmap->width + x].position[0] = x;
+			heightmap->vertices[y * heightmap->width + x].position[1] = y;
 		}
 	}
 
@@ -235,9 +235,9 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	OpenGLHeightmap *heightmap = primitive->data;
 
 	glBindBuffer(GL_ARRAY_BUFFER, heightmap->vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(HeightmapVertex) * heightmap->heights->height * heightmap->heights->width, heightmap->vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(HeightmapVertex) * heightmap->height * heightmap->width, heightmap->vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->heights->height - 1) * (heightmap->heights->width - 1), heightmap->tiles, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->height - 1) * (heightmap->width - 1), heightmap->tiles, GL_STATIC_DRAW);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
@@ -269,7 +269,7 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glDrawElements(GL_TRIANGLES, (heightmap->heights->height - 1) * (heightmap->heights->width - 1) * 6, GL_UNSIGNED_INT, NULL);
+	glDrawElements(GL_TRIANGLES, (heightmap->height - 1) * (heightmap->width - 1) * 6, GL_UNSIGNED_INT, NULL);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		return false;

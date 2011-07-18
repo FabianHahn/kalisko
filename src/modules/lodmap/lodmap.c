@@ -36,7 +36,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 13);
+MODULE_VERSION(0, 1, 14);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -93,10 +93,33 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSiz
 	g_string_free(fragmentShaderPath, true);
 	free(execpath);
 
+	if(!result) {
+		$(void, opengl, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
+		$(void, quadtree, freeQuadtree)(lodmap->quadtree);
+		free(lodmap->dataPrefix);
+		free(lodmap->dataSuffix);
+		free(lodmap->tileModels);
+		LOG_ERROR("Failed to create OpenGL LOD map material");
+		return NULL;
+	}
+
 	// initialize tile models
 	for(unsigned int i = 0; i < maxTiles; i++) {
 		lodmap->tileModels[i] = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
-		result = result && $(bool, opengl, attachOpenGLModelMaterial)(lodmap->tileModels[i], "lodmap");
+		if(!$(bool, opengl, attachOpenGLModelMaterial)(lodmap->tileModels[i], "lodmap")) {
+			for(unsigned int j = 0; j < i; j++) {
+				$(void, opengl, freeOpenGLModel)(lodmap->tileModels[j]);
+			}
+
+			$(bool, opengl, deleteOpenGLMaterial)("lodmap");
+			$(void, opengl, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
+			$(void, quadtree, freeQuadtree)(lodmap->quadtree);
+			free(lodmap->dataPrefix);
+			free(lodmap->dataSuffix);
+			free(lodmap->tileModels);
+			LOG_ERROR("Failed to create OpenGL LOD map tile model %u", i);
+			return NULL;
+		}
 	}
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);

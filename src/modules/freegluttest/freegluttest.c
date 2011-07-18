@@ -48,7 +48,7 @@
 MODULE_NAME("freegluttest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The freegluttest module creates a simple OpenGL window sample using freeglut");
-MODULE_VERSION(0, 14, 24);
+MODULE_VERSION(0, 14, 25);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("landscape", 0, 2, 0), MODULE_DEPENDENCY("imagesynth_scene", 0, 1, 0), MODULE_DEPENDENCY("lodmap", 0, 1, 0));
 
@@ -115,11 +115,13 @@ MODULE_INIT
 
 #if 1 // test code
 		OpenGLLodMap *lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(10, 128, "/home/smf68/kaliskomap/map", "png");
-		$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
-		OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
-		$(void, image, debugImage)(tile->heights);
-		$(void, image, debugImage)(tile->normals);
-		$(void, lodmap, freeOpenGLLodMap)(lodmap);
+		if(lodmap != NULL) {
+			$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
+			OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
+			$(void, image, debugImage)(tile->heights);
+			$(void, image, debugImage)(tile->normals);
+			$(void, lodmap, freeOpenGLLodMap)(lodmap);
+		}
 #endif
 
 		done = true;

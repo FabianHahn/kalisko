@@ -88,6 +88,61 @@ API bool createOpenGLMaterial(const char *name)
 }
 
 /**
+ * Creates a new OpenGL material from two shader files
+ *
+ * @param name					the name of the OpenGL material to create
+ * @param vertexShaderFile		the file name of the vertex shader to use for the OpenGL material
+ * @param fragmentShaderFile	the file name of the fragment shader to use for the OpenGL material
+ * @result						true if successful
+ */
+API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShaderFile, const char *fragmentShaderFile)
+{
+	// create the material
+	if(!createOpenGLMaterial(name)) {
+		return false;
+	}
+
+	const char *material = name;
+
+	// load vertex shader
+	GLuint vertexShader;
+	if((vertexShader = createOpenGLShaderFromFile(vertexShaderFile, GL_VERTEX_SHADER)) == 0) {
+		LOG_ERROR("Failed to read vertex shader from '%s' for material '%s'", vertexShaderFile, material);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// load fragment shader
+	GLuint fragmentShader;
+	if((fragmentShader = createOpenGLShaderFromFile(fragmentShaderFile, GL_FRAGMENT_SHADER)) == 0) {
+		LOG_ERROR("Failed to read fragment shader from '%s' for material '%s'", fragmentShaderFile, material);
+		glDeleteShader(vertexShader);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// link them to a shader program
+	GLuint program;
+	if((program = createOpenGLShaderProgram(vertexShader, fragmentShader, false)) == 0) {
+		LOG_ERROR("Failed to create OpenGL shader program for material '%s'", material);
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	// attach shader program to material
+	if(!attachOpenGLMaterialShaderProgram(material, program)) {
+		LOG_ERROR("Failed to attach shader program to material '%s'", material);
+		glDeleteProgram(program);
+		$(bool, opengl, deleteOpenGLMaterial)(material);
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Deletes an OpenGL material
  *
  * @param name		the name of the OpenGL material to delete

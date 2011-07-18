@@ -29,6 +29,7 @@
 API void initOpenGLMaterials();
 API void freeOpenGLMaterials();
 API bool createOpenGLMaterial(const char *name);
+API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShaderFile, const char *fragmentShaderFile);
 API bool deleteOpenGLMaterial(const char *name);
 API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program);
 API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name);

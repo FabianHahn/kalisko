@@ -72,7 +72,7 @@ typedef struct {
 	OpenGLPrimitive primitive;
 } OpenGLHeightmap;
 
-API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *image);
+API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int width, unsigned int height);
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material);
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive);

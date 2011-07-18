@@ -42,8 +42,8 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 3, 1);
-MODULE_BCVERSION(0, 2, 13);
+MODULE_VERSION(0, 3, 2);
+MODULE_BCVERSION(0, 3, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
 MODULE_INIT
@@ -60,14 +60,18 @@ MODULE_FINALIZE
  * Creates a new OpenGL heightmap primitive
  *
  * @param heights			the image from which the heightmap values will be read (the primitive takes control over this value, do not free it yourself) or NULL to create a heightmap that will be managed by e.g. another primitive
+ * @param width				the width of the heightmap grid to create
+ * @param height			the height of the heightmap grid to create
  * @result					the created OpenGL heightmap primitive object or NULL on failure
  */
-API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
+API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int width, unsigned int height)
 {
 	OpenGLHeightmap *heightmap = ALLOCATE_OBJECT(OpenGLHeightmap);
-	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, heights->height * heights->width);
-	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (heights->height - 1) * (heights->width - 1));
+	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, width * height);
+	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (width - 1) * (height - 1));
 	heightmap->heights = heights;
+	heightmap->width = width;
+	heightmap->height = height;
 	heightmap->primitive.type = "heightmap";
 	heightmap->primitive.data = heightmap;
 	heightmap->primitive.setup_function = &setupOpenGLPrimitiveHeightmap;
@@ -76,14 +80,10 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights)
 	heightmap->primitive.free_function = &freeOpenGLPrimitiveHeightmap;
 
 	if(heights != NULL) { // we have to manage ourselves, so create textures and a normal field
-		heightmap->width = heightmap->heights->width;
-		heightmap->height = heightmap->heights->height;
 		heightmap->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heights);
 		heightmap->normals = $(Image *, image, createImageFloat)(heights->width, heights->height, 3);
 		heightmap->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(heightmap->normals);
 	} else {
-		heightmap->width = 0;
-		heightmap->height = 0;
 		heightmap->heightsTexture = NULL;
 		heightmap->normals = NULL;
 		heightmap->normalsTexture = NULL;

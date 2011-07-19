@@ -18,6 +18,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Import('module')
 Import('custom_tests')
 
+def merge(*args):
+    r = []
+    for a in args: r += a
+    return r
+
 conf = Configure(module, custom_tests)
 check = True
 	
@@ -26,6 +31,6 @@ check = check and conf.CheckLibWithHeader('m', 'math.h', 'C')
 module = conf.Finish()
 
 if check:
-	module.SharedLibrary('../kalisko_quadtree', Glob('*.c'))
+	module.SharedLibrary('../kalisko_quadtree', merge(Glob('*.cpp'), Glob('*.c')))
 else:
 	print('A required library for the \'quadtree\' module is not available, skipping build...')

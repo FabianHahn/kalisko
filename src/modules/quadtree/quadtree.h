@@ -74,7 +74,7 @@ struct QuadtreeStruct {
 typedef struct QuadtreeStruct Quadtree;
 
 /**
- * Struct for 2D axis aligned bounding boxes used for quadtrees
+ * Struct for 3D axis aligned bounding boxes used for quadtrees
  */
 typedef struct {
 	/** The minimum X coordinate of the bounding box */
@@ -85,6 +85,10 @@ typedef struct {
 	int maxX;
 	/** The maximum Y coordinate of the bounding box */
 	int maxY;
+	/** The minimum height of the bounding box */
+	float minHeight;
+	/** The minimum height of the bounding box */
+	float maxHeight;
 } QuadtreeAABB;
 
 API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
@@ -157,6 +161,8 @@ static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
 	box.maxX = node->x * tree->leafSize + span;
 	box.minY = node->y * tree->leafSize;
 	box.maxY = node->y * tree->leafSize + span;
+	box.minHeight = 0.0f;
+	box.maxHeight = 1.0f;
 
 	return box;
 }

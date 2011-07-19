@@ -71,7 +71,7 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
  * @param level				the LOD level for which to retrieve the LOD range
  * @result					the LOD range for the specified level
  */
-static unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int level)
+static inline unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int level)
 {
 	if(level > lodmap->quadtree->root->level) { // there can't be an LOD level higher than the tree's height, so just return the maximum viewing distance
 		return lodmap->viewingDistance;

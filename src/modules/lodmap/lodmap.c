@@ -36,8 +36,8 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 14);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 15);
+MODULE_BCVERSION(0, 1, 15);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
@@ -63,18 +63,20 @@ MODULE_FINALIZE
 /**
  * Creates an OpenGL LOD map
  *
- * @param maxTiles		the maximum number of tiles displayed simultaneously by the LOD map
- * @param leafSize		the leaf size of the LOD map
- * @param dataPrefix	the prefix that should be prepended to all loaded tiles
- * @param dataSuffix	the suffix that should be appended to all loaded tiles
- * @result				the created OpenGL LOD map
+ * @param viewingDistance		the maximum viewing distance to be handled by this LOD map
+ * @param maxTiles				the maximum number of tiles displayed simultaneously by the LOD map
+ * @param leafSize				the leaf size of the LOD map
+ * @param dataPrefix			the prefix that should be prepended to all loaded tiles
+ * @param dataSuffix			the suffix that should be appended to all loaded tiles
+ * @result						the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(unsigned int viewingDistance, unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize, leafSize); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 25, &loadLodMapTile, &freeLodMapTile, true);
 	lodmap->tileModels = ALLOCATE_OBJECTS(OpenGLModel *, maxTiles);
+	lodmap->viewingDistance = viewingDistance;
 	lodmap->maxTiles = maxTiles;
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);

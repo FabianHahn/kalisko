@@ -49,6 +49,8 @@ typedef struct {
 	Quadtree *quadtree;
 	/** The tile models used to render the LOD map */
 	OpenGLModel **tileModels;
+	/** The base viewing range covered by the lowest LOD level in the LOD map */
+	unsigned int baseRange;
 	/** The maximum viewing distance to be handled by this LOD map */
 	unsigned int viewingDistance;
 	/** The maximum number of tiles displayed simultaneously by the LOD map */
@@ -59,7 +61,7 @@ typedef struct {
 	char *dataSuffix;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(unsigned int viewingDistance, unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
@@ -73,12 +75,11 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
  */
 static inline unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int level)
 {
-	if(level > lodmap->quadtree->root->level) { // there can't be an LOD level higher than the tree's height, so just return the maximum viewing distance
-		return lodmap->viewingDistance;
-	}
+	unsigned int maxLevel = MAX(lodmap->viewingDistance, lodmap->quadtree->root->level);
+	unsigned int lookupLevel = MIN(level, maxLevel);
+	unsigned int scale = (1 << lookupLevel);
 
-	unsigned int diff = lodmap->quadtree->root->level - level;
-	return (lodmap->viewingDistance >> diff); // divide by two for each level below the max
+	return lodmap->baseRange * scale;
 }
 
 /**

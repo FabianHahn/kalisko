@@ -37,11 +37,12 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 18);
+MODULE_VERSION(0, 1, 19);
 MODULE_BCVERSION(0, 1, 15);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
+static void enableLodMapNodeModel(OpenGLLodMap *lodmap, QuadtreeNode *node, unsigned int i);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -150,7 +151,21 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 		model->visible = false;
 	}
 
-	GList *nodes = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
+	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
+	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, lodmap->quadtree->root);
+	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level);
+
+	// select the LOD map nodes to be rendered
+	if($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range)) {
+		GList *nodes = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
+
+		// enable all the selected nodes for rendering
+		unsigned int i = 0;
+		for(GList *iter = nodes; iter != NULL; iter = iter->next, i++) {
+			QuadtreeNode *node = iter->data; // retrieve the node from the list
+			enableLodMapNodeModel(lodmap, node, i); // enable the node
+		}
+	}
 }
 
 /**
@@ -237,6 +252,18 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	}
 
 	return nodes;
+}
+
+/**
+ * Enables a selected LOD map node for rendering in a model
+ *
+ * @param lodmap		the LOD map for which to enable the node
+ * @param node			the quadtree node of the LOD map to enable for rendering
+ * @param i				the index of the model for which to enable the node
+ */
+static void enableLodMapNodeModel(OpenGLLodMap *lodmap, QuadtreeNode *node, unsigned int i)
+{
+
 }
 
 /**

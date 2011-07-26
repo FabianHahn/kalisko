@@ -25,6 +25,7 @@
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/quadtree/quadtree.h"
+#include "modules/quadtree/intersect.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
@@ -36,10 +37,11 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 16);
+MODULE_VERSION(0, 1, 17);
 MODULE_BCVERSION(0, 1, 15);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -147,6 +149,8 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 		OpenGLModel *model = lodmap->tileModels[i];
 		model->visible = false;
 	}
+
+	GList *nodes = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
 }
 
 /**
@@ -188,6 +192,27 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 	free(lodmap->dataPrefix);
 	free(lodmap->dataSuffix);
 	free(lodmap);
+}
+
+/**
+ * Recursively selects nodes from an LOD map's quadtree for a LOD query
+ *
+ * @param lodmap		the LOD map for which to select quadtree nodes
+ * @param position		the viewer position with respect to which the LOD map should be updated
+ * @param node			the current quadtree node we're traversing
+ */
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node)
+{
+	GList *nodes = NULL;
+
+	unsigned int range = getLodMapNodeRange(lodmap, node);
+	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
+
+	if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range)) { // the node is beyond the LOD viewing range for the current viewer position
+		return NULL;
+	}
+
+	return nodes;
 }
 
 /**

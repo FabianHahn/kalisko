@@ -78,7 +78,19 @@ static inline unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int lev
 	}
 
 	unsigned int diff = lodmap->quadtree->root->level - level;
-	return (lodmap->viewingDistance << diff); // divide by two for each level below the max
+	return (lodmap->viewingDistance >> diff); // divide by two for each level below the max
+}
+
+/**
+ * Returns the LOD range covered by a quadtree node in the LOD map's quadtree
+ *
+ * @param lodmap			the LOD map for which to retrieve the LOD range
+ * @param node				the quadtree node of the LOD map's quadtree for which to retrieve the LOD range
+ * @result					the LOD range for the specified node
+ */
+static inline unsigned int getLodMapNodeRange(OpenGLLodMap *lodmap, QuadtreeNode *node)
+{
+	return getLodMapRange(lodmap, node->level);
 }
 
 #endif

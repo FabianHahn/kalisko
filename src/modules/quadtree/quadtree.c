@@ -27,10 +27,11 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 10);
+MODULE_VERSION(0, 7, 11);
 MODULE_BCVERSION(0, 7, 6);
 MODULE_NODEPS;
 
+static void loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
@@ -140,6 +141,20 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
+ * Loads the data for a quadtree node. If preloadChildData is set, recursively loads the child nodes' data first.
+ * Note that this operation only updates the access time and the node weight of this node's subtree where appropriate, but not the values of the parent chain.
+ * This means that if you want the tree weights to be consistent, you must track back the path to the root yourself and recursively update these nodes' weights.
+ *
+ * @param tree			the quadtree in which to load a node's data
+ * @param node			the quadtree node for which to load the data
+ */
+API void loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node)
+{
+	double time = $$(double, getMicroTime)();
+	loadQuadtreeNodeDataRec(tree, node, time);
+}
+
+/**
  * Lookup a node's data in the quadtree
  *
  * @param tree			the quadtree to lookup
@@ -239,6 +254,45 @@ API void freeQuadtree(Quadtree *tree)
 
 	// if all the nodes are freed, free the tree itself as well
 	free(tree);
+}
+
+/**
+ * Recursively loads the data for a quadtree node.
+ * Note that this operation only updates the access time and the node weight of this node's subtree where appropriate, but not the values of the parent chain.
+ * This means that if you want the tree weights to be consistent, you must track back the path to the root yourself and recursively update these nodes' weights.
+ *
+ * @param tree			the quadtree in which to load a node's data
+ * @param node			the quadtree node for which to load the data
+ * @param time			the current timestamp to set for caching
+ */
+static void loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time)
+{
+	if(quadtreeNodeDataIsLoaded(node)) {
+		return; // nothing to do if we're already loaded
+	}
+
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+
+	if(node->level > 0 && tree->preloadChildData) {
+		LOG_DEBUG("Preloading quadtree children of node with range [%d,%d]x[%d,%d]...", box.minX, box.maxX, box.minY, box.maxY);
+
+		// Make sure the children are already loaded before loading this one
+		for(unsigned int i = 0; i < 4; i++) {
+			if(!quadtreeNodeDataIsLoaded(node->children[i])) {
+				loadQuadtreeNodeDataRec(tree, node->children[i], time);
+			}
+		}
+	}
+
+	LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
+	node->data = tree->load(tree, node);
+
+	// update node weight
+	if(quadtreeNodeIsLeaf(node)) {
+		node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
+	} else {
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+	}
 }
 
 /**

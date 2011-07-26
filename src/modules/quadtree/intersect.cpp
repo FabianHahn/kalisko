@@ -34,7 +34,7 @@ extern "C" {
  * @param radius		the radius of the sphere
  * @result				true if the sphere intersects the axis aligned bounding box
  */
-API bool quadtreeAABBIntersectsSphere(QuadtreeAABB box, Vector *position, float radius)
+API bool quadtreeAABBIntersectsSphere(QuadtreeAABB box, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
 	Vector& center = *position;

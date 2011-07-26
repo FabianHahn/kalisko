@@ -37,7 +37,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 17);
+MODULE_VERSION(0, 1, 18);
 MODULE_BCVERSION(0, 1, 15);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -208,8 +208,32 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	unsigned int range = getLodMapNodeRange(lodmap, node);
 	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
 
-	if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range)) { // the node is beyond the LOD viewing range for the current viewer position
-		return NULL;
+	assert($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range));
+
+	// we need to check whether all of our children are in viewing range as well - if yes, they replace us
+	bool replacing = true;
+	for(unsigned int i = 0; i < 4; i++) {
+		QuadtreeNode *child = node->children[i];
+		unsigned int subrange = getLodMapNodeRange(lodmap, child);
+		QuadtreeAABB subbox = quadtreeNodeAABB(lodmap->quadtree, child);
+
+		if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
+			replacing = false; // our child nodes won't replace us
+			break;
+		}
+	}
+
+	if(replacing) { // our child nodes replace the area covered by ourselves
+		LOG_DEBUG("LOD selection for node range [%d,%d]x[%d,%d] at level %u passed to children...", box.minX, box.maxX, box.minY, box.maxY, node->level);
+
+		// we know that our child nodes cover our area, so let them recursively handle their node selection now
+		for(unsigned int i = 0; i < 4; i++) {
+			GList *childNodes = selectLodMapNodes(lodmap, position, node->children[i]); // node selection
+			nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
+		}
+	} else { // we cover our area ourselves
+		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
+		nodes = g_list_append(nodes, node); // select ourselves
 	}
 
 	return nodes;

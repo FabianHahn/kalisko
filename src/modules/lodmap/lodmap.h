@@ -35,8 +35,12 @@
 typedef struct {
 	/** The height field of the tile */
 	Image *heights;
+	/** The height texture of the tile */
+	OpenGLTexture *heightsTexture;
 	/** The normal field of the tile */
 	Image *normals;
+	/** The normals texture of the tile */
+	OpenGLTexture *normalsTexture;
 } OpenGLLodMapTile;
 
 /**

@@ -37,7 +37,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 20);
+MODULE_VERSION(0, 1, 21);
 MODULE_BCVERSION(0, 1, 20);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -184,6 +184,8 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 			if(!$(bool, opengl, drawOpenGLModel)(model)) {
 				LOG_WARNING("Failed to draw OpenGL LOD map tile model %u", i);
 			}
+		} else {
+			break; // if a model is invisible, all further models will be unused as well
 		}
 	}
 }
@@ -336,6 +338,10 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->normals = $(Image *, image, createImageFloat)(tree->leafSize, tree->leafSize, 3);
 	$(void, heightmap, computeHeightmapNormals)(tile->heights, tile->normals);
 
+	// Create OpenGL textures
+	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);
+	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->normals);
+
 	return tile;
 }
 
@@ -348,5 +354,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 static void freeLodMapTile(Quadtree *tree, void *data)
 {
 	OpenGLLodMapTile *tile = data;
+	$(void, opengl, freeOpenGLTexture)(tile->heightsTexture);
+	$(void, opengl, freeOpenGLTexture)(tile->normalsTexture);
 	free(tile);
 }

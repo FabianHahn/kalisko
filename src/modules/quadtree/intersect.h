@@ -29,7 +29,7 @@ extern "C" {
 
 #include "quadtree.h"
 
-API bool quadtreeAABBIntersectsSphere(Vector *position, double radius);
+API bool quadtreeAABBIntersectsSphere(QuadtreeAABB box, Vector *position, double radius);
 
 #ifdef __cplusplus
 }

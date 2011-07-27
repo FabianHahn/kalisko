@@ -42,15 +42,17 @@
 #include "modules/scene/scene.h"
 #include "modules/particle/particle.h"
 #include "modules/lodmap/lodmap.h"
-
 #include "api.h"
+
+// #define WITH_LODMAP
+// #define LODMAP_PATH "/home/smf68/kaliskomap/map"
 
 MODULE_NAME("freegluttest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The freegluttest module creates a simple OpenGL window sample using freeglut");
-MODULE_VERSION(0, 14, 27);
+MODULE_VERSION(0, 15, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("landscape", 0, 2, 0), MODULE_DEPENDENCY("imagesynth_scene", 0, 1, 0), MODULE_DEPENDENCY("lodmap", 0, 2, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image_png", 0, 1, 2), MODULE_DEPENDENCY("mesh_opengl", 0, 2, 0), MODULE_DEPENDENCY("particle", 0, 6, 6), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("landscape", 0, 2, 0), MODULE_DEPENDENCY("imagesynth_scene", 0, 1, 0), MODULE_DEPENDENCY("lodmap", 0, 2, 3));
 
 static Scene *scene = NULL;
 static FreeglutWindow *window = NULL;
@@ -61,6 +63,10 @@ static int currentWidth = 800;
 static int currentHeight = 600;
 static bool cameraTiltEnabled = false;
 static float rotation = 0.0f;
+
+#ifdef WITH_LODMAP // test code
+static OpenGLLodMap *lodmap;
+#endif
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args);
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
@@ -113,14 +119,15 @@ MODULE_INIT
 			particles->properties.aspectRatio = 800.0f / 600.0f;
 		}
 
-#if 1 // test code
-		OpenGLLodMap *lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(196, 2, 128, "/home/smf68/kaliskomap/map", "png");
+#ifdef WITH_LODMAP // test code
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(196, 2, 128, LODMAP_PATH, "png");
 		if(lodmap != NULL) {
 			$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3 * 128, 3 * 128, 0);
 			OpenGLLodMapTile *tile = $(void *, quadtree, lookupQuadtree)(lodmap->quadtree, 0.0, 0.0, 2);
 			$(void, image, debugImage)(tile->heights);
 			$(void, image, debugImage)(tile->normals);
-			$(void, lodmap, freeOpenGLLodMap)(lodmap);
 		}
 #endif
 
@@ -175,10 +182,14 @@ MODULE_FINALIZE
 	$(void, event, detachEventListener)(window, "close", NULL, &listener_close);
 	$(void, freeglut, freeFreeglutWindow)(window);
 
+#ifdef WITH_LODMAP // test code
+	$(void, lodmap, freeOpenGLLodMap)(lodmap);
+#endif
 	$(void, scene, freeScene)(scene);
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
 }
+
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args)
 {
 	int key = va_arg(args, int);
@@ -211,6 +222,9 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 	glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	$(void, scene, drawScene)(scene);
+#ifdef WITH_LODMAP // test code
+	$(void, lodmap, drawOpenGLLodMap)(lodmap);
+#endif
 }
 
 static void listener_update(void *subject, const char *event, void *data, va_list args)
@@ -262,6 +276,10 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 	}
 
 	$(void, scene, updateScene)(scene, dt);
+
+#ifdef WITH_LODMAP // test code
+	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position);
+#endif
 
 	glutPostRedisplay();
 }

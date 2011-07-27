@@ -37,7 +37,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 11), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -198,16 +198,21 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 
 	assert($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range));
 
-	// we need to check whether all of our children are in viewing range as well - if yes, they replace us
-	bool replacing = true;
-	for(unsigned int i = 0; i < 4; i++) {
-		QuadtreeNode *child = node->children[i];
-		unsigned int subrange = getLodMapNodeRange(lodmap, child);
-		QuadtreeAABB subbox = quadtreeNodeAABB(lodmap->quadtree, child);
+	bool replacing = false;
 
-		if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
-			replacing = false; // our child nodes won't replace us
-			break;
+	if(!quadtreeNodeIsLeaf(node)) {
+		// we need to check whether all of our children are in viewing range as well - if yes, they replace us
+		replacing = true;
+
+		for(unsigned int i = 0; i < 4; i++) {
+			QuadtreeNode *child = node->children[i];
+			unsigned int subrange = getLodMapNodeRange(lodmap, child);
+			QuadtreeAABB subbox = quadtreeNodeAABB(lodmap->quadtree, child);
+
+			if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
+				replacing = false; // our child nodes won't replace us
+				break;
+			}
 		}
 	}
 

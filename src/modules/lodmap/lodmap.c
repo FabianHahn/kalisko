@@ -37,9 +37,9 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 11), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 13), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
@@ -144,6 +144,8 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 			OpenGLLodMapTile *tile = node->data;
 			tile->model->visible = true; // make model visible for rendering
 		}
+
+		LOG_DEBUG("Selected %u LOD map nodes", g_list_length(lodmap->selection));
 	}
 }
 
@@ -318,12 +320,11 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	$(bool, opengl, attachOpenGLModelMaterial)(tile->model, "lodmap");
 
 	// Set model transform
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
 	unsigned int scale = quadtreeNodeScale(node);
 	float *positionData = $(float *, linalg, getVectorData)(tile->model->translation);
-	positionData[0] = box.minX;
+	positionData[0] = node->x;
 	positionData[1] = 0;
-	positionData[2] = box.minY; // y in model coordinates is z in world coordinates
+	positionData[2] = node->y; // y in model coordinates is z in world coordinates
 	tile->model->scaleX = scale;
 	tile->model->scaleY = 1.0f;
 	tile->model->scaleZ = scale;

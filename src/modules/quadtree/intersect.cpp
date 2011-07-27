@@ -29,15 +29,18 @@ extern "C" {
 /**
  * Checks whether a quadtree bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
  *
+ * @param tree			the quadtree to which the bounding box belongs
  * @param box			the axis aligned bounding box to check
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
  * @result				true if the sphere intersects the axis aligned bounding box
  */
-API bool quadtreeAABBIntersectsSphere(QuadtreeAABB box, Vector *position, double radius)
+API bool quadtreeAABBIntersectsSphere(Quadtree *tree, QuadtreeAABB box, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
 	Vector& center = *position;
+	center[0] *= tree->leafSize;
+	center[2] *= tree->leafSize;
 
 	// Intersect for every axis individually to find the closest point on the box
 	if(center[0] < box.minX) {

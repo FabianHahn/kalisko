@@ -38,7 +38,7 @@ extern "C" {
 API bool quadtreeAABBIntersectsSphere(Quadtree *tree, QuadtreeAABB box, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
-	Vector& center = *position;
+	Vector center = *position;
 	center[0] *= tree->leafSize;
 	center[2] *= tree->leafSize;
 

@@ -41,6 +41,8 @@ typedef struct {
 	Image *normals;
 	/** The normals texture of the tile */
 	OpenGLTexture *normalsTexture;
+	/** The OpenGL model to render the tile */
+	OpenGLModel *model;
 } OpenGLLodMapTile;
 
 /**
@@ -51,21 +53,19 @@ typedef struct {
 	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
 	Quadtree *quadtree;
-	/** The tile models used to render the LOD map */
-	OpenGLModel **tileModels;
+	/** The current selection of quadtree nodes to be rendered */
+	GList *selection;
 	/** The base viewing range covered by the lowest LOD level in the LOD map */
 	unsigned int baseRange;
 	/** The maximum viewing distance to be handled by this LOD map */
 	unsigned int viewingDistance;
-	/** The maximum number of tiles displayed simultaneously by the LOD map */
-	unsigned int maxTiles;
 	/** The data prefix to prepend to file names on map loading */
 	char *dataPrefix;
 	/** The data suffix to append to file names on map loading */
 	char *dataSuffix;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);

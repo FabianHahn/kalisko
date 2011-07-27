@@ -37,12 +37,11 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 1, 21);
-MODULE_BCVERSION(0, 1, 20);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 6), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_VERSION(0, 2, 0);
+MODULE_BCVERSION(0, 2, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 11), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
-static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
-static void enableLodMapNodeModel(OpenGLLodMap *lodmap, QuadtreeNode *node, unsigned int i);
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -68,21 +67,19 @@ MODULE_FINALIZE
  *
  * @param baseRange				the base viewing range covered by the lowest LOD level in the LOD map
  * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
- * @param maxTiles				the maximum number of tiles displayed simultaneously by the LOD map
  * @param leafSize				the leaf size of the LOD map
  * @param dataPrefix			the prefix that should be prepended to all loaded tiles
  * @param dataSuffix			the suffix that should be appended to all loaded tiles
  * @result						the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int maxTiles, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize, leafSize); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 25, &loadLodMapTile, &freeLodMapTile, true);
-	lodmap->tileModels = ALLOCATE_OBJECTS(OpenGLModel *, maxTiles);
+	lodmap->selection = NULL;
 	lodmap->baseRange = baseRange;
 	lodmap->viewingDistance = viewingDistance;
-	lodmap->maxTiles = maxTiles;
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
 
@@ -105,28 +102,8 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewin
 		$(void, quadtree, freeQuadtree)(lodmap->quadtree);
 		free(lodmap->dataPrefix);
 		free(lodmap->dataSuffix);
-		free(lodmap->tileModels);
 		LOG_ERROR("Failed to create OpenGL LOD map material");
 		return NULL;
-	}
-
-	// initialize tile models
-	for(unsigned int i = 0; i < maxTiles; i++) {
-		lodmap->tileModels[i] = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
-		if(!$(bool, opengl, attachOpenGLModelMaterial)(lodmap->tileModels[i], "lodmap")) {
-			for(unsigned int j = 0; j < i; j++) {
-				$(void, opengl, freeOpenGLModel)(lodmap->tileModels[j]);
-			}
-
-			$(bool, opengl, deleteOpenGLMaterial)("lodmap");
-			$(void, opengl, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
-			$(void, quadtree, freeQuadtree)(lodmap->quadtree);
-			free(lodmap->dataPrefix);
-			free(lodmap->dataSuffix);
-			free(lodmap->tileModels);
-			LOG_ERROR("Failed to create OpenGL LOD map tile model %u", i);
-			return NULL;
-		}
 	}
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
@@ -147,25 +124,25 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewin
  */
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 {
-	// reset all models
-	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
-		OpenGLModel *model = lodmap->tileModels[i];
-		model->visible = false;
-	}
-
 	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
 	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, lodmap->quadtree->root);
 	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level);
 
+	// free our previous selection list
+	g_list_free(lodmap->selection);
+	lodmap->selection = NULL;
+
 	// select the LOD map nodes to be rendered
 	if($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range)) {
-		GList *nodes = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
+		double time = $$(double, getMicroTime)();
+		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
-		// enable all the selected nodes for rendering
-		unsigned int i = 0;
-		for(GList *iter = nodes; iter != NULL; iter = iter->next, i++) {
-			QuadtreeNode *node = iter->data; // retrieve the node from the list
-			enableLodMapNodeModel(lodmap, node, i); // enable the node
+		// make all selected nodes visible
+		for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
+			QuadtreeNode *node = iter->data;
+			assert(quadtreeNodeDataIsLoaded(node));
+			OpenGLLodMapTile *tile = node->data;
+			tile->model->visible = true; // make model visible for rendering
 		}
 	}
 }
@@ -177,16 +154,11 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
  */
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 {
-	// draw all visible models
-	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
-		OpenGLModel *model = lodmap->tileModels[i];
-		if(model->visible) {
-			if(!$(bool, opengl, drawOpenGLModel)(model)) {
-				LOG_WARNING("Failed to draw OpenGL LOD map tile model %u", i);
-			}
-		} else {
-			break; // if a model is invisible, all further models will be unused as well
-		}
+	for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
+		QuadtreeNode *node = iter->data;
+		assert(quadtreeNodeDataIsLoaded(node));
+		OpenGLLodMapTile *tile = node->data;
+		$(bool, opengl, drawOpenGLModel)(tile->model);
 	}
 }
 
@@ -200,13 +172,7 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 	g_hash_table_remove(maps, lodmap->quadtree);
 	$(void, quadtree, freeQuadtree)(lodmap->quadtree);
 
-	// free tile models
-	for(unsigned int i = 0; i < lodmap->maxTiles; i++) {
-		$(void, opengl, freeOpenGLModel)(lodmap->tileModels[i]);
-	}
-
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
-	free(lodmap->tileModels);
 	freeOpenGLPrimitive(lodmap->heightmap);
 	free(lodmap->dataPrefix);
 	free(lodmap->dataSuffix);
@@ -219,10 +185,13 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
  * @param lodmap		the LOD map for which to select quadtree nodes
  * @param position		the viewer position with respect to which the LOD map should be updated
  * @param node			the current quadtree node we're traversing
+ * @param time			the current timestamp to set for caching
  */
-static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node)
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time)
 {
 	GList *nodes = NULL;
+
+	node->time = time; // update access time
 
 	unsigned int range = getLodMapNodeRange(lodmap, node);
 	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
@@ -247,27 +216,24 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 
 		// we know that our child nodes cover our area, so let them recursively handle their node selection now
 		for(unsigned int i = 0; i < 4; i++) {
-			GList *childNodes = selectLodMapNodes(lodmap, position, node->children[i]); // node selection
+			GList *childNodes = selectLodMapNodes(lodmap, position, node->children[i], time); // node selection
 			nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
 		}
+
+		// update node weight (we could have loaded child nodes)
+		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 	} else { // we cover our area ourselves
 		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
+
+		// Now make sure the node data is loaded
+		if(!quadtreeNodeDataIsLoaded(node)) {
+			$(void, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node); // load this node's data - our recursion parents will make sure they update their nodes' weights
+		}
+
 		nodes = g_list_append(nodes, node); // select ourselves
 	}
 
 	return nodes;
-}
-
-/**
- * Enables a selected LOD map node for rendering in a model
- *
- * @param lodmap		the LOD map for which to enable the node
- * @param node			the quadtree node of the LOD map to enable for rendering
- * @param i				the index of the model for which to enable the node
- */
-static void enableLodMapNodeModel(OpenGLLodMap *lodmap, QuadtreeNode *node, unsigned int i)
-{
-
 }
 
 /**
@@ -342,6 +308,34 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);
 	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->normals);
 
+	// Create OpenGL model
+	tile->model = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
+	$(bool, opengl, attachOpenGLModelMaterial)(tile->model, "lodmap");
+
+	// Set model transform
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	unsigned int scale = quadtreeNodeScale(node);
+	float *positionData = $(float *, linalg, getVectorData)(tile->model->translation);
+	positionData[0] = box.minX;
+	positionData[1] = 0;
+	positionData[2] = box.minY; // y in model coordinates is z in world coordinates
+	tile->model->scaleX = scale;
+	tile->model->scaleY = 1.0f;
+	tile->model->scaleZ = scale;
+	$(void, opengl, updateOpenGLModelTransform)(tile->model);
+
+	// Attach textures to model
+	OpenGLUniformAttachment *uniforms = tile->model->uniforms;
+	OpenGLUniform *heightsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "heights");
+	assert(heightsTextureUniform != NULL);
+	heightsTextureUniform->content.texture_value = tile->heightsTexture;
+	OpenGLUniform *normalsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "normals");
+	assert(normalsTextureUniform != NULL);
+	normalsTextureUniform->content.texture_value = tile->normalsTexture;
+
+	// Make model invisible
+	tile->model->visible = false;
+
 	return tile;
 }
 
@@ -354,6 +348,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 static void freeLodMapTile(Quadtree *tree, void *data)
 {
 	OpenGLLodMapTile *tile = data;
+	$(void, opengl, freeOpenGLModel)(tile->model);
 	$(void, opengl, freeOpenGLTexture)(tile->heightsTexture);
 	$(void, opengl, freeOpenGLTexture)(tile->normalsTexture);
 	free(tile);

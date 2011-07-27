@@ -37,7 +37,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 13), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -133,7 +133,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 	lodmap->selection = NULL;
 
 	// select the LOD map nodes to be rendered
-	if($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range)) {
+	if($(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, box, position, range)) {
 		double time = $$(double, getMicroTime)();
 		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
@@ -198,7 +198,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	unsigned int range = getLodMapNodeRange(lodmap, node);
 	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
 
-	assert($(bool, quadtree, quadtreeAABBIntersectsSphere)(box, position, range));
+	assert($(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, box, position, range));
 
 	bool replacing = false;
 
@@ -211,7 +211,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			unsigned int subrange = getLodMapNodeRange(lodmap, child);
 			QuadtreeAABB subbox = quadtreeNodeAABB(lodmap->quadtree, child);
 
-			if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
+			if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
 				replacing = false; // our child nodes won't replace us
 				break;
 			}

@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 11);
+MODULE_VERSION(0, 7, 12);
 MODULE_BCVERSION(0, 7, 6);
 MODULE_NODEPS;
 
@@ -314,29 +314,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 
 	if(node->level <= level) { // we hit the desired level
 		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
-			QuadtreeAABB box = quadtreeNodeAABB(tree, node);
-
-			if(node->level > 0 && tree->preloadChildData) {
-				LOG_DEBUG("Preloading quadtree children of node with range [%d,%d]x[%d,%d]...", box.minX, box.maxX, box.minY, box.maxY);
-
-				// Make sure the children are already loaded before loading this one
-				for(unsigned int i = 0; i < 4; i++) {
-					if(!quadtreeNodeDataIsLoaded(node->children[i])) {
-						QuadtreeAABB box = quadtreeNodeAABB(tree, node->children[i]);
-						lookupQuadtreeRec(tree, node->children[i], time, box.minX, box.minY, node->children[i]->level);
-					}
-				}
-			}
-
-			LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] to cover point (%f,%f) at level %u", box.minX, box.maxX, box.minY, box.maxY, x, y, level);
-			node->data = tree->load(tree, node);
-
-			// update node weight
-			if(quadtreeNodeIsLeaf(node)) {
-				node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
-			} else {
-				node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
-			}
+			loadQuadtreeNodeDataRec(tree, node, time);
 		}
 		return node->data;
 	} else {

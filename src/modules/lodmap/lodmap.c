@@ -37,7 +37,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 15), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -76,7 +76,7 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize + 1, leafSize + 1); // create a managed heightmap that will serve as instance for our rendered tiles
-	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 25, &loadLodMapTile, &freeLodMapTile, true);
+	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 512, &loadLodMapTile, &freeLodMapTile, true);
 	lodmap->selection = NULL;
 	lodmap->baseRange = baseRange;
 	lodmap->viewingDistance = viewingDistance;
@@ -124,6 +124,13 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
  */
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 {
+	// prune the quadtree to get rid of unused nodes
+	$(void, quadtree, pruneQuadtree)(lodmap->quadtree);
+
+	// expand the quadtree to actually cover our position
+	float *positionData = $(float *, linalg, getVectorData)(position);
+	$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
+
 	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
 	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, lodmap->quadtree->root);
 	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, lodmap->quadtree->root->level);
@@ -222,9 +229,13 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		}
 	}
 
+#ifdef LODMAP_VERBOSE
 	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, node);
+#endif
 	if(replacing) { // our child nodes replace the area covered by ourselves
+#ifdef LODMAP_VERBOSE
 		LOG_DEBUG("LOD selection for node range [%d,%d]x[%d,%d] at level %u passed to children...", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
+#endif
 
 		// we know that our child nodes cover our area, so let them recursively handle their node selection now
 		for(unsigned int i = 0; i < 4; i++) {
@@ -235,7 +246,9 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		// update node weight (we could have loaded child nodes)
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 	} else { // we cover our area ourselves
+#ifdef LODMAP_VERBOSE
 		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
+#endif
 
 		// Now make sure the node data is loaded
 		if(!quadtreeNodeDataIsLoaded(node)) {
@@ -275,7 +288,9 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				GString *path = g_string_new(lodmap->dataPrefix);
 				g_string_append_printf(path, ".%d.%d.%s", tileX, tileY, lodmap->dataSuffix);
 
+#ifdef LODMAP_VERBOSE
 				LOG_DEBUG("Loading LOD map image tile (%d,%d) from %s as heightmap %d for interpolation", tileX, tileY, path->str, hi);
+#endif
 				heightmaps[hi] = $(Image *, image, readImageFromFile)(path->str);
 				g_string_free(path, true);
 
@@ -285,7 +300,9 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				}
 
 				if(heightmaps[hi] == NULL) { // failed to load, we need to recover
+#ifdef LODMAP_VERBOSE
 					LOG_DEBUG("Failed to load heightmap %d for LOD map interpolation, setting to zero", hi);
+#endif
 					heightmaps[hi] = $(Image *, image, createImageFloat)(tree->leafSize, tree->leafSize, 1);
 					$(void, image, clearImage)(heightmaps[hi]);
 				}

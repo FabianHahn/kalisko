@@ -36,7 +36,7 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 2, 7);
+MODULE_VERSION(0, 2, 8);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
@@ -68,7 +68,7 @@ MODULE_FINALIZE
  */
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, unsigned int worleyPoints, double fbmFrequency, double fbmPersistance, unsigned int fbmDepth, unsigned int erosionThermalIterations, double erosionThermalTalusAngle, unsigned int erosionHydraulicIterations)
 {
-#define DEBUGIMAGES
+//#define DEBUGIMAGES
 	Image *worley =	$(Image *, image, createImageFloat)(width, height, 1);
 	Image *fBm =	$(Image *, image, createImageFloat)(width, height, 1);
 

@@ -28,6 +28,7 @@ uniform float ambient;
 uniform float specular;
 uniform sampler2DArray texture;
 uniform int textureCount;
+uniform int lodLevel;
 
 varying vec3 world_position;
 varying vec3 world_normal;
@@ -86,5 +87,5 @@ void main()
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
 	// gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
-	gl_FragColor = vec4(world_height, 0.5, 0.0, 1.0);
+	gl_FragColor = vec4(lodLevel / 5.0, lodLevel / 2.5, lodLevel, 1.0);
 }

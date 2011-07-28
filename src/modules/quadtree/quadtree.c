@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 15);
+MODULE_VERSION(0, 7, 16);
 MODULE_BCVERSION(0, 7, 15);
 MODULE_NODEPS;
 
@@ -83,7 +83,7 @@ API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, Quadt
 }
 
 /**
- * Expands a quad tree to cover a specific point by adding new tree nodes
+ * Expands a quadtree to cover a specific point by adding new tree nodes
  *
  * @param tree			the quadtree to lookup
  * @param x				the x coordinate to lookup
@@ -141,6 +141,18 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 }
 
 /**
+ * Expands a quadtree to cover a specific point in world coordinates by adding new tree nodes
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param z				the z coordinate to lookup
+ */
+API void expandQuadtreeWorld(Quadtree *tree, double x, double z)
+{
+	expandQuadtree(tree, x * tree->leafSize, z * tree->leafSize);
+}
+
+/**
  * Loads the data for a quadtree node. If preloadChildData is set, recursively loads the child nodes' data first.
  * Note that this operation only updates the access time and the node weight of this node's subtree where appropriate, but not the values of the parent chain.
  * This means that if you want the tree weights to be consistent, you must track back the path to the root yourself and recursively update these nodes' weights.
@@ -182,6 +194,20 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
 }
 
 /**
+ * Lookup a node's data in the quadtree in world coordinates
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param z				the z coordinate to lookup
+ * @param level			the depth level at which to lookup the node data
+ * @result				the looked up quadtree node's data
+ */
+API void *lookupQuadtreeWorld(Quadtree *tree, double x, double z, unsigned int level)
+{
+	return lookupQuadtree(tree, x * tree->leafSize, z * tree->leafSize, level);
+}
+
+/**
  * Lookup a node in the quadtree
  *
  * @param tree			the quadtree to lookup
@@ -198,6 +224,20 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
 
 	double time = $$(double, getMicroTime)();
 	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y, level);
+}
+
+/**
+ * Lookup a node in the quadtree in world coordinates
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param z				the z coordinate to lookup
+ * @param level			the depth level at which to lookup the node
+ * @result				the looked up quadtree node
+ */
+API QuadtreeNode *lookupQuadtreeNodeWorld(Quadtree *tree, double x, double z, unsigned int level)
+{
+	return lookupQuadtreeNode(tree, x * tree->leafSize, z * tree->leafSize, level);
 }
 
 /**

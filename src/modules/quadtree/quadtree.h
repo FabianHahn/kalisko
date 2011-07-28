@@ -107,9 +107,12 @@ typedef struct {
 
 API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
 API void expandQuadtree(Quadtree *tree, double x, double y);
+API void expandQuadtreeWorld(Quadtree *tree, double x, double z);
 API void loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node);
 API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
+API void *lookupQuadtreeWorld(Quadtree *tree, double x, double z, unsigned int level);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
+API QuadtreeNode *lookupQuadtreeNodeWorld(Quadtree *tree, double x, double z, unsigned int level);
 API void pruneQuadtree(Quadtree *tree);
 API char *dumpQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);

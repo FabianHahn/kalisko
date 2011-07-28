@@ -37,9 +37,9 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 13), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 15), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
@@ -65,14 +65,14 @@ MODULE_FINALIZE
 /**
  * Creates an OpenGL LOD map
  *
- * @param baseRange				the base viewing range covered by the lowest LOD level in the LOD map
+ * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
  * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
  * @param leafSize				the leaf size of the LOD map
  * @param dataPrefix			the prefix that should be prepended to all loaded tiles
  * @param dataSuffix			the suffix that should be appended to all loaded tiles
  * @result						the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize + 1, leafSize + 1); // create a managed heightmap that will serve as instance for our rendered tiles
@@ -125,15 +125,16 @@ API OpenGLLodMap *createOpenGLLodMap(unsigned int baseRange, unsigned int viewin
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 {
 	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
-	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, lodmap->quadtree->root);
-	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level);
+	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, lodmap->quadtree->root);
+	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, lodmap->quadtree->root->level);
 
 	// free our previous selection list
 	g_list_free(lodmap->selection);
 	lodmap->selection = NULL;
 
 	// select the LOD map nodes to be rendered
-	if($(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, box, position, range)) {
+	QuadtreeAABB3D box3D = quadtreeNodeAABB3D(lodmap->quadtree, lodmap->quadtree->root);
+	if($(bool, quadtree, quadtreeAABB3DIntersectsSphere)(lodmap->quadtree, box3D, position, range)) {
 		double time = $$(double, getMicroTime)();
 		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
@@ -197,30 +198,33 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	node->time = time; // update access time
 
 	unsigned int range = getLodMapNodeRange(lodmap, node);
-	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
+	QuadtreeAABB3D box = quadtreeNodeAABB3D(lodmap->quadtree, node);
 
-	assert($(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, box, position, range));
+	if(!$(bool, quadtree, quadtreeAABB3DIntersectsSphere)(lodmap->quadtree, box, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
+		return NULL;
+	}
 
 	bool replacing = false;
 
 	if(!quadtreeNodeIsLeaf(node)) {
-		// we need to check whether all of our children are in viewing range as well - if yes, they replace us
-		replacing = true;
+		// we need to check whether any of our children are in their viewing range as well - if yes, they replace us
+		replacing = false;
 
 		for(unsigned int i = 0; i < 4; i++) {
 			QuadtreeNode *child = node->children[i];
 			unsigned int subrange = getLodMapNodeRange(lodmap, child);
-			QuadtreeAABB subbox = quadtreeNodeAABB(lodmap->quadtree, child);
+			QuadtreeAABB3D subbox = quadtreeNodeAABB3D(lodmap->quadtree, child);
 
-			if(!$(bool, quadtree, quadtreeAABBIntersectsSphere)(lodmap->quadtree, subbox, position, subrange)) { // the child node is beyond the LOD viewing range for the current viewer position
-				replacing = false; // our child nodes won't replace us
+			if($(bool, quadtree, quadtreeAABB3DIntersectsSphere)(lodmap->quadtree, subbox, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+				replacing = true; // our child nodes will replace us
 				break;
 			}
 		}
 	}
 
+	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, node);
 	if(replacing) { // our child nodes replace the area covered by ourselves
-		LOG_DEBUG("LOD selection for node range [%d,%d]x[%d,%d] at level %u passed to children...", box.minX, box.maxX, box.minY, box.maxY, node->level);
+		LOG_DEBUG("LOD selection for node range [%d,%d]x[%d,%d] at level %u passed to children...", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
 
 		// we know that our child nodes cover our area, so let them recursively handle their node selection now
 		for(unsigned int i = 0; i < 4; i++) {
@@ -231,7 +235,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		// update node weight (we could have loaded child nodes)
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 	} else { // we cover our area ourselves
-		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
+		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
 
 		// Now make sure the node data is loaded
 		if(!quadtreeNodeDataIsLoaded(node)) {

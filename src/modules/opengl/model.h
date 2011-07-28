@@ -65,6 +65,8 @@ struct OpenGLModelStruct {
 	float scaleY;
 	/** The z scale to apply to the model */
 	float scaleZ;
+	/** The polygon render mode to use for this model */
+	GLuint polygonMode;
 };
 
 typedef struct OpenGLModelStruct OpenGLModel;

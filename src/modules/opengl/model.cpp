@@ -65,6 +65,7 @@ API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive)
 	model->scaleZ = 1.0f;
 	model->transform = new Matrix(4, 4);
 	model->normal_transform = new Matrix(4, 4);
+	model->polygonMode = GL_FILL;
 
 	return model;
 }
@@ -154,9 +155,17 @@ API bool drawOpenGLModel(OpenGLModel *model)
 		return false;
 	}
 
+	if(model->polygonMode != GL_FILL) { // the polygon mode is not set to the default, so change it
+		glPolygonMode(GL_FRONT_AND_BACK, model->polygonMode);
+	}
+
 	if(!drawOpenGLPrimitive(model->primitive)) {
 		LOG_ERROR("Failed to draw primitive for OpenGL model");
 		return false;
+	}
+
+	if(model->polygonMode != GL_FILL) { // the polygon mode is not set to the default, so revert it back
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
 	return true;

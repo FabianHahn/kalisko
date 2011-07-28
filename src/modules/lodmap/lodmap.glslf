@@ -85,5 +85,6 @@ void main()
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	// gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	gl_FragColor = vec4(world_height, 0.5, 0.0, 1.0);
 }

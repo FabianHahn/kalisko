@@ -35,12 +35,10 @@ extern "C" {
  * @param radius		the radius of the sphere
  * @result				true if the sphere intersects the axis aligned bounding box
  */
-API bool quadtreeAABBIntersectsSphere(Quadtree *tree, QuadtreeAABB box, Vector *position, double radius)
+API bool quadtreeAABB3DIntersectsSphere(Quadtree *tree, QuadtreeAABB3D box, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
-	Vector center = *position;
-	center[0] *= tree->leafSize;
-	center[2] *= tree->leafSize;
+	const Vector& center = *position;
 
 	// Intersect for every axis individually to find the closest point on the box
 	if(center[0] < box.minX) {
@@ -51,20 +49,20 @@ API bool quadtreeAABBIntersectsSphere(Quadtree *tree, QuadtreeAABB box, Vector *
 		boxPoint[0] = center[0];
 	}
 
-	if(center[2] < box.minY) { // y in model is z in world coordinates
-		boxPoint[2] = box.minY;
-	} else if(center[2] > box.maxY) {
-		boxPoint[2] = box.maxY;
-	} else {
-		boxPoint[2] = center[2];
-	}
-
-	if(center[1] < box.minHeight) {
-		boxPoint[1] = box.minHeight;
-	} else if(center[1] > box.maxHeight) {
-		boxPoint[1] = box.maxHeight;
+	if(center[1] < box.minY) {
+		boxPoint[1] = box.minY;
+	} else if(center[1] > box.maxY) {
+		boxPoint[1] = box.maxY;
 	} else {
 		boxPoint[1] = center[1];
+	}
+
+	if(center[2] < box.minZ) {
+		boxPoint[2] = box.minZ;
+	} else if(center[2] > box.maxZ) {
+		boxPoint[2] = box.maxZ;
+	} else {
+		boxPoint[2] = center[2];
 	}
 
 	Vector diff = center - boxPoint;

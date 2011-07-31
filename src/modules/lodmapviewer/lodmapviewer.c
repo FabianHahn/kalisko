@@ -47,9 +47,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 4, 5), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -59,6 +59,8 @@ static int currentWidth = 800;
 static int currentHeight = 600;
 static bool cameraTiltEnabled = false;
 static OpenGLLodMap *lodmap;
+static bool autoUpdate = true;
+static bool autoExpand = true;
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args);
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
@@ -177,6 +179,25 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		case 'f':
 			glutFullScreenToggle();
 		break;
+		case 'p':
+			if(lodmap->polygonMode == GL_FILL) {
+				lodmap->polygonMode = GL_LINE;
+				LOG_INFO("Set polygon rendering mode to 'GL_LINE'");
+			} else {
+				lodmap->polygonMode = GL_FILL;
+				LOG_INFO("Set polygon rendering mode to 'GL_FILL'");
+			}
+
+			$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+		break;
+		case 'u':
+			autoUpdate = !autoUpdate;
+			LOG_INFO("%s automatic LOD map updates", autoUpdate ? "Enabled" : "Disabled");
+		break;
+		case 'x':
+			autoExpand = !autoExpand;
+			LOG_INFO("%s automatic LOD map expansion", autoExpand ? "Enabled" : "Disabled");
+		break;
 	}
 }
 
@@ -234,7 +255,10 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 	// We need to update the camera matrix if some movement happened
 	if(cameraChanged) {
 		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
-		$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position);
+
+		if(autoUpdate) {
+			$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+		}
 	}
 
 	glutPostRedisplay();

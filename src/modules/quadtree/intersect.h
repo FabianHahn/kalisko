@@ -41,8 +41,8 @@ API bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, doubl
  */
 static inline bool quadtreeAABB3DIntersectsSphere(QuadtreeAABB3D box, Vector *position, double radius)
 {
-	Vector *pmin = $(Vector *, linalg, createVector3)(box.minX, box.minY, box.minZ);
-	Vector *pmax = $(Vector *, linalg, createVector3)(box.maxX, box.maxY, box.maxZ);
+	Vector *pmin = $(Vector *, linalg, createVector3)((double) box.minX, (double) box.minY, (double) box.minZ);
+	Vector *pmax = $(Vector *, linalg, createVector3)((double) box.maxX, (double) box.maxY, (double) box.maxZ);
 	bool ret = $(bool, quadtree, intersectAABBSphere)(pmin, pmax, position, radius);
 	$(void, linalg, freeVector)(pmin);
 	$(void, linalg, freeVector)(pmax);

@@ -192,7 +192,7 @@ static inline QuadtreeAABB2D quadtreeNodeAABB2D(Quadtree *tree, QuadtreeNode *no
  */
 static inline QuadtreeAABB3D quadtreeNodeAABB3D(Quadtree *tree, QuadtreeNode *node)
 {
-	unsigned int scale = quadtreeNodeScale(node);
+	float scale = quadtreeNodeScale(node);
 
 	QuadtreeAABB3D box;
 	box.minX = node->x;

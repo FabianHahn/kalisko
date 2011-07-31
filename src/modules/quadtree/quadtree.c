@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 17);
+MODULE_VERSION(0, 7, 18);
 MODULE_BCVERSION(0, 7, 17);
 MODULE_NODEPS;
 

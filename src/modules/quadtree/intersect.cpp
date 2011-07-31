@@ -27,42 +27,30 @@ extern "C" {
 #include "intersect.h"
 
 /**
- * Checks whether a quadtree bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
+ * Checks whether an axis aligned bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
  *
- * @param tree			the quadtree to which the bounding box belongs
- * @param box			the axis aligned bounding box to check
+ * @param pmin			the minimum position of the axis aligned bounding box
+ * @param pmax			the maximum position of the axis aligned bounding box
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
  * @result				true if the sphere intersects the axis aligned bounding box
  */
-API bool quadtreeAABB3DIntersectsSphere(Quadtree *tree, QuadtreeAABB3D box, Vector *position, double radius)
+API bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
 	const Vector& center = *position;
+	const Vector& minPoint = *pmin;
+	const Vector& maxPoint = *pmax;
 
 	// Intersect for every axis individually to find the closest point on the box
-	if(center[0] < box.minX) {
-		boxPoint[0] = box.minX;
-	} else if(center[0] > box.maxX) {
-		boxPoint[0] = box.maxX;
-	} else {
-		boxPoint[0] = center[0];
-	}
-
-	if(center[1] < box.minY) {
-		boxPoint[1] = box.minY;
-	} else if(center[1] > box.maxY) {
-		boxPoint[1] = box.maxY;
-	} else {
-		boxPoint[1] = center[1];
-	}
-
-	if(center[2] < box.minZ) {
-		boxPoint[2] = box.minZ;
-	} else if(center[2] > box.maxZ) {
-		boxPoint[2] = box.maxZ;
-	} else {
-		boxPoint[2] = center[2];
+	for(unsigned int k = 0; k < 3; k++) {
+		if(center[k] < minPoint[k]) {
+			boxPoint[k] = minPoint[k];
+		} else if(center[k] > maxPoint[k]) {
+			boxPoint[k] = maxPoint[k];
+		} else {
+			boxPoint[k] = center[k];
+		}
 	}
 
 	Vector diff = center - boxPoint;

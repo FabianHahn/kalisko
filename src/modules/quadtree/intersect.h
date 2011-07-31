@@ -29,7 +29,25 @@ extern "C" {
 
 #include "quadtree.h"
 
-API bool quadtreeAABB3DIntersectsSphere(Quadtree *tree, QuadtreeAABB3D box, Vector *position, double radius);
+API bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius);
+
+/**
+ * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
+ *
+ * @param box			the quadtree node 3D bounding box to check for an intersection
+ * @param position		the position of the sphere
+ * @param radius		the radius of the sphere
+ * @result				true if the sphere intersects the axis aligned bounding box
+ */
+static inline bool quadtreeAABB3DIntersectsSphere(QuadtreeAABB3D box, Vector *position, double radius)
+{
+	Vector *pmin = $(Vector *, linalg, createVector3)(box.minX, box.minY, box.minZ);
+	Vector *pmax = $(Vector *, linalg, createVector3)(box.maxX, box.maxY, box.maxZ);
+	bool ret = $(bool, quadtree, intersectAABBSphere)(pmin, pmax, position, radius);
+	$(void, linalg, freeVector)(pmin);
+	$(void, linalg, freeVector)(pmax);
+	return ret;
+}
 
 #ifdef __cplusplus
 }

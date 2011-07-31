@@ -18,7 +18,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef WIN32
+#ifdef WIN32
+#include <process.h>
+#else
 #include <sys/types.h>
 #include <unistd.h>
 #endif
@@ -33,7 +35,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 18);
+MODULE_VERSION(0, 5, 19);
 MODULE_BCVERSION(0, 5, 16);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 

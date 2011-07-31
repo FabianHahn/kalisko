@@ -315,7 +315,7 @@ inline std::ostream& operator<<(std::ostream& stream, const Vector& vector)
 		stream << vector[i];
 	}
 
-	return stream << "]" << std::endl;
+	return stream << "]";
 }
 
 inline Vector Vector2(float x, float y)

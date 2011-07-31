@@ -39,7 +39,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -84,6 +84,7 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
 	lodmap->viewingDistance = viewingDistance;
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
+	lodmap->polygonMode = GL_FILL;
 
 	// create lodmap material
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
@@ -153,7 +154,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
 			assert(quadtreeNodeDataIsLoaded(node));
 			OpenGLLodMapTile *tile = node->data;
 			tile->model->visible = true; // make model visible for rendering
-			// tile->model->polygonMode = GL_LINE;
+			tile->model->polygonMode = lodmap->polygonMode; // set the parent's polygon mode
 		}
 
 		LOG_DEBUG("Selected %u LOD map nodes", g_list_length(lodmap->selection));

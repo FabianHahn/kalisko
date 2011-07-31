@@ -63,6 +63,8 @@ typedef struct {
 	char *dataPrefix;
 	/** The data suffix to append to file names on map loading */
 	char *dataSuffix;
+	/** The polygon rendering mode to use for the tile models */
+	GLuint polygonMode;
 } OpenGLLodMap;
 
 API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);

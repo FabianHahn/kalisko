@@ -79,7 +79,7 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
  * @param level				the LOD level for which to retrieve the LOD range
  * @result					the LOD range for the specified level
  */
-static inline unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int level)
+static inline float getLodMapRange(OpenGLLodMap *lodmap, unsigned int level)
 {
 	unsigned int maxLevel = MAX(lodmap->viewingDistance, lodmap->quadtree->root->level);
 	unsigned int lookupLevel = MIN(level, maxLevel);
@@ -95,7 +95,7 @@ static inline unsigned int getLodMapRange(OpenGLLodMap *lodmap, unsigned int lev
  * @param node				the quadtree node of the LOD map's quadtree for which to retrieve the LOD range
  * @result					the LOD range for the specified node
  */
-static inline unsigned int getLodMapNodeRange(OpenGLLodMap *lodmap, QuadtreeNode *node)
+static inline float getLodMapNodeRange(OpenGLLodMap *lodmap, QuadtreeNode *node)
 {
 	return getLodMapRange(lodmap, node->level);
 }

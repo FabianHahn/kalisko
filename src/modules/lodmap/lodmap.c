@@ -39,7 +39,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 4, 5);
+MODULE_VERSION(0, 4, 6);
 MODULE_BCVERSION(0, 4, 5);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -137,7 +137,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 		$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
 	}
 
-	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
+	double range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
 	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, lodmap->quadtree->root);
 	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, lodmap->quadtree->root->level);
 
@@ -210,7 +210,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 
 	node->time = time; // update access time
 
-	unsigned int range = getLodMapNodeRange(lodmap, node);
+	double range = getLodMapNodeRange(lodmap, node);
 	QuadtreeAABB3D box = quadtreeNodeAABB3D(lodmap->quadtree, node);
 
 	if(!quadtreeAABB3DIntersectsSphere(box, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
@@ -225,10 +225,15 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 
 		for(unsigned int i = 0; i < 4; i++) {
 			QuadtreeNode *child = node->children[i];
-			unsigned int subrange = getLodMapNodeRange(lodmap, child);
+			double subrange = getLodMapNodeRange(lodmap, child);
 			QuadtreeAABB3D subbox = quadtreeNodeAABB3D(lodmap->quadtree, child);
 
 			if(quadtreeAABB3DIntersectsSphere(subbox, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+#ifdef LODMAP_VERBOSE
+				QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, child);
+				LOG_DEBUG("LOD node with range [%d,%d]x[%d,%d] at level %u forces replacement", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, child->level);
+#endif
+
 				replacing = true; // our child nodes will replace us
 				break;
 			}

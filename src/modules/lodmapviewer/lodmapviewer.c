@@ -47,7 +47,7 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 4, 5), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
 
@@ -193,6 +193,10 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		case 'u':
 			autoUpdate = !autoUpdate;
 			LOG_INFO("%s automatic LOD map updates", autoUpdate ? "Enabled" : "Disabled");
+
+			if(autoUpdate) {
+				$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+			}
 		break;
 		case 'x':
 			autoExpand = !autoExpand;

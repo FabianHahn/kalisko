@@ -68,7 +68,7 @@ typedef struct {
 } OpenGLLodMap;
 
 API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position);
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 

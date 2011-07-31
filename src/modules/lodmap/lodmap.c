@@ -39,8 +39,8 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 4, 4);
-MODULE_BCVERSION(0, 2, 0);
+MODULE_VERSION(0, 4, 5);
+MODULE_BCVERSION(0, 4, 5);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
@@ -124,15 +124,18 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
  *
  * @param lodmap		the LOD map to update
  * @param position		the viewer position with respect to which the LOD map should be updated
+ * @param autoExpand	specifies whether the quadtree should be automatically expanded to ranged not covered yet
  */
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position)
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand)
 {
 	// prune the quadtree to get rid of unused nodes
 	$(void, quadtree, pruneQuadtree)(lodmap->quadtree);
 
-	// expand the quadtree to actually cover our position
-	float *positionData = $(float *, linalg, getVectorData)(position);
-	$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
+	if(autoExpand) {
+		// expand the quadtree to actually cover our position
+		float *positionData = $(float *, linalg, getVectorData)(position);
+		$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
+	}
 
 	unsigned int range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
 	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, lodmap->quadtree->root);

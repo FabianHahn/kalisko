@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <limits.h>
 #include <math.h>
 #include <assert.h>
 #include <glib.h>
@@ -39,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 6, 0);
+MODULE_VERSION(0, 6, 1);
 MODULE_BCVERSION(0, 6, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -319,6 +320,8 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 		LOG_DEBUG("Interpolating LOD map base tile (%d,%d)", node->x, node->y);
 		tile->heights = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 1);
+		tile->minHeight = FLT_MAX;
+		tile->maxHeight = FLT_MIN;
 
 		// inner part
 		for(unsigned int y = 1; y < tree->leafSize; y++) {
@@ -326,6 +329,15 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				// interpolate the height
 				float value = 0.25f * (getImage(heightmaps[4], x - 1, y - 1, 0) + getImage(heightmaps[4], x - 1, y, 0) + getImage(heightmaps[4], x, y - 1, 0) + getImage(heightmaps[4], x, y, 0));
 				setImage(tile->heights, x, y, 0, value);
+
+				// update min/max
+				if(value < tile->minHeight) {
+					tile->minHeight = value;
+				}
+
+				if(value > tile->maxHeight) {
+					tile->maxHeight = value;
+				}
 			}
 		}
 
@@ -402,6 +414,22 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 				// propagate the height
 				setImage(tile->heights, x, y, 0, getImage(subheights, dx + offsetX, dy + offsetY, 0));
+			}
+		}
+
+		// set min/max
+		tile->minHeight = FLT_MAX;
+		tile->maxHeight = FLT_MIN;
+
+		for(unsigned int i = 0; i < 4; i++) {
+			OpenGLLodMapTile *subtile = node->children[i]->data;
+
+			if(subtile->minHeight < tile->minHeight) {
+				tile->minHeight = subtile->minHeight;
+			}
+
+			if(subtile->maxHeight > tile->maxHeight) {
+				tile->maxHeight = subtile->maxHeight;
 			}
 		}
 	}

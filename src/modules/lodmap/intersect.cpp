@@ -41,9 +41,8 @@ static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, do
  */
 API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius)
 {
-	// if no node data is available, just perform the intersection test in the xz plane
-	float minY = (*position)[1];
-	float maxY = (*position)[1];
+	float minY = 0.0f;
+	float maxY = 1.0f;
 
 	if(quadtreeNodeDataIsLoaded(node)) { // if the node data is available, copy over the height info
 		OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;

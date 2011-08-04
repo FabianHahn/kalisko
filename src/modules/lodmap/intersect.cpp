@@ -48,7 +48,7 @@ API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position
 	if(quadtreeNodeDataIsLoaded(node)) { // if the node data is available, copy over the height info
 		OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;
 		minY = tile->minHeight;
-		minY = tile->maxHeight;
+		maxY = tile->maxHeight;
 	}
 
 	float scale = quadtreeNodeScale(node);

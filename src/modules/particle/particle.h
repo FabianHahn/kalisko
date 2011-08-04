@@ -99,7 +99,7 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
-API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
+API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_p);
 API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 
 #endif

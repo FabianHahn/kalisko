@@ -40,9 +40,9 @@
 MODULE_NAME("particle");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL particle effects");
-MODULE_VERSION(0, 6, 15);
+MODULE_VERSION(0, 6, 16);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("random", 0, 6, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3));
 
 MODULE_INIT
 {
@@ -253,8 +253,9 @@ API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
  * Draws an OpenGL particle effect primitive
  *
  * @param primitive			the particle effect primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
  */
-API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
+API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
 		LOG_ERROR("Failed to draw OpenGL particles: Primitive is not a particle effect");

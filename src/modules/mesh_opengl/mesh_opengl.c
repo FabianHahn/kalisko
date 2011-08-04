@@ -34,9 +34,9 @@
 MODULE_NAME("mesh_opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to use meshes as primitives in OpenGL");
-MODULE_VERSION(0, 2, 13);
+MODULE_VERSION(0, 2, 14);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 29, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("mesh", 0, 5, 1), MODULE_DEPENDENCY("opengl", 0, 29, 6));
 
 MODULE_INIT
 {
@@ -126,8 +126,9 @@ API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
  * Draws an OpenGL mesh primitive
  *
  * @param primitive			the mesh primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
  */
-API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
+API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
 		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");

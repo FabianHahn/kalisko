@@ -27,7 +27,7 @@
 
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage);
 API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
-API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
+API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p);
 API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 
 #endif

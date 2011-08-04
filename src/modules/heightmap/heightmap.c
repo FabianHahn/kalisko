@@ -42,9 +42,11 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 3, 4);
-MODULE_BCVERSION(0, 3, 2);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
+
+static void fillHeightmapTile(HeightmapTile *tile, unsigned int heightmapWidth, unsigned int x, unsigned int y);
 
 MODULE_INIT
 {
@@ -66,9 +68,15 @@ MODULE_FINALIZE
  */
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int width, unsigned int height)
 {
+	unsigned int halfWidth = width / 2;
+	unsigned int halfHeight = height / 2;
+
 	OpenGLHeightmap *heightmap = ALLOCATE_OBJECT(OpenGLHeightmap);
 	heightmap->vertices = ALLOCATE_OBJECTS(HeightmapVertex, width * height);
-	heightmap->tiles = ALLOCATE_OBJECTS(HeightmapTile, (width - 1) * (height - 1));
+	heightmap->tiles[0] = ALLOCATE_OBJECTS(HeightmapTile, halfWidth * halfHeight);
+	heightmap->tiles[1] = ALLOCATE_OBJECTS(HeightmapTile, (width - halfWidth - 1) * halfHeight);
+	heightmap->tiles[2] = ALLOCATE_OBJECTS(HeightmapTile, halfWidth * (height - halfHeight - 1));
+	heightmap->tiles[3] = ALLOCATE_OBJECTS(HeightmapTile, (width - halfWidth - 1) * (height - halfHeight - 1));
 	heightmap->heights = heights;
 	heightmap->width = width;
 	heightmap->height = height;
@@ -90,7 +98,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int
 	}
 
 	glGenBuffers(1, &heightmap->vertexBuffer);
-	glGenBuffers(1, &heightmap->indexBuffer);
+	glGenBuffers(4, heightmap->indexBuffers);
 	initOpenGLPrimitiveHeightmap(&heightmap->primitive);
 	synchronizeOpenGLPrimitiveHeightmap(&heightmap->primitive);
 
@@ -126,22 +134,43 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 		}
 	}
 
-	for(unsigned int y = 0; y < heightmap->height - 1; y++) {
-		for(unsigned int x = 0; x < heightmap->width - 1; x++) {
-			int lowerLeft = x + y * heightmap->width;
-			int lowerRight = (x + 1) + y * heightmap->width;
-			int topLeft = x + (y + 1) * heightmap->width;
-			int topRight = (x + 1) + (y + 1) * heightmap->width;
+	// create indices
+	unsigned int halfWidth = heightmap->width / 2;
+	unsigned int halfHeight = heightmap->height / 2;
+	unsigned int tileIndex = 0;
 
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[0] = topLeft;
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[1] = lowerRight;
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[2] = lowerLeft;
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[3] = topLeft;
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[4] = topRight;
-			heightmap->tiles[y * (heightmap->width - 1) + x].indices[5] = lowerRight;
+	// top left
+	for(unsigned int y = 0; y < halfHeight; y++) {
+		for(unsigned int x = 0; x < halfWidth; x++) {
+			fillHeightmapTile(&heightmap->tiles[0][tileIndex++], heightmap->width, x, y);
 		}
 	}
 
+	// top right
+	tileIndex = 0;
+	for(unsigned int y = 0; y < halfHeight; y++) {
+		for(unsigned int x = halfWidth; x < heightmap->width - 1; x++) {
+			fillHeightmapTile(&heightmap->tiles[1][tileIndex++], heightmap->width, x, y);
+		}
+	}
+
+	// bottom left
+	tileIndex = 0;
+	for(unsigned int y = halfHeight; y < heightmap->height - 1; y++) {
+		for(unsigned int x = 0; x < halfWidth; x++) {
+			fillHeightmapTile(&heightmap->tiles[2][tileIndex++], heightmap->width, x, y);
+		}
+	}
+
+	// top right
+	tileIndex = 0;
+	for(unsigned int y = halfHeight; y < heightmap->height - 1; y++) {
+		for(unsigned int x = halfWidth; x < heightmap->width - 1; x++) {
+			fillHeightmapTile(&heightmap->tiles[3][tileIndex++], heightmap->width, x, y);
+		}
+	}
+
+	// create vertices
 	for(unsigned int y = 0; y < heightmap->height; y++) {
 		for(unsigned int x = 0; x < heightmap->width; x++) {
 			heightmap->vertices[y * heightmap->width + x].position[0] = x;
@@ -237,10 +266,29 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 
 	OpenGLHeightmap *heightmap = primitive->data;
 
+	// synchronize vertex buffer
 	glBindBuffer(GL_ARRAY_BUFFER, heightmap->vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(HeightmapVertex) * heightmap->height * heightmap->width, heightmap->vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->height - 1) * (heightmap->width - 1), heightmap->tiles, GL_STATIC_DRAW);
+
+	// synchronize index buffers
+	unsigned int halfWidth = heightmap->width / 2;
+	unsigned int halfHeight = heightmap->height / 2;
+
+	// top left
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * halfWidth * halfHeight, heightmap->tiles[0], GL_STATIC_DRAW);
+
+	// top left
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[1]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->width - halfWidth - 1) * halfHeight, heightmap->tiles[1], GL_STATIC_DRAW);
+
+	// top left
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * halfWidth * (heightmap->height - halfHeight - 1), heightmap->tiles[2], GL_STATIC_DRAW);
+
+	// top left
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[3]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(HeightmapTile) * (heightmap->width - halfWidth - 1) * (heightmap->height - halfHeight - 1), heightmap->tiles[3], GL_STATIC_DRAW);
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
@@ -253,8 +301,9 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
  * Draws an OpenGL heightmap primitive
  *
  * @param primitive			the heightmap primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
  */
-API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
+API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
 		LOG_ERROR("Failed to draw OpenGL heightmap: Primitive is not a heightmap");
@@ -262,6 +311,7 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	OpenGLHeightmap *heightmap = primitive->data;
+	OpenGLHeightmapDrawOptions *options = options_p;
 
 	glBindBuffer(GL_ARRAY_BUFFER, heightmap->vertexBuffer);
 	glVertexAttribPointer(OPENGL_ATTRIBUTE_UV, 2, GL_FLOAT, false, sizeof(HeightmapVertex), NULL + offsetof(HeightmapVertex, position));
@@ -271,8 +321,32 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 		return false;
 	}
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffer);
-	glDrawElements(GL_TRIANGLES, (heightmap->height - 1) * (heightmap->width - 1) * 6, GL_UNSIGNED_INT, NULL);
+	unsigned int halfWidth = heightmap->width / 2;
+	unsigned int halfHeight = heightmap->height / 2;
+
+	// top left
+	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_TOP_LEFT) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glDrawElements(GL_TRIANGLES, halfWidth * halfHeight * 6, GL_UNSIGNED_INT, NULL);
+	}
+
+	// top right
+	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_TOP_RIGHT) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glDrawElements(GL_TRIANGLES, (heightmap->width - halfWidth - 1) * halfHeight * 6, GL_UNSIGNED_INT, NULL);
+	}
+
+	// bottom left
+	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_BOTTOM_LEFT) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glDrawElements(GL_TRIANGLES, halfWidth * (heightmap->height - halfHeight - 1) * 6, GL_UNSIGNED_INT, NULL);
+	}
+
+	// bottom right
+	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_BOTTOM_RIGHT) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glDrawElements(GL_TRIANGLES, (heightmap->width - halfWidth - 1) * (heightmap->height - halfHeight - 1) * 6, GL_UNSIGNED_INT, NULL);
+	}
 
 	if($(bool, opengl, checkOpenGLError)()) {
 		return false;
@@ -301,8 +375,34 @@ API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	}
 
 	glDeleteBuffers(1, &heightmap->vertexBuffer);
-	glDeleteBuffers(1, &heightmap->indexBuffer);
+	glDeleteBuffers(4, heightmap->indexBuffers);
 	free(heightmap->vertices);
-	free(heightmap->tiles);
+	free(heightmap->tiles[0]);
+	free(heightmap->tiles[1]);
+	free(heightmap->tiles[2]);
+	free(heightmap->tiles[3]);
 	free(heightmap);
+}
+
+/**
+ * Fills a heightmap tile with index buffer data
+ *
+ * @param tile				the tile to fill
+ * @param heightmapWidth	the width of the heightmap for which to fill the tile
+ * @param x					the x coordinate of the tile
+ * @param y					the y coordinate of the tile
+ */
+static void fillHeightmapTile(HeightmapTile *tile, unsigned int heightmapWidth, unsigned int x, unsigned int y)
+{
+	int lowerLeft = x + y * heightmapWidth;
+	int lowerRight = (x + 1) + y * heightmapWidth;
+	int topLeft = x + (y + 1) * heightmapWidth;
+	int topRight = (x + 1) + (y + 1) * heightmapWidth;
+
+	tile->indices[0] = topLeft;
+	tile->indices[1] = lowerRight;
+	tile->indices[2] = lowerLeft;
+	tile->indices[3] = topLeft;
+	tile->indices[4] = topRight;
+	tile->indices[5] = lowerRight;
 }

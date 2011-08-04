@@ -55,7 +55,7 @@ typedef struct {
 	/** The vertices to render */
 	HeightmapVertex *vertices;
 	/** The tiles to render */
-	HeightmapTile *tiles;
+	HeightmapTile *tiles[4];
 	/** The image with the height data */
 	Image *heights;
 	/** The texture with the height data */
@@ -67,17 +67,36 @@ typedef struct {
 	/** The OpenGL vertex buffer associated with this heightmap */
 	GLuint vertexBuffer;
 	/** The OpenGL index buffer associated with this heightmap */
-	GLuint indexBuffer;
+	GLuint indexBuffers[4];
 	/** The OpenGL primitive used to render the heightmap */
 	OpenGLPrimitive primitive;
 } OpenGLHeightmap;
+
+/**
+ * Bitset enum representing an OpenGL heightmap draw mode
+ */
+typedef enum {
+	OPENGL_HEIGHTMAP_DRAW_TOP_LEFT = 1,
+	OPENGL_HEIGHTMAP_DRAW_TOP_RIGHT = 2,
+	OPENGL_HEIGHTMAP_DRAW_BOTTOM_LEFT = 4,
+	OPENGL_HEIGHTMAP_DRAW_BOTTOM_RIGHT = 8,
+	OPENGL_HEIGHTMAP_DRAW_ALL = 15
+} OpenGLHeightmapDrawMode;
+
+/**
+ * Struct representing custom options for drawing an OpenGL heightmap
+ */
+typedef struct {
+	/** Bitset representing the draw mode to use */
+	int drawMode;
+} OpenGLHeightmapDrawOptions;
 
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int width, unsigned int height);
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material);
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive);
 API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
-API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
+API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_p);
 API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive);
 
 #endif

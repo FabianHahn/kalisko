@@ -75,7 +75,7 @@ API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive);
 API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name);
 API void updateOpenGLModelTransform(OpenGLModel *model);
 API bool updateOpenGLModel(OpenGLModel *model, double dt);
-API bool drawOpenGLModel(OpenGLModel *model);
+API bool drawOpenGLModel(OpenGLModel *model, void *options_p);
 API void freeOpenGLModel(OpenGLModel *model);
 
 #ifdef __cplusplus

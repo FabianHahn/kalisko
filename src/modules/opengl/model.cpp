@@ -132,9 +132,10 @@ API bool updateOpenGLModel(OpenGLModel *model, double dt)
  * Draws an OpenGL model to the currently active context
  *
  * @param model			the OpenGL model to draw
+ * @param options_p		a pointer to custom options to be considered for this draw call
  * @result				true if successful
  */
-API bool drawOpenGLModel(OpenGLModel *model)
+API bool drawOpenGLModel(OpenGLModel *model, void *options_p)
 {
 	if(!model->visible) {
 		return true; // no need to do anything if the model is invisible
@@ -159,7 +160,7 @@ API bool drawOpenGLModel(OpenGLModel *model)
 		glPolygonMode(GL_FRONT_AND_BACK, model->polygonMode);
 	}
 
-	if(!drawOpenGLPrimitive(model->primitive)) {
+	if(!drawOpenGLPrimitive(model->primitive, options_p)) {
 		LOG_ERROR("Failed to draw primitive for OpenGL model");
 		return false;
 	}

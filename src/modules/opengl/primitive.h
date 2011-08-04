@@ -33,7 +33,7 @@ typedef bool (OpenGLPrimitiveSetupFunction)(struct OpenGLPrimitiveStruct *primit
 /**
  * Function pointer type to draw OpenGL custom primitives
  */
-typedef bool (OpenGLPrimitiveDrawFunction)(struct OpenGLPrimitiveStruct *primitive);
+typedef bool (OpenGLPrimitiveDrawFunction)(struct OpenGLPrimitiveStruct *primitive, void *options_p);
 
 /**
  * Function pointer type to free OpenGL custom primitives
@@ -86,12 +86,13 @@ static inline bool setupOpenGLPrimitive(OpenGLPrimitive *primitive, struct OpenG
  * Draws an OpenGL primitive
  *
  * @param primitive			the primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
  * @result					true if successful
  */
-static inline bool drawOpenGLPrimitive(OpenGLPrimitive *primitive)
+static inline bool drawOpenGLPrimitive(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(primitive->draw_function != NULL) {
-		return primitive->draw_function(primitive);
+		return primitive->draw_function(primitive, options_p);
 	} else {
 		return true;
 	}

@@ -42,7 +42,7 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 4, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -332,19 +332,19 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_
 
 	// top right
 	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_TOP_RIGHT) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[1]);
 		glDrawElements(GL_TRIANGLES, (heightmap->width - halfWidth - 1) * halfHeight * 6, GL_UNSIGNED_INT, NULL);
 	}
 
 	// bottom left
 	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_BOTTOM_LEFT) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[2]);
 		glDrawElements(GL_TRIANGLES, halfWidth * (heightmap->height - halfHeight - 1) * 6, GL_UNSIGNED_INT, NULL);
 	}
 
 	// bottom right
 	if(options == NULL || options->drawMode & OPENGL_HEIGHTMAP_DRAW_BOTTOM_RIGHT) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[0]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, heightmap->indexBuffers[3]);
 		glDrawElements(GL_TRIANGLES, (heightmap->width - halfWidth - 1) * (heightmap->height - halfHeight - 1) * 6, GL_UNSIGNED_INT, NULL);
 	}
 

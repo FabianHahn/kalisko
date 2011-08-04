@@ -85,25 +85,7 @@ typedef struct {
 	int maxX;
 	/** The maximum Y coordinate of the bounding box */
 	int maxY;
-} QuadtreeAABB2D;
-
-/**
- * Struct for 3D axis aligned bounding boxes in world coordinatesused for quadtrees
- */
-typedef struct {
-	/** The minimum X coordinate of the bounding box */
-	float minX;
-	/** The minimum Y coordinate of the bounding box */
-	float minY;
-	/** The minimum Z coordinate of the bounding box */
-	float minZ;
-	/** The maximum X coordinate of the bounding box */
-	float maxX;
-	/** The maximum Y coordinate of the bounding box */
-	float maxY;
-	/** The maximum Z coordinate of the bounding box */
-	float maxZ;
-} QuadtreeAABB3D;
+} QuadtreeAABB;
 
 API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
 API void expandQuadtree(Quadtree *tree, double x, double y);
@@ -170,37 +152,15 @@ static inline unsigned int quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node)
  * @param node		the quadtree node to check
  * @result			the 2D axis aligned bounding box of the spanned square of the provided quadtree node
  */
-static inline QuadtreeAABB2D quadtreeNodeAABB2D(Quadtree *tree, QuadtreeNode *node)
+static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
 {
 	unsigned int span = quadtreeNodeSpan(tree, node);
 
-	QuadtreeAABB2D box;
+	QuadtreeAABB box;
 	box.minX = node->x * tree->leafSize;
 	box.maxX = node->x * tree->leafSize + span;
 	box.minY = node->y * tree->leafSize;
 	box.maxY = node->y * tree->leafSize + span;
-
-	return box;
-}
-
-/**
- * Returns the 3D axis aligned bounding box of a quadtree node in world coordinates
- *
- * @param tree		the quadtree to which the node belongs
- * @param node		the quadtree node to check
- * @result			the 3D axis aligned bounding box of the provided quadtree node
- */
-static inline QuadtreeAABB3D quadtreeNodeAABB3D(Quadtree *tree, QuadtreeNode *node)
-{
-	float scale = quadtreeNodeScale(node);
-
-	QuadtreeAABB3D box;
-	box.minX = node->x;
-	box.maxX = node->x + scale;
-	box.minY = 0.0f; // FIXME: store something useful here!
-	box.maxY = 1.0f; // FIXME: store something useful here!
-	box.minZ = node->y; // y in model coordinates is z in world coordinates
-	box.maxZ = node->y + scale; // y in model coordinates is z in world coordinates
 
 	return box;
 }
@@ -214,9 +174,9 @@ static inline QuadtreeAABB3D quadtreeNodeAABB3D(Quadtree *tree, QuadtreeNode *no
  * @param y			the y coordinate of the point to check
  * @result			true if the quadtree node contains the point
  */
-static inline bool quadtreeNodeContainsPoint2D(Quadtree *tree, QuadtreeNode *node, double x, double y)
+static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node, double x, double y)
 {
-	QuadtreeAABB2D box = quadtreeNodeAABB2D(tree, node);
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
 	return x >= box.minX && x < box.maxX && y >= box.minY && y < box.maxY;
 }
 
@@ -228,9 +188,9 @@ static inline bool quadtreeNodeContainsPoint2D(Quadtree *tree, QuadtreeNode *nod
  * @param y			the y coordinate of the point to check
  * @result			true if the quadtree contains the point
  */
-static inline bool quadtreeContainsPoint2D(Quadtree *tree, double x, double y)
+static inline bool quadtreeContainsPoint(Quadtree *tree, double x, double y)
 {
-	return quadtreeNodeContainsPoint2D(tree, tree->root, x, y);
+	return quadtreeNodeContainsPoint(tree, tree->root, x, y);
 }
 
 /**
@@ -244,11 +204,11 @@ static inline bool quadtreeContainsPoint2D(Quadtree *tree, double x, double y)
  */
 static inline int quadtreeNodeGetContainingChildIndex(Quadtree *tree, QuadtreeNode *node, double x, double y)
 {
-	assert(quadtreeNodeContainsPoint2D(tree, node, x, y));
+	assert(quadtreeNodeContainsPoint(tree, node, x, y));
 
 	unsigned int span = quadtreeNodeSpan(tree, node);
 	int halfspan = span / 2;
-	QuadtreeAABB2D box = quadtreeNodeAABB2D(tree, node);
+	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
 	bool isLowerX = x < (box.minX + halfspan);
 	bool isLowerY = y < (box.minY + halfspan);
 

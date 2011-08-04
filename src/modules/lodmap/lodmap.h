@@ -41,6 +41,10 @@ typedef struct {
 	Image *normals;
 	/** The normals texture of the tile */
 	OpenGLTexture *normalsTexture;
+	/** The minimum height value of the tile */
+	float minHeight;
+	/** The maximum height value of the tile */
+	float maxHeight;
 	/** The OpenGL model to render the tile */
 	OpenGLModel *model;
 	/** The OpenGL heightmap draw options to use to draw this tile */

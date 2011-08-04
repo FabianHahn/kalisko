@@ -25,7 +25,6 @@
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/quadtree/quadtree.h"
-#include "modules/quadtree/intersect.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
@@ -33,15 +32,16 @@
 #include "modules/linalg/Vector.h"
 #include "api.h"
 #include "lodmap.h"
+#include "intersect.h"
 
 // #define LODMAP_VERBOSE
 
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 5, 3);
-MODULE_BCVERSION(0, 5, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_VERSION(0, 6, 0);
+MODULE_BCVERSION(0, 6, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
@@ -88,7 +88,7 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
 	lodmap->polygonMode = GL_FILL;
-	lodmap->morphStartFactor = 0.7f;
+	lodmap->morphStartFactor = 0.85f;
 
 	// create lodmap material
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
@@ -151,16 +151,15 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 	}
 
 	double range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
-	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, lodmap->quadtree->root);
-	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, lodmap->quadtree->root->level);
+	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, lodmap->quadtree->root);
+	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level);
 
 	// free our previous selection list
 	g_list_free(lodmap->selection);
 	lodmap->selection = NULL;
 
 	// select the LOD map nodes to be rendered
-	QuadtreeAABB3D box3D = quadtreeNodeAABB3D(lodmap->quadtree, lodmap->quadtree->root);
-	if(quadtreeAABB3DIntersectsSphere(box3D, position, range)) {
+	if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree->root, position, range)) {
 		double time = $$(double, getMicroTime)();
 		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
@@ -225,9 +224,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	node->time = time; // update access time
 
 	double range = getLodMapNodeRange(lodmap, node);
-	QuadtreeAABB3D box = quadtreeNodeAABB3D(lodmap->quadtree, node);
-
-	if(!quadtreeAABB3DIntersectsSphere(box, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
+	if(!lodmapQuadtreeNodeIntersectsSphere(node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
 		return NULL;
 	}
 
@@ -241,9 +238,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			QuadtreeNode *child = node->children[i];
 			OpenGLHeightmapDrawMode drawMode = getDrawModeForIndex(i);
 			double subrange = getLodMapNodeRange(lodmap, child);
-			QuadtreeAABB3D subbox = quadtreeNodeAABB3D(lodmap->quadtree, child);
-
-			if(quadtreeAABB3DIntersectsSphere(subbox, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+			if(lodmapQuadtreeNodeIntersectsSphere(node, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
 				options.drawMode ^= drawMode; // don't draw this part if the child covers it
 
 				GList *childNodes = selectLodMapNodes(lodmap, position, child, time); // node selection

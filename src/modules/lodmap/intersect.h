@@ -18,8 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef QUADTREE_INTERSECT_H
-#define QUADTREE_INTERSECT_H
+#ifndef LODMAP_INTERSECT_H
+#define LODMAP_INTERSECT_H
 
 #include "modules/linalg/Vector.h"
 
@@ -27,27 +27,7 @@
 extern "C" {
 #endif
 
-#include "quadtree.h"
-
-API bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius);
-
-/**
- * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
- *
- * @param box			the quadtree node 3D bounding box to check for an intersection
- * @param position		the position of the sphere
- * @param radius		the radius of the sphere
- * @result				true if the sphere intersects the axis aligned bounding box
- */
-static inline bool quadtreeAABB3DIntersectsSphere(QuadtreeAABB3D box, Vector *position, double radius)
-{
-	Vector *pmin = $(Vector *, linalg, createVector3)((double) box.minX, (double) box.minY, (double) box.minZ);
-	Vector *pmax = $(Vector *, linalg, createVector3)((double) box.maxX, (double) box.maxY, (double) box.maxZ);
-	bool ret = $(bool, quadtree, intersectAABBSphere)(pmin, pmax, position, radius);
-	$(void, linalg, freeVector)(pmin);
-	$(void, linalg, freeVector)(pmax);
-	return ret;
-}
+API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius);
 
 #ifdef __cplusplus
 }

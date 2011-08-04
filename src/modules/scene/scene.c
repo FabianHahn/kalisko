@@ -46,9 +46,9 @@
 MODULE_NAME("scene");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The scene module represents a loadable OpenGL scene that can be displayed and interaced with");
-MODULE_VERSION(0, 8, 4);
+MODULE_VERSION(0, 8, 5);
 MODULE_BCVERSION(0, 8, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("linalg", 0, 3, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("store", 0, 6, 10));
 
 static void freeOpenGLPrimitiveByPointer(void *primitive_p);
 static void freeSceneParameterByPointer(void *parameter_p);
@@ -816,7 +816,7 @@ API void drawScene(Scene *scene)
 	OpenGLModel *model = NULL;
 	g_hash_table_iter_init(&iter, scene->models);
 	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) { // loop over all models
-		if(!$(bool, opengl, drawOpenGLModel)(model)) {
+		if(!$(bool, opengl, drawOpenGLModel)(model, NULL)) {
 			LOG_WARNING("Failed to draw model '%s' in scene", name);
 		}
 	}

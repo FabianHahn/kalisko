@@ -47,9 +47,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 4, 5), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 0), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 4, 8), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -111,18 +111,6 @@ MODULE_INIT
 		LOG_INFO("lodmapviewer config parameter 'lodmap/extension' not found, defaulting to '%s'", lodMapExtension);
 	}
 
-	GString *dataPrefix = g_string_new(lodMapPath);
-	g_string_append_printf(dataPrefix, "/%s", lodMapPrefix);
-	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(1.5, 2, 128, dataPrefix->str, lodMapExtension);
-	g_string_free(dataPrefix, true);
-
-	if(lodmap == NULL) {
-		$(void, freeglut, freeFreeglutWindow)(window);
-		return false;
-	}
-		
-	$(QuadtreeNode *, quadtree, lookupQuadtreeNodeWorld)(lodmap->quadtree, 3.0, 3.0, 0);
-
 	camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
 	float *cameraData = $(float *, linalg, getVectorData)(camera->position);
 	cameraData[0] = 0.5f;
@@ -130,7 +118,20 @@ MODULE_INIT
 	cameraData[2] = 0.5f;
 	$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
 	$(void, opengl, activateOpenGLCamera)(camera);
-	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+
+	GString *dataPrefix = g_string_new(lodMapPath);
+	g_string_append_printf(dataPrefix, "/%s", lodMapPrefix);
+	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(camera, 1.5, 2, 128, dataPrefix->str, lodMapExtension);
+	g_string_free(dataPrefix, true);
+
+	if(lodmap == NULL) {
+		$(void, freeglut, freeFreeglutWindow)(window);
+		$(void, opengl, freeOpenGLCamera)(camera);
+		return false;
+	}
+		
+	$(QuadtreeNode *, quadtree, lookupQuadtreeNodeWorld)(lodmap->quadtree, 3.0, 3.0, 0);
+	$(void, lodmap, updateOpenGLLodMap)(lodmap, autoExpand);
 
 	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) 800 / 600, 0.1, 100.0);
 	OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);

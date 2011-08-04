@@ -76,6 +76,7 @@ typedef struct {
  * Bitset enum representing an OpenGL heightmap draw mode
  */
 typedef enum {
+	OPENGL_HEIGHTMAP_DRAW_NONE = 0,
 	OPENGL_HEIGHTMAP_DRAW_TOP_LEFT = 1,
 	OPENGL_HEIGHTMAP_DRAW_TOP_RIGHT = 2,
 	OPENGL_HEIGHTMAP_DRAW_BOTTOM_LEFT = 4,

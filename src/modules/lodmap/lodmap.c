@@ -40,8 +40,8 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 4, 8);
-MODULE_BCVERSION(0, 4, 8);
+MODULE_VERSION(0, 5, 0);
+MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
@@ -88,6 +88,7 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, uns
 	lodmap->dataPrefix = strdup(dataPrefix);
 	lodmap->dataSuffix = strdup(dataSuffix);
 	lodmap->polygonMode = GL_FILL;
+	lodmap->morphStartFactor = 0.7f;
 
 	// create lodmap material
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
@@ -104,13 +105,18 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, uns
 	free(execpath);
 
 	if(!result) {
-		$(void, opengl, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
+		$(void, heightmap, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
 		$(void, quadtree, freeQuadtree)(lodmap->quadtree);
 		free(lodmap->dataPrefix);
 		free(lodmap->dataSuffix);
 		LOG_ERROR("Failed to create OpenGL LOD map material");
 		return NULL;
 	}
+
+	// add lodmap configuration uniforms
+	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)("lodmap");
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "baseRange", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->baseRange));
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "morphStartFactor", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->morphStartFactor));
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 

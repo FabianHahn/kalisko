@@ -67,6 +67,8 @@ typedef struct {
 	char *dataSuffix;
 	/** The polygon rendering mode to use for the tile models */
 	GLuint polygonMode;
+	/** The factor of the LOD range at which the vertex morphing should start */
+	float morphStartFactor;
 } OpenGLLodMap;
 
 API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);

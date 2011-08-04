@@ -27,11 +27,11 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 7, 18);
+MODULE_VERSION(0, 7, 19);
 MODULE_BCVERSION(0, 7, 17);
 MODULE_NODEPS;
 
-static void loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
+static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
 static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
@@ -159,11 +159,12 @@ API void expandQuadtreeWorld(Quadtree *tree, double x, double z)
  *
  * @param tree			the quadtree in which to load a node's data
  * @param node			the quadtree node for which to load the data
+ * @result				the loaded node data
  */
-API void loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node)
+API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node)
 {
 	double time = $$(double, getMicroTime)();
-	loadQuadtreeNodeDataRec(tree, node, time);
+	return loadQuadtreeNodeDataRec(tree, node, time);
 }
 
 /**
@@ -304,11 +305,12 @@ API void freeQuadtree(Quadtree *tree)
  * @param tree			the quadtree in which to load a node's data
  * @param node			the quadtree node for which to load the data
  * @param time			the current timestamp to set for caching
+ * @result				the loaded node data
  */
-static void loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time)
+static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time)
 {
 	if(quadtreeNodeDataIsLoaded(node)) {
-		return; // nothing to do if we're already loaded
+		return node->data; // nothing to do if we're already loaded
 	}
 
 	QuadtreeAABB2D box = quadtreeNodeAABB2D(tree, node);
@@ -333,6 +335,8 @@ static void loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double t
 	} else {
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
 	}
+
+	return node->data;
 }
 
 /**

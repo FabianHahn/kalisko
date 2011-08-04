@@ -29,7 +29,6 @@
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
-#include "modules/opengl/camera.h"
 #include "modules/opengl/material.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
@@ -40,12 +39,13 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 5, 2);
-MODULE_BCVERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 3);
+MODULE_BCVERSION(0, 5, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
+static OpenGLHeightmapDrawMode getDrawModeForIndex(int index);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
 /**
@@ -76,13 +76,13 @@ MODULE_FINALIZE
  * @param dataSuffix			the suffix that should be appended to all loaded tiles
  * @result						the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
-	lodmap->camera = camera;
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize + 1, leafSize + 1); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 512, &loadLodMapTile, &freeLodMapTile, true);
 	lodmap->selection = NULL;
+	lodmap->viewerPosition = $(Vector *, linalg, createVector3)(0.0, 0.0, 0.0);
 	lodmap->baseRange = baseRange;
 	lodmap->viewingDistance = viewingDistance;
 	lodmap->dataPrefix = strdup(dataPrefix);
@@ -117,6 +117,7 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, uns
 	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)("lodmap");
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "baseRange", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->baseRange));
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "morphStartFactor", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->morphStartFactor));
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "viewerPosition", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lodmap->viewerPosition));
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
@@ -132,16 +133,20 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, uns
  * Updates an OpenGL LOD map
  *
  * @param lodmap		the LOD map to update
+ * @param position		the viewer position for which the LOD map should be updated
  * @param autoExpand	specifies whether the quadtree should be automatically expanded to ranged not covered yet
  */
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, bool autoExpand)
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand)
 {
+	// update the viewer position
+	$(void, linalg, assignVector)(lodmap->viewerPosition, position);
+
 	// prune the quadtree to get rid of unused nodes
 	$(void, quadtree, pruneQuadtree)(lodmap->quadtree);
 
 	if(autoExpand) {
 		// expand the quadtree to actually cover our position
-		float *positionData = $(float *, linalg, getVectorData)(lodmap->camera->position);
+		float *positionData = $(float *, linalg, getVectorData)(position);
 		$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
 	}
 
@@ -155,9 +160,9 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, bool autoExpand)
 
 	// select the LOD map nodes to be rendered
 	QuadtreeAABB3D box3D = quadtreeNodeAABB3D(lodmap->quadtree, lodmap->quadtree->root);
-	if(quadtreeAABB3DIntersectsSphere(box3D, lodmap->camera->position, range)) {
+	if(quadtreeAABB3DIntersectsSphere(box3D, position, range)) {
 		double time = $$(double, getMicroTime)();
-		lodmap->selection = selectLodMapNodes(lodmap, lodmap->camera->position, lodmap->quadtree->root, time);
+		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
 		// make all selected nodes visible
 		for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
@@ -183,7 +188,7 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 		QuadtreeNode *node = iter->data;
 		assert(quadtreeNodeDataIsLoaded(node));
 		OpenGLLodMapTile *tile = node->data;
-		$(bool, opengl, drawOpenGLModel)(tile->model);
+		$(bool, opengl, drawOpenGLModel)(tile->model, &tile->drawOptions);
 	}
 }
 
@@ -199,6 +204,7 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
 	freeOpenGLPrimitive(lodmap->heightmap);
+	$(void, linalg, freeVector)(lodmap->viewerPosition);
 	free(lodmap->dataPrefix);
 	free(lodmap->dataSuffix);
 	free(lodmap);
@@ -225,54 +231,42 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		return NULL;
 	}
 
-	bool replacing = false;
+	bool drawn = true;
+	OpenGLHeightmapDrawOptions options;
+	options.drawMode = OPENGL_HEIGHTMAP_DRAW_ALL;
 
 	if(!quadtreeNodeIsLeaf(node)) {
-		// we need to check whether any of our children are in their viewing range as well - if yes, they replace us
-		replacing = false;
-
+		// we need to check which of our children are in their viewing range as well
 		for(unsigned int i = 0; i < 4; i++) {
 			QuadtreeNode *child = node->children[i];
+			OpenGLHeightmapDrawMode drawMode = getDrawModeForIndex(i);
 			double subrange = getLodMapNodeRange(lodmap, child);
 			QuadtreeAABB3D subbox = quadtreeNodeAABB3D(lodmap->quadtree, child);
 
 			if(quadtreeAABB3DIntersectsSphere(subbox, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
-#ifdef LODMAP_VERBOSE
-				QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, child);
-				LOG_DEBUG("LOD node with range [%d,%d]x[%d,%d] at level %u forces replacement", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, child->level);
-#endif
+				options.drawMode ^= drawMode; // don't draw this part if the child covers it
 
-				replacing = true; // our child nodes will replace us
-				break;
+				GList *childNodes = selectLodMapNodes(lodmap, position, child, time); // node selection
+				nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
 			}
 		}
-	}
 
-#ifdef LODMAP_VERBOSE
-	QuadtreeAABB2D box2D = quadtreeNodeAABB2D(lodmap->quadtree, node);
-#endif
-	if(replacing) { // our child nodes replace the area covered by ourselves
-#ifdef LODMAP_VERBOSE
-		LOG_DEBUG("LOD selection for node range [%d,%d]x[%d,%d] at level %u passed to children...", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
-#endif
-
-		// we know that our child nodes cover our area, so let them recursively handle their node selection now
-		for(unsigned int i = 0; i < 4; i++) {
-			GList *childNodes = selectLodMapNodes(lodmap, position, node->children[i], time); // node selection
-			nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
+		if(options.drawMode == OPENGL_HEIGHTMAP_DRAW_NONE) { // if all are, we're not drawn
+			drawn = false;
 		}
 
 		// update node weight (we could have loaded child nodes)
 		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
-	} else { // we cover our area ourselves
-#ifdef LODMAP_VERBOSE
-		LOG_DEBUG("LOD selected node range [%d,%d]x[%d,%d] at level %u", box2D.minX, box2D.maxX, box2D.minY, box2D.maxY, node->level);
-#endif
+	}
 
+	if(drawn) {
 		// Now make sure the node data is loaded
 		if(!quadtreeNodeDataIsLoaded(node)) {
-			$(void, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node); // load this node's data - our recursion parents will make sure they update their nodes' weights
+			$(void *, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node); // load this node's data - our recursion parents will make sure they update their nodes' weights
 		}
+
+		OpenGLLodMapTile *tile = node->data;
+		tile->drawOptions = options;
 
 		nodes = g_list_append(nodes, node); // select ourselves
 	}
@@ -454,6 +448,33 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->model->visible = false;
 
 	return tile;
+}
+
+/**
+ * Returns the OpenGL heightmap draw mode for a given child index
+ *
+ * @param index			the child index to look the draw mode up for
+ * @result				the drawing mode
+ */
+static OpenGLHeightmapDrawMode getDrawModeForIndex(int index)
+{
+	switch(index) {
+		case 0:
+			return OPENGL_HEIGHTMAP_DRAW_TOP_LEFT;
+		break;
+		case 1:
+			return OPENGL_HEIGHTMAP_DRAW_TOP_RIGHT;
+		break;
+		case 2:
+			return OPENGL_HEIGHTMAP_DRAW_BOTTOM_LEFT;
+		break;
+		case 3:
+			return OPENGL_HEIGHTMAP_DRAW_BOTTOM_RIGHT;
+		break;
+		default:
+			return OPENGL_HEIGHTMAP_DRAW_NONE;
+		break;
+	}
 }
 
 /**

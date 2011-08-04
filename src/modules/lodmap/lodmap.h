@@ -22,12 +22,12 @@
 #define HEIGHTMAP_LODMAP_H
 
 #include <GL/glew.h>
-#include "modules/opengl/camera.h"
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/heightmap/heightmap.h"
 #include "modules/quadtree/quadtree.h"
+#include "modules/linalg/Vector.h"
 
 /**
  * Struct representing an OpenGL LOD map tile
@@ -43,20 +43,22 @@ typedef struct {
 	OpenGLTexture *normalsTexture;
 	/** The OpenGL model to render the tile */
 	OpenGLModel *model;
+	/** The OpenGL heightmap draw options to use to draw this tile */
+	OpenGLHeightmapDrawOptions drawOptions;
 } OpenGLLodMapTile;
 
 /**
  * Struct representing an OpenGL LOD map
  */
 typedef struct {
-	/** The OpenGL camera with respect to which the OpenGL map should be updated */
-	OpenGLCamera *camera;
 	/** The heightmap primitive used to render the LOD map */
 	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
 	Quadtree *quadtree;
 	/** The current selection of quadtree nodes to be rendered */
 	GList *selection;
+	/** The current viewer position */
+	Vector *viewerPosition;
 	/** The base viewing range covered by the lowest LOD level in the LOD map */
 	float baseRange;
 	/** The maximum viewing distance to be handled by this LOD map */
@@ -71,8 +73,8 @@ typedef struct {
 	float morphStartFactor;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, bool autoExpand);
+API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 

@@ -20,7 +20,6 @@
 
 #version 120
 
-uniform vec3 cameraPosition;
 uniform mat4 model;
 uniform mat4 modelNormal;
 uniform mat4 camera;
@@ -36,6 +35,7 @@ uniform sampler2D normals;
 uniform int lodLevel;
 uniform float baseRange;
 uniform float morphStartFactor;
+uniform vec3 viewerPosition;
 
 attribute vec2 uv;
 
@@ -53,7 +53,7 @@ vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
 
 float getLodDistance(in vec3 vertexWorld)
 {
-	return distance(cameraPosition, vertexWorld);
+	return distance(viewerPosition, vertexWorld);
 }
 
 float getLodRange()

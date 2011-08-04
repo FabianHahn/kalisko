@@ -22,12 +22,12 @@
 #define HEIGHTMAP_LODMAP_H
 
 #include <GL/glew.h>
+#include "modules/opengl/camera.h"
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/model.h"
 #include "modules/opengl/texture.h"
 #include "modules/heightmap/heightmap.h"
 #include "modules/quadtree/quadtree.h"
-#include "modules/linalg/Vector.h"
 
 /**
  * Struct representing an OpenGL LOD map tile
@@ -49,6 +49,8 @@ typedef struct {
  * Struct representing an OpenGL LOD map
  */
 typedef struct {
+	/** The OpenGL camera with respect to which the OpenGL map should be updated */
+	OpenGLCamera *camera;
 	/** The heightmap primitive used to render the LOD map */
 	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
@@ -67,8 +69,8 @@ typedef struct {
 	GLuint polygonMode;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
+API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 

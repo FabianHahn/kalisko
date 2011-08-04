@@ -29,6 +29,7 @@
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
+#include "modules/opengl/camera.h"
 #include "modules/opengl/material.h"
 #include "modules/linalg/Vector.h"
 #include "api.h"
@@ -39,8 +40,8 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 4, 7);
-MODULE_BCVERSION(0, 4, 5);
+MODULE_VERSION(0, 4, 8);
+MODULE_BCVERSION(0, 4, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 4), MODULE_DEPENDENCY("heightmap", 0, 3, 2), MODULE_DEPENDENCY("quadtree", 0, 7, 17), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
@@ -67,6 +68,7 @@ MODULE_FINALIZE
 /**
  * Creates an OpenGL LOD map
  *
+ * @param camera				the OpenGL camera with respect to which the OpenGL map should be updated
  * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
  * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
  * @param leafSize				the leaf size of the LOD map
@@ -74,9 +76,10 @@ MODULE_FINALIZE
  * @param dataSuffix			the suffix that should be appended to all loaded tiles
  * @result						the created OpenGL LOD map
  */
-API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
+API OpenGLLodMap *createOpenGLLodMap(OpenGLCamera *camera, double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix)
 {
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
+	lodmap->camera = camera;
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, leafSize + 1, leafSize + 1); // create a managed heightmap that will serve as instance for our rendered tiles
 	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(leafSize, 512, &loadLodMapTile, &freeLodMapTile, true);
 	lodmap->selection = NULL;
@@ -123,17 +126,16 @@ API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDista
  * Updates an OpenGL LOD map
  *
  * @param lodmap		the LOD map to update
- * @param position		the viewer position with respect to which the LOD map should be updated
  * @param autoExpand	specifies whether the quadtree should be automatically expanded to ranged not covered yet
  */
-API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand)
+API void updateOpenGLLodMap(OpenGLLodMap *lodmap, bool autoExpand)
 {
 	// prune the quadtree to get rid of unused nodes
 	$(void, quadtree, pruneQuadtree)(lodmap->quadtree);
 
 	if(autoExpand) {
 		// expand the quadtree to actually cover our position
-		float *positionData = $(float *, linalg, getVectorData)(position);
+		float *positionData = $(float *, linalg, getVectorData)(lodmap->camera->position);
 		$(void, quadtree, expandQuadtreeWorld)(lodmap->quadtree, positionData[0], positionData[2]);
 	}
 
@@ -147,9 +149,9 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 
 	// select the LOD map nodes to be rendered
 	QuadtreeAABB3D box3D = quadtreeNodeAABB3D(lodmap->quadtree, lodmap->quadtree->root);
-	if(quadtreeAABB3DIntersectsSphere(box3D, position, range)) {
+	if(quadtreeAABB3DIntersectsSphere(box3D, lodmap->camera->position, range)) {
 		double time = $$(double, getMicroTime)();
-		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
+		lodmap->selection = selectLodMapNodes(lodmap, lodmap->camera->position, lodmap->quadtree->root, time);
 
 		// make all selected nodes visible
 		for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {

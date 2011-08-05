@@ -49,7 +49,7 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9));
 
@@ -82,9 +82,9 @@ MODULE_INIT
 		return false;
 	}
 
-	glutReshapeWindow(800, 600);
+	glutReshapeWindow(currentWidth, currentHeight);
 	glutSetCursor(GLUT_CURSOR_NONE);
-	glutWarpPointer(400, 300);
+	glutWarpPointer(currentWidth / 2, currentHeight / 2);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -137,7 +137,7 @@ MODULE_INIT
 	$(QuadtreeNode *, quadtree, lookupQuadtreeNodeWorld)(lodmap->quadtree, 3.0, 3.0, 0);
 	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
 
-	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) 800 / 600, 0.1, 100.0);
+	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
 	OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
 	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective", perspectiveUniform);
 
@@ -210,7 +210,7 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		break;
 		case 't':
 			{
-				Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, 800, 600);
+				Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, currentWidth, currentHeight);
 				$(void, image, debugImage)(screenshot);
 				$(void, image, freeImage)(screenshot);
 			}
@@ -237,7 +237,7 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 	$(void, lodmap, drawOpenGLLodMap)(lodmap);
 
 	if(recording) {
-		Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, 800, 600);
+		Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, currentWidth, currentHeight);
 		GString *name = g_string_new("record");
 		g_string_append_printf(name, "%04d.ppm", recordFrame++);
 		$(bool, image, writeImageToFile)(screenshot, name->str);

@@ -40,9 +40,9 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 29, 7);
+MODULE_VERSION(0, 29, 8);
 MODULE_BCVERSION(0, 29, 6);
-MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
+MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("image", 0, 5, 20));
 
 MODULE_INIT
 {
@@ -93,5 +93,10 @@ API Image *getOpenGLScreenshot(int x, int y, unsigned int width, unsigned int he
 	Image *image = $(Image *, image, createImageFloat)(width, height, 3);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1); // don't align the returned image
 	glReadPixels(x, y, width, height, GL_RGB, GL_FLOAT, image->data.float_data);
-	return image;
+
+	// OpenGL orients the y axis differently, so flip the image
+	Image *flipped = $(Image *, image, flipImage)(image, IMAGE_FLIP_Y);
+	$(void, image, freeImage)(image);
+
+	return flipped;
 }

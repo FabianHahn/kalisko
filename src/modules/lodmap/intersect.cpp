@@ -42,7 +42,7 @@ static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, do
 API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius)
 {
 	float minY = 0.0f;
-	float maxY = 1.0f;
+	float maxY = 0.0f;
 
 	if(quadtreeNodeDataIsLoaded(node)) { // if the node data is available, copy over the height info
 		OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;
@@ -87,8 +87,10 @@ static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, do
 	float radius2 = radius * radius;
 
 	if(diff.getLength2() < radius2) { // radius is larger than distance, so we have an intersection
+		// LOG_DEBUG("Intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
 		return true;
 	} else {
+		// LOG_DEBUG("No intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
 		return false;
 	}
 }

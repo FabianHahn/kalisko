@@ -40,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 6, 3);
+MODULE_VERSION(0, 6, 4);
 MODULE_BCVERSION(0, 6, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -239,7 +239,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			QuadtreeNode *child = node->children[i];
 			OpenGLHeightmapDrawMode drawMode = getDrawModeForIndex(i);
 			double subrange = getLodMapNodeRange(lodmap, child);
-			if(lodmapQuadtreeNodeIntersectsSphere(node, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+			if(lodmapQuadtreeNodeIntersectsSphere(child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
 				options.drawMode ^= drawMode; // don't draw this part if the child covers it
 
 				GList *childNodes = selectLodMapNodes(lodmap, position, child, time); // node selection
@@ -256,6 +256,11 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	}
 
 	if(drawn) {
+#ifdef LODMAP_VERBOSE
+		QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
+		LOG_DEBUG("Selected node range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
+#endif
+
 		// Now make sure the node data is loaded
 		if(!quadtreeNodeDataIsLoaded(node)) {
 			$(void *, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node); // load this node's data - our recursion parents will make sure they update their nodes' weights

@@ -53,6 +53,28 @@ vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
 	return vertexGrid - isOdd * morphFactor; // morph it back for each odd component in the respective direction
 }
 
+vec4 texture2DBilinear(in sampler2D texture, in vec2 uv)
+{
+	vec2 textureDimension = vec2(heightmapWidth - 1, heightmapHeight - 1);
+	vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
+	
+	vec2 uvGrid = uv * textureDimension;
+	vec2 uvGridTopLeft = floor(uvGrid);
+	vec2 uvTopLeft = uvGridTopLeft * textureDimensionInv; 
+	
+	// sample texture
+    vec4 topLeft = texture2D(texture, uvTopLeft);
+    vec4 topRight = texture2D(texture, uvTopLeft + vec2(textureDimensionInv.x, 0.0));
+    vec4 bottomLeft = texture2D(texture, uvTopLeft + vec2(0.0, textureDimensionInv.y));
+    vec4 bottomRight = texture2D(texture, uvTopLeft + textureDimensionInv);
+    
+    // bilinear interpolation
+    vec2 ratio = uvGrid - uvGridTopLeft;
+    vec4 topX = mix(topLeft, topRight, ratio.x);
+    vec4 bottomX = mix(bottomLeft, bottomRight, ratio.x);
+    return mix(topX, bottomX, ratio.y);
+}
+
 float getLodDistance(in vec3 vertexWorld)
 {
 	return distance(viewerPosition, vertexWorld);
@@ -84,24 +106,6 @@ float getMorphFactor(in vec2 vertexGrid)
 	
 	// compute the morph factor for the vertex
 	return clamp((lodDistance - morphStart) / (morphEnd - morphStart), 0.0, 1.0);
-}
-
-vec4 texture2DBilinear(in sampler2D texture, in vec2 uv)
-{
-	float widthStep = 1.0 / heightmapWidth;
-	float heightStep = 1.0 / heightmapWidth;
-	
-	// sample texture
-    vec4 topLeft = texture2D(texture, uv);
-    vec4 topRight = texture2D(texture, uv + vec2(widthStep, 0.0));
-    vec4 bottomLeft = texture2D(texture, uv + vec2(0.0, heightStep));
-    vec4 bottomRight = texture2D(texture, uv + vec2(widthStep, heightStep));
-    
-    // bilinear interpolation
-    vec2 ratio = fract(uv * vec2(heightmapWidth, heightmapHeight));
-    vec4 topX = mix(topLeft, topRight, ratio.x);
-    vec4 bottomX = mix(bottomLeft, bottomRight, ratio.x); // will interpolate the blue dot in the image
-    return mix(topX, bottomX, ratio.y);
 }
 
 void main()

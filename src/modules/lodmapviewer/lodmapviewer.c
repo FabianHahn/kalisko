@@ -42,14 +42,16 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/config/config.h"
+#include "modules/image/image.h"
+#include "modules/image/io.h"
 #include "api.h"
 
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 1, 9);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -61,6 +63,8 @@ static bool cameraTiltEnabled = false;
 static OpenGLLodMap *lodmap;
 static bool autoUpdate = true;
 static bool autoExpand = true;
+static bool recording = false;
+static unsigned int recordFrame = 0;
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args);
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
@@ -204,6 +208,16 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 			autoExpand = !autoExpand;
 			LOG_INFO("%s automatic LOD map expansion", autoExpand ? "Enabled" : "Disabled");
 		break;
+		case 't':
+			{
+				Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, 800, 600);
+				$(void, image, debugImage)(screenshot);
+				$(void, image, freeImage)(screenshot);
+			}
+		break;
+		case 'r':
+			recording = !recording;
+		break;
 	}
 }
 
@@ -221,6 +235,15 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 	glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	$(void, lodmap, drawOpenGLLodMap)(lodmap);
+
+	if(recording) {
+		Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, 800, 600);
+		GString *name = g_string_new("record");
+		g_string_append_printf(name, "%04d.ppm", recordFrame++);
+		$(bool, image, writeImageToFile)(screenshot, name->str);
+		g_string_free(name, true);
+		$(void, image, freeImage)(screenshot);
+	}
 }
 
 static void listener_update(void *subject, const char *event, void *data, va_list args)

@@ -87,5 +87,5 @@ void main()
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
 	// gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
-	gl_FragColor = vec4(world_height, 0.25, lodLevel / 5.0, 1.0);
+	gl_FragColor = vec4(world_height, 0.25, 0.25, 1.0);
 }

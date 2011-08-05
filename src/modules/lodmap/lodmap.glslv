@@ -45,6 +45,8 @@ varying vec4 world_color;
 varying vec2 world_uv;
 varying float world_height;
 
+const float morphEndScaleFactor = 0.99;
+
 vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
 {
 	vec2 isOdd = 2.0 * fract(0.5 * vertexGrid); // determine whether the x and y component of the grid vertex is odd
@@ -56,17 +58,19 @@ float getLodDistance(in vec3 vertexWorld)
 	return distance(viewerPosition, vertexWorld);
 }
 
-float getLodRange()
+float getLodRange(in int level)
 {
-	float scale = pow(2.0, lodLevel);
-	return baseRange * scale;
+	float scale = pow(2.0, level);
+	int nonnegative = int(level >= 0); // we need to return zero if the level is negative
+	return nonnegative * baseRange * scale;
 }
 
 float getMorphFactor(in vec2 vertexGrid)
 {
 	// determine start and end LOD ranges for morphing
-	float morphEnd = getLodRange();
-	float morphStart = morphStartFactor * morphEnd;
+	float morphEnd = morphEndScaleFactor * getLodRange(lodLevel);
+	float morphPreviousEnd = morphEndScaleFactor * getLodRange(lodLevel - 1);
+	float morphStart = morphPreviousEnd + morphStartFactor * (morphEnd - morphPreviousEnd);
 	
 	// transform the grid vertex to model coordinates
 	vec2 vertexModel = vertexGrid / vec2(heightmapWidth - 1, heightmapHeight - 1);

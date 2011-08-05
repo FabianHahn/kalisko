@@ -54,6 +54,16 @@ typedef struct {
 	} data;
 } Image;
 
+/**
+ * Bitset enum representing image flip modes
+ */
+typedef enum {
+	IMAGE_FLIP_NONE = 0,
+	IMAGE_FLIP_X = 1,
+	IMAGE_FLIP_Y = 2,
+	IMAGE_FLIP_XY = 3
+} ImageFlipMode;
+
 API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels);
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
 API Image *createImage(unsigned int width, unsigned int height, unsigned int channels, ImageType type);
@@ -64,6 +74,7 @@ API void normalizeImageChannel(Image *image, unsigned int channel);
 API void invertImageChannel(Image *image, unsigned int channel);
 API void scaleImageChannel(Image *image, unsigned int channel, float factor);
 API Image *blendImages(Image *a, Image *b, double factor);
+API Image *flipImage(Image *image, int flipModes);
 API void debugImage(Image *image);
 API void freeImage(Image *image);
 

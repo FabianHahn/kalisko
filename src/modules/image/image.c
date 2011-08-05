@@ -35,7 +35,7 @@
 MODULE_NAME("image");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a general image data type");
-MODULE_VERSION(0, 5, 19);
+MODULE_VERSION(0, 5, 20);
 MODULE_BCVERSION(0, 5, 16);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 10));
 
@@ -295,6 +295,31 @@ API Image *blendImages(Image *a, Image *b, double factor)
 	}
 
 	return blend;
+}
+
+/**
+ * Flips an image
+ *
+ * @param image			the image to flip
+ * @param flipMode		a bitset of ImageFlipMode values specifying how to flip the image
+ * @result				the flipped image
+ */
+API Image *flipImage(Image *image, int flipModes)
+{
+	Image *result = copyImage(image, image->type);
+
+	// flip the image
+	for(unsigned int y = 0; y < image->height; y++) {
+		unsigned int ty = (flipModes & IMAGE_FLIP_Y) ? image->height - y - 1 : y;
+		for(unsigned int x = 0; x < image->width; x++) {
+			unsigned int tx = (flipModes & IMAGE_FLIP_X) ? image->width - x - 1 : x;
+			for(unsigned int c = 0; c < image->channels; c++) {
+				setImage(result, tx, ty, c, getImage(image, x, y, c));
+			}
+		}
+	}
+
+	return result;
 }
 
 /**

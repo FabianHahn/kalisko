@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2011, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -40,7 +40,7 @@
 MODULE_NAME("opengl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The opengl module supports hardware accelerated graphics rendering and interaction");
-MODULE_VERSION(0, 29, 6);
+MODULE_VERSION(0, 29, 7);
 MODULE_BCVERSION(0, 29, 6);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("linalg", 0, 2, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -77,4 +77,21 @@ API bool checkOpenGLError()
 	}
 
 	return false;
+}
+
+/**
+ * Returns a screenshot of the currently active OpenGL framebuffer
+ *
+ * @param x			the x corner coordinate of the screenshot to take
+ * @param y			the y corner coordinate of the screenshot to take
+ * @param width		the width of the screenshot to take
+ * @param height	the height of the screenshot to take
+ * @result			the screenshot as image
+ */
+API Image *getOpenGLScreenshot(int x, int y, unsigned int width, unsigned int height)
+{
+	Image *image = $(Image *, image, createImageFloat)(width, height, 3);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1); // don't align the returned image
+	glReadPixels(x, y, width, height, GL_RGB, GL_FLOAT, image->data.float_data);
+	return image;
 }

@@ -49,7 +49,7 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 2, 2);
+MODULE_VERSION(0, 2, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9));
 
@@ -65,6 +65,8 @@ static bool autoUpdate = true;
 static bool autoExpand = true;
 static bool recording = false;
 static unsigned int recordFrame = 0;
+static Vector *lightPosition;
+static Vector *lightColor;
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args);
 static void listener_keyUp(void *subject, const char *event, void *data, va_list args);
@@ -139,7 +141,19 @@ MODULE_INIT
 
 	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
 	OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective");
 	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective", perspectiveUniform);
+	lightPosition = $(Vector *, linalg, createVector3)(-10.0, 100.0, -50.0);
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition");
+	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightPosition));
+	lightColor = $(Vector *, linalg, createVector4)(1.0, 1.0, 1.0, 1.0);
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor");
+	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightColor));
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient");
+	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient", $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.25));
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular");
+	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular", $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.4));
+
 
 	$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
 	$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
@@ -168,6 +182,15 @@ MODULE_FINALIZE
 	$(void, lodmap, freeOpenGLLodMap)(lodmap);
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
+
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective");
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition");
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor");
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient");
+	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular");
+
+	$(void, linalg, freeVector)(lightPosition);
+	$(void, linalg, freeVector)(lightColor);
 }
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args)

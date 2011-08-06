@@ -49,7 +49,7 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 2, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9));
 
@@ -125,7 +125,7 @@ MODULE_INIT
 
 	GString *dataPrefix = g_string_new(lodMapPath);
 	g_string_append_printf(dataPrefix, "/%s", lodMapPrefix);
-	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(1.5, 2, 128, dataPrefix->str, lodMapExtension);
+	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(2.2, 2, 128, dataPrefix->str, lodMapExtension);
 	g_string_free(dataPrefix, true);
 
 	if(lodmap == NULL) {

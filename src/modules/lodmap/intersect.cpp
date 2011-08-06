@@ -29,7 +29,7 @@ extern "C" {
 }
 #include "intersect.h"
 
-static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius);
+static int intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius);
 
 /**
  * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
@@ -37,9 +37,9 @@ static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, do
  * @param node			the quadtree node which has to be intersected
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
- * @result				true if the sphere intersects the axis aligned bounding box
+ * @result				nonzero if the sphere intersects the axis aligned bounding box
  */
-API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius)
+API int lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius)
 {
 	float minY = 0.0f;
 	float maxY = 0.0f;
@@ -63,9 +63,9 @@ API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position
  * @param pmax			the maximum position of the axis aligned bounding box
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
- * @result				true if the sphere intersects the axis aligned bounding box
+ * @result				nonzero if the sphere intersects the axis aligned bounding box
  */
-static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius)
+static int intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius)
 {
 	Vector boxPoint = Vector3(0.0f, 0.0f, 0.0f);
 	const Vector& center = *position;
@@ -88,9 +88,9 @@ static bool intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, do
 
 	if(diff.getLength2() < radius2) { // radius is larger than distance, so we have an intersection
 		// LOG_DEBUG("Intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
-		return true;
+		return 1;
 	} else {
 		// LOG_DEBUG("No intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
-		return false;
+		return 0;
 	}
 }

@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-API bool lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius);
+API int lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius);
 
 #ifdef __cplusplus
 }

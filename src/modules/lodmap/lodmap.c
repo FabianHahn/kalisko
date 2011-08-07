@@ -40,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 6, 8);
+MODULE_VERSION(0, 7, 0);
 MODULE_BCVERSION(0, 6, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -288,6 +288,8 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	assert(lodmap != NULL);
 
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
+	tile->heights = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 1);
+	tile->normals = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 3);
 
 	if(node->level == 0) { // load the lowest level from disk
 		Image *heightmaps[9];
@@ -323,16 +325,39 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 			}
 		}
 
+		// add the border from the neighbor tiles, we need to first border line for consistent height interpolation and the second line for consistent normal interpolation
+		Image *bordered = $(Image *, image, createImageFloat)(tree->leafSize + 4, tree->leafSize + 4, 1);
+		for(unsigned int y = 0; y < tree->leafSize + 4; y++) {
+			unsigned int heightmapY = (y < 2) ? 0 : ((y < tree->leafSize + 2) ? 1 : 2);
+			unsigned int my = (y - 2 + tree->leafSize) % tree->leafSize;
+
+			for(unsigned int x = 0; x < tree->leafSize + 4; x++) {
+				unsigned int heightmapX = (x < 2) ? 0 : ((x < tree->leafSize + 2) ? 1 : 2);
+				unsigned int heightmapIndex = 3 * heightmapY + heightmapX;
+				unsigned int mx = (x - 2 + tree->leafSize) % tree->leafSize;
+
+				setImage(bordered, x, y, 0, getImage(heightmaps[heightmapIndex], mx, my, 0));
+			}
+		}
+
+		// free the loaded heightmaps
+		for(int k = 0; k < 9; k++) {
+			$(void, image, freeImage)(heightmaps[k]);
+		}
+
+		// Compute border normals
+		Image *borderNormals = $(Image *, image, createImageFloat)(tree->leafSize + 4, tree->leafSize + 4, 3);
+		$(void, heightmap, computeHeightmapNormals)(bordered, borderNormals);
+
+		// interpolate
 		LOG_DEBUG("Interpolating LOD map base tile (%d,%d)", node->x, node->y);
-		tile->heights = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 1);
 		tile->minHeight = FLT_MAX;
 		tile->maxHeight = FLT_MIN;
 
-		// inner part
-		for(unsigned int y = 1; y < tree->leafSize; y++) {
-			for(unsigned int x = 1; x < tree->leafSize; x++) {
+		for(unsigned int y = 0; y < tree->leafSize + 1; y++) {
+			for(unsigned int x = 0; x < tree->leafSize + 1; x++) {
 				// interpolate the height
-				float value = 0.25f * (getImage(heightmaps[4], x - 1, y - 1, 0) + getImage(heightmaps[4], x - 1, y, 0) + getImage(heightmaps[4], x, y - 1, 0) + getImage(heightmaps[4], x, y, 0));
+				float value = 0.25f * (getImage(bordered, x + 1, y + 1, 0) + getImage(bordered, x + 2, y + 1, 0) + getImage(bordered, x + 1, y + 2, 0) + getImage(bordered, x + 2, y + 2, 0));
 				setImage(tile->heights, x, y, 0, value);
 
 				// update min/max
@@ -343,53 +368,17 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				if(value > tile->maxHeight) {
 					tile->maxHeight = value;
 				}
+
+				// interpolate normal vector
+				for(unsigned int c = 0; c < 3; c++) {
+					float normalValue = 0.25f * (getImage(borderNormals, x + 1, y + 1, c) + getImage(borderNormals, x + 2, y + 1, c) + getImage(borderNormals, x + 1, y + 2, c) + getImage(borderNormals, x + 2, y + 2, c));
+					setImage(tile->normals, x, y, c, normalValue);
+				}
 			}
 		}
 
-		// bottom border with heightmap 7
-		for(unsigned int x = 1; x < tree->leafSize; x++) {
-			// interpolate the height
-			float value = 0.25f * (getImage(heightmaps[7], x - 1, 0, 0) + getImage(heightmaps[7], x, 0, 0) + getImage(heightmaps[4], x - 1, tree->leafSize - 1, 0) + getImage(heightmaps[4], x, tree->leafSize - 1, 0));
-			setImage(tile->heights, x, tree->leafSize, 0, value);
-		}
-
-		// top border with heightmap 1
-		for(unsigned int x = 1; x < tree->leafSize; x++) {
-			// interpolate the height
-			float value = 0.25f * (getImage(heightmaps[4], x - 1, 0, 0) + getImage(heightmaps[4], x, 0, 0) + getImage(heightmaps[1], x - 1, tree->leafSize - 1, 0) + getImage(heightmaps[1], x, tree->leafSize - 1, 0));
-			setImage(tile->heights, x, 0, 0, value);
-		}
-
-		// left border with heightmap 3
-		for(unsigned int y = 1; y < tree->leafSize; y++) {
-			// interpolate the height
-			float value = 0.25f * (getImage(heightmaps[4], 0, y, 0) + getImage(heightmaps[4], 0, y - 1, 0) + getImage(heightmaps[3], tree->leafSize - 1, y, 0) + getImage(heightmaps[3], tree->leafSize - 1, y - 1, 0));
-			setImage(tile->heights, 0, y, 0, value);
-		}
-
-		// right border with heightmap 5
-		for(unsigned int y = 1; y < tree->leafSize; y++) {
-			// interpolate the height
-			float value = 0.25f * (getImage(heightmaps[5], 0, y, 0) + getImage(heightmaps[5], 0, y - 1, 0) + getImage(heightmaps[4], tree->leafSize - 1, y, 0) + getImage(heightmaps[4], tree->leafSize - 1, y - 1, 0));
-			setImage(tile->heights, tree->leafSize, y, 0, value);
-		}
-
-		// bottom left corner with heightmap 6
-		setImage(tile->heights, 0, tree->leafSize, 0, 0.25f * (getImage(heightmaps[7], 0, 0, 0) + getImage(heightmaps[6], tree->leafSize - 1, 0, 0) + getImage(heightmaps[3], tree->leafSize - 1, tree->leafSize - 1, 0) + getImage(heightmaps[4], 0, tree->leafSize - 1, 0)));
-
-		// bottom right corner with heightmap 8
-		setImage(tile->heights, tree->leafSize, tree->leafSize, 0, 0.25f * (getImage(heightmaps[8], 0, 0, 0) + getImage(heightmaps[7], tree->leafSize - 1, 0, 0) + getImage(heightmaps[4], tree->leafSize - 1, tree->leafSize - 1, 0) + getImage(heightmaps[5], 0, tree->leafSize - 1, 0)));
-
-		// top left corner with heightmap 0
-		setImage(tile->heights, 0, 0, 0, 0.25f * (getImage(heightmaps[4], 0, 0, 0) + getImage(heightmaps[3], tree->leafSize - 1, 0, 0) + getImage(heightmaps[0], tree->leafSize - 1, tree->leafSize - 1, 0) + getImage(heightmaps[1], 0, tree->leafSize - 1, 0)));
-
-		// top right corner with heightmap 2
-		setImage(tile->heights, tree->leafSize, 0, 0, 0.25f * (getImage(heightmaps[5], 0, 0, 0) + getImage(heightmaps[4], tree->leafSize - 1, 0, 0) + getImage(heightmaps[1], tree->leafSize - 1, tree->leafSize - 1, 0) + getImage(heightmaps[2], 0, tree->leafSize - 1, 0)));
-
-		// free the loaded heightmaps
-		for(int k = 0; k < 9; k++) {
-			$(void, image, freeImage)(heightmaps[k]);
-		}
+		$(void, image, freeImage)(bordered);
+		$(void, image, freeImage)(borderNormals);
 	} else { // construct higher LOD levels by downsampling the lower detailed ones
 		// these should be preloaded
 		assert(quadtreeNodeDataIsLoaded(node->children[0]));
@@ -398,9 +387,6 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 		assert(quadtreeNodeDataIsLoaded(node->children[3]));
 
 		LOG_DEBUG("Propagating LOD map image tile (%hd,%hd) for level %hd", node->x, node->y, node->level);
-
-		// create the image to which we propagate
-		tile->heights = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 1);
 
 		// propagate the heights
 		for(unsigned int y = 0; y < (tree->leafSize + 1); y++) {
@@ -416,9 +402,15 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				// determine correct sub image
 				unsigned int index = (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
 				Image *subheights = ((OpenGLLodMapTile *) node->children[index]->data)->heights;
+				Image *subnormals = ((OpenGLLodMapTile *) node->children[index]->data)->normals;
 
 				// propagate the height
 				setImage(tile->heights, x, y, 0, getImage(subheights, dx + offsetX, dy + offsetY, 0));
+
+				// propagate the normal vector
+				setImage(tile->normals, x, y, 0, 2.0 * getImage(subnormals, dx + offsetX, dy + offsetY, 0));
+				setImage(tile->normals, x, y, 1, getImage(subnormals, dx + offsetX, dy + offsetY, 1));
+				setImage(tile->normals, x, y, 2, 2.0 * getImage(subnormals, dx + offsetX, dy + offsetY, 2));
 			}
 		}
 
@@ -438,10 +430,6 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 			}
 		}
 	}
-
-	// Compute normals
-	tile->normals = $(Image *, image, createImageFloat)(tree->leafSize + 1, tree->leafSize + 1, 3);
-	$(void, heightmap, computeHeightmapNormals)(tile->heights, tile->normals);
 
 	// Create OpenGL textures
 	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);

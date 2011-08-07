@@ -134,7 +134,7 @@ void main()
 	// store output values
 	world_position = morphedWorld.xyz / morphedWorld.w;
 	world_normal = normalWorld.xyz / normalWorld.w;
-	world_color = vec4(morphedModel.x, morphedHeight, morphedModel.y, 1.0);
+	world_color = vec4(morphedHeight / 2.0, morphedHeight, 0.5, 1.0);
 	world_uv = morphedModel;
 	world_height = morphedHeight;
 		

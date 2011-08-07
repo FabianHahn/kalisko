@@ -38,6 +38,7 @@ varying float world_height;
 
 vec4 getColor(float x)
 {
+	/*
 	float scaled = (textureCount - 1) * x;
 	int prev = int(floor(scaled));
 	int next = prev + 1;
@@ -47,6 +48,8 @@ vec4 getColor(float x)
 	vec3 higher = texture2DArray(texture, vec3(world_uv, next)).xyz;
 
 	return vec4(mix(lower, higher, diff), 1.0);
+	*/
+	return world_color;
 }
 
 vec4 phongAmbient(in vec4 textureColor)
@@ -86,6 +89,6 @@ void main()
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	// gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
-	gl_FragColor = vec4(world_height, 0.25, 0.25, 1.0);
+	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	// gl_FragColor = vec4(world_height, 0.25, 0.25, 1.0);
 }

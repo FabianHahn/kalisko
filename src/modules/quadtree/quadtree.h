@@ -27,7 +27,7 @@
 /**
  * Quadtree node struct
  */
-struct QuadtreeNodeStruct{
+struct QuadtreeNodeStruct {
 	/** The x position of the bottom left corner of the quadtree node */
 	int x;
 	/** The y position of the bottom left corner of the quadtree node */

@@ -18,8 +18,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEIGHTMAP_LODMAP_H
-#define HEIGHTMAP_LODMAP_H
+#ifndef LODMAP_LODMAP_H
+#define LODMAP_LODMAP_H
 
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"

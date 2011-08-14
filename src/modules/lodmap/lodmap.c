@@ -275,6 +275,14 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLLodMap *lodmap = g_hash_table_lookup(maps, tree);
 	assert(lodmap != NULL);
 
+	if(node->level > 0) {
+		// these should be preloaded
+		assert(quadtreeNodeDataIsLoaded(node->children[0]));
+		assert(quadtreeNodeDataIsLoaded(node->children[1]));
+		assert(quadtreeNodeDataIsLoaded(node->children[2]));
+		assert(quadtreeNodeDataIsLoaded(node->children[3]));
+	}
+
 	unsigned int tileSize = getLodMapTileSize(lodmap->source);
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 
@@ -337,18 +345,16 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	switch(lodmap->source->providesTexture) { // retrieve texture
 		case OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID:
 			tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE, node->x, node->y, node->level);
-			assert(tile->texture->channels == 3);
 			assert(tile->texture->width == tileSize);
 			assert(tile->texture->height == tileSize);
 		break;
 		case OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF:
 			if(node->level == 0) {
 				tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE, node->x, node->y, 0);
-				assert(tile->texture->channels == 3);
 				assert(tile->texture->width == tileSize);
 				assert(tile->texture->height == tileSize);
 			} else { // construct higher LOD levels by propagating the lower detailed ones
-				tile->texture = $(Image *, image, createImageFloat)(tileSize, tileSize, 3);
+				tile->texture = $(Image *, image, createImageFloat)(tileSize, tileSize, ((OpenGLLodMapTile *) node->children[0]->data)->texture->channels);
 				propagateTexture = true;
 			}
 		break;
@@ -356,14 +362,6 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 			tile->texture = $(Image *, image, createImageFloat)(tileSize, tileSize, 3);
 			$(void, image, clearImage)(tile->texture);
 		break;
-	}
-
-	if(node->level > 0) {
-		// these should be preloaded
-		assert(quadtreeNodeDataIsLoaded(node->children[0]));
-		assert(quadtreeNodeDataIsLoaded(node->children[1]));
-		assert(quadtreeNodeDataIsLoaded(node->children[2]));
-		assert(quadtreeNodeDataIsLoaded(node->children[3]));
 	}
 
 	// propagate images
@@ -412,7 +410,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 				}
 
 				if(propagateTexture) { // propagate the texture
-					for(unsigned int c = 0 ; c < 3; c++) {
+					for(unsigned int c = 0; c < tile->texture->channels; c++) {
 						setImage(tile->texture, x - 1, y - 1, c, getImage(subtexture, 2 * (x - 1) + offsetX, 2 * (y - 1) + offsetY, c));
 					}
 				}

@@ -115,16 +115,17 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 			}
 		break;
 		case OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE:
-			result = $(Image *, image, createImageFloat)(tileSize, tileSize, 3);
-			for(int y = 0; y < tileSize; y++) {
+			result = $(Image *, image, createImageFloat)(tileSize, tileSize, imageSource->texture->channels);
+			for(unsigned int y = 0; y < tileSize; y++) {
 				int dy = qy * (tileSize - 1) + y;
-				for(int x = 0; x < tileSize; x++) {
+				for(unsigned int x = 0; x < tileSize; x++) {
 					int dx = qx * (tileSize - 1) + x;
-
-					if(dy >= 0 && dy < imageSource->texture->height && dx >= 0 && dx < imageSource->texture->width) {
-						setImage(result, x, y, 0, getImage(imageSource->texture, dx, dy, 0));
-					} else {
-						setImage(result, x, y, 0, 0.0);
+						for(unsigned int c = 0; c < imageSource->texture->channels; c++) {
+						if(dy >= 0 && dy < imageSource->texture->height && dx >= 0 && dx < imageSource->texture->width) {
+							setImage(result, x, y, c, getImage(imageSource->texture, dx, dy, c));
+						} else {
+							setImage(result, x, y, c, 0.0);
+						}
 					}
 				}
 			}

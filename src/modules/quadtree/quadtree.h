@@ -57,8 +57,6 @@ typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data)
 struct QuadtreeStruct {
 	/** The root node of the quad tree */
 	QuadtreeNode *root;
-	/** The size of a leaf in the quad tree */
-	unsigned short leafSize;
 	/** The capacity of the quadtree's data cache */
 	unsigned int capacity;
 	/** The loader function for quadtree data */
@@ -87,14 +85,11 @@ typedef struct {
 	int maxY;
 } QuadtreeAABB;
 
-API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
+API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
 API void expandQuadtree(Quadtree *tree, double x, double y);
-API void expandQuadtreeWorld(Quadtree *tree, double x, double z);
 API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node);
 API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
-API void *lookupQuadtreeWorld(Quadtree *tree, double x, double z, unsigned int level);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
-API QuadtreeNode *lookupQuadtreeNodeWorld(Quadtree *tree, double x, double z, unsigned int level);
 API void pruneQuadtree(Quadtree *tree);
 API char *dumpQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);
@@ -133,34 +128,20 @@ static inline unsigned int quadtreeNodeScale(QuadtreeNode *node)
 }
 
 /**
- * Returns the side length of the spanned square of a quadtree node
- *
- * @param tree		the quadtree to which the node belongs
- * @param node		the quadtree node to check
- * @result			the side length of the spanned square of the provided quadtree node
- */
-static inline unsigned int quadtreeNodeSpan(Quadtree *tree, QuadtreeNode *node)
-{
-	unsigned int scale = quadtreeNodeScale(node);
-	return tree->leafSize * scale;
-}
-
-/**
  * Returns the 2D axis aligned bounding box of the spanned square of a quadtree node in model coordinates
  *
- * @param tree		the quadtree to which the node belongs
  * @param node		the quadtree node to check
  * @result			the 2D axis aligned bounding box of the spanned square of the provided quadtree node
  */
-static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
+static inline QuadtreeAABB quadtreeNodeAABB(QuadtreeNode *node)
 {
-	unsigned int span = quadtreeNodeSpan(tree, node);
+	unsigned int scale = quadtreeNodeScale(node);
 
 	QuadtreeAABB box;
-	box.minX = node->x * tree->leafSize;
-	box.maxX = node->x * tree->leafSize + span;
-	box.minY = node->y * tree->leafSize;
-	box.maxY = node->y * tree->leafSize + span;
+	box.minX = node->x;
+	box.maxX = node->x + scale;
+	box.minY = node->y;
+	box.maxY = node->y + scale;
 
 	return box;
 }
@@ -168,15 +149,14 @@ static inline QuadtreeAABB quadtreeNodeAABB(Quadtree *tree, QuadtreeNode *node)
 /**
  * Checks whether a quadtree node contains a point in model coordinates
  *
- * @param tree		the quadtree to which the node belongs
  * @param node		the quadtree node to check
  * @param x			the x coordinate of the point to check
  * @param y			the y coordinate of the point to check
  * @result			true if the quadtree node contains the point
  */
-static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node, double x, double y)
+static inline bool quadtreeNodeContainsPoint(QuadtreeNode *node, double x, double y)
 {
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	QuadtreeAABB box = quadtreeNodeAABB(node);
 	return x >= box.minX && x < box.maxX && y >= box.minY && y < box.maxY;
 }
 
@@ -190,27 +170,25 @@ static inline bool quadtreeNodeContainsPoint(Quadtree *tree, QuadtreeNode *node,
  */
 static inline bool quadtreeContainsPoint(Quadtree *tree, double x, double y)
 {
-	return quadtreeNodeContainsPoint(tree, tree->root, x, y);
+	return quadtreeNodeContainsPoint(tree->root, x, y);
 }
 
 /**
  * Retrieves the child index of the node that contains a specified point in model coordinates
  *
- * @param tree		the quadtree to which the node belongs
  * @param node		the quadtree node to check
  * @param x			the x coordinate of the point to check
  * @param y			the y coordinate of the point to check
  * @result			the index of the child node
  */
-static inline int quadtreeNodeGetContainingChildIndex(Quadtree *tree, QuadtreeNode *node, double x, double y)
+static inline int quadtreeNodeGetContainingChildIndex(QuadtreeNode *node, double x, double y)
 {
-	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+	assert(quadtreeNodeContainsPoint(node, x, y));
 
-	unsigned int span = quadtreeNodeSpan(tree, node);
-	int halfspan = span / 2;
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
-	bool isLowerX = x < (box.minX + halfspan);
-	bool isLowerY = y < (box.minY + halfspan);
+	unsigned int scale = quadtreeNodeScale(node);
+	double halfscale = scale / 2.0;
+	bool isLowerX = x < (node->x + halfscale);
+	bool isLowerY = y < (node->y + halfscale);
 
 	return (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
 }

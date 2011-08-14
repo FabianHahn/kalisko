@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 8, 0);
-MODULE_BCVERSION(0, 8, 0);
+MODULE_VERSION(0, 9, 0);
+MODULE_BCVERSION(0, 9, 0);
 MODULE_NODEPS;
 
 static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
@@ -51,17 +51,15 @@ MODULE_FINALIZE
 /**
  * Creates a new quadtree
  *
- * @param leafSize				the leaf size of the quadtree
  * @param capacity				the caching capacity of the quadtree
  * @param load					the load function to use for the quadtree data
  * @param free					the free function to use for the quadtree data
  * @param preloadChildData		specifies whether the load function expects its child nodes to be already loaded
  * @result						the created quadtree
  */
-API Quadtree *createQuadtree(unsigned int leafSize, unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData)
+API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
-	quadtree->leafSize = leafSize;
 	quadtree->capacity = capacity;
 	quadtree->load = load;
 	quadtree->free = free;
@@ -96,7 +94,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	}
 
 	double time = $$(double, getMicroTime)();
-	QuadtreeAABB box = quadtreeNodeAABB(tree, tree->root);
+	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
 	bool isLowerX = x < box.minX;
 	bool isLowerY = y < box.minY;
 
@@ -138,18 +136,6 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 
 	// recursively expand to make sure we include the point
 	expandQuadtree(tree, x, y);
-}
-
-/**
- * Expands a quadtree to cover a specific point in world coordinates by adding new tree nodes
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param z				the z coordinate to lookup
- */
-API void expandQuadtreeWorld(Quadtree *tree, double x, double z)
-{
-	expandQuadtree(tree, x * tree->leafSize, z * tree->leafSize);
 }
 
 /**
@@ -195,20 +181,6 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
 }
 
 /**
- * Lookup a node's data in the quadtree in world coordinates
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param z				the z coordinate to lookup
- * @param level			the depth level at which to lookup the node data
- * @result				the looked up quadtree node's data
- */
-API void *lookupQuadtreeWorld(Quadtree *tree, double x, double z, unsigned int level)
-{
-	return lookupQuadtree(tree, x * tree->leafSize, z * tree->leafSize, level);
-}
-
-/**
  * Lookup a node in the quadtree
  *
  * @param tree			the quadtree to lookup
@@ -225,20 +197,6 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
 
 	double time = $$(double, getMicroTime)();
 	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y, level);
-}
-
-/**
- * Lookup a node in the quadtree in world coordinates
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param z				the z coordinate to lookup
- * @param level			the depth level at which to lookup the node
- * @result				the looked up quadtree node
- */
-API QuadtreeNode *lookupQuadtreeNodeWorld(Quadtree *tree, double x, double z, unsigned int level)
-{
-	return lookupQuadtreeNode(tree, x * tree->leafSize, z * tree->leafSize, level);
 }
 
 /**
@@ -271,7 +229,7 @@ API void pruneQuadtree(Quadtree *tree)
 API char *dumpQuadtree(Quadtree *tree)
 {
 	GString *string = g_string_new("");
-	g_string_append_printf(string, "Quadtree: capacity = %u, leafsize = %u\n", tree->capacity, tree->leafSize);
+	g_string_append_printf(string, "Quadtree: capacity = %u\n", tree->capacity);
 
 	// dump all the nodes
 	dumpQuadtreeNode(tree, tree->root, string, 0);
@@ -313,7 +271,7 @@ static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double 
 		return node->data; // nothing to do if we're already loaded
 	}
 
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	QuadtreeAABB box = quadtreeNodeAABB(node);
 
 	if(node->level > 0 && tree->preloadChildData) {
 		LOG_DEBUG("Preloading quadtree children of node with range [%d,%d]x[%d,%d]...", box.minX, box.maxX, box.minY, box.maxY);
@@ -352,7 +310,7 @@ static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double 
  */
 static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
 {
-	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+	assert(quadtreeNodeContainsPoint(node, x, y));
 
 	node->time = time; // update access time
 
@@ -364,7 +322,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
 	} else {
 		assert(!quadtreeNodeIsLeaf(node));
 
-		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+		int index = quadtreeNodeGetContainingChildIndex(node, x, y);
 		QuadtreeNode *child = node->children[index];
 		void *data = lookupQuadtreeRec(tree, child, time, x, y, level);
 
@@ -389,7 +347,7 @@ static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, 
  */
 static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
 {
-	assert(quadtreeNodeContainsPoint(tree, node, x, y));
+	assert(quadtreeNodeContainsPoint(node, x, y));
 
 	node->time = time; // update access time
 
@@ -398,7 +356,7 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
 	} else {
 		assert(!quadtreeNodeIsLeaf(node));
 
-		int index = quadtreeNodeGetContainingChildIndex(tree, node, x, y);
+		int index = quadtreeNodeGetContainingChildIndex(node, x, y);
 		QuadtreeNode *child = node->children[index];
 		return lookupQuadtreeNodeRec(tree, child, time, x, y, level);
 	}
@@ -473,7 +431,7 @@ static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, u
 
 	// prune ourselves
 	if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
-		QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+		QuadtreeAABB box = quadtreeNodeAABB(node);
 		LOG_DEBUG("Pruning quadtree node covering range [%d,%d]x[%d,%d] with access time %f", box.minX, box.maxX, box.minY, box.maxY, node->time);
 		tree->free(tree, node->data);
 		node->data = NULL;
@@ -502,7 +460,7 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
 		g_string_append_c(string, '\t');
 	}
 
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	QuadtreeAABB box = quadtreeNodeAABB(node);
 	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d], weight = %u, time = %f, loaded = %s\n", box.minX, box.maxX, box.minY, box.maxY, node->weight, node->time, quadtreeNodeDataIsLoaded(node) ? "yes" : "no");
 
 	if(!quadtreeNodeIsLeaf(node)) {

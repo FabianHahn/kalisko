@@ -36,12 +36,10 @@
 #include "intersect.h"
 #include "source.h"
 
-// #define LODMAP_VERBOSE
-
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 8, 4);
+MODULE_VERSION(0, 8, 5);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 9, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -252,11 +250,6 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	}
 
 	if(drawn) {
-#ifdef LODMAP_VERBOSE
-		QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree, node);
-		LOG_DEBUG("Selected node range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
-#endif
-
 		// Now make sure the node data is loaded
 		if(!quadtreeNodeDataIsLoaded(node)) {
 			$(void *, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node); // load this node's data - our recursion parents will make sure they update their nodes' weights
@@ -378,21 +371,42 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	if(propagateHeight || propagateNormals || propagateTexture) {
 		LOG_DEBUG("Propagating LOD map image tile (%hd,%hd) for level %hd", node->x, node->y, node->level);
 
-		for(unsigned int y = 1; y < tileSize + 1; y++) { // leave border away, only needed for base level interpolation!
+		for(unsigned int y = 0; y < tileSize + 2; y++) {
 			unsigned int dy = 2 * y;
 			bool isLowerY = (2 * y) < tileSize;
 			int offsetY = isLowerY ? 0 : -(tileSize - 1);
 
-			for(unsigned int x = 1; x < tileSize + 1; x++) { // leave border away, only needed for base level interpolation!
+			for(unsigned int x = 0; x < tileSize + 2; x++) {
 				unsigned int dx = 2 * x;
 				bool isLowerX = dx < tileSize;
 				int offsetX = isLowerX ? 0 : -(tileSize - 1);
+
+				if(x == 0 || x == tileSize + 1 || y == 0 || y == tileSize + 1) { // border is not needed, so just set it to zero
+					if(propagateHeight) {
+						setImage(tile->heights, x, y, 0, 0.0);
+					}
+
+					if(propagateNormals) {
+						for(unsigned int c = 0; c < 3; c++) {
+							setImage(tile->normals, x, y, c, 0.0);
+						}
+					}
+
+					if(propagateTexture) {
+						for(unsigned int c = 0; c < 3; c++) {
+							setImage(tile->texture, x, y, c, 0.0);
+						}
+					}
+
+					continue;
+				}
 
 				// determine correct sub image
 				unsigned int index = (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
 				Image *subheights = ((OpenGLLodMapTile *) node->children[index]->data)->heights;
 				Image *subnormals = ((OpenGLLodMapTile *) node->children[index]->data)->normals;
 				Image *subtexture = ((OpenGLLodMapTile *) node->children[index]->data)->texture;
+
 
 				if(propagateHeight) { // propagate the height
 					setImage(tile->heights, x, y, 0, getImage(subheights, dx - 1 + offsetX, dy - 1 + offsetY, 0));

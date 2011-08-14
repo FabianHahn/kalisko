@@ -39,7 +39,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 8, 6);
+MODULE_VERSION(0, 8, 7);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 9, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -68,7 +68,7 @@ MODULE_FINALIZE
 /**
  * Creates an OpenGL LOD map
  *
- * @param source				the data source used for the LOD map (note that the LOD map takes over controler over the data source, i.e. you must not free it)
+ * @param source				the data source used for the LOD map
  * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
  * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
  * @result						the created OpenGL LOD map
@@ -200,7 +200,6 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
 	freeOpenGLPrimitive(lodmap->heightmap);
 	$(void, linalg, freeVector)(lodmap->viewerPosition);
-	free(lodmap->source);
 	free(lodmap);
 }
 

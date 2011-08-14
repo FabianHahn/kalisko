@@ -48,21 +48,36 @@ API OpenGLLodMapDataSource *createOpenGLLodMapNullSource(unsigned int baseLevel)
 /**
  * Creates an image source for an OpenGL LOD map
  *
- * @param image					the image from which to read the data
+ * @param heights				the image from which to read the height data (note that the source takes over control over this image, i.e. you must not free it)
+ * @param texture				the image from which to read the texture data (note that the source takes over control over this image, i.e. you must not free it)
  * @param baseLevel				the base level of a tile for the null source
  * @result						the created LOD map data source
  */
-API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *image, unsigned int baseLevel)
+API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *texture, unsigned int baseLevel)
 {
-	OpenGLLodMapDataSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataSource);
-	source->baseLevel = baseLevel;
-	source->providesHeight = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
-	source->providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
-	source->providesTexture = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
-	source->load = &queryOpenGLLodMapImageSource;
-	source->data = image;
+	OpenGLLodMapDataImageSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataImageSource);
+	source->heights = heights;
+	source->texture = texture;
+	source->source.baseLevel = baseLevel;
+	source->source.providesHeight = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
+	source->source.providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
+	source->source.providesTexture = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
+	source->source.load = &queryOpenGLLodMapImageSource;
+	source->source.data = source;
 
 	return source;
+}
+
+/**
+ * Frees an image source for an OpenGL LOD map
+ *
+ * @param source			the image source to free
+ */
+API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source)
+{
+	$(void, image, freeImage)(source->heights);
+	$(void, image, freeImage)(source->texture);
+	free(source);
 }
 
 /**
@@ -77,24 +92,46 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *image, unsigned
  */
 static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int qx, int qy, unsigned int level)
 {
-	assert(query == OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT);
 	assert(level == 0);
 
-	Image *image = dataSource->data;
 	unsigned int tileSize = getLodMapTileSize(dataSource);
+	OpenGLLodMapDataImageSource *imageSource = dataSource->data;
+	Image *result;
 
-	Image *result = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
-	for(int y = 0; y < tileSize + 2; y++) {
-		int dy = qy * (tileSize - 1) - 1 + y;
-		for(int x = 0; x < tileSize + 2; x++) {
-			int dx = qx * (tileSize - 1) - 1 + x;
+	switch(query) {
+		case OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT:
+			result = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
+			for(int y = 0; y < tileSize + 2; y++) {
+				int dy = qy * (tileSize - 1) - 1 + y;
+				for(int x = 0; x < tileSize + 2; x++) {
+					int dx = qx * (tileSize - 1) - 1 + x;
 
-			if(dy >= 0 && dy < image->height && dx >= 0 && dx < image->width) {
-				setImage(result, x, y, 0, getImage(image, dx, dy, 0));
-			} else {
-				setImage(result, x, y, 0, 0.0);
+					if(dy >= 0 && dy < imageSource->heights->height && dx >= 0 && dx < imageSource->heights->width) {
+						setImage(result, x, y, 0, getImage(imageSource->heights, dx, dy, 0));
+					} else {
+						setImage(result, x, y, 0, 0.0);
+					}
+				}
 			}
-		}
+		break;
+		case OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE:
+			result = $(Image *, image, createImageFloat)(tileSize, tileSize, 3);
+			for(int y = 0; y < tileSize; y++) {
+				int dy = qy * (tileSize - 1) + y;
+				for(int x = 0; x < tileSize; x++) {
+					int dx = qx * (tileSize - 1) + x;
+
+					if(dy >= 0 && dy < imageSource->texture->height && dx >= 0 && dx < imageSource->texture->width) {
+						setImage(result, x, y, 0, getImage(imageSource->texture, dx, dy, 0));
+					} else {
+						setImage(result, x, y, 0, 0.0);
+					}
+				}
+			}
+		break;
+		default:
+			return NULL;
+		break;
 	}
 
 	return result;

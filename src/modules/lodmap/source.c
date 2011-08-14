@@ -32,64 +32,30 @@
  * @param x						the x position of the tile to query
  * @param y						the y position of the tile to query
  * @param level					the LOD level at which to perform the query
- * @result						the result of the query
+ * @result						the result of the query or NULL if the source doesn't provide data for this kind of query
  */
 API Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int x, int y, unsigned int level)
 {
+	OpenGLLodMapDataSourceProviderType provides;
+
 	switch(query) {
 		case OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT:
-			return queryOpenGLLodMapDataSourceHeight(dataSource, x, y, level);
+			provides = dataSource->providesHeight;
 		break;
 		case OPENGL_LODMAP_DATASOURCE_QUERY_NORMALS:
-			return queryOpenGLLodMapDataSourceNormals(dataSource, x, y, level);
+			provides = dataSource->providesNormals;
 		break;
 		case OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE:
-			return queryOpenGLLodMapDataSourceTexture(dataSource, x, y, level);
+			provides = dataSource->providesTexture;
 		break;
 		default:
-			return NULL;
+			provides = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
 		break;
 	}
-}
 
-/**
- * Queries an OpenGL LOD map data source for height data
- *
- * @param dataSource			the data source to query
- * @param x						the x position of the tile to query
- * @param y						the y position of the tile to query
- * @param level					the LOD level at which to perform the query
- * @result						the result of the query
- */
-API Image *queryOpenGLLodMapDataSourceHeight(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level)
-{
-	return NULL;
-}
+	if(provides == OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE || (provides == OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF && level > 0)) { // return NULL if we don't provide this kind of query
+		return NULL;
+	}
 
-/**
- * Queries an OpenGL LOD map data source for normal vector data
- *
- * @param dataSource			the data source to query
- * @param x						the x position of the tile to query
- * @param y						the y position of the tile to query
- * @param level					the LOD level at which to perform the query
- * @result						the result of the query
- */
-API Image *queryOpenGLLodMapDataSourceNormals(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level)
-{
-	return NULL;
-}
-
-/**
- * Queries an OpenGL LOD map data source for texture data
- *
- * @param dataSource			the data source to query
- * @param x						the x position of the tile to query
- * @param y						the y position of the tile to query
- * @param level					the LOD level at which to perform the query
- * @result						the result of the query
- */
-API Image *queryOpenGLLodMapDataSourceTexture(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level)
-{
-	return NULL;
+	return dataSource->load(dataSource, query, x, y, level);
 }

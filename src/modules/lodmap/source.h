@@ -73,8 +73,5 @@ struct OpenGLLodMapDataSourceStruct {
 typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
 
 API Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int x, int y, unsigned int level);
-API Image *queryOpenGLLodMapDataSourceHeight(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level);
-API Image *queryOpenGLLodMapDataSourceNormals(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level);
-API Image *queryOpenGLLodMapDataSourceTexture(OpenGLLodMapDataSource *dataSource, int x, int y, unsigned int level);
 
 #endif

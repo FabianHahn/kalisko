@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 8);
-MODULE_BCVERSION(0, 2, 8);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 8, 0));
+MODULE_VERSION(0, 2, 9);
+MODULE_BCVERSION(0, 2, 9);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 9, 0));
 
 static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
@@ -45,15 +45,15 @@ TEST_SUITE_END
 
 TEST_CASE(expand)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, NULL, NULL, false);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(100, NULL, NULL, false);
 	QuadtreeNode *origRoot = tree->root;
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
 
 	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, 1.0, 1.0));
-	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, 1.0, 1.0));
-	QuadtreeAABB box = quadtreeNodeAABB(tree, node);
+	TEST_ASSERT(quadtreeNodeContainsPoint(node, 1.0, 1.0));
+	QuadtreeAABB box = quadtreeNodeAABB(node);
 	TEST_ASSERT(box.minX == 1);
 	TEST_ASSERT(box.maxX == 2);
 	TEST_ASSERT(box.minY == 1);
@@ -61,12 +61,12 @@ TEST_CASE(expand)
 	TEST_ASSERT(tree->root->level == 1);
 	TEST_ASSERT(tree->root->children[0] == origRoot);
 	TEST_ASSERT(tree->root->children[3] == node);
-	QuadtreeAABB box1 = quadtreeNodeAABB(tree, tree->root->children[1]);
+	QuadtreeAABB box1 = quadtreeNodeAABB(tree->root->children[1]);
 	TEST_ASSERT(box1.minX == 1);
 	TEST_ASSERT(box1.maxX == 2);
 	TEST_ASSERT(box1.minY == 0);
 	TEST_ASSERT(box1.maxY == 1);
-	QuadtreeAABB box2 = quadtreeNodeAABB(tree, tree->root->children[2]);
+	QuadtreeAABB box2 = quadtreeNodeAABB(tree->root->children[2]);
 	TEST_ASSERT(box2.minX == 0);
 	TEST_ASSERT(box2.maxX == 1);
 	TEST_ASSERT(box2.minY == 1);
@@ -80,15 +80,15 @@ TEST_CASE(expand)
 
 	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, -1.0, -1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, -1.0, -1.0));
-	TEST_ASSERT(quadtreeNodeContainsPoint(tree, node, -1.0, -1.0));
-	box = quadtreeNodeAABB(tree, node);
+	TEST_ASSERT(quadtreeNodeContainsPoint(node, -1.0, -1.0));
+	box = quadtreeNodeAABB(node);
 	TEST_ASSERT(box.minX == -1);
 	TEST_ASSERT(box.maxX == 0);
 	TEST_ASSERT(box.minY == -1);
 	TEST_ASSERT(box.maxY == 0);
 	TEST_ASSERT(tree->root->level == 2);
 	TEST_ASSERT(tree->root->children[3] == origRoot);
-	QuadtreeAABB box0 = quadtreeNodeAABB(tree, tree->root->children[0]);
+	QuadtreeAABB box0 = quadtreeNodeAABB(tree->root->children[0]);
 	TEST_ASSERT(box0.minX == -2);
 	TEST_ASSERT(box0.maxX == 0);
 	TEST_ASSERT(box0.minY == -2);
@@ -102,7 +102,7 @@ TEST_CASE(expand)
 
 TEST_CASE(data)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 100, &testDataLoadFunction, &testDataFreeFunction, false);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(100, &testDataLoadFunction, &testDataFreeFunction, false);
 	TEST_ASSERT(tree != NULL);
 
 	QuadtreeNode *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
@@ -125,7 +125,7 @@ TEST_CASE(data)
 
 TEST_CASE(cache)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, 1, &testDataLoadFunction, &testDataFreeFunction, false);
+	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, &testDataLoadFunction, &testDataFreeFunction, false);
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(tree->root->weight == 0);
 

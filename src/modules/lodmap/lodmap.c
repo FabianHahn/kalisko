@@ -41,7 +41,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 8, 1);
+MODULE_VERSION(0, 8, 2);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 9, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -366,11 +366,13 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 		break;
 	}
 
-	// these should be preloaded
-	assert(quadtreeNodeDataIsLoaded(node->children[0]));
-	assert(quadtreeNodeDataIsLoaded(node->children[1]));
-	assert(quadtreeNodeDataIsLoaded(node->children[2]));
-	assert(quadtreeNodeDataIsLoaded(node->children[3]));
+	if(node->level > 0) {
+		// these should be preloaded
+		assert(quadtreeNodeDataIsLoaded(node->children[0]));
+		assert(quadtreeNodeDataIsLoaded(node->children[1]));
+		assert(quadtreeNodeDataIsLoaded(node->children[2]));
+		assert(quadtreeNodeDataIsLoaded(node->children[3]));
+	}
 
 	// propagate images
 	if(propagateHeight || propagateNormals || propagateTexture) {
@@ -379,12 +381,12 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 		for(unsigned int y = 1; y < tileSize + 1; y++) { // leave border away, only needed for base level interpolation!
 			unsigned int dy = 2 * y;
 			bool isLowerY = (2 * y) < tileSize;
-			int offsetY = isLowerY ? 0 : -(tileSize + 1);
+			int offsetY = isLowerY ? 0 : -(tileSize - 1);
 
 			for(unsigned int x = 1; x < tileSize + 1; x++) { // leave border away, only needed for base level interpolation!
 				unsigned int dx = 2 * x;
 				bool isLowerX = dx < tileSize;
-				int offsetX = isLowerX ? 0 : -(tileSize + 1);
+				int offsetX = isLowerX ? 0 : -(tileSize - 1);
 
 				// determine correct sub image
 				unsigned int index = (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
@@ -404,7 +406,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 				if(propagateTexture) { // propagate the texture
 					for(unsigned int c = 0 ; c < 3; c++) {
-						setImage(tile->texture, x - 1, y - 1, c, getImage(subtexture, 2 * (x - 1) + (isLowerX ? -(tileSize - 1) : 0), 2 * (y - 1) + (isLowerY ? -(tileSize - 1) : 0), c));
+						setImage(tile->texture, x - 1, y - 1, c, getImage(subtexture, 2 * (x - 1) + offsetX, 2 * (y - 1) + offsetY, c));
 					}
 				}
 			}

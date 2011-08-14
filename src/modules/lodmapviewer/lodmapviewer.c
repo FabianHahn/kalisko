@@ -39,6 +39,7 @@
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/transform.h"
 #include "modules/lodmap/lodmap.h"
+#include "modules/lodmap/sources.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/config/config.h"
@@ -49,9 +50,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 6, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 8, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -60,6 +61,7 @@ static bool keysPressed[256];
 static int currentWidth = 800;
 static int currentHeight = 600;
 static bool cameraTiltEnabled = false;
+static OpenGLLodMapDataImageSource *source;
 static OpenGLLodMap *lodmap;
 static bool autoUpdate = true;
 static bool autoExpand = true;
@@ -94,28 +96,59 @@ MODULE_INIT
 	glEnable(GL_BLEND);
 
 	Store *config = $(Store *, config, getConfig)();
-	Store *configLodMapPath;
-	char *lodMapPath = "/tmp/kaliskomap/";
-	if((configLodMapPath = $(Store *, store, getStorePath)(config, "lodmap/path")) != NULL && configLodMapPath->type == STORE_STRING) {
-		lodMapPath = configLodMapPath->content.string;
+	Store *configLodMapHeights;
+	char *lodMapHeights = "/tmp/kaliskomap_heights.png";
+	if((configLodMapHeights = $(Store *, store, getStorePath)(config, "lodmap/heights")) != NULL && configLodMapHeights->type == STORE_STRING) {
+		lodMapHeights = configLodMapHeights->content.string;
 	} else {
-		LOG_INFO("lodmapviewer config parameter 'lodmap/path' not found, defaulting to '%s'", lodMapPath);
+		LOG_INFO("Config parameter 'lodmap/heights' not found, defaulting to '%s'", lodMapHeights);
 	}
 
-	Store *configLodMapPrefix;
-	char *lodMapPrefix = "map";
-	if((configLodMapPrefix = $(Store *, store, getStorePath)(config, "lodmap/prefix")) != NULL && configLodMapPrefix->type == STORE_STRING) {
-		lodMapPrefix = configLodMapPrefix->content.string;
+	Store *configLodMapTexture;
+	char *lodMapTexture = "/tmp/kaliskomap_texture.png";
+	if((configLodMapTexture = $(Store *, store, getStorePath)(config, "lodmap/texture")) != NULL && configLodMapTexture->type == STORE_STRING) {
+		lodMapTexture = configLodMapTexture->content.string;
 	} else {
-		LOG_INFO("lodmapviewer config parameter 'lodmap/prefix' not found, defaulting to '%s'", lodMapPrefix);
+		LOG_INFO("Config parameter 'lodmap/texture' not found, defaulting to '%s'", lodMapTexture);
 	}
 
-	Store *configLodMapExtension;
-	char *lodMapExtension = "png";
-	if((configLodMapExtension = $(Store *, store, getStorePath)(config, "lodmap/extension")) != NULL && configLodMapExtension->type == STORE_STRING) {
-		lodMapExtension = configLodMapExtension->content.string;
+	Store *configLodMapBaseLevel;
+	unsigned int baseLevel = 5;
+	if((configLodMapBaseLevel = $(Store *, store, getStorePath)(config, "lodmap/baseLevel")) != NULL && configLodMapBaseLevel->type == STORE_INTEGER) {
+		baseLevel = configLodMapBaseLevel->content.integer;
 	} else {
-		LOG_INFO("lodmapviewer config parameter 'lodmap/extension' not found, defaulting to '%s'", lodMapExtension);
+		LOG_INFO("Config parameter 'lodmap/baseLevel' not found, defaulting to '%d'", baseLevel);
+	}
+
+	Image *heights = $(Image *, image, readImageFromFile)(lodMapHeights);
+	if(heights == NULL) {
+		LOG_ERROR("Failed to load heights image from '%s'", lodMapHeights);
+		$(void, freeglut, freeFreeglutWindow)(window);
+		return false;
+	}
+
+	Image *texture = $(Image *, image, readImageFromFile)(lodMapTexture);
+	if(texture == NULL) {
+		LOG_ERROR("Failed to load texture image from '%s'", lodMapTexture);
+		$(void, image, freeImage)(heights);
+		$(void, freeglut, freeFreeglutWindow)(window);
+		return false;
+	}
+
+	source = $(OpenGLLodMapDataImageSource *, lodmap, createOpenGLLodMapImageSource)(heights, texture, baseLevel);
+	if(source == NULL) {
+		LOG_ERROR("Failed create LOD map image source");
+		$(void, image, freeImage)(heights);
+		$(void, image, freeImage)(texture);
+		$(void, freeglut, freeFreeglutWindow)(window);
+		return false;
+	}
+
+	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(&source->source, 2.2, 2);
+	if(lodmap == NULL) {
+		$(void, lodmap, freeOpenGLLodMapImageSource)(source);
+		$(void, freeglut, freeFreeglutWindow)(window);
+		return false;
 	}
 
 	camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
@@ -125,19 +158,8 @@ MODULE_INIT
 	cameraData[2] = 0.5f;
 	$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
 	$(void, opengl, activateOpenGLCamera)(camera);
-
-	GString *dataPrefix = g_string_new(lodMapPath);
-	g_string_append_printf(dataPrefix, "/%s", lodMapPrefix);
-	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(2.2, 2, 128, dataPrefix->str, lodMapExtension);
-	g_string_free(dataPrefix, true);
-
-	if(lodmap == NULL) {
-		$(void, freeglut, freeFreeglutWindow)(window);
-		$(void, opengl, freeOpenGLCamera)(camera);
-		return false;
-	}
 		
-	$(QuadtreeNode *, quadtree, lookupQuadtreeNodeWorld)(lodmap->quadtree, 3.0, 3.0, 0);
+	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3.0, 3.0, 0);
 	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
 
 	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
@@ -181,6 +203,7 @@ MODULE_FINALIZE
 	$(void, freeglut, freeFreeglutWindow)(window);
 
 	$(void, lodmap, freeOpenGLLodMap)(lodmap);
+	$(void, lodmap, freeOpenGLLodMapImageSource)(source);
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
 

@@ -27,8 +27,8 @@ uniform mat4 perspective;
 
 // heightmap uniforms
 uniform sampler2D heights;
-uniform int heightmapWidth;
-uniform int heightmapHeight;
+uniform int heightmapWidth; // NOTE: textures are 2 pixels larger than this
+uniform int heightmapHeight; // NOTE: textures are 2 pixels larger than this
 uniform sampler2D normals;
 
 // lodmap uniforms
@@ -47,19 +47,22 @@ varying float world_height;
 
 const float morphEndScaleFactor = 0.99;
 
+// some globals
+int textureWidth = heightmapWidth + 2;
+int textureHeight = heightmapHeight + 2;
+vec2 textureDimension = vec2(textureWidth - 1, textureHeight - 1);
+vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
+
 vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
 {
 	vec2 isOdd = 2.0 * fract(0.5 * vertexGrid); // determine whether the x and y component of the grid vertex is odd
 	return vertexGrid - isOdd * morphFactor; // morph it back for each odd component in the respective direction
 }
 
-vec4 texture2DBilinear(in sampler2D texture, in vec2 uv)
+vec4 texture2DBilinearGrid(in sampler2D texture, in vec2 uvGrid)
 {
-	vec2 textureDimension = vec2(heightmapWidth - 1, heightmapHeight - 1);
-	vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
-	
-	vec2 uvGrid = uv * textureDimension;
-	vec2 uvGridTopLeft = floor(uvGrid);
+	vec2 uvGridShift = uvGrid + vec2(1.0, 1.0); // account for the fact that textures are 2 pixels larger
+	vec2 uvGridTopLeft = floor(uvGridShift);
 	vec2 uvTopLeft = uvGridTopLeft * textureDimensionInv; 
 	
 	// sample texture
@@ -69,7 +72,7 @@ vec4 texture2DBilinear(in sampler2D texture, in vec2 uv)
     vec4 bottomRight = texture2D(texture, uvTopLeft + textureDimensionInv);
     
     // bilinear interpolation
-    vec2 ratio = uvGrid - uvGridTopLeft;
+    vec2 ratio = uvGridShift - uvGridTopLeft;
     vec4 topX = mix(topLeft, topRight, ratio.x);
     vec4 bottomX = mix(bottomLeft, bottomRight, ratio.x);
     return mix(topX, bottomX, ratio.y);
@@ -98,7 +101,7 @@ float getMorphFactor(in vec2 vertexGrid)
 	vec2 vertexModel = vertexGrid / vec2(heightmapWidth - 1, heightmapHeight - 1);
 	
 	// transform the grid vertex to world coordinates
-	float vertexHeight = texture2D(heights, vertexModel).x;
+	float vertexHeight = texture2D(heights, (vertexGrid + vec2(1.0, 1.0)) * textureDimensionInv).x; // account for the fact that textures are 2 pixels larger
 	vec4 vertexWorld = model * vec4(vertexModel.x, vertexHeight, vertexModel.y, 1.0);
 	
 	// compute the lod distance for the vertex
@@ -122,11 +125,11 @@ void main()
 	vec2 morphedModel = morphedGrid / vec2(heightmapWidth - 1, heightmapHeight - 1);
 	
 	// transform the grid vertex to world coordinates
-	float morphedHeight = texture2DBilinear(heights, morphedModel).x;
+	float morphedHeight = texture2DBilinearGrid(heights, morphedGrid).x;
 	vec4 morphedWorld = model * vec4(morphedModel.x, morphedHeight, morphedModel.y, 1.0);
 
 	// compute the normal vector in model coordinates
-	vec3 normalModel = texture2DBilinear(normals, morphedModel).xyz;
+	vec3 normalModel = texture2DBilinearGrid(normals, morphedGrid).xyz;
 	
 	// transform the normal to world coordiantes
 	vec4 normalWorld = modelNormal * vec4(normalModel, 1.0);

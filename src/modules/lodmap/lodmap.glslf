@@ -26,8 +26,7 @@ uniform vec3 lightPosition;
 uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
-uniform sampler2DArray texture;
-uniform int textureCount;
+uniform sampler2D texture;
 uniform int lodLevel;
 
 varying vec3 world_position;
@@ -49,7 +48,8 @@ vec4 getColor(float x)
 
 	return vec4(mix(lower, higher, diff), 1.0);
 	*/
-	return world_color;
+	return texture2D(texture, world_uv);
+	// return world_color;
 }
 
 vec4 phongAmbient(in vec4 textureColor)

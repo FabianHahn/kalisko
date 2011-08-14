@@ -39,7 +39,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 8, 8);
+MODULE_VERSION(0, 8, 9);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 9, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -454,7 +454,10 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	// Create OpenGL textures
 	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);
 	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->normals);
-	tile->textureTexture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(tile->texture, true);
+	tile->textureTexture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(tile->texture, false);
+	tile->textureTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
+	$(bool, opengl, initOpenGLTexture)(tile->textureTexture);
+	$(bool, opengl, synchronizeOpenGLTexture)(tile->textureTexture);
 
 	// Create OpenGL model
 	tile->model = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
@@ -479,6 +482,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLUniform *normalsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "normals");
 	assert(normalsTextureUniform != NULL);
 	normalsTextureUniform->content.texture_value = tile->normalsTexture;
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "texture", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(tile->textureTexture));
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "lodLevel", $(OpenGLUniform *, opengl, createOpenGLUniformInt)(node->level));
 
 	// Make model invisible
@@ -526,5 +530,6 @@ static void freeLodMapTile(Quadtree *tree, void *data)
 	$(void, opengl, freeOpenGLModel)(tile->model);
 	$(void, opengl, freeOpenGLTexture)(tile->heightsTexture);
 	$(void, opengl, freeOpenGLTexture)(tile->normalsTexture);
+	$(void, opengl, freeOpenGLTexture)(tile->textureTexture);
 	free(tile);
 }

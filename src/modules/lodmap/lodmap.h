@@ -28,6 +28,7 @@
 #include "modules/heightmap/heightmap.h"
 #include "modules/quadtree/quadtree.h"
 #include "modules/linalg/Vector.h"
+#include "source.h"
 
 /**
  * Struct representing an OpenGL LOD map tile
@@ -41,6 +42,10 @@ typedef struct {
 	Image *normals;
 	/** The normals texture of the tile */
 	OpenGLTexture *normalsTexture;
+	/** The texture of the tile */
+	Image *texture;
+	/** The texture texture of the tile */
+	OpenGLTexture *textureTexture;
 	/** The minimum height value of the tile */
 	float minHeight;
 	/** The maximum height value of the tile */
@@ -55,6 +60,8 @@ typedef struct {
  * Struct representing an OpenGL LOD map
  */
 typedef struct {
+	/** The data source used for the LOD map */
+	OpenGLLodMapDataSource *source;
 	/** The heightmap primitive used to render the LOD map */
 	OpenGLPrimitive *heightmap;
 	/** The quadtree from which to obtain the data */
@@ -67,17 +74,13 @@ typedef struct {
 	float baseRange;
 	/** The maximum viewing distance to be handled by this LOD map */
 	unsigned int viewingDistance;
-	/** The data prefix to prepend to file names on map loading */
-	char *dataPrefix;
-	/** The data suffix to append to file names on map loading */
-	char *dataSuffix;
 	/** The polygon rendering mode to use for the tile models */
 	GLuint polygonMode;
 	/** The factor of the LOD range at which the vertex morphing should start */
 	float morphStartFactor;
 } OpenGLLodMap;
 
-API OpenGLLodMap *createOpenGLLodMap(double baseRange, unsigned int viewingDistance, unsigned int leafSize, const char *dataPrefix, const char *dataSuffix);
+API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance);
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);

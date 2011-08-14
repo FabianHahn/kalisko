@@ -58,8 +58,8 @@ typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruc
  * Struct representing an OpenGL LOD map data source
  */
 struct OpenGLLodMapDataSourceStruct {
-	/** The size of a tile in pixels */
-	unsigned int tileSize;
+	/** The base level of an LOD map tile */
+	unsigned int baseLevel;
 	/** The height provider type of this data source */
 	OpenGLLodMapDataSourceProviderType providesHeight;
 	/** The normal vector provider type of this data source */
@@ -73,5 +73,16 @@ struct OpenGLLodMapDataSourceStruct {
 typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
 
 API Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int x, int y, unsigned int level);
+
+/**
+ * Returns the tile size of a LOD map for a given data source
+ *
+ * @param dataSource			the data source to check for the tile size
+ * @result						the tile size of an LOD map tile
+ */
+static inline unsigned int getLodMapTileSize(OpenGLLodMapDataSource *dataSource)
+{
+	return (1 << dataSource->baseLevel) + 1;
+}
 
 #endif

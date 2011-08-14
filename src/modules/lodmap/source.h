@@ -68,6 +68,8 @@ struct OpenGLLodMapDataSourceStruct {
 	OpenGLLodMapDataSourceProviderType providesTexture;
 	/** The loader function callback of the data source */
 	OpenGLLodMapDataSourceLoader *load;
+	/** Custom data for the data source */
+	void *data;
 };
 
 typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;

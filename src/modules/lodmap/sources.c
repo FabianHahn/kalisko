@@ -25,6 +25,8 @@
 #include "source.h"
 #include "sources.h"
 
+static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int qx, int qy, unsigned int level);
+
 /**
  * Creates a null source for an OpenGL LOD map, i.e. a source that doesn't provide any data at all
  *
@@ -41,4 +43,59 @@ API OpenGLLodMapDataSource *createOpenGLLodMapNullSource(unsigned int baseLevel)
 	source->load = NULL; // if we don't provide anything, we will never be called
 
 	return source;
+}
+
+/**
+ * Creates an image source for an OpenGL LOD map
+ *
+ * @param image					the image from which to read the data
+ * @param baseLevel				the base level of a tile for the null source
+ * @result						the created LOD map data source
+ */
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *image, unsigned int baseLevel)
+{
+	OpenGLLodMapDataSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataSource);
+	source->baseLevel = baseLevel;
+	source->providesHeight = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
+	source->providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
+	source->providesTexture = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
+	source->load = &queryOpenGLLodMapImageSource;
+	source->data = image;
+
+	return source;
+}
+
+/**
+ * Queries an OpenGL LOD map image data source
+ *
+ * @param dataSource			the data source to query
+ * @param query					the type of query to perform
+ * @param qx					the x position of the tile to query
+ * @param qy					the y position of the tile to query
+ * @param level					the LOD level at which to perform the query
+ * @result						the result of the query or NULL if the source doesn't provide data for this kind of query
+ */
+static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int qx, int qy, unsigned int level)
+{
+	assert(query == OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT);
+	assert(level == 0);
+
+	Image *image = dataSource->data;
+	unsigned int tileSize = getLodMapTileSize(dataSource);
+
+	Image *result = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
+	for(int y = 0; y < tileSize + 2; y++) {
+		int dy = qy * (tileSize - 1) - 1 + y;
+		for(int x = 0; x < tileSize + 2; x++) {
+			int dx = qx * (tileSize - 1) - 1 + x;
+
+			if(dy >= 0 && dy < image->height && dx >= 0 && dx < image->width) {
+				setImage(result, x, y, 0, getImage(image, dx, dy, 0));
+			} else {
+				setImage(result, x, y, 0, 0.0);
+			}
+		}
+	}
+
+	return result;
 }

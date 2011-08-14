@@ -25,5 +25,6 @@
 #include "source.h"
 
 API OpenGLLodMapDataSource *createOpenGLLodMapNullSource(unsigned int baseLevel);
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *image, unsigned int baseLevel);
 
 #endif

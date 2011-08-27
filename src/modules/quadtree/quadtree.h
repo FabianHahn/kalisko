@@ -38,6 +38,8 @@ struct QuadtreeNodeStruct {
 	unsigned short weight;
 	/** The last access time (used for caching) */
 	double time;
+	/** The parent node of the quadtree node */
+	struct QuadtreeNodeStruct *parent;
 	/** The child nodes of the quadtree node */
 	struct QuadtreeNodeStruct *children[4];
 	/** The data of the quadtree node */
@@ -87,7 +89,8 @@ typedef struct {
 
 API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
 API void expandQuadtree(Quadtree *tree, double x, double y);
-API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node);
+API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackback);
+API void trackbackQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
 API void pruneQuadtree(Quadtree *tree);

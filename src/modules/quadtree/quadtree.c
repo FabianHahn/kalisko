@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 9, 0);
-MODULE_BCVERSION(0, 9, 0);
+MODULE_VERSION(0, 10, 0);
+MODULE_BCVERSION(0, 10, 0);
 MODULE_NODEPS;
 
 static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
@@ -71,6 +71,7 @@ API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *lo
 	quadtree->root->weight = 0;
 	quadtree->root->time = $$(double, getMicroTime)();
 	quadtree->root->level = 0;
+	quadtree->root->parent = 0;
 	quadtree->root->children[0] = NULL;
 	quadtree->root->children[1] = NULL;
 	quadtree->root->children[2] = NULL;
@@ -104,6 +105,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
 	newRoot->data = NULL;
+	newRoot->parent = NULL;
 	newRoot->children[0] = NULL;
 	newRoot->children[1] = NULL;
 	newRoot->children[2] = NULL;
@@ -128,6 +130,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 		newRoot->children[0] = tree->root;
 	}
 
+	tree->root->parent = newRoot;
 	tree->root = newRoot;
 	fillTreeNodes(tree, tree->root, time);
 
@@ -140,17 +143,38 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 
 /**
  * Loads the data for a quadtree node. If preloadChildData is set, recursively loads the child nodes' data first.
- * Note that this operation only updates the access time and the node weight of this node's subtree where appropriate, but not the values of the parent chain.
- * This means that if you want the tree weights to be consistent, you must track back the path to the root yourself and recursively update these nodes' weights.
  *
  * @param tree			the quadtree in which to load a node's data
  * @param node			the quadtree node for which to load the data
+ * @param trackback		specifies whether the path to the root node should be tracked back and all node weights and access times should be updated accordingly (not doing this leaves the quadtree in a consistent state, but you might want to do this yourself for efficiency reasons)
  * @result				the loaded node data
  */
-API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node)
+API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackback)
 {
 	double time = $$(double, getMicroTime)();
-	return loadQuadtreeNodeDataRec(tree, node, time);
+	void *data = loadQuadtreeNodeDataRec(tree, node, time);
+
+	if(trackback) {
+		trackbackQuadtreeNode(tree, node);
+	}
+
+	return data;
+}
+
+/**
+ * Tracks back a quadtree node by following its parent path back to the root and updates all node weights and access times accordingly
+ *
+ * @param tree			the tree in which the node is located
+ * @param node			the node from which to track back
+ */
+API void trackbackQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
+{
+	double time = $$(double, getMicroTime)();
+
+	for(QuadtreeNode *iter = node; iter != NULL; iter = iter->parent) {
+		iter->weight = iter->children[0]->weight + iter->children[1]->weight + iter->children[2]->weight + iter->children[3]->weight + (quadtreeNodeDataIsLoaded(iter) ? 1 : 0);
+		iter->time = time;
+	}
 }
 
 /**
@@ -381,6 +405,7 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->level = node->level - 1;
 			node->children[i]->weight = 0;
 			node->children[i]->time = time;
+			node->children[i]->parent = node;
 
 			unsigned int scale = quadtreeNodeScale(node->children[i]);
 			node->children[i]->x = node->x + (i % 2) * scale;

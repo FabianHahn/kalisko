@@ -120,10 +120,14 @@ int main(int argc, char **argv)
 			char *argumentTypes = g_match_info_fetch(matches, 3);
 			char *trailing = g_match_info_fetch(matches, 4);
 
-			g_string_append_printf(result, "#ifdef API\n");
-			g_string_append_printf(result, "API %s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
+			g_string_append_printf(result, "#ifdef WIN32\n");
+			g_string_append_printf(result, "\t#ifdef API\n");
+			g_string_append_printf(result, "\t\t__declspec(dllexport) %s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
+			g_string_append_printf(result, "\t#else\n");
+			g_string_append_printf(result, "\t\t#define %s ((%s (*)(%s)) GET_API_FUNCTION(%s, %s))\n", functionName, returnType, argumentTypes, moduleName, functionName);
+			g_string_append_printf(result, "\t#endif\n");
 			g_string_append_printf(result, "#else\n");
-			g_string_append_printf(result, "#define %s ((%s (*)(%s)) GET_API_FUNCTION(%s, %s))\n", functionName, returnType, argumentTypes, moduleName, functionName);
+			g_string_append_printf(result, "\t%s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
 			g_string_append_printf(result, "#endif\n");
 		} else {
 			g_string_append_printf(result, "%s\n", line);

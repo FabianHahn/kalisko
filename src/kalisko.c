@@ -32,7 +32,7 @@
 #endif
 
 #include <stdlib.h>
-#include "api.h"
+#define API
 #include "log.h"
 #include "timer.h"
 #include "module.h"

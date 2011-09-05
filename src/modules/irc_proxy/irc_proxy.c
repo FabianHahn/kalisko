@@ -35,7 +35,7 @@
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/config/config.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 #include "irc_proxy.h"
 
 MODULE_NAME("irc_proxy");

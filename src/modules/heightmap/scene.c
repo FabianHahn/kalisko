@@ -27,7 +27,7 @@
 #include "modules/opengl/primitive.h"
 #include "modules/image/io.h"
 #include "modules/image/image.h"
-#include "api.h"
+#define API
 #include "heightmap.h"
 #include "scene.h"
 

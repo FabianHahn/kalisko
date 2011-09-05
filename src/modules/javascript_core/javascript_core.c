@@ -25,7 +25,7 @@
 #include "log.h"
 #include "util.h"
 #include "modules/lang_javascript/lang_javascript.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("javascript_core");
 MODULE_AUTHOR("The Kalisko Team");

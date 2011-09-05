@@ -23,7 +23,7 @@
 #include "modules/store/store.h"
 #include "modules/store/parse.h"
 #include "modules/store/write.h"
-#include "api.h"
+#define API
 #include "mesh.h"
 #include "io.h"
 #include "store.h"

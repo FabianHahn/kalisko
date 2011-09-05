@@ -36,7 +36,7 @@
 
 #include <syslog.h>
 
-#include "api.h"
+#define API
 #include "log.h"
 
 MODULE_NAME("log_syslog");

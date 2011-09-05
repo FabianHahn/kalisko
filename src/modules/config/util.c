@@ -24,7 +24,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 
-#include "api.h"
+#define API
 #include "config.h"
 #include "util.h"
 

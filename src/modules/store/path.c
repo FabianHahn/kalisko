@@ -25,7 +25,7 @@
 #include "memory_alloc.h"
 #include "types.h"
 
-#include "api.h"
+#define API
 #include "parse.h"
 #include "path.h"
 

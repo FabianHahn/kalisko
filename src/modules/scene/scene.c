@@ -38,7 +38,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/store/parse.h"
-#include "api.h"
+#define API
 #include "scene.h"
 #include "primitive.h"
 #include "texture.h"

@@ -22,14 +22,15 @@
 #ifndef TABLE_TABLE_H
 #define TABLE_TABLE_H
 
-typedef struct Table Table;
-typedef struct TableCell TableCell;
+// forward declarations
+struct Table;
+struct TableCell;
 
-typedef char *(OutputGeneratorCallback)(Table *table);
-typedef void (FreeTableCallback)(Table *table);
-typedef void (FreeCellCallback)(TableCell *cell);
-typedef void (NewCellCallback)(Table *table, TableCell *newCell);
-typedef void (CopyCellCallback)(Table *table, TableCell *original, TableCell *copy);
+typedef char *(OutputGeneratorCallback)(struct Table *table);
+typedef void (FreeTableCallback)(struct Table *table);
+typedef void (FreeCellCallback)(struct TableCell *cell);
+typedef void (NewCellCallback)(struct Table *table, struct TableCell *newCell);
+typedef void (CopyCellCallback)(struct Table *table, struct TableCell *original, struct TableCell *copy);
 
 /**
  * Represents a single cell of a table. It can hold a string as content.
@@ -66,8 +67,10 @@ struct TableCell {
 	 *
 	 * @see tag
 	 */
-	FreeCellCallback *freeCell;
+	FreeCellCallback *freeCellCallback;
 };
+
+typedef struct TableCell TableCell;
 
 /**
  * Represents a Table. It can be extended to generate different outputs and is useful
@@ -116,25 +119,27 @@ struct Table {
 	 *
 	 * Can be null.
 	 */
-	OutputGeneratorCallback *outputGenerator;
+	OutputGeneratorCallback *outputGeneratorCallback;
 
 	/**
 	 * A callback to free the content of tag.
 	 *
 	 * @see tag
 	 */
-	FreeTableCallback *freeTable;
+	FreeTableCallback *freeTableCallback;
 
 	/**
 	 * A callback to apply the specific stuff to a new TableCell.
 	 */
-	NewCellCallback *newCell;
+	NewCellCallback *newCellCallback;
 
 	/**
 	 * A callback to apply a specific stuff to a copy of a TableCell.
 	 */
-	CopyCellCallback *copyCell;
+	CopyCellCallback *copyCellCallback;
 };
+
+typedef struct Table Table;
 
 #ifndef MODULE_TABLE_DEFAULT_ALLOC_ROWS
 	/**

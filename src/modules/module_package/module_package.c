@@ -31,7 +31,7 @@
 #include "modules/store/store.h"
 #include "modules/module_util/module_util.h"
 
-#include "api.h"
+#define API
 
 
 MODULE_NAME("module_package");

@@ -23,7 +23,7 @@
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"
-#include "api.h"
+#define API
 #include "material.h"
 #include "texture.h"
 #include "uniform.h"

@@ -27,7 +27,7 @@
 #include "modules/store/path.h"
 #include "util.h"
 
-#include "api.h"
+#define API
 #include "cli_help_meta.h"
 
 

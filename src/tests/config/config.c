@@ -29,7 +29,7 @@
 #include "modules/store/store.h"
 
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_config");
 MODULE_AUTHOR("The Kalisko team");

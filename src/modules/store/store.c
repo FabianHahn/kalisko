@@ -26,7 +26,7 @@
 #include "memory_alloc.h"
 #include "util.h"
 
-#include "api.h"
+#define API
 #include "store.h"
 
 MODULE_NAME("store");

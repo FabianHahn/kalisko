@@ -28,7 +28,7 @@
 #include "types.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("sigint_exit");
 MODULE_AUTHOR("The Kalisko team");

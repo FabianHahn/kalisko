@@ -35,7 +35,7 @@
 #include "modules/xcall/xcall.h"
 #include "modules/store/store.h"
 #include "modules/store/write.h"
-#include "api.h"
+#define API
 #include "phpext_kalisko.h"
 
 PHP_MINIT_FUNCTION(kalisko)

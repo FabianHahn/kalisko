@@ -33,7 +33,7 @@
 #include "modules/event/event.h"
 
 #include "log.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");

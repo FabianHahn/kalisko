@@ -28,7 +28,7 @@
 #include "types.h"
 #include "modules/xcall/xcall.h"
 
-#include "api.h"
+#define API
 #include "modules/lang_javascript/lang_javascript.h"
 #include "modules/lang_javascript/store.h"
 #include "modules/lang_javascript/xcall.h"

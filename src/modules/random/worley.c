@@ -23,7 +23,7 @@
 #include <assert.h>
 #include "dll.h"
 #include "modules/linalg/Vector.h"
-#include "api.h"
+#define API
 #include "random.h"
 #include "worley.h"
 

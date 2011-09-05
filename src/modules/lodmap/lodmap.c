@@ -28,10 +28,11 @@
 #include "modules/quadtree/quadtree.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
+#include "modules/heightmap/heightmap.h"
 #include "modules/heightmap/normals.h"
 #include "modules/opengl/material.h"
 #include "modules/linalg/Vector.h"
-#include "api.h"
+#define API
 #include "lodmap.h"
 #include "intersect.h"
 #include "source.h"

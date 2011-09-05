@@ -25,7 +25,7 @@
 extern "C" {
 #include "log.h"
 #include "memory_alloc.h"
-#include "api.h"
+#define API
 }
 
 #include "transform.h"

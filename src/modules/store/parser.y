@@ -23,11 +23,7 @@
 	#include <string.h>
 	#include <glib.h>
 	#include "dll.h"
-	#include "types.h"
-	#include "log.h"
-	#include "memory_alloc.h"
-	#include "util.h"
-	#include "api.h"
+	#define API
 	#include "store.h"
 	#include "parse.h"
 	#include "lexer.h"

@@ -21,7 +21,7 @@
 #include "dll.h"
 #include "test.h"
 #include "modules/quadtree/quadtree.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");

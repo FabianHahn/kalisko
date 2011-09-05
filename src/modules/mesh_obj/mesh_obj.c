@@ -20,7 +20,7 @@
 
 #include "dll.h"
 #include "modules/mesh/io.h"
-#include "api.h"
+#define API
 #include "obj.h"
 
 MODULE_NAME("mesh_obj");

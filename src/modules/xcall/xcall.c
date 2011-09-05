@@ -29,7 +29,7 @@
 #include "modules/store/clone.h"
 #include "modules/store/write.h"
 #include "modules/store/merge.h"
-#include "api.h"
+#define API
 #include "xcall.h"
 
 MODULE_NAME("xcall");

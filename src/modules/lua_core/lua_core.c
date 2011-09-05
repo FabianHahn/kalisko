@@ -25,7 +25,7 @@
 #include "log.h"
 #include "util.h"
 #include "modules/lua/module_lua.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("lua_core");
 MODULE_AUTHOR("The Kalisko Team");

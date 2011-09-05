@@ -27,7 +27,7 @@
 #include "modules/xcall/xcall.h"
 #include "modules/mesh/io.h"
 #include "modules/mesh/store.h"
-#include "api.h"
+#define API
 
 static Store *xcall_readMeshFile(Store *xcall);
 static Store *xcall_writeMeshFile(Store *xcall);

@@ -25,7 +25,7 @@
 #include "string.h"
 #include "modules/irc_parser/irc_parser.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_irc_parser");
 MODULE_AUTHOR("The Kalisko team");

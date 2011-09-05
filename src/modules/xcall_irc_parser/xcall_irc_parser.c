@@ -32,7 +32,7 @@
 #include "modules/store/write.h"
 #include "modules/xcall/xcall.h"
 
-#include "api.h"
+#define API
 
 static Store *xcall_parseIrcMessage(Store *xcall);
 static Store *xcall_parseIrcUserMask(Store *xcall);

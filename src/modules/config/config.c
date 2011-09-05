@@ -33,7 +33,7 @@
 #include "types.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 #include "config.h"
 #include "modules/config/util.h"
 

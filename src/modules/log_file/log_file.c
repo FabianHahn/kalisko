@@ -30,7 +30,7 @@
 #include "modules/config/config.h"
 #include "modules/event/event.h"
 
-#include "api.h"
+#define API
 #include "log_file.h"
 
 #define LOG_FILES_CONFIG_PATH "kalisko/logfiles"

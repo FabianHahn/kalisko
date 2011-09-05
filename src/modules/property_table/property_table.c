@@ -22,7 +22,7 @@
 #include "dll.h"
 #include "log.h"
 #include "memory_alloc.h"
-#include "api.h"
+#define API
 #include "property_table.h"
 
 MODULE_NAME("property_table");

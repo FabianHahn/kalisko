@@ -26,7 +26,7 @@
 #include "test.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
-#include "api.h"
+#define API
 
 #ifdef WIN32
 #define TMPFILE "kalisko_test_image.store"

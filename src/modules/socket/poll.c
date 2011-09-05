@@ -27,7 +27,7 @@
 #include "memory_alloc.h"
 #include "modules/event/event.h"
 
-#include "api.h"
+#define API
 #include "socket.h"
 #include "poll.h"
 

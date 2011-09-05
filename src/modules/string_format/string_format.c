@@ -27,7 +27,7 @@
 #include "dll.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 #include "modules/string_format/string_format.h"
 
 MODULE_NAME("string_format");

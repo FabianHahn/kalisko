@@ -27,7 +27,7 @@
 #include "modules/socket/poll.h"
 #include "modules/event/event.h"
 
-#include "api.h"
+#define API
 
 #define BUF 4096
 #define REQUEST "GET / HTTP/1.1\nHost: www.kalisko.org\nConnection: close\n\n"

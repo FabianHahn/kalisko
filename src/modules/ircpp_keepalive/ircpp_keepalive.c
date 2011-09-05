@@ -32,7 +32,7 @@
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");

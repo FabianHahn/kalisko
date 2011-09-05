@@ -27,7 +27,7 @@
 #include "modules/xcall/xcall.h"
 #include "modules/image/io.h"
 #include "modules/image/store.h"
-#include "api.h"
+#define API
 
 static Store *xcall_readImageFile(Store *xcall);
 static Store *xcall_writeImageFile(Store *xcall);

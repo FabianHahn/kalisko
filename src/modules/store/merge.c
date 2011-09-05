@@ -22,7 +22,7 @@
 #include <string.h>
 #include <glib.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "store.h"
 #include "merge.h"
 #include "clone.h"

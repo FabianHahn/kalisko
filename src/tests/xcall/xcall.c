@@ -27,7 +27,7 @@
 #include "modules/store/path.h"
 #include "modules/xcall/xcall.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_xcall");
 MODULE_AUTHOR("The Kalisko team");

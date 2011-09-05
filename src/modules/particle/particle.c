@@ -33,7 +33,7 @@
 #include "modules/opengl/uniform.h"
 #include "modules/random/random.h"
 #include "modules/linalg/Vector.h"
-#include "api.h"
+#define API
 #include "particle.h"
 #include "scene.h"
 

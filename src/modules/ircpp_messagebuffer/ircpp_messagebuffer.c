@@ -33,7 +33,7 @@
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("ircpp_messagebuffer");
 MODULE_AUTHOR("The Kalisko team");

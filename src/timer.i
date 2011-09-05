@@ -57,8 +57,6 @@ API int removeModuleTimers(const char *module);
  */
 #define TIMER_CALLBACK(CALLBACK) static void TIMER_CALLBACK_NAME(CALLBACK)(GTimeVal time, void *custom_data)
 
-#ifdef DLL_API_IMPORT
-
 /**
  * @see addTimer
  * @param TIME			the time when the callback should be executed
@@ -99,7 +97,5 @@ API int removeModuleTimers(const char *module);
  * Removes all timers registered by this module
  */
 #define TIMERS_CLEAR $$(int, removeModuleTimers)(STR(KALISKO_MODULE))
-
-#endif
 
 #endif

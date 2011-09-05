@@ -24,13 +24,9 @@
 
 #include <stdlib.h> // malloc, free
 
-#ifdef DLL_API_IMPORT
-
 #define ALLOCATE_OBJECT(TYPE) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE))
 #define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
 #define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
-
-#endif
 
 API void initMemory();
 API void *allocateMemory(int size);

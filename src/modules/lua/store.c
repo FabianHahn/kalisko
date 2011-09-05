@@ -29,7 +29,7 @@
 #include "modules/store/parse.h"
 #include "modules/store/path.h"
 #include "modules/store/write.h"
-#include "api.h"
+#define API
 #include "module_lua.h"
 #include "store.h"
 

@@ -30,7 +30,7 @@
 #include "modules/store/store.h"
 #include "modules/store/parse.h"
 
-#include "api.h"
+#define API
 #include "modules/lang_javascript/store.h"
 #include "modules/lang_javascript/xcall.h"
 

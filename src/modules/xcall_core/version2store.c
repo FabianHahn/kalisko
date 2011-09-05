@@ -23,7 +23,7 @@
 #include "dll.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "api.h"
+#define API
 
 /**
  * Serializes a versions struct into a store

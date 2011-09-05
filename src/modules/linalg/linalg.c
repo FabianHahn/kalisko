@@ -26,7 +26,7 @@
 #include "util.h"
 #include "memory_alloc.h"
 
-#include "api.h"
+#define API
 #include "Matrix.h"
 
 

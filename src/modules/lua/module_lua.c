@@ -26,7 +26,7 @@
 #include "log.h"
 #include "modules/xcall/xcall.h"
 #include "modules/store/store.h"
-#include "api.h"
+#define API
 #include "module_lua.h"
 #include "xcall.h"
 #include "store.h"

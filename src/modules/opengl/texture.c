@@ -23,7 +23,7 @@
 #include "dll.h"
 #include "modules/image/image.h"
 #include "memory_alloc.h"
-#include "api.h"
+#define API
 #include "opengl.h"
 #include "texture.h"
 

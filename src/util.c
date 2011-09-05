@@ -31,7 +31,7 @@
 #include <glib.h>
 #include <assert.h>
 
-#include "api.h"
+#define API
 #include "log.h"
 #include "util.h"
 

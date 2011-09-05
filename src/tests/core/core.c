@@ -25,7 +25,7 @@
 #include "version.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 
 TEST_CASE(version_compare);
 TEST_CASE(module_failure);

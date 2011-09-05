@@ -26,7 +26,7 @@
 #include "util.h"
 #include "modules/getopts/getopts.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_getopts");
 MODULE_AUTHOR("The Kalisko team");

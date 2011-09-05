@@ -23,7 +23,7 @@
 #include <GL/glew.h>
 #include "dll.h"
 #include "modules/linalg/Matrix.h"
-#include "api.h"
+#define API
 #include "opengl.h"
 #include "shader.h"
 #include "uniform.h"

@@ -26,7 +26,7 @@
 #include "module.h"
 #include "util.h"
 
-#include "api.h"
+#define API
 #include "gtk+.h"
 
 MODULE_NAME("gtk+");

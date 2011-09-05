@@ -34,7 +34,7 @@
 #include "modules/opengl/texture.h"
 #include "modules/linalg/Vector.h"
 #include "modules/image/image.h"
-#include "api.h"
+#define API
 #include "heightmap.h"
 #include "scene.h"
 #include "normals.h"

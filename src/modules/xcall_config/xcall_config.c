@@ -29,7 +29,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/xcall/xcall.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("xcall_config");
 MODULE_AUTHOR("The Kalisko team");

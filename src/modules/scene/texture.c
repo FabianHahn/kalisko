@@ -27,7 +27,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/opengl/texture.h"
-#include "api.h"
+#define API
 #include "texture.h"
 #include "texture_parsers.h"
 

@@ -27,7 +27,8 @@ extern "C" {
 #include <limits>
 #include <vector>
 #include "dll.h"
-#include "api.h"
+#include "modules/mesh/mesh.h"
+#define API
 #include "obj.h"
 
 typedef struct {

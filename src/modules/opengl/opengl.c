@@ -29,8 +29,9 @@
 #include "util.h"
 #include "memory_alloc.h"
 #include "modules/event/event.h"
+#include "modules/image/image.h"
 
-#include "api.h"
+#define API
 #include "opengl.h"
 #include "material.h"
 #include "model.h"

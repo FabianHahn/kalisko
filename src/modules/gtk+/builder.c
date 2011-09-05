@@ -20,7 +20,7 @@
 
 #include <gtk/gtk.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "builder.h"
 
 /**

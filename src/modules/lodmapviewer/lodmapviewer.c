@@ -45,7 +45,7 @@
 #include "modules/config/config.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");

@@ -26,7 +26,7 @@
 #include "memory_alloc.h"
 #include "modules/irc_proxy/irc_proxy.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("test_irc_proxy_plugin");
 MODULE_AUTHOR("The Kalisko team");

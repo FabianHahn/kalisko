@@ -26,7 +26,7 @@
 #include "types.h"
 #include "log.h"
 
-#include "api.h"
+#define API
 #include "store.h"
 #include "write.h"
 

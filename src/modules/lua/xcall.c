@@ -31,7 +31,7 @@
 #include "modules/store/path.h"
 #include "modules/store/write.h"
 #include "modules/xcall/xcall.h"
-#include "api.h"
+#define API
 #include "module_lua.h"
 #include "xcall.h"
 #include "store.h"

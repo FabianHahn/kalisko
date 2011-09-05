@@ -26,7 +26,7 @@
 #include "modules/store/path.h"
 #include "modules/opengl/primitive.h"
 #include "modules/linalg/store.h"
-#include "api.h"
+#define API
 #include "particle.h"
 #include "scene.h"
 

@@ -21,7 +21,7 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/image/image.h"
-#include "api.h"
+#define API
 #include "source.h"
 #include "sources.h"
 

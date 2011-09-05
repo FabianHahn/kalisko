@@ -25,7 +25,7 @@
 #include "dll.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 #include "modules/string_util/string_util.h"
 
 MODULE_NAME("string_util");

@@ -26,7 +26,7 @@
 #include "types.h"
 #include "timer.h"
 
-#include "api.h"
+#define API
 #include "module_util.h"
 
 MODULE_NAME("module_util");

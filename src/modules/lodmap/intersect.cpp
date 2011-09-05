@@ -23,7 +23,7 @@
 extern "C" {
 #include "modules/quadtree/quadtree.h"
 }
-#include "api.h"
+#define API
 extern "C" {
 #include "lodmap.h"
 }

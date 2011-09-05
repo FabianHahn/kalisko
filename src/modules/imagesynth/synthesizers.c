@@ -28,7 +28,7 @@
 #include "modules/store/path.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/store.h"
-#include "api.h"
+#define API
 #include "synthesizers.h"
 
 /**

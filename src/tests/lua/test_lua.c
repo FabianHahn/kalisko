@@ -28,7 +28,7 @@
 #include "modules/xcall/xcall.h"
 #include "modules/lua/module_lua.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_lua");
 MODULE_AUTHOR("The Kalisko team");

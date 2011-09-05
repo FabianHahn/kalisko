@@ -29,7 +29,7 @@
 #include "timer.h"
 #include "util.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("getopts");
 MODULE_AUTHOR("The Kalisko team");

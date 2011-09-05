@@ -27,7 +27,7 @@ extern "C" {
 #include "modules/store/path.h"
 }
 
-#include "api.h"
+#define API
 #include "store.h"
 #include "Vector.h"
 #include "Matrix.h"

@@ -23,6 +23,9 @@
 #undef API
 #endif
 
+#define $(TYPE, MODULE, FUNC) FUNC
+#define $$(TYPE, FUNC) FUNC
+
 #ifdef WIN32
 #include <stdio.h>
 #include "windows.h"

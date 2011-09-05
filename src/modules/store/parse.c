@@ -23,7 +23,7 @@
 #include "types.h"
 #include "log.h"
 
-#include "api.h"
+#define API
 #include "parse.h"
 #include "parser.h"
 #include "lexer.h"

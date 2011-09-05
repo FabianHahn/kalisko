@@ -32,7 +32,7 @@
 #include "modules/plaintext_table/plaintext_table.h"
 #include "modules/event/event.h"
 
-#include "api.h"
+#define API
 #include "cli_help.h"
 
 

@@ -52,8 +52,6 @@ API void initLog();
 API void setLogHandler(LogHandler *handler);
 API void logMessage(const char *module, LogType type, const char *message, ...) G_GNUC_PRINTF(3, 4);
 
-#ifdef DLL_API_IMPORT
-
 /**
  * Logs a system error (strerror).
  *
@@ -101,4 +99,3 @@ API void logMessage(const char *module, LogType type, const char *message, ...) 
  */
 #define LOG_MSG_MAXLEN 4096
 
-#endif

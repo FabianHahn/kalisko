@@ -29,7 +29,7 @@
 #include "modules/random/perlin.h"
 #include "modules/random/worley.h"
 #include "modules/scene/primitive.h"
-#include "api.h"
+#define API
 #include "landscape.h"
 #include "scene.h"
 

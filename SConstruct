@@ -17,6 +17,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import os
 import re
+import kic
+
+kic.buildInterfaces()
 
 modules = os.listdir('src/modules')
 

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 	}
 
 	GError *error = NULL;
-	GRegex *functionRegex = g_regex_new("^API (.+[ *])(\\S+)\\((.*)\\);(.*)", 0, 0, &error);
+	GRegex *functionRegex = g_regex_new("^API ([^(]+[ *])(\\S+)\\(([^)]*)\\)(.*)", 0, 0, &error);
 
 	if(error != NULL) {
 		fprintf(stderr, "Error: Failed to create API regex");
@@ -126,12 +126,12 @@ int main(int argc, char **argv)
 
 			g_string_append_printf(result, "#ifdef WIN32\n");
 			g_string_append_printf(result, "\t#ifdef API\n");
-			g_string_append_printf(result, "\t\t__declspec(dllexport) %s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
+			g_string_append_printf(result, "\t\t__declspec(dllexport) %s %s(%s)%s\n", returnType, functionName, argumentTypes, trailing);
 			g_string_append_printf(result, "\t#else\n");
 			g_string_append_printf(result, "\t\t#define %s ((%s (*)(%s)) GET_API_FUNCTION(%s, %s))\n", functionName, returnType, argumentTypes, moduleName, functionName);
 			g_string_append_printf(result, "\t#endif\n");
 			g_string_append_printf(result, "#else\n");
-			g_string_append_printf(result, "\t%s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
+			g_string_append_printf(result, "\t%s %s(%s)%s\n", returnType, functionName, argumentTypes, trailing);
 			g_string_append_printf(result, "#endif\n");
 
 			free(returnType);

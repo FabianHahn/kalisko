@@ -23,31 +23,18 @@
 #undef API
 #endif
 
-#ifndef DLL_API_IMPORT
-#define DLL_API_IMPORT
-#endif
-
-#define $$(TYPE, FUNC) $(TYPE,, FUNC)
-
 #ifdef WIN32
 #include <stdio.h>
 #include "windows.h"
-#ifdef __cplusplus
-#define $(TYPE, MODULE, FUNC) ((TYPE (*)(...)) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
-#else
-#define $(TYPE, MODULE, FUNC) ((TYPE (*)()) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC))
-#endif
+#define GET_API_FUNCTION(MODULE, FUNC) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC)
 #define GET_LIBRARY_HANDLE(MODULE) GetModuleHandle(GET_MODULE_PARAM(MODULE))
 #define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
-#define API __declspec(dllimport)
-#else
-#define $(TYPE, MODULE, FUNC) FUNC
-#define API
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include "module.h"
 #include "log.h"
 #include "memory_alloc.h"
@@ -55,6 +42,7 @@ extern "C" {
 #include "types.h"
 #include "util.h"
 #include "version.h"
+
 #ifdef __cplusplus
 }
 #endif

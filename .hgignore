@@ -21,6 +21,12 @@ syntax: glob
 bin/*
 3rd_party/*
 *.pyc
+*.o
+*.exe
+kic/kic
+
+# ignore compiled headers
+*.h
 
 # ignore custom Makefiles
 Makefile

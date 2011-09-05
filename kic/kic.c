@@ -129,6 +129,11 @@ int main(int argc, char **argv)
 			g_string_append_printf(result, "#else\n");
 			g_string_append_printf(result, "\t%s %s(%s);%s\n", returnType, functionName, argumentTypes, trailing);
 			g_string_append_printf(result, "#endif\n");
+
+			free(returnType);
+			free(functionName);
+			free(argumentTypes);
+			free(trailing);
 		} else {
 			g_string_append_printf(result, "%s\n", line);
 		}

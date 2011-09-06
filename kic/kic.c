@@ -119,17 +119,15 @@ int main(int argc, char **argv)
 		char *line = lines[i];
 
 		if(g_regex_match(functionRegex, line, 0, &matches)) {
-			char *returnType = g_strchomp(g_match_info_fetch(matches, 1));
+			char *returnType = g_strstrip(g_match_info_fetch(matches, 1));
 			char *functionName = g_match_info_fetch(matches, 2);
 			char *argumentTypes = g_match_info_fetch(matches, 3);
 			char *trailing = g_match_info_fetch(matches, 4);
 
-			g_string_append_printf(result, "#ifdef WIN32\n");
-			g_string_append_printf(result, "\t#ifdef API\n");
-			g_string_append_printf(result, "\t\t__declspec(dllexport) %s %s(%s)%s\n", returnType, functionName, argumentTypes, trailing);
-			g_string_append_printf(result, "\t#else\n");
-			g_string_append_printf(result, "\t\t#define %s ((%s (*)(%s)) GET_API_FUNCTION(%s, %s))\n", functionName, returnType, argumentTypes, moduleName, functionName);
-			g_string_append_printf(result, "\t#endif\n");
+			g_string_append_printf(result, "#if defined WIN32 && defined API\n");
+			g_string_append_printf(result, "\t__declspec(dllexport) %s %s(%s)%s\n", returnType, functionName, argumentTypes, trailing);
+			g_string_append_printf(result, "#elif defined WIN32 || defined WRAP_API\n");
+			g_string_append_printf(result, "\t#define %s ((%s (*)(%s)) getApiFunction(GET_MODULE_PARAM(%s), \"%s\"))\n", functionName, returnType, argumentTypes, moduleName, functionName);
 			g_string_append_printf(result, "#else\n");
 			g_string_append_printf(result, "\t%s %s(%s)%s\n", returnType, functionName, argumentTypes, trailing);
 			g_string_append_printf(result, "#endif\n");

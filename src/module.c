@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <glib.h>
+
 #define API
 #include "log.h"
 #include "memory_alloc.h"
@@ -238,6 +239,23 @@ API Version *getModuleBcVersion(const char *name)
 	}
 
 	return mod->bcversion;
+}
+
+/**
+ * Returns the internal handle of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the handle of the module's shared libarary
+ */
+API void *getModuleHandle(const char *name)
+{
+	Module *mod = g_hash_table_lookup(modules, name);
+
+	if(mod != NULL) {
+		return mod->handle;
+	}
+
+	return NULL;
 }
 
 /**

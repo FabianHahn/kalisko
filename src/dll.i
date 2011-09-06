@@ -26,13 +26,37 @@
 #define $(TYPE, MODULE, FUNC) FUNC
 #define $$(TYPE, FUNC) FUNC
 
-#ifdef WIN32
 #include <stdio.h>
-#include "windows.h"
-#define GET_API_FUNCTION(MODULE, FUNC) GetProcAddress(GET_LIBRARY_HANDLE(MODULE), #FUNC)
-#define GET_LIBRARY_HANDLE(MODULE) GetModuleHandle(GET_MODULE_PARAM(MODULE))
+#include <assert.h>
+#ifdef WIN32
+#include <windows.h>
 #define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
+#else
+#include <dlfcn.h>
+void *getModuleHandle(const char *name);
+#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? #MODULE : NULL)
 #endif
+
+/**
+ * Returns an API function of a module. This can be used without actually linking to the specified module's shared library.
+ * Note that this only works for functions declared with "API" in their respective interface file.
+ *
+ * @param moduleName		the module from which to fetch the API function
+ * @param functionName		the name of the function to fetch
+ * @result					a function pointer to the API function
+ */
+static inline void *getApiFunction(const char *moduleName, const char *functionName)
+{
+#ifdef WIN32
+	HMODULE handle = GetModuleHandle(moduleName);
+	assert(handle != NULL);
+	return (void *) GetProcAddress(handle, functionName);
+#else
+	void *handle = getModuleHandle(moduleName);
+	assert(handle != NULL);
+	return dlsym(handle, functionName);
+#endif
+}
 
 #ifdef __cplusplus
 extern "C" {

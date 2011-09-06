@@ -53,6 +53,15 @@ else:
 env = Environment(variables = vars, CCFLAGS = ['-Wall'], CFLAGS = ['-std=gnu99'], ENV = os.environ, CPPPATH = ['.','#src'], YACC = 'bison', YACCFLAGS = ['-d','-Wall','--report=all'], TOOLS = tools)
 Help(vars.GenerateHelpText(env))
 
+if testenv['PLATFORM'] != 'win32':
+	conf = Configure(env)
+
+	if not conf.CheckLibWithHeader('dl', 'dlfcn.h', 'C'):
+		print('Error: Could not find libdl and/or the corresponding dlfcn.h header file!')
+		Exit(1)	
+		
+	env = conf.Finish()	
+
 if env['force_zero_revision']:
 	srcversion = '0'
 else:

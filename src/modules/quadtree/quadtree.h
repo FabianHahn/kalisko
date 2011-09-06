@@ -50,7 +50,7 @@ typedef struct QuadtreeNodeStruct QuadtreeNode;
 
 struct QuadtreeStruct; // forward declaration
 
-typedef void *(QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, QuadtreeNode *node);
+typedef void (QuadtreeDataLoadFunction)(struct QuadtreeStruct *tree, QuadtreeNode *node);
 typedef void (QuadtreeDataFreeFunction)(struct QuadtreeStruct *tree, void *data);
 
 /**
@@ -194,6 +194,17 @@ static inline int quadtreeNodeGetContainingChildIndex(QuadtreeNode *node, double
 	bool isLowerY = y < (node->y + halfscale);
 
 	return (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
+}
+
+/**
+ * Retrieves the child index of a node in its parent node
+ *
+ * @param node		the quadtree node to check
+ * @result			the index of the node in its parent node
+ */
+static inline int quadtreeNodeGetParentContainingChildIndex(QuadtreeNode *node)
+{
+	return quadtreeNodeGetContainingChildIndex(node->parent, node->x, node->y);
 }
 
 #endif

@@ -27,8 +27,8 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 10, 0);
-MODULE_BCVERSION(0, 10, 0);
+MODULE_VERSION(0, 11, 0);
+MODULE_BCVERSION(0, 11, 0);
 MODULE_NODEPS;
 
 static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
@@ -309,7 +309,7 @@ static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double 
 	}
 
 	LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
-	node->data = tree->load(tree, node);
+	tree->load(tree, node);
 
 	// update node weight
 	if(quadtreeNodeIsLeaf(node)) {

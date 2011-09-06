@@ -21,35 +21,36 @@
 #version 120
 #extension GL_EXT_texture_array : enable
 
+uniform mat4 modelNormal;
 uniform vec3 cameraPosition;
 uniform vec3 lightPosition;
 uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
-uniform sampler2D texture;
 uniform int lodLevel;
 
+uniform sampler2D normals;
+uniform sampler2D parentNormals;
+uniform sampler2D texture;
+uniform sampler2D parentTexture;
+uniform vec2 parentOffset;
+uniform int heightmapWidth; // NOTE: textures are 2 pixels larger than this
+uniform int heightmapHeight; // NOTE: textures are 2 pixels larger than this
+
 varying vec3 world_position;
-varying vec3 world_normal;
 varying vec4 world_color;
 varying vec2 world_uv;
 varying float world_height;
+varying float world_morph;
 
-vec4 getColor(float x)
+vec4 getColor()
 {
-	/*
-	float scaled = (textureCount - 1) * x;
-	int prev = int(floor(scaled));
-	int next = prev + 1;
-	float diff = scaled - prev;
-	
-	vec3 lower = texture2DArray(texture, vec3(world_uv, prev)).xyz;
-	vec3 higher = texture2DArray(texture, vec3(world_uv, next)).xyz;
+	vec4 value = texture2D(texture, world_uv);
 
-	return vec4(mix(lower, higher, diff), 1.0);
-	*/
-	return texture2D(texture, world_uv);
-	// return world_color;
+	vec2 parentUV = 0.5 * world_uv + parentOffset;
+	vec4 parentValue = texture2D(parentTexture, parentUV); 
+
+	return mix(value, parentValue, world_morph);
 }
 
 vec4 phongAmbient(in vec4 textureColor)
@@ -80,11 +81,11 @@ vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
 
 void main()
 {
-	vec3 normal = normalize(world_normal);
+	vec3 normal = vec3(0, 1, 0);
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
 	
-	vec4 textureColor = getColor(world_height);
+	vec4 textureColor = getColor();
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);

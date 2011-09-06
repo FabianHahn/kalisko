@@ -39,12 +39,12 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 8, 10);
+MODULE_VERSION(0, 8, 11);
 MODULE_BCVERSION(0, 8, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 10, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
-static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
+static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static OpenGLHeightmapDrawMode getDrawModeForIndex(int index);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -270,7 +270,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
  * @param node			the quadtree node for which to load the map data
  * @result				the loaded LOD map tile
  */
-static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
+static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 {
 	OpenGLLodMap *lodmap = g_hash_table_lookup(maps, tree);
 	assert(lodmap != NULL);
@@ -285,6 +285,7 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	unsigned int tileSize = getLodMapTileSize(lodmap->source);
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
+	node->data = tile;
 
 	bool propagateHeight = false;
 	bool propagateNormals = false;
@@ -474,7 +475,26 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->model->scaleZ = scale;
 	$(void, opengl, updateOpenGLModelTransform)(tile->model);
 
-	// Attach textures to model
+	// At this point our tile is fully loaded except for the uniforms initialization, so let's initialize our parent now so we can grab its textures
+	OpenGLLodMapTile *parentTile;
+	tile->parentOffset = $(Vector *, linalg, createVector2)(0.0f, 0.0f);
+	if(node->parent != NULL) {
+		parentTile = $(void *, quadtree, loadQuadtreeNodeData)(tree, node->parent, true);
+
+		// determine our index in our parent's node
+		unsigned int parentIndex = quadtreeNodeGetParentContainingChildIndex(node);
+		if(parentIndex & 1) { // second in x direction
+			$(void, linalg, setVector)(tile->parentOffset, 0, 0.5);
+		}
+
+		if(parentIndex & 2) { // second in y direction
+			$(void, linalg, setVector)(tile->parentOffset, 1, 0.5);
+		}
+	} else {
+		parentTile = tile;
+	}
+
+	// Attach uniforms to model
 	OpenGLUniformAttachment *uniforms = tile->model->uniforms;
 	OpenGLUniform *heightsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "heights");
 	assert(heightsTextureUniform != NULL);
@@ -483,12 +503,13 @@ static void *loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	assert(normalsTextureUniform != NULL);
 	normalsTextureUniform->content.texture_value = tile->normalsTexture;
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "texture", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(tile->textureTexture));
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentNormals", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(parentTile->normalsTexture));
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentTexture", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(parentTile->textureTexture));
+	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentOffset", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(tile->parentOffset));
 	$(bool, opengl, attachOpenGLUniform)(uniforms, "lodLevel", $(OpenGLUniform *, opengl, createOpenGLUniformInt)(node->level));
 
 	// Make model invisible
 	tile->model->visible = false;
-
-	return tile;
 }
 
 /**
@@ -531,5 +552,6 @@ static void freeLodMapTile(Quadtree *tree, void *data)
 	$(void, opengl, freeOpenGLTexture)(tile->heightsTexture);
 	$(void, opengl, freeOpenGLTexture)(tile->normalsTexture);
 	$(void, opengl, freeOpenGLTexture)(tile->textureTexture);
+	$(void, linalg, freeVector)(tile->parentOffset);
 	free(tile);
 }

@@ -21,7 +21,6 @@
 #version 120
 
 uniform mat4 model;
-uniform mat4 modelNormal;
 uniform mat4 camera;
 uniform mat4 perspective;
 
@@ -29,7 +28,6 @@ uniform mat4 perspective;
 uniform sampler2D heights;
 uniform int heightmapWidth; // NOTE: textures are 2 pixels larger than this
 uniform int heightmapHeight; // NOTE: textures are 2 pixels larger than this
-uniform sampler2D normals;
 
 // lodmap uniforms
 uniform int lodLevel;
@@ -40,10 +38,10 @@ uniform vec3 viewerPosition;
 attribute vec2 uv;
 
 varying vec3 world_position;
-varying vec3 world_normal;
 varying vec4 world_color;
 varying vec2 world_uv;
 varying float world_height;
+varying float world_morph;
 
 const float morphEndScaleFactor = 0.99;
 
@@ -127,19 +125,13 @@ void main()
 	// transform the grid vertex to world coordinates
 	float morphedHeight = texture2DBilinearGrid(heights, morphedGrid).x;
 	vec4 morphedWorld = model * vec4(morphedModel.x, morphedHeight, morphedModel.y, 1.0);
-
-	// compute the normal vector in model coordinates
-	vec3 normalModel = texture2DBilinearGrid(normals, morphedGrid).xyz;
-	
-	// transform the normal to world coordiantes
-	vec4 normalWorld = modelNormal * vec4(normalModel, 1.0);
 	
 	// store output values
 	world_position = morphedWorld.xyz / morphedWorld.w;
-	world_normal = normalWorld.xyz / normalWorld.w;
 	world_color = vec4(morphedHeight / 2.0, morphedHeight, 0.5, 1.0);
 	world_uv = morphedModel;
 	world_height = morphedHeight;
+	world_morph = morphFactor;
 		
 	gl_Position = perspective * camera * morphedWorld;
 }

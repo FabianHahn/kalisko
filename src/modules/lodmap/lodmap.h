@@ -46,6 +46,8 @@ typedef struct {
 	Image *texture;
 	/** The texture texture of the tile */
 	OpenGLTexture *textureTexture;
+	/** The UV offset inside the parent texture */
+	Vector *parentOffset;
 	/** The minimum height value of the tile */
 	float minHeight;
 	/** The maximum height value of the tile */

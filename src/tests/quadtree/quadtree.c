@@ -26,11 +26,11 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 9);
-MODULE_BCVERSION(0, 2, 9);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 9, 0));
+MODULE_VERSION(0, 2, 10);
+MODULE_BCVERSION(0, 2, 10);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 11, 0));
 
-static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
+static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
 
 TEST_CASE(expand);
@@ -160,10 +160,10 @@ TEST_CASE(cache)
 	TEST_PASS;
 }
 
-static void *testDataLoadFunction(Quadtree *tree, QuadtreeNode *node)
+static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node)
 {
 	// store the node itself as data
-	return node;
+	node->data = node;
 }
 
 static void testDataFreeFunction(Quadtree *tree, void *data)

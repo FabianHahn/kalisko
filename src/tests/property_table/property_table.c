@@ -25,7 +25,7 @@
 #include "memory_alloc.h"
 #include "modules/property_table/property_table.h"
 
-#include "api.h"
+#define API
 
 TEST_CASE(null_subject);
 TEST_CASE(multiple_subjects);

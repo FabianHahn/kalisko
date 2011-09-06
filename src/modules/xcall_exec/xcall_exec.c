@@ -29,7 +29,7 @@
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/xcall/xcall.h"
-#include "api.h"
+#define API
 
 static Store *xcall_executeShellCommand(Store *xcall);
 static Store *xcall_executeShellCommandArgs(Store *xcall);

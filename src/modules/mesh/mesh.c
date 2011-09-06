@@ -22,7 +22,7 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/linalg/Vector.h"
-#include "api.h"
+#define API
 #include "mesh.h"
 #include "io.h"
 

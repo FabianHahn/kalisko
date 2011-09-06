@@ -26,7 +26,7 @@
 #include "modules/gtk+/gtk+.h"
 #include "modules/lua/module_lua.h"
 #include "timer.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("lua_console");
 MODULE_AUTHOR("The Kalisko team");

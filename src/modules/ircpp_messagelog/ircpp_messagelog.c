@@ -30,7 +30,7 @@
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/string_util/string_util.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("ircpp_messagelog");
 MODULE_AUTHOR("The Kalisko team");

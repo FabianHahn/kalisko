@@ -25,7 +25,7 @@
 #include "string.h"
 #include "modules/string_format/string_format.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_string_format");
 MODULE_AUTHOR("The Kalisko team");

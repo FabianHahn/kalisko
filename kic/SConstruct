@@ -1,5 +1,5 @@
 """
-Copyright (c) 2008, Kalisko Project Leaders
+Copyright (c) 2011, Kalisko Project Leaders
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -15,40 +15,12 @@ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-Import('module')
-Import('custom_tests')
+import os
+import re
 
-conf = Configure(module, custom_tests)
-check = True
+env = Environment(CCFLAGS = ['-Wall'], CFLAGS = ['-std=gnu99'], ENV = os.environ, CPPPATH = ['.'])
 
-check = check and conf.CheckPKGConfig('gtk+-2.0')
-	
-if conf.env['PLATFORM'] == 'posix':
-	if conf.CheckPKGConfig('lua'):
-		lua = 'lua'
-	elif conf.CheckPKGConfig('lua5.1'):
-		lua = 'lua5.1'
-	else:
-		check = False
-else: 
-	if conf.CheckPKGConfig('lua5.1'):
-		lua = 'lua5.1'
-	elif conf.CheckLib('lua5.1'):
-		lua = ''
-	else:
-		check = False
+# Add glib support
+env.ParseConfig('pkg-config --cflags --libs glib-2.0 gthread-2.0')
 
-module = conf.Finish()
-
-if check:
-	if lua.startswith('lua'):
-		module.ParseConfig('pkg-config --libs --cflags ' + lua)
-	else:
-		import os
-		luaroot = os.environ['LUA_DEV']
-		module.Append(LIBPATH=[luaroot + '/lib'], CPPPATH=[luaroot + '/include'])
-
-	module.ParseConfig('pkg-config --libs --cflags gtk+-2.0')
-	module.SharedLibrary('../kalisko_lua_console', Glob('*.c'))
-else:
-	print('A required library for the \'lua_console\' module is not available, skipping build...')
+kic = env.Program('kic', env.Glob('*.c'))

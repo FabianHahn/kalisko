@@ -26,7 +26,7 @@
 #include "memory_alloc.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/Matrix.h"
-#include "api.h"
+#define API
 
 TEST_CASE(matrix_matrix_multiplication);
 TEST_CASE(matrix_vector_multiplication);

@@ -61,7 +61,6 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  */
 #define TEST_CASE(CASE) static void TEST_CASE_NAME(CASE)(char *testsuite, char *testcase)
 
-#ifdef DLL_API_IMPORT
 /**
  * Checks if an expression holds, and fails the test case if it doesn't
  *
@@ -80,6 +79,4 @@ API void reportTestResult(char *testsuite, char *testcase, bool pass, char *erro
  * @param ERROR		printf-like error message
  */
 #define TEST_FAIL(ERROR, ...) $$(void, incTestCount)(); $$(void, reportTestResult)(testsuite, testcase, false, ERROR, ##__VA_ARGS__); return
-#endif
-
 #endif

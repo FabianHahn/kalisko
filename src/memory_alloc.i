@@ -19,16 +19,17 @@
  */
 
 
-#ifdef API
-#undef API
-#endif
+#ifndef MEMORY_ALLOC_H
+#define MEMORY_ALLOC_H
 
-#ifdef DLL_API_IMPORT
-#undef DLL_API_IMPORT
-#endif
+#include <stdlib.h> // malloc, free
 
-#ifdef WIN32
-#define API __declspec(dllexport)
-#else
-#define API
+#define ALLOCATE_OBJECT(TYPE) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE))
+#define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
+#define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
+
+API void initMemory();
+API void *allocateMemory(int size);
+API void *reallocateMemory(void *ptr, int size);
+
 #endif

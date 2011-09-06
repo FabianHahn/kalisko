@@ -25,7 +25,7 @@
 #include "string.h"
 #include "modules/string_util/string_util.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_string_util");
 MODULE_AUTHOR("The Kalisko team");

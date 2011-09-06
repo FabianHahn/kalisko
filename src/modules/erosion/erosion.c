@@ -23,9 +23,10 @@
 #include <glib.h>
 #include <stdio.h>
 #include "dll.h"
-#include "api.h"
-#include "erosion.h"
+#include "modules/image/image.h"
 #include "modules/image/io.h"
+#define API
+#include "erosion.h"
 
 MODULE_NAME("erosion");
 MODULE_AUTHOR("The Kalisko team");

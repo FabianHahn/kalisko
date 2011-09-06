@@ -21,7 +21,7 @@
 #include <glib.h>
 #include <GL/glew.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "material.h"
 #include "shader.h"
 #include "uniform.h"

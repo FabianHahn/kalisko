@@ -22,7 +22,7 @@
 #include <limits.h>
 #include "dll.h"
 #include "modules/image/io.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("image_pnm");
 MODULE_AUTHOR("The Kalisko team");

@@ -28,7 +28,7 @@
 #include <glib.h>
 #include <limits.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "io.h"
 #include "image.h"
 

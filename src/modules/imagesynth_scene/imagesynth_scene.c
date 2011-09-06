@@ -28,7 +28,7 @@
 #include "modules/imagesynth/imagesynth.h"
 #include "modules/scene/scene.h"
 #include "modules/scene/texture.h"
-#include "api.h"
+#define API
 #include "imagesynth_scene.h"
 
 MODULE_NAME("imagesynth_scene");

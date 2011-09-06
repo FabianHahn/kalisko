@@ -49,7 +49,7 @@
 #include "modules/store/path.h"
 #include "modules/event/event.h"
 
-#include "api.h"
+#define API
 #include "socket.h"
 #include "poll.h"
 
@@ -417,14 +417,14 @@ API bool connectSocket(Socket *s)
 
 			int writefd;
 
-			if((writefd = _open_osfhandle((long) handles[3], _O_APPEND)) == -1) {
+			if((writefd = _open_osfhandle((intptr_t) handles[3], _O_APPEND)) == -1) {
 				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
 				return false;
 			}
 
 			int readfd;
 
-			if((readfd = _open_osfhandle((long) handles[0], _O_RDONLY | _O_BINARY)) == -1) {
+			if((readfd = _open_osfhandle((intptr_t) handles[0], _O_RDONLY | _O_BINARY)) == -1) {
 				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
 				return false;
 			}

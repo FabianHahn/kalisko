@@ -34,7 +34,7 @@
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
 
-#include "api.h"
+#define API
 
 static Store *xcall_ircSend(Store *xcall);
 

@@ -29,18 +29,23 @@ if conf.env['PLATFORM'] == 'posix':
 	else:
 		check = False
 else: 
-	check = check and conf.CheckLib('lua5.1')
+	if conf.CheckPKGConfig('lua5.1'):
+		lua = 'lua5.1'
+	elif conf.CheckLib('lua5.1'):
+		lua = ''
+	else:
+		check = False
 
 module = conf.Finish()
 
 if check:
-	if conf.env['PLATFORM'] == 'posix':
+	if lua.startswith('lua'):
 		module.ParseConfig('pkg-config --libs --cflags ' + lua)
 	else:
 		import os
 		luaroot = os.environ['LUA_DEV']
 		module.Append(LIBPATH=[luaroot + '/lib'], CPPPATH=[luaroot + '/include'])
-
+	
 	module.SharedLibrary('../kalisko_lua', Glob('*.c'))
 else:
 	print('A required library for the \'lua\' module is not available, skipping build...')

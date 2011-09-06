@@ -26,7 +26,7 @@
 #include "types.h"
 #include "memory_alloc.h"
 
-#include "api.h"
+#define API
 #include "event.h"
 
 MODULE_NAME("event");

@@ -23,7 +23,7 @@
 #include <setjmp.h>
 #include "dll.h"
 #include "modules/image/io.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");

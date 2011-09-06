@@ -28,7 +28,7 @@
 #include "modules/table/table.h"
 #include "modules/plaintext_table/plaintext_table.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_table");
 MODULE_AUTHOR("The Kalisko team");
@@ -170,7 +170,7 @@ TEST_CASE(generator)
 	Table *table = $(Table *, table, newTable)();
 	TEST_ASSERT(table != NULL);
 
-	table->outputGenerator = &generatorFunc;
+	table->outputGeneratorCallback = &generatorFunc;
 
 	// create template
 	TableCell *tpl = $(TableCell *, table, newTableCell)(table);

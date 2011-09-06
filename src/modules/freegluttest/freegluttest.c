@@ -41,7 +41,7 @@
 #include "modules/mesh/io.h"
 #include "modules/scene/scene.h"
 #include "modules/particle/particle.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("freegluttest");
 MODULE_AUTHOR("The Kalisko team");

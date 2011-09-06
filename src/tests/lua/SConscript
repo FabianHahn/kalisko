@@ -29,12 +29,17 @@ if conf.env['PLATFORM'] == 'posix':
 	else:
 		check = False
 else: 
-	check = check and conf.CheckLib('lua5.1')
+	if conf.CheckPKGConfig('lua5.1'):
+		lua = 'lua5.1'
+	elif conf.CheckLib('lua5.1'):
+		lua = ''
+	else:
+		check = False
 
 test = conf.Finish()
 
 if check:
-	if conf.env['PLATFORM'] == 'posix':
+	if lua.startswith('lua'):
 		test.ParseConfig('pkg-config --libs --cflags ' + lua)
 	else:
 		import os

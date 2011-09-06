@@ -28,7 +28,7 @@
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("ircpp_plugin");
 MODULE_AUTHOR("The Kalisko team");

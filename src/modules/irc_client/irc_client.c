@@ -32,7 +32,7 @@
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/irc_channel/irc_channel.h"
 #include "modules/property_table/property_table.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");

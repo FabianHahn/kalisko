@@ -25,7 +25,7 @@
 #include <time.h> // time_t
 #include <glib.h>
 
-#include "api.h"
+#define API
 #include "log.h"
 
 #ifndef LOG_DEFAULT_LEVEL

@@ -28,7 +28,7 @@
 #include "log.h"
 #include "modules/string_util/string_util.h"
 
-#include "api.h"
+#define API
 #include "irc_parser.h"
 
 MODULE_NAME("irc_parser");

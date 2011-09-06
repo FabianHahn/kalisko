@@ -28,7 +28,7 @@ extern "C" {
 #include "modules/linalg/Matrix.h"
 #include "modules/linalg/Vector.h"
 #include "modules/linalg/transform.h"
-#include "api.h"
+#define API
 
 extern "C" {
 #include "primitive.h"

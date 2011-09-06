@@ -28,7 +28,7 @@
 #include "types.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("posix_signal");
 MODULE_AUTHOR("The Kalisko team");

@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <glib.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "random.h"
 #include "perlin.h"
 

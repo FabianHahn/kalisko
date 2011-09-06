@@ -22,6 +22,8 @@
 #ifndef PLAINTEXT_TABLE_PLAINTEXT_TABLE_H
 #define PLAINTEXT_TABLE_PLAINTEXT_TABLE_H
 
+#include "modules/table/table.h"
+
 typedef struct PlaintextTableCellTag PlaintextTableCellTag;
 
 /**

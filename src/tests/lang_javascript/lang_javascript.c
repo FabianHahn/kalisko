@@ -31,7 +31,7 @@
 #include "modules/lang_javascript/lang_javascript.h"
 #include "modules/lang_javascript/store.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("test_lang_javascript");
 MODULE_AUTHOR("The Kalisko team");

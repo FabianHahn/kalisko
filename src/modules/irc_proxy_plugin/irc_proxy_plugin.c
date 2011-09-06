@@ -26,7 +26,7 @@
 #include "types.h"
 #include "memory_alloc.h"
 #include "modules/irc_proxy/irc_proxy.h"
-#include "api.h"
+#define API
 #include "irc_proxy_plugin.h"
 
 

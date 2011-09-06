@@ -27,7 +27,7 @@
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/shader.h"
 #include "modules/opengl/opengl.h"
-#include "api.h"
+#define API
 #include "mesh_opengl.h"
 #include "scene.h"
 

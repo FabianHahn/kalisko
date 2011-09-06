@@ -21,7 +21,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "api.h"
+#define API
 #include "log.h"
 #include "module.h"
 #include "types.h"

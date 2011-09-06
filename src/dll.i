@@ -19,21 +19,64 @@
  */
 
 
-#ifndef MEMORY_ALLOC_H
-#define MEMORY_ALLOC_H
-
-#include <stdlib.h> // malloc, free
-
-#ifdef DLL_API_IMPORT
-
-#define ALLOCATE_OBJECT(TYPE) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE))
-#define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
-#define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
-
+#ifdef API
+#undef API
 #endif
 
-API void initMemory();
-API void *allocateMemory(int size);
-API void *reallocateMemory(void *ptr, int size);
+#define $(TYPE, MODULE, FUNC) FUNC
+#define $$(TYPE, FUNC) FUNC
 
+#include <stdio.h>
+#include <assert.h>
+#ifdef WIN32
+#include <windows.h>
+#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
+#else
+#include <dlfcn.h>
+#ifdef __cplusplus
+extern "C" {
 #endif
+void *getModuleHandle(const char *name);
+#ifdef __cplusplus
+}
+#endif
+#define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? #MODULE : NULL)
+#endif
+
+/**
+ * Returns an API function of a module. This can be used without actually linking to the specified module's shared library.
+ * Note that this only works for functions declared with "API" in their respective interface file.
+ *
+ * @param moduleName		the module from which to fetch the API function
+ * @param functionName		the name of the function to fetch
+ * @result					a function pointer to the API function
+ */
+static inline void *getApiFunction(const char *moduleName, const char *functionName)
+{
+#ifdef WIN32
+	HMODULE handle = GetModuleHandle(moduleName);
+	assert(handle != NULL);
+	return (void *) GetProcAddress(handle, functionName);
+#else
+	void *handle = getModuleHandle(moduleName);
+	assert(handle != NULL);
+	return dlsym(handle, functionName);
+#endif
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "module.h"
+#include "log.h"
+#include "memory_alloc.h"
+#include "timer.h"
+#include "types.h"
+#include "util.h"
+#include "version.h"
+
+#ifdef __cplusplus
+}
+#endif
+

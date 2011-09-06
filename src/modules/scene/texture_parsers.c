@@ -29,7 +29,7 @@
 #include "modules/opengl/texture.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
-#include "api.h"
+#define API
 #include "texture.h"
 #include "texture_parsers.h"
 

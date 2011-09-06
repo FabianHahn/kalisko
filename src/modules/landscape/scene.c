@@ -27,7 +27,7 @@
 #include "modules/image/io.h"
 #include "modules/image/image.h"
 #include "modules/heightmap/heightmap.h"
-#include "api.h"
+#define API
 #include "landscape.h"
 #include "scene.h"
 

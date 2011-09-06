@@ -24,7 +24,7 @@
 extern "C" {
 #include "modules/image/image.h"
 }
-#include "api.h"
+#define API
 
 extern "C" {
 #include "heightmap.h"

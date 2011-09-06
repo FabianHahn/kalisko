@@ -28,7 +28,7 @@
 #include "types.h"
 #include "memory_alloc.h"
 
-#include "api.h"
+#define API
 #include "table.h"
 
 MODULE_NAME("table");
@@ -72,12 +72,12 @@ API Table *newTableFull(int preAllocRows, int preAllocCols)
 {
 	// create table in memory
 	Table *table = ALLOCATE_OBJECT(Table);
-	table->freeTable = NULL;
-	table->newCell = NULL;
-	table->outputGenerator = NULL;
+	table->freeTableCallback = NULL;
+	table->newCellCallback = NULL;
+	table->outputGeneratorCallback = NULL;
 	table->table = NULL;
 	table->tag = NULL;
-	table->copyCell = NULL;
+	table->copyCellCallback = NULL;
 	table->rows = 0;
 	table->cols = 0;
 	table->freeRowsAmount = preAllocRows;
@@ -116,12 +116,12 @@ API TableCell *newTableCell(Table *table)
 {
 	TableCell *cell = ALLOCATE_OBJECT(TableCell);
 	cell->content = NULL;
-	cell->freeCell = NULL;
+	cell->freeCellCallback = NULL;
 	cell->tag = NULL;
 	cell->freeContent = false;
 
-	if(table->newCell) {
-		table->newCell(table, cell);
+	if(table->newCellCallback) {
+		table->newCellCallback(table, cell);
 	}
 
 	return cell;
@@ -155,8 +155,8 @@ API void freeTable(Table *table)
 		free(table->table);
 	}
 
-	if(table->freeTable != NULL) {
-		table->freeTable(table);
+	if(table->freeTableCallback != NULL) {
+		table->freeTableCallback(table);
 	}
 
 	free(table);
@@ -169,8 +169,8 @@ API void freeTable(Table *table)
  */
 API void freeCell(TableCell *cell)
 {
-	if(cell->freeCell != NULL) {
-		cell->freeCell(cell);
+	if(cell->freeCellCallback != NULL) {
+		cell->freeCellCallback(cell);
 	}
 
 	if(cell->freeContent) {
@@ -314,8 +314,8 @@ API TableCell *copyTableCell(Table *table, TableCell *original)
 		copy->freeContent = true;
 	}
 
-	if(table->copyCell) {
-		table->copyCell(table, original, copy);
+	if(table->copyCellCallback) {
+		table->copyCellCallback(table, original, copy);
 	}
 
 	return copy;
@@ -367,8 +367,8 @@ API bool replaceTableCell(Table *table, TableCell *cell, int row, int col)
  */
 API char *getTableString(Table *table)
 {
-	if(table->outputGenerator != NULL) {
-		return table->outputGenerator(table);
+	if(table->outputGeneratorCallback != NULL) {
+		return table->outputGeneratorCallback(table);
 	} else {
 		return NULL;
 	}

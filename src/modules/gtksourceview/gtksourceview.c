@@ -19,7 +19,7 @@
  */
 
 #include "dll.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("gtksourceview");
 MODULE_AUTHOR("The Kalisko team");

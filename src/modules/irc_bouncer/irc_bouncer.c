@@ -32,7 +32,7 @@
 #include "modules/store/path.h"
 #include "modules/irc_proxy_plugin/irc_proxy_plugin.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");

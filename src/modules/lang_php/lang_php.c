@@ -32,7 +32,7 @@
 #include "dll.h"
 #include "modules/event/event.h"
 #include "log.h"
-#include "api.h"
+#define API
 #include "lang_php.h"
 #include "phpext_kalisko.h"
 

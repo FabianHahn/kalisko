@@ -27,7 +27,7 @@ extern "C" {
 #include <sstream>
 #include <cmath>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "Matrix.h"
 
 /**

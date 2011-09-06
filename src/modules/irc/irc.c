@@ -33,7 +33,7 @@
 #include "modules/string_util/string_util.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 #include "irc.h"
 
 MODULE_NAME("irc");

@@ -20,7 +20,7 @@
 
 #include <glib.h>
 #include <string.h>
-#include "api.h"
+#define API
 #include "timer.h"
 #include "util.h"
 #include "memory_alloc.h"

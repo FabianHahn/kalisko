@@ -27,7 +27,7 @@
 #include "modules/irc/irc.h"
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/event/event.h"
-#include "api.h"
+#define API
 #include "irc_channel.h"
 
 MODULE_NAME("irc_channel");

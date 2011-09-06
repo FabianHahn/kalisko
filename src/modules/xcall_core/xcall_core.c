@@ -32,7 +32,7 @@
 #include "modules/store/write.h"
 #include "modules/event/event.h"
 #include "modules/module_util/module_util.h"
-#include "api.h"
+#define API
 #include "version2store.h"
 
 MODULE_NAME("xcall_core");

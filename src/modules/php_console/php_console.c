@@ -27,7 +27,7 @@
 #include "modules/lang_php/lang_php.h"
 #include "modules/event/event.h"
 #include "timer.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("php_console");
 MODULE_AUTHOR("The Kalisko team");

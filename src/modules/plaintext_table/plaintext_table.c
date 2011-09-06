@@ -28,7 +28,7 @@
 #include "modules/table/table.h"
 #include "memory_alloc.h"
 
-#include "api.h"
+#define API
 #include "plaintext_table.h"
 
 
@@ -77,9 +77,9 @@ API Table *newPlaintextTableFull(int preAllocRows, int preAllocCols)
 {
 	Table *table = $(Table *, table, newTableFull)(preAllocRows, preAllocCols);
 
-	table->newCell = &newPlaintextTableCellCallback;
-	table->outputGenerator = &getPlaintextTableString;
-	table->copyCell = &copyPlaintextTableCellCallback;
+	table->newCellCallback = &newPlaintextTableCellCallback;
+	table->outputGeneratorCallback = &getPlaintextTableString;
+	table->copyCellCallback = &copyPlaintextTableCellCallback;
 
 	return table;
 }
@@ -187,7 +187,7 @@ static void freePlaintextTableCell(TableCell *cell)
  */
 static void newPlaintextTableCellCallback(Table *table, TableCell *newCell)
 {
-	newCell->freeCell = &freePlaintextTableCell;
+	newCell->freeCellCallback = &freePlaintextTableCell;
 
 	PlaintextTableCellTag *tag = ALLOCATE_OBJECT(PlaintextTableCellTag);
 	tag->alignment = PLAINTEXT_TABLE_ALIGN_LEFT;

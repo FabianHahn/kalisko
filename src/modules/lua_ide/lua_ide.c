@@ -34,7 +34,7 @@
 #include "modules/config/config.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
-#include "api.h"
+#define API
 
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");

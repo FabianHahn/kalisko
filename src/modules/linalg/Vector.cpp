@@ -28,7 +28,7 @@ extern "C" {
 
 #include <cmath>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "Vector.h"
 
 /**

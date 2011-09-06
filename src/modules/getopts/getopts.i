@@ -26,9 +26,6 @@ API char *getOptValue(char *opt, ...) G_GNUC_NULL_TERMINATED;
 API char *dumpOpts();
 API void setOptsParsed(bool v);
 
-
-#ifdef DLL_API_IMPORT
-
 /**
  * Checks if the CLI option (OPT) exists. It does not have to have a value.
  *
@@ -37,7 +34,5 @@ API void setOptsParsed(bool v);
  */
 #define HAS_OPT(OPT) \
 	($(char *, getopts, getOpt)(OPT) != NULL)
-
-#endif
 
 #endif

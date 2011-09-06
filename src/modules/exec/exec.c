@@ -24,7 +24,7 @@
 #include "types.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
-#include "api.h"
+#define API
 #include "exec.h"
 
 MODULE_NAME("exec");

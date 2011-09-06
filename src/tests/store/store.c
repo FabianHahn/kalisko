@@ -32,7 +32,7 @@
 #include "modules/store/clone.h"
 #include "modules/store/write.h"
 #include "modules/store/merge.h"
-#include "api.h"
+#define API
 
 TEST_CASE(lexer);
 TEST_CASE(parser_clone_dump);

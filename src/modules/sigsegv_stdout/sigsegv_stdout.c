@@ -32,7 +32,7 @@
 #include "types.h"
 #include "module.h"
 
-#include "api.h"
+#define API
 
 MODULE_NAME("sigsegv_stdout");
 MODULE_AUTHOR("The Kalisko team");

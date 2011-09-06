@@ -30,7 +30,7 @@
 #include "modules/event/event.h"
 #include "modules/module_util/module_util.h"
 
-#include "api.h"
+#define API
 
 #define PERFORM_CONFIG_PATH "loadModules"
 

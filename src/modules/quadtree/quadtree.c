@@ -21,7 +21,7 @@
 #include <math.h>
 #include <glib.h>
 #include "dll.h"
-#include "api.h"
+#define API
 #include "quadtree.h"
 
 MODULE_NAME("quadtree");

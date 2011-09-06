@@ -23,13 +23,7 @@ import sys
 if not core.GetOption('clean'):
 	conf = Configure(core)
 
-	if sys.platform.startswith('linux'):
-		conf.env.Append(LIBS = ['dl'])
-		
-		if not conf.CheckLibWithHeader('dl', 'dlfcn.h', 'C'):
-			print('Error: Could not find libdl and/or the corresponding dlfcn.h header file!')
-			Exit(1)		
-	elif conf.env['PLATFORM'] == 'win32':
+	if conf.env['PLATFORM'] == 'win32':
 		if not conf.CheckCHeader('windows.h'):
 			print('Error: Could not find windows.h header file!')
 			Exit(1)

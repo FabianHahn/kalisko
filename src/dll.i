@@ -33,7 +33,13 @@
 #define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? "kalisko_"#MODULE : NULL)
 #else
 #include <dlfcn.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 void *getModuleHandle(const char *name);
+#ifdef __cplusplus
+}
+#endif
 #define GET_MODULE_PARAM(MODULE) (strlen(#MODULE) ? #MODULE : NULL)
 #endif
 

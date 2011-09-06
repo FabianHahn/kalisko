@@ -28,6 +28,7 @@ uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
 uniform int lodLevel;
+uniform int enableFragmentMorph;
 
 uniform sampler2D normals;
 uniform sampler2D parentNormals;
@@ -43,14 +44,14 @@ varying vec2 world_uv;
 varying float world_height;
 varying float world_morph;
 
-vec4 getColor()
+vec4 getColor(float morph)
 {
 	vec4 value = texture2D(texture, world_uv);
 
 	vec2 parentUV = 0.5 * world_uv + parentOffset;
 	vec4 parentValue = texture2D(parentTexture, parentUV); 
 
-	return mix(value, parentValue, world_morph);
+	return mix(value, parentValue, morph);
 }
 
 vec4 phongAmbient(in vec4 textureColor)
@@ -85,7 +86,7 @@ void main()
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
 	
-	vec4 textureColor = getColor();
+	vec4 textureColor = getColor(world_morph * enableFragmentMorph);
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);

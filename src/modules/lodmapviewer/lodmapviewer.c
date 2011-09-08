@@ -50,9 +50,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 8, 1), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 10, 0), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -120,6 +120,14 @@ MODULE_INIT
 		LOG_INFO("Config parameter 'lodmap/baseLevel' not found, defaulting to '%d'", baseLevel);
 	}
 
+	Store *configLodMapHeightRatio;
+	float heightRatio = 256.0f;
+	if((configLodMapHeightRatio = getStorePath(config, "lodmap/heightRatio")) != NULL && (configLodMapHeightRatio->type == STORE_INTEGER || configLodMapHeightRatio->type == STORE_FLOAT_NUMBER)) {
+		heightRatio = configLodMapHeightRatio->type == STORE_INTEGER ? configLodMapHeightRatio->content.integer : configLodMapHeightRatio->content.float_number;
+	} else {
+		LOG_INFO("Config parameter 'lodmap/heightRatio' not found, defaulting to '%f'", heightRatio);
+	}
+
 	Image *heights = $(Image *, image, readImageFromFile)(lodMapHeights);
 	if(heights == NULL) {
 		LOG_ERROR("Failed to load heights image from '%s'", lodMapHeights);
@@ -135,7 +143,7 @@ MODULE_INIT
 		return false;
 	}
 
-	source = $(OpenGLLodMapDataImageSource *, lodmap, createOpenGLLodMapImageSource)(heights, texture, baseLevel);
+	source = createOpenGLLodMapImageSource(heights, texture, baseLevel, heightRatio);
 	if(source == NULL) {
 		LOG_ERROR("Failed create LOD map image source");
 		$(void, image, freeImage)(heights);
@@ -159,7 +167,7 @@ MODULE_INIT
 	$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
 	$(void, opengl, activateOpenGLCamera)(camera);
 		
-	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 3.0, 3.0, 0);
+	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 12.0, 12.0, 0);
 	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
 
 	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);

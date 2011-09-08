@@ -39,7 +39,7 @@ attribute vec2 uv;
 
 varying vec3 world_position;
 varying vec4 world_color;
-varying vec2 world_uv;
+varying vec2 world_grid;
 varying float world_height;
 varying float world_morph;
 
@@ -129,7 +129,7 @@ void main()
 	// store output values
 	world_position = morphedWorld.xyz / morphedWorld.w;
 	world_color = vec4(morphedHeight / 2.0, morphedHeight, 0.5, 1.0);
-	world_uv = morphedModel;
+	world_grid = morphedGrid;
 	world_height = morphedHeight;
 	world_morph = morphFactor;
 		

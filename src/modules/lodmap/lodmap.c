@@ -40,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 9, 0);
+MODULE_VERSION(0, 9, 1);
 MODULE_BCVERSION(0, 8, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -455,7 +455,7 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	// Create OpenGL textures
 	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);
-	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->normals);
+	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(tile->normals, true);
 	tile->textureTexture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(tile->texture, false);
 	tile->textureTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
 	$(bool, opengl, initOpenGLTexture)(tile->textureTexture);

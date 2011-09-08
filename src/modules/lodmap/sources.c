@@ -54,11 +54,12 @@ API OpenGLLodMapDataSource *createOpenGLLodMapNullSource(unsigned int baseLevel)
  * @param baseLevel				the base level of a tile for the null source
  * @result						the created LOD map data source
  */
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *texture, unsigned int baseLevel)
+API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *texture, unsigned int baseLevel, float heightRatio)
 {
 	OpenGLLodMapDataImageSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataImageSource);
 	source->heights = heights;
 	source->texture = texture;
+	source->heightRatio = heightRatio;
 	source->source.baseLevel = baseLevel;
 	source->source.providesHeight = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
 	source->source.providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
@@ -97,6 +98,8 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 	OpenGLLodMapDataImageSource *imageSource = dataSource->data;
 	Image *result;
 
+	float heightScale = (1.0f / tileSize) * imageSource->heightRatio;
+
 	switch(query) {
 		case OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT:
 			result = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
@@ -106,7 +109,7 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 					int dx = qx * (tileSize - 1) - 1 + x;
 
 					if(dy >= 0 && dy < imageSource->heights->height && dx >= 0 && dx < imageSource->heights->width) {
-						setImage(result, x, y, 0, getImage(imageSource->heights, dx, dy, 0));
+						setImage(result, x, y, 0, heightScale * getImage(imageSource->heights, dx, dy, 0));
 					} else {
 						setImage(result, x, y, 0, 0.0);
 					}

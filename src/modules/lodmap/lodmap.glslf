@@ -40,15 +40,35 @@ uniform int heightmapHeight; // NOTE: textures are 2 pixels larger than this
 
 varying vec3 world_position;
 varying vec4 world_color;
-varying vec2 world_uv;
+varying vec2 world_grid;
 varying float world_height;
 varying float world_morph;
 
-vec4 getColor(float morph)
-{
-	vec4 value = texture2D(texture, world_uv);
+// some globals
+int textureWidth = heightmapWidth + 2;
+int textureHeight = heightmapHeight + 2;
+vec2 textureDimension = vec2(textureWidth - 1, textureHeight - 1);
+vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
 
-	vec2 parentUV = 0.5 * world_uv + parentOffset;
+vec3 getNormal(in float morph)
+{
+	vec2 gridShift = world_grid + vec2(1.0, 1.0); // account for the fact that textures are 2 pixels larger
+	vec2 uvShift = gridShift * textureDimensionInv;
+	
+	vec2 parentGridShift = 0.5 * world_grid + parentOffset * vec2(heightmapWidth - 1, heightmapHeight - 1) + vec2(1.0, 1.0);
+	vec2 parentUvShift = parentGridShift * textureDimensionInv;
+	
+	vec3 normal = texture2D(normals, uvShift).xyz;
+	vec3 parentNormal = texture2D(parentNormals, parentUvShift).xyz;
+	
+	return normalize(mix(normal, parentNormal, morph));
+}
+
+vec4 getColor(in vec2 uv, in float morph)
+{
+	vec4 value = texture2D(texture, uv);
+
+	vec2 parentUV = 0.5 * uv + parentOffset;
 	vec4 parentValue = texture2D(parentTexture, parentUV); 
 
 	return mix(value, parentValue, morph);
@@ -82,15 +102,19 @@ vec4 phongSpecular(in vec3 pos2light, in vec3 pos2cam, in vec3 normal)
 
 void main()
 {
-	vec3 normal = vec3(0, 1, 0);
+	vec2 uv = world_grid / vec2(heightmapWidth - 1, heightmapHeight - 1);
+	float fragmentMorph = world_morph * enableFragmentMorph;
+	vec3 normal = getNormal(fragmentMorph);
+	vec4 textureColor = getColor(uv, fragmentMorph);
+	
 	vec3 pos2light = normalize(lightPosition - world_position);
 	vec3 pos2cam = normalize(cameraPosition - world_position);
 	
-	vec4 textureColor = getColor(world_morph * enableFragmentMorph);
 	vec4 ac = phongAmbient(textureColor);
 	vec4 dc = phongDiffuse(textureColor, pos2light, normal);
 	vec4 sc = phongSpecular(pos2light, pos2cam, normal);
 
-	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	gl_FragColor = vec4(normal, 1.0);
+	// gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
 	// gl_FragColor = vec4(world_height, 0.25, 0.25, 1.0);
 }

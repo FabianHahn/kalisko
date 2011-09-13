@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <math.h>
 #include <glib.h>
 #include "dll.h"
 #include "modules/image/image.h"
@@ -36,10 +35,11 @@ static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int
  * @param heights				the image from which to read the height data (note that the source takes over control over this image, i.e. you must not free it)
  * @param normals				the image from which to read the normals data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it)
  * @param texture				the image from which to read the texture data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it)
- * @param baseLevel				the base level of a tile for the null source
+ * @param baseLevel				the base level of a tile
+ * @param heightRatio			the ratio to scale height values with
  * @result						the created LOD map data source or NULL on failure
  */
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel)
+API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio)
 {
 	int normalDetailLevel = 0;
 	int textureDetailLevel = 0;
@@ -109,6 +109,7 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 	source->source.baseLevel = baseLevel;
 	source->source.normalDetailLevel = normalDetailLevel;
 	source->source.textureDetailLevel = textureDetailLevel;
+	source->source.heightRatio = heightRatio;
 	source->source.load = &queryOpenGLLodMapImageSource;
 	source->source.data = source;
 

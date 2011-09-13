@@ -52,6 +52,8 @@ struct OpenGLLodMapDataSourceStruct {
 	unsigned int normalDetailLevel;
 	/** The texture detail level offset of the data source */
 	unsigned int textureDetailLevel;
+	/** The height ratio associated with this data source */
+	float heightRatio;
 	OpenGLLodMapDataSourceLoader *load;
 	/** Custom data for the data source */
 	void *data;

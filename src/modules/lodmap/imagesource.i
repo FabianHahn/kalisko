@@ -35,7 +35,7 @@ typedef struct {
 	OpenGLLodMapDataSource source;
 } OpenGLLodMapDataImageSource;
 
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel);
+API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
 API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source);
 
 #endif

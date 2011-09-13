@@ -48,7 +48,7 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 		double widthRatio = (double) normals->width / heights->width;
 		double heightRatio = (double) normals->height / heights->height;
 
-		if(widthRatio != heightRatio || widthRatio >= 1.0) {
+		if(widthRatio != heightRatio || widthRatio < 1.0) {
 			LOG_ERROR("Failed to create LOD map image source: Normals image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
@@ -62,7 +62,7 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 
 		unsigned int scaleFactor = 1 << normalDetailLevel;
 
-		if((scaleFactor * heights->width != normals->width) || (scaleFactor * heights->width != normals->height)) {
+		if((scaleFactor * heights->width != normals->width) || (scaleFactor * heights->height != normals->height)) {
 			LOG_ERROR("Failed to create LOD map image source: Normal detail image must be exactly 2 to the power of X times larger than heights image");
 			return NULL;
 		}
@@ -72,7 +72,7 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 		double widthRatio = (double) texture->width / heights->width;
 		double heightRatio = (double) texture->height / heights->height;
 
-		if(widthRatio != heightRatio || widthRatio >= 1.0) {
+		if(widthRatio != heightRatio || widthRatio < 1.0) {
 			LOG_ERROR("Failed to create LOD map image source: Texture image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
@@ -86,7 +86,7 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 
 		unsigned int scaleFactor = 1 << textureDetailLevel;
 
-		if((scaleFactor * heights->width != texture->width) || (scaleFactor * heights->width != texture->height)) {
+		if((scaleFactor * heights->width != texture->width) || (scaleFactor * heights->height != texture->height)) {
 			LOG_ERROR("Failed to create LOD map image source: Texture detail image must be exactly 2 to the power of X times larger than heights image");
 			return NULL;
 		}

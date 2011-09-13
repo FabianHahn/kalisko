@@ -143,29 +143,25 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 	OpenGLLodMapDataImageSource *imageSource = dataSource->data;
 	int imageSize = getLodMapImageSize(dataSource, query);
 	Image *image;
-	bool interpolate;
+	bool interpolate = true;
+	float scale = 1.0f;
 
 	switch(query) {
 		case OPENGL_LODMAP_IMAGE_HEIGHT:
 			image = imageSource->heights;
 			interpolate = false;
+			scale = (1.0f / imageSize) * dataSource->heightRatio;
 		break;
 		case OPENGL_LODMAP_IMAGE_NORMALS:
 			image = imageSource->normals;
-			interpolate = true;
 		break;
 		case OPENGL_LODMAP_IMAGE_TEXTURE:
 			image = imageSource->texture;
-			interpolate = true;
 		break;
 	}
 
 	Image *result = getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, interpolate);
-
-	if(query == OPENGL_LODMAP_IMAGE_HEIGHT) {
-		scaleImageChannel(result, 0, dataSource->heightRatio);
-	}
-
+	scaleImageChannel(result, 0, scale);
 	return result;
 }
 

@@ -40,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 11, 2);
+MODULE_VERSION(0, 11, 3);
 MODULE_BCVERSION(0, 11, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -289,8 +289,8 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->maxHeight = FLT_MIN;
 
 	if(node->level == 0) { // retrieve min/max values from data
-		for(unsigned int y = 1; y < tileSize + 1; y++) { // leave border away, only needed for base level interpolation!
-			for(unsigned int x = 1; x < tileSize + 1; x++) { // leave border away, only needed for base level interpolation!
+		for(unsigned int y = 1; y < tileSize; y++) { // leave border away, only needed for base level interpolation!
+			for(unsigned int x = 1; x < tileSize; x++) { // leave border away, only needed for base level interpolation!
 				float value = getImage(tile->heights, x, y, 0);
 
 				// update min/max

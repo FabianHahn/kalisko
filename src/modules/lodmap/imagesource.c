@@ -160,7 +160,13 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 		break;
 	}
 
-	return getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, interpolate);
+	Image *result = getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, interpolate);
+
+	if(query == OPENGL_LODMAP_IMAGE_HEIGHT) {
+		scaleImageChannel(result, 0, dataSource->heightRatio);
+	}
+
+	return result;
 }
 
 /**

@@ -40,7 +40,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 11, 3);
+MODULE_VERSION(0, 11, 4);
 MODULE_BCVERSION(0, 11, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
@@ -81,7 +81,7 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->source = source;
 	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, tileSize, tileSize); // create a managed heightmap that will serve as instance for our rendered tiles
-	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(512, &loadLodMapTile, &freeLodMapTile, true);
+	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(512, &loadLodMapTile, &freeLodMapTile, false);
 	lodmap->selection = NULL;
 	lodmap->viewerPosition = $(Vector *, linalg, createVector3)(0.0, 0.0, 0.0);
 	lodmap->baseRange = baseRange;
@@ -279,43 +279,9 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 	node->data = tile;
 
-	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level);
-	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level);
-	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level);
-
-	// determine min/max heights
-	unsigned int tileSize = getLodMapImageSize(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT);
-	tile->minHeight = FLT_MAX;
-	tile->maxHeight = FLT_MIN;
-
-	if(node->level == 0) { // retrieve min/max values from data
-		for(unsigned int y = 1; y < tileSize; y++) { // leave border away, only needed for base level interpolation!
-			for(unsigned int x = 1; x < tileSize; x++) { // leave border away, only needed for base level interpolation!
-				float value = getImage(tile->heights, x, y, 0);
-
-				// update min/max
-				if(value < tile->minHeight) {
-					tile->minHeight = value;
-				}
-
-				if(value > tile->maxHeight) {
-					tile->maxHeight = value;
-				}
-			}
-		}
-	} else { // retrieve min/max values from children
-		for(unsigned int i = 0; i < 4; i++) {
-			OpenGLLodMapTile *subtile = node->children[i]->data;
-
-			if(subtile->minHeight < tile->minHeight) {
-				tile->minHeight = subtile->minHeight;
-			}
-
-			if(subtile->maxHeight > tile->maxHeight) {
-				tile->maxHeight = subtile->maxHeight;
-			}
-		}
-	}
+	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level, &tile->minHeight, &tile->maxHeight);
+	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
+	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level, NULL, NULL);
 
 	// Create OpenGL textures
 	tile->heightsTexture = createOpenGLVertexTexture2D(tile->heights);

@@ -40,7 +40,7 @@ struct OpenGLLodMapDataSourceStruct; // forward declaration
 /**
  * Function pointer type for OpenGL LOD map data source loading callbacks
  */
-typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruct *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level);
+typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruct *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level, float *min, float *max);
 
 /**
  * Struct representing an OpenGL LOD map data source
@@ -69,11 +69,13 @@ typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
  * @param x						the x position of the tile to query
  * @param y						the y position of the tile to query
  * @param level					the LOD level at which to perform the query
+ * @param minValue				if not NULL, the minimum value of the looked up image will be written to the pointer target
+ * @param maxValue				if not NULL, the maximum value of the looked up image will be written to the pointer target
  * @result						the result of the query
  */
-static inline Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level)
+static inline Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level, float *minValue, float *maxValue)
 {
-	return dataSource->load(dataSource, query, x, y, level);
+	return dataSource->load(dataSource, query, x, y, level, minValue, maxValue);
 }
 
 /**

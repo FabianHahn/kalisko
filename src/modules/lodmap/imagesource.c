@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <limits.h>
 #include <glib.h>
 #include "dll.h"
 #include "modules/image/image.h"
@@ -26,8 +27,8 @@
 #include "source.h"
 #include "imagesource.h"
 
-static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level);
-static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, bool interpolate);
+static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
+static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, float *minValue, float *maxValue, bool interpolate);
 
 /**
  * Creates an image source for an OpenGL LOD map
@@ -136,15 +137,19 @@ API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source)
  * @param qx					the x position of the tile to query
  * @param qy					the y position of the tile to query
  * @param level					the LOD level at which to perform the query
+ * @param minValue				if not NULL, the minimum value of the looked up image will be written to the pointer target
+ * @param maxValue				if not NULL, the maximum value of the looked up image will be written to the pointer target
  * @result						the result of the query
  */
-static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level)
+static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue)
 {
 	OpenGLLodMapDataImageSource *imageSource = dataSource->data;
 	int imageSize = getLodMapImageSize(dataSource, query);
 	Image *image;
 	bool interpolate = true;
 	float scale = 1.0f;
+	float minValueBuffer = 0.0f;
+	float maxValueBuffer = 0.0f;
 
 	switch(query) {
 		case OPENGL_LODMAP_IMAGE_HEIGHT:
@@ -160,8 +165,16 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 		break;
 	}
 
-	Image *result = getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, interpolate);
+	Image *result = getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, &minValueBuffer, &maxValueBuffer, interpolate);
 	scaleImageChannel(result, 0, scale);
+
+	if(minValue != NULL) {
+		*minValue = minValueBuffer;
+	}
+	if(maxValue != NULL) {
+		*maxValue = maxValueBuffer;
+	}
+
 	return result;
 }
 
@@ -174,20 +187,39 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
  * @param size			the size of the image patch to extract
  * @param level			the pyramid level at which to extract the patch
  * @param interpolate	specifies whether image values should be interpolated or propagated
+ * @param minValue		the minimum value of the looked up image will be written to the pointer target
+ * @param maxValue		the maximum value of the looked up image will be written to the pointer target
  * @result				the extracted patch
  */
-static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, bool interpolate)
+static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, float *minValue, float *maxValue, bool interpolate)
 {
+	assert(minValue != NULL);
+	assert(maxValue != NULL);
+
+	*minValue = FLT_MAX;
+	*maxValue = FLT_MIN;
+
 	Image *result = createImageFloat(size, size, image->channels);
 
 	if(level == 0) {
 		for(int y = sy; y < sy + size; y++) {
 			for(int x = sx; x < sx + size; x++) {
 				for(unsigned int c = 0; c < image->channels; c++) {
+					float value;
 					if(y >= 0 && y < image->height && x >= 0 && x < image->width) {
-						setImage(result, x - sx, y - sy, c, getImage(image, x, y, c));
+						value = getImage(image, x, y, c);
 					} else {
-						setImage(result, x - sx, y - sy, c, 0.0);
+						value = 0.0f;
+					}
+
+					setImage(result, x - sx, y - sy, c, value);
+
+					// update min/max
+					if(value < *minValue) {
+						*minValue = value;
+					}
+					if(value > *maxValue) {
+						*maxValue = value;
 					}
 				}
 			}
@@ -195,7 +227,9 @@ static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int
 	} else {
 		if(interpolate) { // interpolate 8-neighborhood for each pixel
 			int detailStep = 1 << (level - 1);
-			Image *detail = getImagePatch(image, sx - detailStep, sy - detailStep, 2 * (size - 1) + 3, level - 1, interpolate);
+			Image *detail = getImagePatch(image, sx - detailStep, sy - detailStep, 2 * (size - 1) + 3, level - 1, minValue, maxValue, interpolate);
+			*minValue = FLT_MAX;
+			*maxValue = FLT_MIN;
 
 			for(int y = 0; y < size; y++) {
 				int dy = 2 * y;
@@ -209,21 +243,42 @@ static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int
 							}
 						}
 						value /= 9.0f;
+
 						setImage(result, x, y, c, value);
+
+						// update min/max
+						if(value < *minValue) {
+							*minValue = value;
+						}
+						if(value > *maxValue) {
+							*maxValue = value;
+						}
 					}
 				}
 			}
 
 			freeImage(detail);
 		} else { // just propagate the exact pixel from the lower level
-			Image *detail = getImagePatch(image, sx, sy, 2 * (size - 1) + 1, level - 1, interpolate);
+			Image *detail = getImagePatch(image, sx, sy, 2 * (size - 1) + 1, level - 1, minValue, maxValue, interpolate);
+			*minValue = FLT_MAX;
+			*maxValue = FLT_MIN;
 
 			for(int y = 0; y < size; y++) {
 				int dy = 2 * y;
 				for(int x = 0; x < size; x++) {
 					int dx = 2 * x;
 					for(unsigned int c = 0; c < image->channels; c++) {
-						setImage(result, x, y, c, getImage(detail, dx, dy, c));
+						float value = getImage(detail, dx, dy, c);
+
+						setImage(result, x, y, c, value);
+
+						// update min/max
+						if(value < *minValue) {
+							*minValue = value;
+						}
+						if(value > *maxValue) {
+							*maxValue = value;
+						}
 					}
 				}
 			}

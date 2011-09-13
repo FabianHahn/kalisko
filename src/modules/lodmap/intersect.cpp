@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cassert>
 #include "dll.h"
 #include "modules/linalg/Vector.h"
 extern "C" {
@@ -32,23 +33,26 @@ extern "C" {
 static int intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, double radius);
 
 /**
- * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Note that this function returns will not work as expected when the sphere center is located inside the bounding box
+ * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Make sure to update the node's weight after calling this function since it can cause the node to become loaded.
+ * Note that this function returns will not work as expected when the sphere center is located inside the bounding box.
  *
+ * @param tree			the quadtree to which the node belongs
  * @param node			the quadtree node which has to be intersected
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
  * @result				nonzero if the sphere intersects the axis aligned bounding box
  */
-API int lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius)
+API int lodmapQuadtreeNodeIntersectsSphere(Quadtree *tree, QuadtreeNode *node, Vector *position, double radius)
 {
-	float minY = 0.0f;
-	float maxY = 0.0f;
-
-	if(quadtreeNodeDataIsLoaded(node)) { // if the node data is available, copy over the height info
-		OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;
-		minY = tile->minHeight;
-		maxY = tile->maxHeight;
+	if(!quadtreeNodeDataIsLoaded(node)) { // if the node data is available, copy over the height info
+		loadQuadtreeNodeData(tree, node, false); // load this node's data - our callers will make sure they update their nodes' weights
 	}
+
+	assert(quadtreeNodeDataIsLoaded(node));
+
+	OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;
+	float minY = tile->minHeight;
+	float maxY = tile->maxHeight;
 
 	float scale = quadtreeNodeScale(node);
 	Vector pmin = Vector3(node->x, minY, node->y);

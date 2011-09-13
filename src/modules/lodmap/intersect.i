@@ -27,7 +27,9 @@
 extern "C" {
 #endif
 
-API int lodmapQuadtreeNodeIntersectsSphere(QuadtreeNode *node, Vector *position, double radius);
+#include "modules/quadtree/quadtree.h"
+
+API int lodmapQuadtreeNodeIntersectsSphere(Quadtree *tree, QuadtreeNode *node, Vector *position, double radius);
 
 #ifdef __cplusplus
 }

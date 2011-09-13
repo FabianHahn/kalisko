@@ -169,10 +169,10 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 	scaleImageChannel(result, 0, scale);
 
 	if(minValue != NULL) {
-		*minValue = minValueBuffer;
+		*minValue = minValueBuffer * scale;
 	}
 	if(maxValue != NULL) {
-		*maxValue = maxValueBuffer;
+		*maxValue = maxValueBuffer * scale;
 	}
 
 	return result;

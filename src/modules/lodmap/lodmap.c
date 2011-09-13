@@ -40,9 +40,9 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 11, 4);
+MODULE_VERSION(0, 12, 0);
 MODULE_BCVERSION(0, 11, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 1), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 1, 4), MODULE_DEPENDENCY("linalg", 0, 3, 4));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
 static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
@@ -156,7 +156,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 	lodmap->selection = NULL;
 
 	// select the LOD map nodes to be rendered
-	if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree->root, position, range)) {
+	if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, lodmap->quadtree->root, position, range)) {
 		double time = $$(double, getMicroTime)();
 		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
 
@@ -171,6 +171,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 
 		LOG_DEBUG("Selected %u LOD map nodes", g_list_length(lodmap->selection));
 	}
+	updateQuadtreeNodeWeight(lodmap->quadtree->root); // the root could have been loaded by intersecting it
 }
 
 /**
@@ -219,7 +220,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	node->time = time; // update access time
 
 	double range = getLodMapNodeRange(lodmap, node);
-	if(!lodmapQuadtreeNodeIntersectsSphere(node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
+	if(!lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
 		return NULL;
 	}
 
@@ -233,7 +234,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			QuadtreeNode *child = node->children[i];
 			OpenGLHeightmapDrawMode drawMode = getDrawModeForIndex(i);
 			double subrange = getLodMapNodeRange(lodmap, child);
-			if(lodmapQuadtreeNodeIntersectsSphere(child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+			if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
 				options.drawMode ^= drawMode; // don't draw this part if the child covers it
 
 				GList *childNodes = selectLodMapNodes(lodmap, position, child, time); // node selection
@@ -246,14 +247,11 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		}
 
 		// update node weight (we could have loaded child nodes)
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+		updateQuadtreeNodeWeight(node);
 	}
 
 	if(drawn) {
-		// Now make sure the node data is loaded
-		if(!quadtreeNodeDataIsLoaded(node)) {
-			$(void *, quadtree, loadQuadtreeNodeData)(lodmap->quadtree, node, false); // load this node's data - our recursion parents will make sure they update their nodes' weights
-		}
+		assert(quadtreeNodeDataIsLoaded(node));
 
 		OpenGLLodMapTile *tile = node->data;
 		tile->drawOptions = options;

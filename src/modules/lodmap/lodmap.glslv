@@ -46,9 +46,7 @@ varying float world_morph;
 const float morphEndScaleFactor = 0.99;
 
 // some globals
-int textureWidth = heightmapWidth + 2;
-int textureHeight = heightmapHeight + 2;
-vec2 textureDimension = vec2(textureWidth - 1, textureHeight - 1);
+vec2 textureDimension = vec2(heightmapWidth - 1, heightmapHeight - 1);
 vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
 
 vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
@@ -59,8 +57,7 @@ vec2 morphVertex(in vec2 vertexGrid, in float morphFactor)
 
 vec4 texture2DBilinearGrid(in sampler2D texture, in vec2 uvGrid)
 {
-	vec2 uvGridShift = uvGrid + vec2(1.0, 1.0); // account for the fact that textures are 2 pixels larger
-	vec2 uvGridTopLeft = floor(uvGridShift);
+	vec2 uvGridTopLeft = floor(uvGrid);
 	vec2 uvTopLeft = uvGridTopLeft * textureDimensionInv; 
 	
 	// sample texture
@@ -70,7 +67,7 @@ vec4 texture2DBilinearGrid(in sampler2D texture, in vec2 uvGrid)
     vec4 bottomRight = texture2D(texture, uvTopLeft + textureDimensionInv);
     
     // bilinear interpolation
-    vec2 ratio = uvGridShift - uvGridTopLeft;
+    vec2 ratio = uvGrid - uvGridTopLeft;
     vec4 topX = mix(topLeft, topRight, ratio.x);
     vec4 bottomX = mix(bottomLeft, bottomRight, ratio.x);
     return mix(topX, bottomX, ratio.y);
@@ -96,10 +93,10 @@ float getMorphFactor(in vec2 vertexGrid)
 	float morphStart = morphPreviousEnd + morphStartFactor * (morphEnd - morphPreviousEnd);
 	
 	// transform the grid vertex to model coordinates
-	vec2 vertexModel = vertexGrid / vec2(heightmapWidth - 1, heightmapHeight - 1);
+	vec2 vertexModel = vertexGrid * textureDimensionInv;
 	
 	// transform the grid vertex to world coordinates
-	float vertexHeight = texture2D(heights, (vertexGrid + vec2(1.0, 1.0)) * textureDimensionInv).x; // account for the fact that textures are 2 pixels larger
+	float vertexHeight = texture2D(heights, vertexModel).x;
 	vec4 vertexWorld = model * vec4(vertexModel.x, vertexHeight, vertexModel.y, 1.0);
 	
 	// compute the lod distance for the vertex
@@ -120,7 +117,7 @@ void main()
 	vec2 morphedGrid = morphVertex(vertexGrid, morphFactor);
 	
 	// transform the morphed grid vertex to model coordinates
-	vec2 morphedModel = morphedGrid / vec2(heightmapWidth - 1, heightmapHeight - 1);
+	vec2 morphedModel = morphedGrid * textureDimensionInv;
 	
 	// transform the grid vertex to world coordinates
 	float morphedHeight = texture2DBilinearGrid(heights, morphedGrid).x;

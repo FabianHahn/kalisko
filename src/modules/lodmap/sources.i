@@ -27,6 +27,8 @@
 typedef struct {
 	/** The heights image associated with this image source */
 	Image *heights;
+	/** The normals image associated with this image source */
+	Image *normals;
 	/** The texture image associated with this image source */
 	Image *texture;
 	/** The height ratio associated with this image source */

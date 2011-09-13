@@ -21,6 +21,7 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/image/image.h"
+#include "modules/heightmap/normals.h"
 #define API
 #include "source.h"
 #include "sources.h"
@@ -58,11 +59,13 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 {
 	OpenGLLodMapDataImageSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataImageSource);
 	source->heights = heights;
+	source->normals = createImageFloat(heights->width, heights->height, 3);
+	computeHeightmapNormals(source->heights, source->normals);
 	source->texture = texture;
 	source->heightRatio = heightRatio;
 	source->source.baseLevel = baseLevel;
 	source->source.providesHeight = OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF;
-	source->source.providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE;
+	source->source.providesNormals = OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID;
 	source->source.providesTexture = OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID;
 	source->source.load = &queryOpenGLLodMapImageSource;
 	source->source.data = source;
@@ -115,6 +118,9 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 					}
 				}
 			}
+		break;
+		case OPENGL_LODMAP_DATASOURCE_QUERY_NORMALS:
+			result = getImagePatch(imageSource->normals, qx * (tileSize - 1) - 1, qy * (tileSize - 1) - 1, tileSize + 2, level);
 		break;
 		case OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE:
 			result = getImagePatch(imageSource->texture, qx * (tileSize - 1), qy * (tileSize - 1), tileSize, level);

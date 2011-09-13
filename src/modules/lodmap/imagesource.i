@@ -27,14 +27,15 @@
 typedef struct {
 	/** The heights image associated with this image source */
 	Image *heights;
+	/** The normals image associated with this image source */
+	Image *normals;
 	/** The texture image associated with this image source */
 	Image *texture;
 	/** The LOD map data source for this image source */
 	OpenGLLodMapDataSource source;
 } OpenGLLodMapDataImageSource;
 
-API OpenGLLodMapDataSource *createOpenGLLodMapNullSource(unsigned int baseLevel);
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *texture, unsigned int baseLevel);
+API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel);
 API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source);
 
 #endif

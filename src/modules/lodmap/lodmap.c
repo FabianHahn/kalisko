@@ -76,7 +76,7 @@ MODULE_FINALIZE
  */
 API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance)
 {
-	unsigned int tileSize = getLodMapTileSize(source);
+	unsigned int tileSize = getLodMapImageSize(source, OPENGL_LODMAP_IMAGE_HEIGHT);
 
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->source = source;
@@ -276,151 +276,15 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLLodMap *lodmap = g_hash_table_lookup(maps, tree);
 	assert(lodmap != NULL);
 
-	if(node->level > 0) {
-		// these should be preloaded
-		assert(quadtreeNodeDataIsLoaded(node->children[0]));
-		assert(quadtreeNodeDataIsLoaded(node->children[1]));
-		assert(quadtreeNodeDataIsLoaded(node->children[2]));
-		assert(quadtreeNodeDataIsLoaded(node->children[3]));
-	}
-
-	unsigned int tileSize = getLodMapTileSize(lodmap->source);
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 	node->data = tile;
 
-	bool propagateHeight = false;
-	bool propagateNormals = false;
-	bool propagateTexture = false;
-
-	switch(lodmap->source->providesHeight) { // retrieve height
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID:
-			tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT, node->x, node->y, node->level);
-			assert(tile->heights->channels == 1);
-			assert(tile->heights->width == tileSize + 2);
-			assert(tile->heights->height == tileSize + 2);
-		break;
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF:
-			if(node->level == 0) {
-				tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT, node->x, node->y, 0);
-				assert(tile->heights->channels == 1);
-				assert(tile->heights->width == tileSize + 2);
-				assert(tile->heights->height == tileSize + 2);
-			} else { // construct higher LOD levels by propagating the lower detailed ones
-				tile->heights = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
-				propagateHeight = true;
-			}
-		break;
-		default:
-			tile->heights = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 1);
-			$(void, image, clearImage)(tile->heights);
-		break;
-	}
-
-	switch(lodmap->source->providesNormals) { // retrieve normals
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID:
-			tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_NORMALS, node->x, node->y, node->level);
-			assert(tile->normals->channels == 3);
-			assert(tile->normals->width == tileSize + 2);
-			assert(tile->normals->height == tileSize + 2);
-		break;
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF:
-			if(node->level == 0) {
-				tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_NORMALS, node->x, node->y, 0);
-				assert(tile->normals->channels == 3);
-				assert(tile->normals->width == tileSize + 2);
-				assert(tile->normals->height == tileSize + 2);
-			} else { // construct higher LOD levels by propagating the lower detailed ones
-				tile->normals = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 3);
-				propagateNormals = true;
-			}
-		break;
-		default:
-			tile->normals = $(Image *, image, createImageFloat)(tileSize + 2, tileSize + 2, 3);
-			if(node->level == 0) { // we can be sure that height data is available, so compute normals from it
-				$(void, heightmap, computeHeightmapNormals)(tile->heights, tile->normals);
-			} else { // construct higher LOD levels by propagating the lower detailed ones
-				propagateNormals = true;
-			}
-		break;
-	}
-
-	switch(lodmap->source->providesTexture) { // retrieve texture
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID:
-			tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE, node->x, node->y, node->level);
-			assert(tile->texture->width == tileSize);
-			assert(tile->texture->height == tileSize);
-		break;
-		case OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF:
-			if(node->level == 0) {
-				tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE, node->x, node->y, 0);
-				assert(tile->texture->width == tileSize);
-				assert(tile->texture->height == tileSize);
-			} else { // construct higher LOD levels by propagating the lower detailed ones
-				tile->texture = $(Image *, image, createImageFloat)(tileSize, tileSize, ((OpenGLLodMapTile *) node->children[0]->data)->texture->channels);
-				propagateTexture = true;
-			}
-		break;
-		default:
-			tile->texture = $(Image *, image, createImageFloat)(tileSize, tileSize, 3);
-			$(void, image, clearImage)(tile->texture);
-		break;
-	}
-
-	// propagate images
-	if(propagateHeight || propagateNormals || propagateTexture) {
-		LOG_DEBUG("Propagating LOD map image tile (%hd,%hd) for level %hd", node->x, node->y, node->level);
-
-		for(unsigned int y = 0; y < tileSize + 2; y++) {
-			unsigned int dy = 2 * y;
-			bool isLowerY = (2 * y) < tileSize;
-			int offsetY = isLowerY ? 0 : -(tileSize - 1);
-
-			for(unsigned int x = 0; x < tileSize + 2; x++) {
-				unsigned int dx = 2 * x;
-				bool isLowerX = dx < tileSize;
-				int offsetX = isLowerX ? 0 : -(tileSize - 1);
-
-				if(x == 0 || x == tileSize + 1 || y == 0 || y == tileSize + 1) { // border is not needed, so just set it to zero
-					if(propagateHeight) {
-						setImage(tile->heights, x, y, 0, 0.0);
-					}
-
-					if(propagateNormals) {
-						for(unsigned int c = 0; c < 3; c++) {
-							setImage(tile->normals, x, y, c, 0.0);
-						}
-					}
-
-					continue;
-				}
-
-				// determine correct sub image
-				unsigned int index = (isLowerX ? 0 : 1) + (isLowerY ? 0 : 2);
-				Image *subheights = ((OpenGLLodMapTile *) node->children[index]->data)->heights;
-				Image *subnormals = ((OpenGLLodMapTile *) node->children[index]->data)->normals;
-				Image *subtexture = ((OpenGLLodMapTile *) node->children[index]->data)->texture;
-
-
-				if(propagateHeight) { // propagate the height
-					setImage(tile->heights, x, y, 0, getImage(subheights, dx - 1 + offsetX, dy - 1 + offsetY, 0));
-				}
-
-				if(propagateNormals) { // propagate the normal vector
-					setImage(tile->normals, x, y, 0, 2.0 * getImage(subnormals, dx - 1 + offsetX, dy - 1 + offsetY, 0));
-					setImage(tile->normals, x, y, 1, getImage(subnormals, dx - 1 + offsetX, dy - 1 + offsetY, 1));
-					setImage(tile->normals, x, y, 2, 2.0 * getImage(subnormals, dx - 1 + offsetX, dy - 1 + offsetY, 2));
-				}
-
-				if(propagateTexture) { // propagate the texture
-					for(unsigned int c = 0; c < tile->texture->channels; c++) {
-						setImage(tile->texture, x - 1, y - 1, c, getImage(subtexture, 2 * (x - 1) + offsetX, 2 * (y - 1) + offsetY, c));
-					}
-				}
-			}
-		}
-	}
+	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level);
+	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level);
+	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level);
 
 	// determine min/max heights
+	unsigned int tileSize = getLodMapImageSize(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT);
 	tile->minHeight = FLT_MAX;
 	tile->maxHeight = FLT_MIN;
 
@@ -454,12 +318,15 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	}
 
 	// Create OpenGL textures
-	tile->heightsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->heights);
-	tile->normalsTexture = $(OpenGLTexture *, opengl, createOpenGLVertexTexture2D)(tile->normals);
-	tile->textureTexture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(tile->texture, false);
+	tile->heightsTexture = createOpenGLVertexTexture2D(tile->heights);
+	tile->normalsTexture = createOpenGLTexture2D(tile->normals, false);
+	tile->normalsTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
+	initOpenGLTexture(tile->normalsTexture);
+	synchronizeOpenGLTexture(tile->normalsTexture);
+	tile->textureTexture = createOpenGLTexture2D(tile->texture, false);
 	tile->textureTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
-	$(bool, opengl, initOpenGLTexture)(tile->textureTexture);
-	$(bool, opengl, synchronizeOpenGLTexture)(tile->textureTexture);
+	initOpenGLTexture(tile->textureTexture);
+	synchronizeOpenGLTexture(tile->textureTexture);
 
 	// Create OpenGL model
 	tile->model = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);

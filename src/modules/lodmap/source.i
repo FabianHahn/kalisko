@@ -24,35 +24,23 @@
 #include "modules/image/image.h"
 
 /**
- * Enum representing provider types for an OpenGL LOD map data source
- */
-typedef enum {
-	/** The data source provides no data of this type */
-	OPENGL_LODMAP_DATASOURCE_PROVIDE_NONE,
-	/** The data source provides the leaf level of this type */
-	OPENGL_LODMAP_DATASOURCE_PROVIDE_LEAF,
-	/** The data source provides the whole pyramid of this type */
-	OPENGL_LODMAP_DATASOURCE_PROVIDE_PYRAMID
-} OpenGLLodMapDataSourceProviderType;
-
-/**
  * Enum representing query types for an OpenGL LOD map data source
  */
 typedef enum {
 	/** Query for height data */
-	OPENGL_LODMAP_DATASOURCE_QUERY_HEIGHT,
+	OPENGL_LODMAP_IMAGE_HEIGHT,
 	/** Query for normal vector data */
-	OPENGL_LODMAP_DATASOURCE_QUERY_NORMALS,
+	OPENGL_LODMAP_IMAGE_NORMALS,
 	/** Query for texture data */
-	OPENGL_LODMAP_DATASOURCE_QUERY_TEXTURE
-} OpenGLLodMapDataSourceQueryType;
+	OPENGL_LODMAP_IMAGE_TEXTURE
+} OpenGLLodMapImageType;
 
 struct OpenGLLodMapDataSourceStruct; // forward declaration
 
 /**
  * Function pointer type for OpenGL LOD map data source loading callbacks
  */
-typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruct *dataSource, OpenGLLodMapDataSourceQueryType query, int x, int y, unsigned int level);
+typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruct *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level);
 
 /**
  * Struct representing an OpenGL LOD map data source
@@ -60,13 +48,10 @@ typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruc
 struct OpenGLLodMapDataSourceStruct {
 	/** The base level of an LOD map tile */
 	unsigned int baseLevel;
-	/** The height provider type of this data source */
-	OpenGLLodMapDataSourceProviderType providesHeight;
-	/** The normal vector provider type of this data source */
-	OpenGLLodMapDataSourceProviderType providesNormals;
-	/** The texture provider type of this data source */
-	OpenGLLodMapDataSourceProviderType providesTexture;
-	/** The loader function callback of the data source */
+	/** The normal detail level offset of the data source */
+	unsigned int normalDetailLevel;
+	/** The texture detail level offset of the data source */
+	unsigned int textureDetailLevel;
 	OpenGLLodMapDataSourceLoader *load;
 	/** Custom data for the data source */
 	void *data;
@@ -74,17 +59,39 @@ struct OpenGLLodMapDataSourceStruct {
 
 typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
 
-API Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapDataSourceQueryType query, int x, int y, unsigned int level);
+/**
+ * Queries an OpenGL LOD map data source
+ *
+ * @param dataSource			the data source to query
+ * @param query					the type of query to perform
+ * @param x						the x position of the tile to query
+ * @param y						the y position of the tile to query
+ * @param level					the LOD level at which to perform the query
+ * @result						the result of the query
+ */
+static inline Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level)
+{
+	return dataSource->load(dataSource, query, x, y, level);
+}
 
 /**
  * Returns the tile size of a LOD map for a given data source
  *
+ * @param type					the type of the tile for which to lookup the size
  * @param dataSource			the data source to check for the tile size
  * @result						the tile size of an LOD map tile
  */
-static inline unsigned int getLodMapTileSize(OpenGLLodMapDataSource *dataSource)
+static inline unsigned int getLodMapImageSize(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType type)
 {
-	return (1 << dataSource->baseLevel) + 1;
+	unsigned int level = dataSource->baseLevel;
+
+	if(type == OPENGL_LODMAP_IMAGE_NORMALS) {
+		level += dataSource->normalDetailLevel;
+	} else if(type == OPENGL_LODMAP_IMAGE_TEXTURE) {
+		level += dataSource->textureDetailLevel;
+	}
+
+	return (1 << level) + 1;
 }
 
 #endif

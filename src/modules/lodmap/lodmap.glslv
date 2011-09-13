@@ -26,8 +26,8 @@ uniform mat4 perspective;
 
 // heightmap uniforms
 uniform sampler2D heights;
-uniform int heightmapWidth; // NOTE: textures are 2 pixels larger than this
-uniform int heightmapHeight; // NOTE: textures are 2 pixels larger than this
+uniform int heightmapWidth;
+uniform int heightmapHeight;
 
 // lodmap uniforms
 uniform int lodLevel;

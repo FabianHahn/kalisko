@@ -159,6 +159,7 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 		break;
 		case OPENGL_LODMAP_IMAGE_NORMALS:
 			image = imageSource->normals;
+			scale = 1 << level;
 		break;
 		case OPENGL_LODMAP_IMAGE_TEXTURE:
 			image = imageSource->texture;
@@ -167,6 +168,7 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 
 	Image *result = getImagePatch(image, qx * (imageSize - 1), qy * (imageSize - 1), imageSize, level, &minValueBuffer, &maxValueBuffer, interpolate);
 	scaleImageChannel(result, 0, scale);
+	scaleImageChannel(result, 2, scale);
 
 	if(minValue != NULL) {
 		*minValue = minValueBuffer * scale;

@@ -207,4 +207,14 @@ static inline int quadtreeNodeGetParentContainingChildIndex(QuadtreeNode *node)
 	return quadtreeNodeGetContainingChildIndex(node->parent, node->x, node->y);
 }
 
+/**
+ * Updates a quadtree node's weight. Note that this function only changes the weight of the passed note, it is completely non-recursive.
+ *
+ * @param node		the node for which to update the weight
+ */
+static inline void updateQuadtreeNodeWeight(QuadtreeNode *node)
+{
+	node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+}
+
 #endif

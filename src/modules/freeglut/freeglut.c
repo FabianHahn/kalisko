@@ -37,7 +37,7 @@
 MODULE_NAME("freeglut");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The freeglut module is an freeglut context provider suited to rendering into multiple windows");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 1));
 
@@ -84,6 +84,7 @@ MODULE_INIT
 
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowPosition(0, 0);
 
 	loopTime = getDoubleTime();
 	windows = g_hash_table_new_full(&g_int_hash, &g_int_equal, NULL, &freeFreeglutWindowEntry);

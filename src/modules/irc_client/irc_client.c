@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 10);
+MODULE_VERSION(0, 3, 11);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3));
 
@@ -239,7 +239,7 @@ MODULE_INIT
 	$(void, gtk+, runGtkLoop)();
 
 	// log handler
-	//$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
+	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
 
 	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
 
@@ -474,7 +474,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 
 static void finalize()
 {
-	//$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
+	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
 
 	gtk_widget_destroy(GTK_WIDGET(window));
 	g_object_unref(status_buffer);

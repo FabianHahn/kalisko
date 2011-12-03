@@ -145,7 +145,7 @@ static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, O
 {
 	OpenGLLodMapDataImageSource *imageSource = dataSource->data;
 	int imageSize = getLodMapImageSize(dataSource, query);
-	Image *image;
+	Image *image = NULL;
 	bool interpolate = true;
 	float scale = 1.0f;
 	float minValueBuffer = 0.0f;

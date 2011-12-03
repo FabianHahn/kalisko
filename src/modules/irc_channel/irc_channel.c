@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -88,7 +88,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				channel->tracker = tracker;
 				g_hash_table_insert(tracker->channels, channel->name, channel); // add it to channels table
 
-				LOG_DEBUG("Joined channel %s on IRC conection %d", channel->name, irc->socket->fd);
+				LOG_DEBUG("Joined channel %s on IRC connection %d", channel->name, irc->socket->fd);
 
 				$(int, event, triggerEvent)(irc, "channel_join", channel);
 			}

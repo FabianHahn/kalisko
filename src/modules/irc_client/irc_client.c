@@ -37,7 +37,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 9);
+MODULE_VERSION(0, 3, 11);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3));
 
@@ -97,6 +97,7 @@ static void setWindowTitle(char *connection, char *channel);
 static void setChannelDirty(IrcClientConnectionChannel *channel, bool value);
 static void freeIrcClientConnection(void *connection_p);
 static void freeIrcClientConnectionChannel(void *channel_p);
+static bool updateScroll(void *data);
 static int strpcmp(const void *p1, const void *p2);
 
 /**
@@ -318,6 +319,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
 
     			if(channel != NULL) {
     				gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), channel->buffer);
+
     				active_type = CHAT_ELEMENT_CHANNEL;
     				active = channel;
     				setWindowTitle(parentName, name);
@@ -335,10 +337,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
 
 API void irc_client_chat_output_scroll_size_allocate(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data)
 {
-	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(chat_output));
-	GtkTextIter end;
-	gtk_text_buffer_get_end_iter(buffer, &end);
-	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(chat_output), &end, 0.0, true, 1.0, 1.0);
+	g_idle_add(&updateScroll, NULL);
 }
 
 API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
@@ -449,7 +448,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 
 	GDateTime *now = g_date_time_new_now_local();
 
-	const char *typestr;
+	const char *typestr = NULL;
 	switch(type) {
 		case LOG_TYPE_DEBUG:
 			typestr = "debug";
@@ -723,6 +722,16 @@ static void freeIrcClientConnectionChannel(void *channel_p)
 	free(channel->name);
 	g_object_unref(channel->buffer);
 	free(channel);
+}
+
+static bool updateScroll(void *data)
+{
+	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(chat_output));
+	GtkTextIter end;
+	gtk_text_buffer_get_end_iter(buffer, &end);
+	gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(chat_output), &end, 0.0, true, 1.0, 1.0);
+
+	return false;
 }
 
 static int strpcmp(const void *p1, const void *p2)

@@ -30,5 +30,6 @@ const char WHITESPACE_CHARS[] = "\r\t\n\v\f ";
 API void stripDuplicateWhitespace(char *str);
 API void stripDuplicateNewlines(char *str);
 API void convertToFilename(char *str);
+API char *convertToUtf8(const char *string);
 
 #endif

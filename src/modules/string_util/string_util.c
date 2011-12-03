@@ -31,11 +31,13 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
 #define NEWLINE_CHARS "\r\n"
+
+const char *utf8ConversionCodesets[] = {"ISO-8859-1", NULL};
 
 MODULE_INIT
 {
@@ -117,4 +119,27 @@ API void convertToFilename(char *str)
 			str[i] = '_';
 		}
 	}
+}
+
+/**
+ * Converts a NUL terminated string to UTF-8 if needed, which can be useful for displaying it in GUI widgets and the like that require UTF-8
+ *
+ * @param string			the string to convert to UTF-8
+ * @result					the converted string or NULL on failure
+ */
+char *convertToUtf8(const char *string)
+{
+	if(g_utf8_validate(string, -1, NULL)) { // already correct UTF-8
+		return strdup(string);
+	} else {
+		// Try to convert to the current locale
+		for(const char **iter = utf8ConversionCodesets; *iter != NULL; ++iter) {
+			char *converted = g_convert(string, -1, "UTF-8", *iter, NULL, NULL, NULL); // try to convert to this codeset
+			if(converted != NULL) {
+				return converted; // if it worked, return the conversion
+			}
+		}
+	}
+
+	return NULL; // failure
 }

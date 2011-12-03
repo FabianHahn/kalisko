@@ -32,14 +32,15 @@
 #include "modules/irc_parser/irc_parser.h"
 #include "modules/irc_channel/irc_channel.h"
 #include "modules/property_table/property_table.h"
+#include "modules/string_util/string_util.h"
 #define API
 
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 11);
+MODULE_VERSION(0, 3, 12);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -414,7 +415,12 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	IrcClientConnection *clientConnection = data;
-	appendMessage(clientConnection->buffer, message->raw_message, CHAT_MESSAGE_CONNECTION_LINE);
+	char *converted;
+	if((converted = convertToUtf8(message->raw_message)) == NULL) {
+		converted = strdup("[Kalisko UTF-8 conversion error]");
+	}
+	appendMessage(clientConnection->buffer, converted, CHAT_MESSAGE_CONNECTION_LINE);
+	free(converted);
 
 	if(g_strcmp0(message->command, "PRIVMSG") == 0) {
 		if(message->params[0] != NULL) {
@@ -423,10 +429,15 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 			if(channel != NULL) {
 				IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
 				if(mask != NULL) {
+					if((converted = convertToUtf8(message->trailing)) == NULL) {
+						converted = strdup("[Kalisko UTF-8 conversion error]");
+					}
+
 					GString *msg = g_string_new("");
-					g_string_append_printf(msg, "<%s> %s", mask->nick, message->trailing);
+					g_string_append_printf(msg, "<%s> %s", mask->nick, converted);
 					appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_IN);
 					g_string_free(msg, true);
+					free(converted);
 					$(void, irc_parser, freeIrcUserMask)(mask);
 
 					if(active_type != CHAT_ELEMENT_CHANNEL || g_strcmp0(((IrcClientConnectionChannel *) active)->name, channel->name) != 0) { // Not posted into the active channel

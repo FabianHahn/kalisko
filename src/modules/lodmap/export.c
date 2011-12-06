@@ -31,6 +31,8 @@
 #include "source.h"
 #include "export.h"
 
+static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path);
+
 /**
  * Exports an OpenGL LOD map to a folder by dumping both the metadata and the node data into files
  *
@@ -40,6 +42,7 @@
  */
 bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
 {
+	// First dump meta information
 	Store *meta = createStore();
 	setStorePath(meta, "lodmap", createStore());
 	setStorePath(meta, "lodmap/baseRange", createStoreFloatNumberValue(lodmap->baseRange));
@@ -54,8 +57,76 @@ bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
 
 	GString *metaPath = g_string_new(path);
 	g_string_append(metaPath, "/lodmap.store");
-
 	writeStoreFile(metaPath->str, meta);
+	g_string_free(metaPath, true);
+
+	// Now dump the tree contents
+	exportOpenGLLodMapQuadtreeNode(lodmap, lodmap->quadtree->root, path);
 
 	return true;
+}
+
+/**
+ * Recursively dumps an OpenGL LOD map quadtree node and all its children into files at a specified path
+ *
+ * @param lodmap		the OpenGL LOD map to which this node belongs
+ * @param node			the current quadtree node we're visiting during the recursion
+ * @param path			the target folder to export to
+ */
+static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path)
+{
+	// make sure the node's data is loaded before proceeding
+	if(!quadtreeNodeDataIsLoaded(node)) {
+		loadQuadtreeNodeData(lodmap->quadtree, node, false);
+	}
+
+	assert(quadtreeNodeDataIsLoaded(node));
+
+	OpenGLLodMapTile *tile = node->data;
+
+	GString *fileSuffix = g_string_new("");
+	g_string_append_printf(fileSuffix, "%u.%d.%d.store", node->level, node->x, node->y);
+
+	// export heights
+	GString *heightsName = g_string_new("/lodmap_heights_");
+	g_string_append(heightsName, fileSuffix->str);
+
+	if(!writeImageToFile(tile->heights, heightsName->str)) {
+		LOG_ERROR("Failed to export LOD map heights image to '%s'", heightsName->str);
+	}
+
+	g_string_free(heightsName, true);
+
+	// export normals
+	GString *normalsName = g_string_new("/lodmap_normals_");
+	g_string_append(normalsName, fileSuffix->str);
+
+	if(!writeImageToFile(tile->heights, normalsName->str)) {
+		LOG_ERROR("Failed to export LOD map normals image to '%s'", normalsName->str);
+	}
+
+	g_string_free(normalsName, true);
+
+	// export texture
+	GString *textureName = g_string_new("/lodmap_texture_");
+	g_string_append(textureName, fileSuffix->str);
+
+	if(!writeImageToFile(tile->texture, textureName->str)) {
+		LOG_ERROR("Failed to export LOD map texture image to '%s'", textureName->str);
+	}
+
+	g_string_free(textureName, true);
+	g_string_free(fileSuffix, true);
+
+	// Recursively export children
+	if(!quadtreeNodeIsLeaf(node)) {
+		for(unsigned int i = 0; i < 4; i++) {
+			exportOpenGLLodMapQuadtreeNode(lodmap, node->children[i], path);
+		}
+	}
+
+	// Update node weight
+	updateQuadtreeNodeWeight(node);
+
+	LOG_INFO("Exported LOD map quadtree node (%d,%d) at level %u", node->x, node->y, node->level);
 }

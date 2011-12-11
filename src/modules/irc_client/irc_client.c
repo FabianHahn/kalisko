@@ -38,7 +38,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 12);
+MODULE_VERSION(0, 3, 13);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
@@ -64,6 +64,8 @@ typedef struct {
 	IrcClientConnection *connection;
 	/** An iterator pointing to the channel in the side tree */
 	GtkTreeIter tree_iter;
+	/** Specifies whether this is a query */
+	bool isQuery;
 } IrcClientConnectionChannel;
 
 typedef enum {
@@ -383,17 +385,25 @@ static void listener_channel(void *subject, const char *event, void *data, va_li
 
 	if(g_strcmp0(event, "channel_join") == 0) { // join
 		IrcChannel *channel = va_arg(args, IrcChannel *);
-		IrcClientConnectionChannel *connectionChannel = ALLOCATE_OBJECT(IrcClientConnectionChannel);
-		connectionChannel->name = strdup(channel->name);
-		connectionChannel->buffer = gtk_text_buffer_new(tags);
-		connectionChannel->connection = connection;
-		GString *text = g_string_new("");
-		g_string_append_printf(text, "Created text buffer for channel '%s' in connection '%s'", connectionChannel->name, connection->name);
-		gtk_text_buffer_set_text(connectionChannel->buffer, text->str, -1);
-		g_string_free(text, true);
 
-		// Add to channels table of connection
-		g_hash_table_insert(connection->channels, connectionChannel->name, connectionChannel);
+		IrcClientConnectionChannel *connectionChannel = g_hash_table_lookup(connection->channels, channel->name);
+
+		if(connectionChannel != NULL) { // Trying to join an already joined channel, so just make sure it's no query
+			connectionChannel->isQuery = false;
+		} else {
+			connectionChannel = ALLOCATE_OBJECT(IrcClientConnectionChannel);
+			connectionChannel->name = strdup(channel->name);
+			connectionChannel->buffer = gtk_text_buffer_new(tags);
+			connectionChannel->connection = connection;
+			connectionChannel->isQuery = false;
+			GString *text = g_string_new("");
+			g_string_append_printf(text, "Created text buffer for channel '%s' in connection '%s'", connectionChannel->name, connection->name);
+			gtk_text_buffer_set_text(connectionChannel->buffer, text->str, -1);
+			g_string_free(text, true);
+
+			// Add to channels table of connection
+			g_hash_table_insert(connection->channels, connectionChannel->name, connectionChannel);
+		}
 	} else { // part
 		char *channel = va_arg(args, char *);
 		g_hash_table_remove(connection->channels, channel);
@@ -424,29 +434,57 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 	if(g_strcmp0(message->command, "PRIVMSG") == 0) {
 		if(message->params[0] != NULL) {
-			IrcClientConnectionChannel *channel = g_hash_table_lookup(clientConnection->channels, message->params[0]);
+			IrcUserMask *mask = parseIrcUserMask(message->prefix);
+			if(mask == NULL) {
+				LOG_ERROR("Failed to parse IRC user mask: %s", message->prefix);
+				return;
+			}
 
-			if(channel != NULL) {
-				IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
-				if(mask != NULL) {
-					if((converted = convertToUtf8(message->trailing)) == NULL) {
-						converted = strdup("[Kalisko UTF-8 conversion error]");
-					}
+			IrcClientConnectionChannel *channel;
+			if(g_strcmp0(message->params[0], clientConnection->connection->nick) == 0) { // query
+				channel = g_hash_table_lookup(clientConnection->channels, mask->nick);
+				if(channel == NULL) { // new query
+					channel = ALLOCATE_OBJECT(IrcClientConnectionChannel);
+					channel->name = strdup(mask->nick);
+					channel->buffer = gtk_text_buffer_new(tags);
+					channel->connection = clientConnection;
+					channel->isQuery = true;
+					GString *text = g_string_new("");
+					g_string_append_printf(text, "Created text buffer for query '%s' in connection '%s'", channel->name, clientConnection->name);
+					gtk_text_buffer_set_text(channel->buffer, text->str, -1);
+					g_string_free(text, true);
 
-					GString *msg = g_string_new("");
-					g_string_append_printf(msg, "<%s> %s", mask->nick, converted);
-					appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_IN);
-					g_string_free(msg, true);
-					free(converted);
-					$(void, irc_parser, freeIrcUserMask)(mask);
+					// Add to channels table of connection
+					g_hash_table_insert(clientConnection->channels, channel->name, channel);
 
-					if(active_type != CHAT_ELEMENT_CHANNEL || g_strcmp0(((IrcClientConnectionChannel *) active)->name, channel->name) != 0) { // Not posted into the active channel
-						setChannelDirty(channel, true);
-					}
+					refreshSideTree();
+
+					LOG_INFO("New query from '%s' in IRC client connection '%s'", channel->name, clientConnection->name);
 				}
 			} else {
-				LOG_WARNING("Received channel message for unjoined channel '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
+				channel = g_hash_table_lookup(clientConnection->channels, message->params[0]);
+				if(channel == NULL) {
+					LOG_WARNING("Received channel message for unjoined channel '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
+				}
 			}
+
+			if(channel != NULL) {
+				if((converted = convertToUtf8(message->trailing)) == NULL) {
+					converted = strdup("[Kalisko UTF-8 conversion error]");
+				}
+
+				GString *msg = g_string_new("");
+				g_string_append_printf(msg, "<%s> %s", mask->nick, converted);
+				appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_PRIVMSG_IN);
+				g_string_free(msg, true);
+				free(converted);
+
+				if(active_type != CHAT_ELEMENT_CHANNEL || g_strcmp0(((IrcClientConnectionChannel *) active)->name, channel->name) != 0) { // Not posted into the active channel
+					setChannelDirty(channel, true);
+				}
+			}
+
+			freeIrcUserMask(mask);
 		}
 	}
 }
@@ -586,11 +624,10 @@ static void refreshSideTree()
 		}
 
 		GPtrArray *channelEntries = g_ptr_array_new();
-		GList *channels = $(GList *, irc_channel, getTrackedChannels)(connection->connection);
+		GList *channels = g_hash_table_get_keys(connection->channels);
 
 		for(GList *iter = channels; iter != NULL; iter = iter->next) {
-			IrcChannel *channel = iter->data;
-			g_ptr_array_add(channelEntries, channel->name);
+			g_ptr_array_add(channelEntries, iter->data);
 		}
 
 		g_list_free(channels);

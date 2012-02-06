@@ -30,7 +30,7 @@
 MODULE_NAME("exec");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The exec module offers a simple interface to execute shell commands and return their output");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 6, 3));
 
@@ -84,6 +84,8 @@ API GString *executeShellCommandArgs(char **args)
 			g_string_append_len(ret, buffer, size);
 		}
 	}
+
+	freeSocket(socket);
 
 	return ret;
 }

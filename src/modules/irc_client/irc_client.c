@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "dll.h"
 #include "modules/gtk+/gtk+.h"
@@ -38,7 +39,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 14);
+MODULE_VERSION(0, 3, 15);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
@@ -66,6 +67,10 @@ typedef struct {
 	GtkTreeIter tree_iter;
 	/** Specifies whether this is a query */
 	bool isQuery;
+	/** The current position in the history queue */
+	GList *inputHistoryPosition;
+	/** The history queue */
+	GQueue *inputHistory;
 } IrcClientConnectionChannel;
 
 typedef enum {
@@ -357,6 +362,8 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 		case CHAT_ELEMENT_CHANNEL:
 			do {
 				IrcClientConnectionChannel *channel = active;
+				g_queue_push_head(channel->inputHistory, strdup(command));
+				channel->inputHistoryPosition = NULL;
 				$(bool, irc, ircSend)(channel->connection->connection, "PRIVMSG %s :%s", channel->name, command);
 
 				GString *msg = g_string_new("");
@@ -392,6 +399,43 @@ API gboolean irc_client_chat_output_key_press_event(GtkWidget *widget, GdkEvent 
 	return true;
 }
 
+API gboolean irc_client_chat_input_key_press_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+	assert(event->type == GDK_KEY_PRESS);
+
+	if(active_type == CHAT_ELEMENT_CHANNEL) {
+		IrcClientConnectionChannel *channel = active;
+
+		if(channel->inputHistory->head != NULL) {
+			if(event->key.keyval == GDK_Up) {
+				if(channel->inputHistoryPosition == NULL) {
+					channel->inputHistoryPosition = channel->inputHistory->head;
+				} else if(channel->inputHistoryPosition->next != NULL) {
+					channel->inputHistoryPosition = channel->inputHistoryPosition->next;
+				}
+
+				gtk_entry_set_text(GTK_ENTRY(widget), channel->inputHistoryPosition->data);
+				gtk_editable_set_position(GTK_EDITABLE(chat_input), -1);
+
+				return true;
+			} else if(event->key.keyval == GDK_Down) {
+				if(channel->inputHistoryPosition == NULL) {
+					channel->inputHistoryPosition = channel->inputHistory->head;
+				} else if(channel->inputHistoryPosition->prev != NULL) {
+					channel->inputHistoryPosition = channel->inputHistoryPosition->prev;
+				}
+
+				gtk_entry_set_text(GTK_ENTRY(widget), channel->inputHistoryPosition->data);
+				gtk_editable_set_position(GTK_EDITABLE(chat_input), -1);
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 static void listener_channel(void *subject, const char *event, void *data, va_list args)
 {
 	IrcClientConnection *connection = $(void *, property_table, getPropertyTableValue)(subject, "irc_client_connection");
@@ -413,6 +457,8 @@ static void listener_channel(void *subject, const char *event, void *data, va_li
 			connectionChannel->buffer = gtk_text_buffer_new(tags);
 			connectionChannel->connection = connection;
 			connectionChannel->isQuery = false;
+			connectionChannel->inputHistoryPosition = NULL;
+			connectionChannel->inputHistory = g_queue_new();
 			GString *text = g_string_new("");
 			g_string_append_printf(text, "Created text buffer for channel '%s' in connection '%s'", connectionChannel->name, connection->name);
 			gtk_text_buffer_set_text(connectionChannel->buffer, text->str, -1);
@@ -466,6 +512,8 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 					channel->buffer = gtk_text_buffer_new(tags);
 					channel->connection = clientConnection;
 					channel->isQuery = true;
+					channel->inputHistoryPosition = NULL;
+					channel->inputHistory = g_queue_new();
 					GString *text = g_string_new("");
 					g_string_append_printf(text, "Created text buffer for query '%s' in connection '%s'", channel->name, clientConnection->name);
 					gtk_text_buffer_set_text(channel->buffer, text->str, -1);
@@ -786,6 +834,12 @@ static void freeIrcClientConnectionChannel(void *channel_p)
 	IrcClientConnectionChannel *channel = channel_p;
 	free(channel->name);
 	g_object_unref(channel->buffer);
+
+	for(GList *iter = channel->inputHistory->head; iter != NULL; iter = iter->next) {
+		free(iter->data);
+	}
+
+	g_queue_free(channel->inputHistory);
 	free(channel);
 }
 

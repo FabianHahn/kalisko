@@ -468,6 +468,7 @@
                     <property name="primary_icon_sensitive">True</property>
                     <property name="secondary_icon_sensitive">True</property>
                     <signal name="activate" handler="irc_client_chat_input_activate" swapped="no"/>
+                    <signal name="key-press-event" handler="irc_client_chat_input_key_press_event" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>

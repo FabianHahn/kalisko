@@ -37,7 +37,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 8), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -135,7 +135,7 @@ static void listener_remoteReconnect(void *subject, const char *event, void *dat
 	IrcConnection *irc = subject;
 
 	IrcProxy *proxy;
-	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
+	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket reconnected
 		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
 			LOG_INFO("Remote IRC connection for IRC proxy '%s' reconnected", proxy->name);
 

@@ -488,24 +488,24 @@ static void checkForBufferLine(IrcConnection *irc)
 		g_string_free(irc->ibuffer, false);
 		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
 		char **parts = g_strsplit(message, "\n", 0);
+		int count = 0;
+		for(char **iter = parts; *iter != NULL; iter++) {
+			count++;
+		}
 
-		char **iter;
-		for(iter = parts; *iter != NULL; iter++) {
-			if(*(iter + 1) != NULL) { // Don't trigger the last part, it's not yet complete
-				if(strlen(*iter) > 0) {
-					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
+		for(int i = 0; i < count - 1; i++) { // Don't trigger the last part, it's not yet complete
+			char *part = parts[i];
+			if(strlen(part) > 0) {
+				IrcMessage *ircMessage = parseIrcMessage(part);
 
-					if(ircMessage != NULL) {
-						$(int, event, triggerEvent)(irc, "line", ircMessage);
-
-						// Free the IRC message
-						$(void, irc_parser, freeIrcMessage)(ircMessage);
-					}
+				if(ircMessage != NULL) {
+					triggerEvent(irc, "line", ircMessage);
+					freeIrcMessage(ircMessage);
 				}
 			}
 		}
 
-		irc->ibuffer = g_string_new(*(iter - 1)); // reinitialize buffer
+		irc->ibuffer = g_string_new(parts[count-1]); // reinitialize buffer
 
 		g_strfreev(parts);
 		free(message);

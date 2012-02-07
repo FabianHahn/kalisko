@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 8);
+MODULE_VERSION(0, 3, 9);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -487,22 +487,24 @@ static void checkForBufferLine(IrcProxyClient *client)
 		g_string_free(client->ibuffer, false);
 		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
 		char **parts = g_strsplit(message, "\n", 0);
+		int count = 0;
+		for(char **iter = parts; *iter != NULL; iter++) {
+			count++;
+		}
 
-		char **iter;
-		for(iter = parts; *iter != NULL; iter++) {
-			if(*(iter + 1) != NULL) { // Don't trigger the last part, it's not yet complete
-				if(strlen(*iter) > 0) {
-					IrcMessage *ircMessage = $(IrcMessage *, irc_parser, parseIrcMessage)(*iter);
+		for(int i = 0; i < count - 1; i++) { // Don't trigger the last part, it's not yet complete
+			char *part = parts[i];
+			if(strlen(part) > 0) {
+				IrcMessage *ircMessage = parseIrcMessage(part);
 
-					if(ircMessage != NULL) {
-						$(int, event, triggerEvent)(client, "line", ircMessage);
-						$(void, irc_parser, freeIrcMessage)(ircMessage);
-					}
+				if(ircMessage != NULL) {
+					triggerEvent(client, "line", ircMessage);
+					freeIrcMessage(ircMessage);
 				}
 			}
 		}
 
-		client->ibuffer = g_string_new(*(iter - 1)); // reinitialize buffer
+		client->ibuffer = g_string_new(parts[count-1]); // reinitialize buffer
 
 		g_strfreev(parts);
 		free(message);

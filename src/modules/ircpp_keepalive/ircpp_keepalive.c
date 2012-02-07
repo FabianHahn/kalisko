@@ -37,18 +37,20 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 5, 0);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 10), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
+static void listener_bouncerReattached(void *subject, const char *event, void *data, va_list args);
 static void listener_remoteLine(void *subject, const char *event, void *data, va_list args);
 static void listener_remoteReconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
+static bool clearAndRescheduleKeepaliveTimers(IrcProxy *proxy);
 static void loadConfig();
 
 static IrcProxyPlugin plugin;
@@ -105,6 +107,14 @@ MODULE_FINALIZE
 	g_hash_table_destroy(challengeTimeouts);
 }
 
+static void listener_bouncerReattached(void *subject, const char *event, void *data, va_list args)
+{
+	IrcProxy *proxy = subject;
+	if(isIrcProxyPluginEnabled(proxy, "keepalive")) { // plugin is enabled for this proxy
+		clearAndRescheduleKeepaliveTimers(proxy);
+	}
+}
+
 static void listener_remoteLine(void *subject, const char *event, void *data, va_list args)
 {
 	IrcConnection *irc = subject;
@@ -121,7 +131,9 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 					if(g_strcmp0(message->trailing, challenge->str) == 0) { // Matches our challenge
 						LOG_DEBUG("Successful keepalive response from IRC connection %d: %ld%ld", proxy->irc->socket->fd, timer->tv_sec, timer->tv_usec);
 						// Stop the timer
-						TIMER_DEL(timer);
+						if(TIMER_DEL(timer)) {
+							g_hash_table_remove(challengeTimeouts, proxy);
+						}
 					}
 					g_string_free(challenge, true);
 				}
@@ -139,22 +151,7 @@ static void listener_remoteReconnect(void *subject, const char *event, void *dat
 		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
 			LOG_INFO("Remote IRC connection for IRC proxy '%s' reconnected", proxy->name);
 
-			// Reschedule the keepalive timer for this connection
-			GTimeVal *timeout;
-			if((timeout = g_hash_table_lookup(challenges, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
-				if(TIMER_DEL(timeout)) { // clear the challenge timeout timer as well
-					// Remove the challenge from the challenge table
-					g_hash_table_remove(challenges, proxy);
-
-					// Schedule a new challenge timer
-					if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
-						LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
-						return;
-					}
-
-					g_hash_table_insert(challenges, proxy, timeout);
-				}
-			}
+			clearAndRescheduleKeepaliveTimers(proxy);
 		}
 	}
 }
@@ -175,23 +172,6 @@ static void listener_remoteDisconnect(void *subject, const char *event, void *da
 static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args)
 {
 	loadConfig();
-}
-
-static void loadConfig()
-{
-	Store *configKeepaliveInterval = $(Store *, config, getConfigPath)("irc/keepalive/interval");
-	if(configKeepaliveInterval != NULL && configKeepaliveInterval->type == STORE_INTEGER) {
-		keepaliveInterval = configKeepaliveInterval->content.integer;
-	} else {
-		LOG_INFO("Could not determine config value irc/keepalive/interval, using default value of %d", keepaliveInterval);
-	}
-
-	Store *configKeepaliveTimeout = $(Store *, config, getConfigPath)("irc/keepalive/timeout");
-	if(configKeepaliveTimeout != NULL && configKeepaliveTimeout->type == STORE_INTEGER) {
-		keepaliveTimeout = configKeepaliveTimeout->content.integer;
-	} else {
-		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", keepaliveTimeout);
-	}
 }
 
 TIMER_CALLBACK(challenge)
@@ -256,6 +236,7 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 		return false;
 	}
 
+	attachEventListener(proxy, "bouncer_reattached", NULL, &listener_bouncerReattached);
 	attachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
 	attachEventListener(proxy->irc, "reconnect", NULL, &listener_remoteReconnect);
 	attachEventListener(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
@@ -276,6 +257,7 @@ static void finiPlugin(IrcProxy *proxy, char *name)
 	// Fetch the timeout for this proxy from the timeouts table
 	GTimeVal *timeout = g_hash_table_lookup(challenges, proxy);
 
+	detachEventListener(proxy, "bouncer_reattached", NULL, &listener_bouncerReattached);
 	detachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
 	detachEventListener(proxy->irc, "reconnect", NULL, &listener_remoteReconnect);
 	detachEventListener(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
@@ -291,5 +273,66 @@ static void finiPlugin(IrcProxy *proxy, char *name)
 		g_hash_table_remove(challengeTimeouts, proxy);
 
 		TIMER_DEL(timeout); // clear the challenge timeout timer as well
+	}
+}
+
+/**
+ * Clears all challenges and reschedules the keepalive timeout for an IRC proxy
+ *
+ * @param proxy			the IRC proxy for which to clear and reschedule timers
+ * @result				true if successful
+ */
+static bool clearAndRescheduleKeepaliveTimers(IrcProxy *proxy)
+{
+	// Stop the challenge timeout if there's currently one active
+	GTimeVal *timer;
+	if((timer = g_hash_table_lookup(challengeTimeouts, proxy)) != NULL) { // there is a challenge timer currently active
+		// Stop the timer
+		if(TIMER_DEL(timer)) {
+			g_hash_table_remove(challengeTimeouts, proxy);
+		} else {
+			LOG_ERROR("Failed to clear keepalive challenge timer for IRC proxy '%s'", proxy->name);
+			return false;
+		}
+	}
+
+	// Reschedule the keepalive timer for this connection
+	GTimeVal *timeout;
+	if((timeout = g_hash_table_lookup(challenges, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
+		if(TIMER_DEL(timeout)) { // clear the challenge timeout timer as well
+			// Remove the challenge from the challenge table
+			g_hash_table_remove(challenges, proxy);
+
+			// Schedule a new challenge timer
+			if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
+				LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
+				return false;
+			}
+
+			g_hash_table_insert(challenges, proxy, timeout);
+		} else {
+			LOG_ERROR("Failed to reschedule keepalive timeout for IRC proxy '%s'", proxy->name);
+			return false;
+		}
+	}
+
+	LOG_INFO("Cleared challenges and rescheduled keepalive timeout for IRC proxy '%s'", proxy->name);
+	return true;
+}
+
+static void loadConfig()
+{
+	Store *configKeepaliveInterval = $(Store *, config, getConfigPath)("irc/keepalive/interval");
+	if(configKeepaliveInterval != NULL && configKeepaliveInterval->type == STORE_INTEGER) {
+		keepaliveInterval = configKeepaliveInterval->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value irc/keepalive/interval, using default value of %d", keepaliveInterval);
+	}
+
+	Store *configKeepaliveTimeout = $(Store *, config, getConfigPath)("irc/keepalive/timeout");
+	if(configKeepaliveTimeout != NULL && configKeepaliveTimeout->type == STORE_INTEGER) {
+		keepaliveTimeout = configKeepaliveTimeout->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", keepaliveTimeout);
 	}
 }

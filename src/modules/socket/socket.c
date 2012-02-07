@@ -60,7 +60,7 @@ static GString *ip2str(unsigned int ip);
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 6, 17);
+MODULE_VERSION(0, 6, 18);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -594,11 +594,19 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 			}
 		} else
 #endif
+#ifdef MSG_NOSIGNAL // prevent SIGPIPE if we can...
+		if((ret = send(s->fd, buffer, left, MSG_NOSIGNAL)) > 0) { // wrote ret characters
+#else
 		if((ret = send(s->fd, buffer, left, 0)) > 0) { // wrote ret characters
+#endif
 			left -= ret;
 			buffer += ret;
 		} else if(errno == EINTR) { // interrupted
 			continue;
+		} else if(errno == EPIPE) { // broken pipe means the connection broke down but we didn't get the disconnect event yet
+			LOG_INFO("Broken pipe for socket %d on write, disconnecting...", s->fd);
+			disconnectSocket(s);
+			return false;
 		} else { // error
 			GString *msg = g_string_new("");
 			g_string_append_len(msg, buffer, size);

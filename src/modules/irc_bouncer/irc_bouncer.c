@@ -37,7 +37,7 @@
 MODULE_NAME("irc_bouncer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a multi-user multi-connection IRC bouncer service that can be configured via the standard config");
-MODULE_VERSION(0, 3, 7);
+MODULE_VERSION(0, 3, 8);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_channel", 0, 1, 4), MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("irc_proxy", 0, 3, 6), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -88,12 +88,10 @@ MODULE_FINALIZE
 	g_hash_table_iter_init(&iter, proxies);
 	while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &proxy)) {
 		$(void, event, detachEventListener)(proxy, "client_authenticated", NULL, &listener_bouncerReattached);
-		IrcConnection *irc = proxy->irc;
 		$(void, irc_proxy_plugins, disableIrcProxyPlugins)(proxy); // disable plugins of the proxy
-		free(proxy->password);
-		free(proxy->name);
-		$(void, irc_proxy, freeIrcProxy)(proxy); // disable the proxy itself
-		$(void, irc, freeIrcConnection)(irc); // free the remote connection
+		IrcConnection *irc = proxy->irc; // backup the IRC connection
+		freeIrcProxy(proxy); // free the proxy
+		freeIrcConnection(irc); // now free the associated IRC connection
 	}
 
 	g_hash_table_destroy(proxies);

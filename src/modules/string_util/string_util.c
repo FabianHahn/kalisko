@@ -31,7 +31,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -68,7 +68,7 @@ API void stripDuplicateWhitespace(char *str)
 			str[0] = ' ';
 			str++, whitespace--, len--;
 			// Move everything that follows to the front
-			memmove(str, str + whitespace, len -= whitespace);
+			memmove(str, str + whitespace, len - whitespace);
 		}
 
 		// Now let's move forward to the next whitespace
@@ -96,7 +96,7 @@ API void stripDuplicateNewlines(char *str)
 			str[0] = '\n';
 			str++, whitespace--, len--;
 			// Move everything that follows to the front
-			memmove(str, str + whitespace, len -= whitespace);
+			memmove(str, str + whitespace, len - whitespace);
 		}
 
 		// Now let's move forward to the next whitespace

@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 8);
+MODULE_VERSION(0, 4, 9);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -86,7 +86,7 @@ TIMER_CALLBACK(reconnect)
 			// Reauthenticate the connection
 			authenticateIrcConnection(irc);
 
-			triggerEvent(irc, "reconnected");
+			triggerEvent(irc, "reconnect");
 		} else {
 			LOG_WARNING("Failed to reconnect IRC connection with previous socket %d", prevfd);
 			if(irc->socket->connected) { // disconnect if it is somehow connected but enabling polling didn't work

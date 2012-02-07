@@ -37,16 +37,16 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 3, 6);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 1), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 4, 8), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
 static void listener_remoteLine(void *subject, const char *event, void *data, va_list args);
+static void listener_remoteReconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args);
-static void reconnectRemoteConnection(IrcProxy *proxy);
 static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
 static void loadConfig();
@@ -130,6 +130,35 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 	}
 }
 
+static void listener_remoteReconnect(void *subject, const char *event, void *data, va_list args)
+{
+	IrcConnection *irc = subject;
+
+	IrcProxy *proxy;
+	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
+		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
+			LOG_INFO("Remote IRC connection for IRC proxy '%s' reconnected", proxy->name);
+
+			// Reschedule the keepalive timer for this connection
+			GTimeVal *timeout;
+			if((timeout = g_hash_table_lookup(challenges, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
+				if(TIMER_DEL(timeout)) { // clear the challenge timeout timer as well
+					// Remove the challenge from the challenge table
+					g_hash_table_remove(challenges, proxy);
+
+					// Schedule a new challenge timer
+					if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
+						LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
+						return;
+					}
+
+					g_hash_table_insert(challenges, proxy, timeout);
+				}
+			}
+		}
+	}
+}
+
 static void listener_remoteDisconnect(void *subject, const char *event, void *data, va_list args)
 {
 	IrcConnection *irc = subject;
@@ -138,7 +167,7 @@ static void listener_remoteDisconnect(void *subject, const char *event, void *da
 	if((proxy = $(IrcProxy *, irc_proxy, getIrcProxyByIrcConnection)(irc)) != NULL) { // a proxy socket disconnected
 		if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(proxy, "keepalive")) { // plugin is enabled for this proxy
 			LOG_INFO("Remote IRC connection for IRC proxy '%s' disconnected", proxy->name);
-			reconnectRemoteConnection(proxy);
+			reconnectIrcConnection(proxy->irc);
 		}
 	}
 }
@@ -185,7 +214,7 @@ TIMER_CALLBACK(challenge)
 		LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 	} else {
 		// Socket is no longer connected, try to reconnect it
-		reconnectRemoteConnection(proxy);
+		reconnectIrcConnection(proxy->irc);
 	}
 
 	// Schedule a new challenge
@@ -212,40 +241,6 @@ TIMER_CALLBACK(challenge_timeout)
 }
 
 /**
- * Reconnects a remote IRC connection for an IRC proxy
- *
- * @param proxy		the IRC proxy of which the remote IRC connection should be reloaded
- */
-static void reconnectRemoteConnection(IrcProxy *proxy)
-{
-	LOG_DEBUG("Trying to reconnect remote IRC connection for IRC proxy '%s'", proxy->name);
-	// Now try to reconnect
-	if($(bool, socket, connectSocket)(proxy->irc->socket) && $(bool, socket, enableSocketPolling)(proxy->irc->socket)) { // reconnect successful
-		LOG_INFO("Remote IRC connection for IRC proxy '%s' reconnected successfully", proxy->name);
-
-		// Reauthenticate the connection
-		$(void, irc, authenticateIrcConnection)(proxy->irc);
-
-		// Reschedule the keepalive timer for this connection
-		GTimeVal *timeout;
-		if((timeout = g_hash_table_lookup(challenges, proxy)) != NULL) { // check if there is a challenge going on right now that hasn't timed out yet
-			if(TIMER_DEL(timeout)) { // clear the challenge timeout timer as well
-				// Remove the challenge from the challenge table
-				g_hash_table_remove(challenges, proxy);
-
-				// Schedule a new challenge timer
-				if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
-					LOG_ERROR("Failed to add IRC proxy keepalive challenge for IRC proxy '%s'", proxy->name);
-					return;
-				}
-
-				g_hash_table_insert(challenges, proxy, timeout);
-			}
-		}
-	}
-}
-
-/**
  * Initializes the plugin
  *
  * @param proxy		the IRC proxy to initialize the plugin for
@@ -261,8 +256,9 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 		return false;
 	}
 
-	$(void, event, attachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
-	$(void, event, attachEventListener)(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
+	attachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
+	attachEventListener(proxy->irc, "reconnect", NULL, &listener_remoteReconnect);
+	attachEventListener(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
 
 	g_hash_table_insert(challenges, proxy, timeout);
 
@@ -280,8 +276,9 @@ static void finiPlugin(IrcProxy *proxy, char *name)
 	// Fetch the timeout for this proxy from the timeouts table
 	GTimeVal *timeout = g_hash_table_lookup(challenges, proxy);
 
-	$(void, event, detachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
-	$(void, event, detachEventListener)(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
+	detachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
+	detachEventListener(proxy->irc, "reconnect", NULL, &listener_remoteReconnect);
+	detachEventListener(proxy->irc, "disconnect", NULL, &listener_remoteDisconnect);
 
 	// Free the timeout from the timeouts table
 	g_hash_table_remove(challenges, proxy);

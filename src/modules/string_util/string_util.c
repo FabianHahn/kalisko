@@ -57,8 +57,8 @@ MODULE_FINALIZE
 API void stripDuplicateWhitespace(char *str)
 {
 	size_t len = strlen(str) + 1 /* Consider nullbyte */;
-	size_t whitespace; // To keep track of whitespaces
-	size_t textlength; // Length of text without spaces to skip
+	size_t whitespace = 0; // To keep track of whitespaces
+	size_t textlength = 0; // Length of text without spaces to skip
 
 	while(*str != '\0') {
 		// Is there whitespace to eat?
@@ -66,14 +66,18 @@ API void stripDuplicateWhitespace(char *str)
 		if(whitespace > 0) {
 			// Keep one space (' ')
 			str[0] = ' ';
-			str++, whitespace--, len--;
+			str++;
+			whitespace--;
+			len--;
 			// Move everything that follows to the front
-			memmove(str, str + whitespace, len - whitespace);
+			len -= whitespace;
+			memmove(str, str + whitespace, len);
 		}
 
 		// Now let's move forward to the next whitespace
 		textlength = strcspn(str, WHITESPACE_CHARS);
-		str += textlength, len -= textlength;
+		str += textlength;
+		len -= textlength;
 	}
 }
 
@@ -85,8 +89,8 @@ API void stripDuplicateWhitespace(char *str)
 API void stripDuplicateNewlines(char *str)
 {
 	size_t len = strlen(str) + 1 /* Consider nullbyte */;
-	size_t whitespace; // To keep track of whitespaces
-	size_t textlength; // Length of text without spaces to skip
+	size_t whitespace = 0; // To keep track of whitespaces
+	size_t textlength = 0; // Length of text without spaces to skip
 
 	while(*str != '\0') {
 		// Is there whitespace to eat?
@@ -94,14 +98,18 @@ API void stripDuplicateNewlines(char *str)
 		if(whitespace > 0) {
 			// Keep one newline ('\n')
 			str[0] = '\n';
-			str++, whitespace--, len--;
+			str++;
+			whitespace--;
+			len--;
 			// Move everything that follows to the front
-			memmove(str, str + whitespace, len - whitespace);
+			len -= whitespace;
+			memmove(str, str + whitespace, len);
 		}
 
 		// Now let's move forward to the next whitespace
 		textlength = strcspn(str, NEWLINE_CHARS);
-		str += textlength, len -= textlength;
+		str += textlength;
+		len -= textlength;
 	}
 }
 

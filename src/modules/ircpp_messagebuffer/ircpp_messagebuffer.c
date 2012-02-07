@@ -38,7 +38,7 @@
 MODULE_NAME("ircpp_messagebuffer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that sends the last few lines to new connected clients");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 5), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("string_util", 0, 1, 3), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -142,17 +142,17 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 			return;
 		}
 
-		// create time string
-		GTimeVal now;
-		g_get_current_time(&now);
-		char *nowStr = g_time_val_to_iso8601(&now);
+		// date and time
+		GDateTime *now = g_date_time_new_now_local();
+		unsigned int day = g_date_time_get_day_of_month(now);
+		unsigned int month = g_date_time_get_month(now);
+		unsigned int year = g_date_time_get_year(now);
+		unsigned int hour = g_date_time_get_hour(now);
+		unsigned int minute = g_date_time_get_minute(now);
+		unsigned int second = g_date_time_get_second(now);
+	    g_date_time_unref(now);
 
-		char *bufferStr = NULL;
-		if(g_str_has_prefix(msgTarget, "#")) {
-			bufferStr = g_strdup_printf(":%s  PRIVMSG %s :[%s] %s", client->proxy->irc->nick, msgTarget, nowStr, message->trailing);
-		} else {
-			bufferStr = g_strdup_printf(":%s  PRIVMSG %s :<you> [%s] %s", msgTarget, msgTarget, nowStr, message->trailing);
-		}
+		char *bufferStr = g_strdup_printf(":%s PRIVMSG %s :[%02u.%02u.%04u-%02u:%02u:%02u] %s", client->proxy->irc->nick, msgTarget, day, month, year, hour, minute, second, message->trailing);
 
 		// create queue if needed
 		GQueue *queue = NULL;
@@ -169,9 +169,6 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 			// as we only add one line we have to remove only one to meet the maxLines
 			g_queue_pop_head(queue);
 		}
-
-		// clean up
-		free(nowStr);
 	}
 }
 
@@ -231,13 +228,18 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 				return;
 			}
 
-			// create time string
-			GTimeVal now;
-			g_get_current_time(&now);
-			char *nowStr = g_time_val_to_iso8601(&now);
+			// date and time
+			GDateTime *now = g_date_time_new_now_local();
+			unsigned int day = g_date_time_get_day_of_month(now);
+			unsigned int month = g_date_time_get_month(now);
+			unsigned int year = g_date_time_get_year(now);
+			unsigned int hour = g_date_time_get_hour(now);
+			unsigned int minute = g_date_time_get_minute(now);
+			unsigned int second = g_date_time_get_second(now);
+		    g_date_time_unref(now);
 
 			// build string for buffer
-			char *bufferStr = g_strdup_printf(":%s  PRIVMSG %s :[%s] %s", message->prefix, msgTarget, nowStr, message->trailing);
+			char *bufferStr = g_strdup_printf(":%s PRIVMSG %s :[%02u.%02u.%04u-%02u:%02u:%02u] %s", message->prefix, msgTarget, day, month, year, hour, minute, second, message->trailing);
 
 			// create queue if needed
 			GQueue *queue = NULL;
@@ -256,7 +258,6 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 			}
 
 			// clean up
-			free(nowStr);
 			$(void, irc_parser, freeIrcUserMask)(usrMask);
 		}
 	}
@@ -295,17 +296,17 @@ static void listener_clientReattached(void *subject, const char *event, void *da
 		if(messages->length > 0) {
 			char *infoSender = NULL;
 			if(g_str_has_prefix(target, "#")) {
-				infoSender = "*!kalisko@kalisko.org";
+				infoSender = "*messagebuffer!kalisko@kalisko.org";
 			} else {
 				infoSender = target;
 			}
 
-			$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s PRIVMSG %s : Buffer playback...", infoSender, target);
+			$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s PRIVMSG %s :Message buffer playback...", infoSender, target);
 			char *message = NULL;
 			while((message = g_queue_pop_head(messages)) != NULL) {
 				$(bool, irc_proxy, proxyClientIrcSend)(client, "%s", message);
 			}
-			$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s PRIVMSG %s : ... playback complete.", infoSender, target);
+			$(bool, irc_proxy, proxyClientIrcSend)(client, ":%s PRIVMSG %s :...buffer playback complete!", infoSender, target);
 		}
 	}
 }

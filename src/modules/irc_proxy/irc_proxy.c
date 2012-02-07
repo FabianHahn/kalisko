@@ -477,7 +477,7 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 /**
  * Checks for a new newline terminated line in the buffer and parses it
  *
- * @param client			the IRC proxz client to check for buffer lines
+ * @param client			the IRC proxy client to check for buffer lines
  */
 static void checkForBufferLine(IrcProxyClient *client)
 {

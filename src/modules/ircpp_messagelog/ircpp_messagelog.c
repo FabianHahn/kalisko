@@ -35,7 +35,7 @@
 MODULE_NAME("ircpp_messagelog");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that allows IRC messages to be logged to the hard drive");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 5), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("string_util", 0, 1, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -99,13 +99,17 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 				return;
 			}
 
-			GTimeVal now;
-			g_get_current_time(&now);
+			GDateTime *now = g_date_time_new_now_local();
+			unsigned int day = g_date_time_get_day_of_month(now);
+			unsigned int month = g_date_time_get_month(now);
+			unsigned int year = g_date_time_get_year(now);
+			unsigned int hour = g_date_time_get_hour(now);
+			unsigned int minute = g_date_time_get_minute(now);
+			unsigned int second = g_date_time_get_second(now);
+		    g_date_time_unref(now);
 
-			char *nowstr = g_time_val_to_iso8601(&now);
-			fprintf(file, "[%s] <%s> %s\n", nowstr, client->proxy->irc->nick, message->trailing);
+			fprintf(file, "[%02u.%02u.%04u-%02u:%02u:%02u] <%s> %s\n", day, month, year, hour, minute, second, client->proxy->irc->nick, message->trailing);
 
-			free(nowstr);
 			fclose(file);
 			g_string_free(path, true);
 		}

@@ -38,7 +38,7 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -115,16 +115,18 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 
-	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
-	g_get_current_time(now);
-	char *dateTime = g_time_val_to_iso8601(now);
+	GDateTime *now = g_date_time_new_now_local();
+	unsigned int hour = g_date_time_get_hour(now);
+	unsigned int minute = g_date_time_get_minute(now);
+	unsigned int second = g_date_time_get_second(now);
+    g_date_time_unref(now);
 
 	switch(type) {
 		case LOG_TYPE_ERROR:
 #ifdef WIN32
 			writeMessage(dateTime, errorColor, module, "ERROR", message);
 #else
-			fprintf(stderr, "%s [%s] \033[%sERROR: %s\033[m\n", dateTime, module, errorColor, message);
+			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sERROR: %s\033[m\n", hour, minute, second, module, errorColor, message);
 #endif
 
 		break;
@@ -132,7 +134,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #ifdef WIN32
 			writeMessage(dateTime, warningColor, module, "WARNING", message);
 #else
-			fprintf(stderr, "%s [%s] \033[%sWARNING: %s\033[m\n", dateTime, module, warningColor, message);
+			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sWARNING: %s\033[m\n", hour, minute, second, module, warningColor, message);
 #endif
 
 		break;
@@ -140,7 +142,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #ifdef WIN32
 			writeMessage(dateTime, infoColor, module, "INFO", message);
 #else
-			fprintf(stderr, "%s [%s] \033[%sINFO: %s\033[m\n", dateTime, module, infoColor, message);
+			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sINFO: %s\033[m\n", hour, minute, second, module, infoColor, message);
 #endif
 
 		break;
@@ -148,13 +150,11 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #ifdef WIN32
 			writeMessage(dateTime, debugColor, module, "DEBUG", message);
 #else
-			fprintf(stderr, "%s [%s] \033[%sDEBUG: %s\033[m\n", dateTime, module, debugColor, message);
+			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sDEBUG: %s\033[m\n", hour, minute, second, module, debugColor, message);
 #endif
 		break;
 	}
 
-	free(now);
-	free(dateTime);
 	fflush(stderr);
 }
 

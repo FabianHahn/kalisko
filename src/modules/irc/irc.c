@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 6);
+MODULE_VERSION(0, 4, 7);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -211,6 +211,7 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	char *user;
 	char *real;
 	char *nick;
+	int throttle;
 
 	if((param = $(Store *, store, getStorePath)(params, "server")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'server', aborting IRC connection");
@@ -253,7 +254,20 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 
 	nick = param->content.string;
 
-	return createIrcConnection(server, port, password, user, real, nick);
+	if((param = $(Store *, store, getStorePath)(params, "throttle")) == NULL || param->type != STORE_INTEGER) {
+		LOG_ERROR("Could not find required params value 'throttle', aborting IRC connection");
+		return NULL;
+	}
+
+	throttle = param->content.integer;
+
+	IrcConnection *connection = createIrcConnection(server, port, password, user, real, nick);
+
+	if(throttle > 0) {
+		enableIrcConnectionThrottle(connection);
+	}
+
+	return connection;
 }
 
 /**
@@ -274,6 +288,8 @@ API bool enableIrcConnectionThrottle(IrcConnection *irc)
 	irc->throttle_time = $$(double, getMicroTime)();
 
 	g_queue_push_tail(throttled, irc);
+
+	LOG_INFO("Enabled throttling for IRC connection with socket %d", irc->socket->fd);
 
 	return true;
 }

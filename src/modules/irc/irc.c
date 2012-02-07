@@ -263,7 +263,7 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 
 	IrcConnection *connection = createIrcConnection(server, port, password, user, real, nick);
 
-	if(throttle > 0) {
+	if(throttle > 0 && connection != NULL) {
 		enableIrcConnectionThrottle(connection);
 	}
 

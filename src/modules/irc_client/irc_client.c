@@ -39,7 +39,7 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 15);
+MODULE_VERSION(0, 3, 16);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
@@ -385,6 +385,24 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 API gboolean irc_client_chat_output_key_press_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
 	assert(event->type == GDK_KEY_PRESS);
+
+	switch(event->key.keyval) { // allow moving cursor and pressing control/alt/shift
+		case GDK_Up:
+		case GDK_Down:
+		case GDK_Left:
+		case GDK_Right:
+		case GDK_Shift_L:
+		case GDK_Shift_R:
+		case GDK_Control_L:
+		case GDK_Control_R:
+		case GDK_Alt_L:
+		case GDK_Alt_R:
+		return false;
+	}
+
+	if(event->key.state & GDK_CONTROL_MASK || event->key.state & GDK_MOD1_MASK) { // allow hotkeys (CTRL, ALT)
+		return false;
+	}
 
 	guint32 unicode = gdk_keyval_to_unicode(event->key.keyval); // translate pressed key to unicode
 

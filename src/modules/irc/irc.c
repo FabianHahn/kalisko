@@ -39,7 +39,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 9);
+MODULE_VERSION(0, 4, 10);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 4, 3), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -162,7 +162,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
-		ircSend(irc, "PONG :%s", challenge);
+		ircSendFirst(irc, "PONG :%s", challenge);
 	} else if(g_strcmp0(message->command, "NICK") == 0) {
 		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
 		if(mask != NULL) {
@@ -386,10 +386,10 @@ API void freeIrcConnection(IrcConnection *irc)
 }
 
 /**
- * Sends a message to the IRC socket
+ * Sends a message to the IRC connection's remote server
  *
  * @param irc			the IRC connection to use for sending the message
- * @param message		frintf-style message to send to the socket
+ * @param message		printf-style message to send to the socket
  * @result				true if successful, false on error
  */
 API bool ircSend(IrcConnection *irc, char *message, ...)
@@ -402,6 +402,38 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
 
 	if(irc->throttle) { // delay message
 		g_queue_push_tail(irc->obuffer, g_string_new(buffer));
+		return true;
+	}
+
+	$(int, event, triggerEvent)(irc, "send", buffer);
+
+	GString *nlmessage = g_string_new(buffer);
+	g_string_append_c(nlmessage, '\n');
+
+	bool ret = $(bool, socket, socketWriteRaw)(irc->socket, nlmessage->str, nlmessage->len);
+
+	g_string_free(nlmessage, true);
+
+	return ret;
+}
+
+/**
+ * Sends a message to the IRC connection's remote server. If the connection is throttled, makes sure the message is sent before all already queued messages
+ *
+ * @param irc			the IRC connection to use for sending the message
+ * @param message		printf-style message to send to the socket
+ * @result				true if successful, false on error
+ */
+API bool ircSendFirst(IrcConnection *irc, char *message, ...)
+{
+	va_list va;
+	char buffer[IRC_SEND_MAXLEN];
+
+	va_start(va, message);
+	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
+
+	if(irc->throttle) { // delay message
+		g_queue_push_head(irc->obuffer, g_string_new(buffer));
 		return true;
 	}
 

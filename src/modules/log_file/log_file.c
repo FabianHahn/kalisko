@@ -52,7 +52,7 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -175,9 +175,14 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	LogType type = va_arg(args, LogType);
 	char *message = va_arg(args, char *);
 
-	GTimeVal *now = ALLOCATE_OBJECT(GTimeVal);
-	g_get_current_time(now);
-	char *dateTime = g_time_val_to_iso8601(now);
+	GDateTime *now = g_date_time_new_now_local();
+	unsigned int day = g_date_time_get_day_of_month(now);
+	unsigned int month = g_date_time_get_month(now);
+	unsigned int year = g_date_time_get_year(now);
+	unsigned int hour = g_date_time_get_hour(now);
+	unsigned int minute = g_date_time_get_minute(now);
+	unsigned int second = g_date_time_get_second(now);
+    g_date_time_unref(now);
 
     for(GList *item = logFiles; item != NULL; item = item->next) {
     	LogFileConfig *logFile = item->data;
@@ -199,21 +204,20 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     	switch(logFile->logType) {
 			case LOG_TYPE_DEBUG:
 				if(type == LOG_TYPE_DEBUG)
-					fprintf(logFile->fileAppend, "%s [%s] DEBUG: %s\n", dateTime, module, message);
+					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] DEBUG: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_INFO:
 				if(type == LOG_TYPE_INFO)
-					fprintf(logFile->fileAppend, "%s [%s] INFO: %s\n", dateTime, module, message);
+					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] INFO: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_WARNING:
 				if(type == LOG_TYPE_WARNING)
-					fprintf(logFile->fileAppend, "%s [%s] WARNING: %s\n", dateTime, module, message);
+					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] WARNING: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_ERROR:
 				if(type == LOG_TYPE_ERROR)
-					fprintf(logFile->fileAppend, "%s [%s] ERROR: %s\n", dateTime, module, message);
+					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] ERROR: %s\n", day, month, year, hour, minute, second, module, message);
     	}
-    }
 
-    free(now);
-    free(dateTime);
+    	fflush(logFile->fileAppend);
+    }
 }
 
 static void finalize()

@@ -52,7 +52,7 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -204,16 +204,16 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     	switch(logFile->logType) {
 			case LOG_TYPE_DEBUG:
 				if(type == LOG_TYPE_DEBUG)
-					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] DEBUG: %s\n", day, month, year, hour, minute, second, module, message);
+					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] DEBUG: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_INFO:
 				if(type == LOG_TYPE_INFO)
-					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] INFO: %s\n", day, month, year, hour, minute, second, module, message);
+					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] INFO: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_WARNING:
 				if(type == LOG_TYPE_WARNING)
-					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] WARNING: %s\n", day, month, year, hour, minute, second, module, message);
+					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] WARNING: %s\n", day, month, year, hour, minute, second, module, message);
 			case LOG_TYPE_ERROR:
 				if(type == LOG_TYPE_ERROR)
-					fprintf(logFile->fileAppend, "%02u.%02u.%04u-%02u:%02u:%02u [%s] ERROR: %s\n", day, month, year, hour, minute, second, module, message);
+					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] ERROR: %s\n", day, month, year, hour, minute, second, module, message);
     	}
 
     	fflush(logFile->fileAppend);

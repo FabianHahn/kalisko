@@ -306,9 +306,11 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 		case OPENGL_TEXTURE_TYPE_2D:
 			switch(texture->image->type) {
 				case IMAGE_TYPE_BYTE:
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 					glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
 				break;
 				case IMAGE_TYPE_FLOAT:
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 					glTexImage2D(GL_TEXTURE_2D, 0, texture->internalFormat, texture->image->width, texture->image->height, 0, texture->format, GL_FLOAT, texture->image->data.float_data);
 				break;
 			}
@@ -316,9 +318,11 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 		case OPENGL_TEXTURE_TYPE_2D_ARRAY:
 			switch(texture->image->type) {
 				case IMAGE_TYPE_BYTE:
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 					glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, texture->internalFormat, texture->image->width, texture->image->height / texture->arraySize, texture->arraySize, 0, texture->format, GL_UNSIGNED_BYTE, texture->image->data.byte_data);
 				break;
 				case IMAGE_TYPE_FLOAT:
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 					glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, texture->internalFormat, texture->image->width, texture->image->height / texture->arraySize, texture->arraySize, 0, texture->format, GL_FLOAT, texture->image->data.float_data);
 				break;
 			}

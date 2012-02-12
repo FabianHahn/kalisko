@@ -28,15 +28,20 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 2, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
 static Image *readImageFilePng(const char *filename);
+static bool writeImageFilePng(const char *filename, Image *image);
 
 MODULE_INIT
 {
-	if(!$(bool, image, addImageIOReadHandler)("png", &readImageFilePng)) {
+	if(!addImageIOReadHandler("png", &readImageFilePng)) {
+		return false;
+	}
+
+	if(!addImageIOWriteHandler("png", &writeImageFilePng)) {
 		return false;
 	}
 
@@ -45,7 +50,8 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(bool, image, deleteImageIOReadHandler)("png");
+	deleteImageIOReadHandler("png");
+	deleteImageIOWriteHandler("png");
 }
 
 /**
@@ -65,8 +71,7 @@ static Image *readImageFilePng(const char *filename)
 		return NULL;
 	}
 
-	fread(header, 1, 8, file);
-	if(png_sig_cmp(header, 0, 8)) {
+	if(fread(header, 1, 8, file) <= 0 || png_sig_cmp(header, 0, 8)) {
 		LOG_ERROR("Failed to read PNG image '%s': libpng header signature mismatch", filename);
 		fclose(file);
 		return NULL;
@@ -168,4 +173,108 @@ static Image *readImageFilePng(const char *filename)
 	free(row_pointers);
 
 	return image;
+}
+
+/**
+ * Writes an image to a png file
+ *
+ * @param filename			the png file to write to
+ * @param image				the image to write
+ * @result					true if successful
+ */
+static bool writeImageFilePng(const char *filename, Image *image)
+{
+	if(image->channels > 4) {
+		LOG_ERROR("Cannot save images with more than 4 channels as PNG");
+		return false;
+	}
+
+	FILE *file;
+
+	if((file = fopen(filename, "wb")) == NULL) {
+		LOG_SYSTEM_ERROR("Could not open image file %s", filename);
+		return false;
+	}
+
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+	if(png_ptr == NULL) {
+		LOG_ERROR("Failed to create libpng write struct");
+		fclose(file);
+		return false;
+	}
+
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if(info_ptr == NULL) {
+		LOG_ERROR("Failed to create libpng info struct");
+		fclose(file);
+		png_destroy_write_struct(&png_ptr, NULL);
+		return false;
+	}
+
+	png_bytep *row_pointers = ALLOCATE_OBJECTS(png_bytep, image->height);
+	for(unsigned int y = 0; y < image->height; y++) {
+		row_pointers[y] = ALLOCATE_OBJECTS(png_byte, image->width * image->channels);
+
+		for(unsigned int x = 0; x < image->width; x++) {
+			for(unsigned int c = 0; c < image->channels; c++) {
+				row_pointers[y][image->channels * x + c] = getImageAsByte(image, x, y, c);
+			}
+		}
+	}
+
+	if(setjmp(png_jmpbuf(png_ptr))) {
+		LOG_ERROR("Failed to write PNG image '%s': libpng called longjmp", filename);
+		fclose(file);
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+
+		// Cleanup memory
+		for(unsigned int y = 0; y < image->height; y++) {
+			free(row_pointers[y]);
+		}
+		free(row_pointers);
+
+		return false;
+	}
+
+	// set up writing
+	png_init_io(png_ptr, file);
+
+	png_byte colorType = 0;
+	switch(image->channels) {
+		case 1:
+			colorType = PNG_COLOR_TYPE_GRAY;
+		break;
+		case 2:
+			colorType = PNG_COLOR_TYPE_GRAY_ALPHA;
+		break;
+		case 3:
+			colorType = PNG_COLOR_TYPE_RGB;
+		break;
+		case 4:
+			colorType = PNG_COLOR_TYPE_RGB_ALPHA;
+		break;
+	}
+
+	// prepare header
+	png_set_IHDR(png_ptr, info_ptr, image->width, image->height, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+	// prepare image contents
+	png_set_rows(png_ptr, info_ptr, row_pointers);
+
+	// write it to disk
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+
+	// free the libpng context
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+
+	fclose(file);
+
+	// Cleanup memory
+	for(unsigned int y = 0; y < image->height; y++) {
+		free(row_pointers[y]);
+	}
+	free(row_pointers);
+
+	return true;
 }

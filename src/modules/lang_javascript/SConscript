@@ -26,9 +26,15 @@ if module['PLATFORM'] == 'win32':
 	thirdPartyDir = os.path.join(module.GetLaunchDir(), '3rd_party')
 	check = check and os.path.exists(thirdPartyDir)
 else:
-	try:
-		conf.env.ParseConfig('js-config --libs --cflags')
-	except:
+	cmd = os.popen('js-config --version')
+	version = cmd.read()
+	
+	if len(version) > 1:
+		try:
+			conf.env.ParseConfig('js-config --libs --cflags')
+		except:
+			check = False
+	else:
 		check = False
 
 module = conf.Finish()

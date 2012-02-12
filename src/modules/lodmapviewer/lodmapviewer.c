@@ -40,6 +40,8 @@
 #include "modules/linalg/transform.h"
 #include "modules/lodmap/lodmap.h"
 #include "modules/lodmap/imagesource.h"
+#include "modules/lodmap/importsource.h"
+#include "modules/lodmap/export.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/config/config.h"
@@ -50,9 +52,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 3, 4);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 11, 0), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 14, 3), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -61,7 +63,7 @@ static bool keysPressed[256];
 static int currentWidth = 800;
 static int currentHeight = 600;
 static bool cameraTiltEnabled = false;
-static OpenGLLodMapDataImageSource *source;
+static OpenGLLodMapDataSource *source;
 static OpenGLLodMap *lodmap;
 static bool autoUpdate = true;
 static bool autoExpand = true;
@@ -152,9 +154,9 @@ MODULE_INIT
 		return false;
 	}
 
-	lodmap = $(OpenGLLodMap *, lodmap, createOpenGLLodMap)(&source->source, 2.2, 2);
+	lodmap = createOpenGLLodMap(source, 2.2, 2);
 	if(lodmap == NULL) {
-		$(void, lodmap, freeOpenGLLodMapImageSource)(source);
+		freeOpenGLLodMapDataSource(source);
 		$(void, freeglut, freeFreeglutWindow)(window);
 		return false;
 	}
@@ -213,7 +215,7 @@ MODULE_FINALIZE
 	$(void, freeglut, freeFreeglutWindow)(window);
 
 	$(void, lodmap, freeOpenGLLodMap)(lodmap);
-	$(void, lodmap, freeOpenGLLodMapImageSource)(source);
+	freeOpenGLLodMapDataSource(source);
 	$(void, opengl, freeOpenGLCamera)(camera);
 	$(void, linalg, freeMatrix)(perspectiveMatrix);
 

@@ -106,7 +106,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	GString *normalsName = g_string_new(path);
 	g_string_append_printf(normalsName, "/lodmap_normals_%s" ,fileSuffix->str);
 
-	if(!writeImageToFile(tile->heights, normalsName->str)) {
+	if(!writeImageToFile(tile->normals, normalsName->str)) {
 		LOG_ERROR("Failed to export LOD map normals image to '%s'", normalsName->str);
 	}
 

@@ -24,18 +24,6 @@
 #include "modules/image/image.h"
 #include "source.h"
 
-typedef struct {
-	/** The heights image associated with this image source */
-	Image *heights;
-	/** The normals image associated with this image source */
-	Image *normals;
-	/** The texture image associated with this image source */
-	Image *texture;
-	/** The LOD map data source for this image source */
-	OpenGLLodMapDataSource source;
-} OpenGLLodMapDataImageSource;
-
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
-API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source);
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
 
 #endif

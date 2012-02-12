@@ -30,6 +30,14 @@
 #include "source.h"
 #include "importsource.h"
 
+typedef struct {
+	/** The the folder path in which the import source is stored */
+	char *path;
+	/** The LOD map data source for this image source */
+	OpenGLLodMapDataSource source;
+} OpenGLLodMapDataImportSource;
+
+static void freeOpenGLLodMapImportSource(OpenGLLodMapDataSource *source);
 static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
 
 /**
@@ -38,7 +46,7 @@ static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, 
  * @param path			the path from which to configure the import data source
  * @result				the created LOD map data source or NULL on failure
  */
-API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *path)
+API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
 {
 	GString *metaPath = g_string_new(path);
 	g_string_append(metaPath, "/lodmap.store");
@@ -54,7 +62,7 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
 	if(baseLevelParam == NULL || baseLevelParam->type != STORE_INTEGER) {
 		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/baseLevel' not found in '%s/lodmap.store'", path);
 		freeStore(store);
-		return false;
+		return NULL;
 	}
 
 	// load normalDetailLevel parameter
@@ -62,7 +70,7 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
 	if(normalDetailLevelParam == NULL || normalDetailLevelParam->type != STORE_INTEGER) {
 		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/normalDetailLevel' not found in '%s/lodmap.store'", path);
 		freeStore(store);
-		return false;
+		return NULL;
 	}
 
 	// load textureDetailLevel parameter
@@ -70,7 +78,7 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
 	if(textureDetailLevelParam == NULL || textureDetailLevelParam->type != STORE_INTEGER) {
 		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/textureDetailLevel' not found in '%s/lodmap.store'", path);
 		freeStore(store);
-		return false;
+		return NULL;
 	}
 
 	// load heightRatio parameter
@@ -78,7 +86,7 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
 	if(heightRatioParam == NULL || !(heightRatioParam->type == STORE_INTEGER || heightRatioParam->type == STORE_FLOAT_NUMBER)) {
 		LOG_ERROR("Failed to create LOD map import store: Config float value 'lodmap/source/heightRatio' not found in '%s/lodmap.store'", path);
 		freeStore(store);
-		return false;
+		return NULL;
 	}
 
 	// create the struct for the image source
@@ -89,9 +97,10 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
 	source->source.textureDetailLevel = textureDetailLevelParam->content.integer;
 	source->source.heightRatio = heightRatioParam->type == STORE_FLOAT_NUMBER ? heightRatioParam->content.float_number : heightRatioParam->content.integer;
 	source->source.load = &queryOpenGLLodMapImportSource;
+	source->source.free = &freeOpenGLLodMapImportSource;
 	source->source.data = source;
 
-	return source;
+	return &source->source;
 }
 
 /**
@@ -99,10 +108,12 @@ API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *pat
  *
  * @param source			the image source to free
  */
-API void freeOpenGLLodMapImportSource(OpenGLLodMapDataImportSource *source)
+static void freeOpenGLLodMapImportSource(OpenGLLodMapDataSource *source)
 {
-	free(source->path);
-	free(source);
+	OpenGLLodMapDataImportSource *importSource = source->data;
+
+	free(importSource->path);
+	free(importSource);
 }
 
 /**
@@ -135,7 +146,7 @@ static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, 
 			channels = 3;
 		break;
 		case OPENGL_LODMAP_IMAGE_TEXTURE:
-			g_string_append(imageName, "/lodmap_image_");
+			g_string_append(imageName, "/lodmap_texture_");
 			channels = 3;
 		break;
 	}
@@ -154,6 +165,33 @@ static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, 
 		freeImage(image);
 		image = createImageFloat(imageSize, imageSize, channels);
 		clearImage(image);
+	}
+
+	// determine min/max
+	if(minValue != NULL || maxValue != NULL) {
+		if(minValue != NULL) {
+			*minValue = FLT_MAX;
+		}
+
+		if(maxValue != NULL) {
+			*maxValue = -FLT_MAX;
+		}
+
+		for(unsigned int y = 0; y < image->height; y++) {
+			for(unsigned int x = 0; x < image->width; x++) {
+				for(unsigned int c = 0; c < image->channels; c++) {
+					float value = getImage(image, x, y, c);
+
+					// update min/max
+					if(minValue != NULL && value < *minValue) {
+						*minValue = value;
+					}
+					if(maxValue != NULL && value > *maxValue) {
+						*maxValue = value;
+					}
+				}
+			}
+		}
 	}
 
 	return image;

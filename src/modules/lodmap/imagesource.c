@@ -27,6 +27,18 @@
 #include "source.h"
 #include "imagesource.h"
 
+typedef struct {
+	/** The heights image associated with this image source */
+	Image *heights;
+	/** The normals image associated with this image source */
+	Image *normals;
+	/** The texture image associated with this image source */
+	Image *texture;
+	/** The LOD map data source for this image source */
+	OpenGLLodMapDataSource source;
+} OpenGLLodMapDataImageSource;
+
+static void freeOpenGLLodMapImageSource(OpenGLLodMapDataSource *source);
 static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
 static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, float *minValue, float *maxValue, bool interpolate);
 
@@ -40,7 +52,7 @@ static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int
  * @param heightRatio			the ratio to scale height values with
  * @result						the created LOD map data source or NULL on failure
  */
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio)
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio)
 {
 	int normalDetailLevel = 0;
 	int textureDetailLevel = 0;
@@ -112,9 +124,10 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
 	source->source.textureDetailLevel = textureDetailLevel;
 	source->source.heightRatio = heightRatio;
 	source->source.load = &queryOpenGLLodMapImageSource;
+	source->source.free = &freeOpenGLLodMapImageSource;
 	source->source.data = source;
 
-	return source;
+	return &source->source;
 }
 
 /**
@@ -122,11 +135,13 @@ API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, I
  *
  * @param source			the image source to free
  */
-API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source)
+static void freeOpenGLLodMapImageSource(OpenGLLodMapDataSource *source)
 {
-	$(void, image, freeImage)(source->heights);
-	$(void, image, freeImage)(source->texture);
-	free(source);
+	OpenGLLodMapDataImageSource *imageSource = source->data;
+
+	freeImage(imageSource->heights);
+	freeImage(imageSource->texture);
+	free(imageSource);
 }
 
 /**

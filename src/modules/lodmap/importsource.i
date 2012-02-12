@@ -23,14 +23,6 @@
 
 #include "source.h"
 
-typedef struct {
-	/** The the folder path in which the import source is stored */
-	char *path;
-	/** The LOD map data source for this image source */
-	OpenGLLodMapDataSource source;
-} OpenGLLodMapDataImportSource;
-
-API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *path);
-API void freeOpenGLLodMapImportSource(OpenGLLodMapDataImportSource *source);
+API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path);
 
 #endif

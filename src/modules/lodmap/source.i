@@ -43,6 +43,11 @@ struct OpenGLLodMapDataSourceStruct; // forward declaration
 typedef Image *(OpenGLLodMapDataSourceLoader)(struct OpenGLLodMapDataSourceStruct *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level, float *min, float *max);
 
 /**
+ * Function pointer type for OpenGL LOD map data source freeing callbacks
+ */
+typedef void (OpenGLLodMapDataSourceFreeFunction)(struct OpenGLLodMapDataSourceStruct *dataSource);
+
+/**
  * Struct representing an OpenGL LOD map data source
  */
 struct OpenGLLodMapDataSourceStruct {
@@ -56,6 +61,8 @@ struct OpenGLLodMapDataSourceStruct {
 	float heightRatio;
 	/** The data loader for this source */
 	OpenGLLodMapDataSourceLoader *load;
+	/**	The free function for this source */
+	OpenGLLodMapDataSourceFreeFunction *free;
 	/** Custom data for the data source */
 	void *data;
 };
@@ -77,6 +84,16 @@ typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
 static inline Image *queryOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int x, int y, unsigned int level, float *minValue, float *maxValue)
 {
 	return dataSource->load(dataSource, query, x, y, level, minValue, maxValue);
+}
+
+/**
+ * Frees an OpenGL LOD map data source
+ *
+ * @param dataSource			the data source to free
+ */
+static inline void freeOpenGLLodMapDataSource(OpenGLLodMapDataSource *dataSource)
+{
+	dataSource->free(dataSource);
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,24 +18,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LODMAP_IMAGE_SOURCE_H
-#define LODMAP_IMAGE_SOURCE_H
+#ifndef LODMAP_IMPORT_SOURCE_H
+#define LODMAP_IMPORT_SOURCE_H
 
-#include "modules/image/image.h"
 #include "source.h"
 
 typedef struct {
-	/** The heights image associated with this image source */
-	Image *heights;
-	/** The normals image associated with this image source */
-	Image *normals;
-	/** The texture image associated with this image source */
-	Image *texture;
+	/** The the folder path in which the import source is stored */
+	char *path;
 	/** The LOD map data source for this image source */
 	OpenGLLodMapDataSource source;
-} OpenGLLodMapDataImageSource;
+} OpenGLLodMapDataImportSource;
 
-API OpenGLLodMapDataImageSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
-API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImageSource *source);
+API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *path);
+API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImportSource *source);
 
 #endif

@@ -31,6 +31,6 @@ typedef struct {
 } OpenGLLodMapDataImportSource;
 
 API OpenGLLodMapDataImportSource *createOpenGLLodMapImportSource(const char *path);
-API void freeOpenGLLodMapImageSource(OpenGLLodMapDataImportSource *source);
+API void freeOpenGLLodMapImportSource(OpenGLLodMapDataImportSource *source);
 
 #endif

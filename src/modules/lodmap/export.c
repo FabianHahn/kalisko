@@ -42,6 +42,11 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
  */
 bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
 {
+	if(g_mkdir_with_parents(path, 0755) < 0) {
+		LOG_SYSTEM_ERROR("Failed to create LOD map export folder at '%s':", path);
+		return false;
+	}
+
 	// First dump meta information
 	Store *meta = createStore();
 	setStorePath(meta, "lodmap", createStore());
@@ -88,8 +93,8 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_append_printf(fileSuffix, "%u.%d.%d.store", node->level, node->x, node->y);
 
 	// export heights
-	GString *heightsName = g_string_new("/lodmap_heights_");
-	g_string_append(heightsName, fileSuffix->str);
+	GString *heightsName = g_string_new(path);
+	g_string_append_printf(heightsName, "/lodmap_heights_%s", fileSuffix->str);
 
 	if(!writeImageToFile(tile->heights, heightsName->str)) {
 		LOG_ERROR("Failed to export LOD map heights image to '%s'", heightsName->str);
@@ -98,8 +103,8 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_free(heightsName, true);
 
 	// export normals
-	GString *normalsName = g_string_new("/lodmap_normals_");
-	g_string_append(normalsName, fileSuffix->str);
+	GString *normalsName = g_string_new(path);
+	g_string_append_printf(normalsName, "/lodmap_normals_%s" ,fileSuffix->str);
 
 	if(!writeImageToFile(tile->heights, normalsName->str)) {
 		LOG_ERROR("Failed to export LOD map normals image to '%s'", normalsName->str);
@@ -108,8 +113,8 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_free(normalsName, true);
 
 	// export texture
-	GString *textureName = g_string_new("/lodmap_texture_");
-	g_string_append(textureName, fileSuffix->str);
+	GString *textureName = g_string_new(path);
+	g_string_append_printf(textureName, "/lodmap_texture_%s", fileSuffix->str);
 
 	if(!writeImageToFile(tile->texture, textureName->str)) {
 		LOG_ERROR("Failed to export LOD map texture image to '%s'", textureName->str);
@@ -123,10 +128,10 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 		for(unsigned int i = 0; i < 4; i++) {
 			exportOpenGLLodMapQuadtreeNode(lodmap, node->children[i], path);
 		}
-	}
 
-	// Update node weight
-	updateQuadtreeNodeWeight(node);
+		// Update node weight
+		updateQuadtreeNodeWeight(node);
+	}
 
 	LOG_INFO("Exported LOD map quadtree node (%d,%d) at level %u", node->x, node->y, node->level);
 }

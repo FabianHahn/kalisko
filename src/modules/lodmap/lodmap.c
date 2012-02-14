@@ -42,7 +42,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 15, 2);
+MODULE_VERSION(0, 15, 3);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 1), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 11));
 
@@ -100,13 +100,19 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store)
 		return NULL;
 	}
 
-	return createOpenGLLodMap(source, baseRange, viewingDistance);
+	OpenGLLodMap *lodmap = createOpenGLLodMap(source, baseRange, viewingDistance);
+	if(lodmap == NULL) {
+		freeOpenGLLodMapDataSource(source);
+		return NULL;
+	}
+
+	return lodmap;
 }
 
 /**
  * Creates an OpenGL LOD map
  *
- * @param source				the data source used for the LOD map
+ * @param source				the data source used for the LOD map (note that the LOD map takes over control over this data source, i.e. you must not free it once this function succeeded)
  * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
  * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
  * @result						the created OpenGL LOD map
@@ -127,31 +133,31 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	lodmap->morphStartFactor = 0.8f;
 
 	// create lodmap material
-	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
-	char *execpath = $$(char *, getExecutablePath)();
+	deleteOpenGLMaterial("lodmap");
+	char *execpath = getExecutablePath();
 	GString *vertexShaderPath = g_string_new(execpath);
 	g_string_append_printf(vertexShaderPath, "/modules/lodmap/lodmap.glslv");
 	GString *fragmentShaderPath = g_string_new(execpath);
 	g_string_append_printf(fragmentShaderPath, "/modules/lodmap/lodmap.glslf");
 
-	bool result = $(bool, opengl, createOpenGLMaterialFromFiles)("lodmap", vertexShaderPath->str, fragmentShaderPath->str);
+	bool result = createOpenGLMaterialFromFiles("lodmap", vertexShaderPath->str, fragmentShaderPath->str);
 
 	g_string_free(vertexShaderPath, true);
 	g_string_free(fragmentShaderPath, true);
 	free(execpath);
 
 	if(!result) {
-		$(void, heightmap, freeOpenGLPrimitiveHeightmap)(lodmap->heightmap);
-		$(void, quadtree, freeQuadtree)(lodmap->quadtree);
+		freeOpenGLPrimitiveHeightmap(lodmap->heightmap);
+		freeQuadtree(lodmap->quadtree);
 		LOG_ERROR("Failed to create OpenGL LOD map material");
 		return NULL;
 	}
 
 	// add lodmap configuration uniforms
-	OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)("lodmap");
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "baseRange", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->baseRange));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "morphStartFactor", $(OpenGLUniform *, opengl, createOpenGLUniformFloatPointer)(&lodmap->morphStartFactor));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "viewerPosition", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lodmap->viewerPosition));
+	OpenGLUniformAttachment *uniforms = getOpenGLMaterialUniforms("lodmap");
+	attachOpenGLUniform(uniforms, "baseRange", createOpenGLUniformFloatPointer(&lodmap->baseRange));
+	attachOpenGLUniform(uniforms, "morphStartFactor", createOpenGLUniformFloatPointer(&lodmap->morphStartFactor));
+	attachOpenGLUniform(uniforms, "viewerPosition", createOpenGLUniformVector(lodmap->viewerPosition));
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
@@ -234,11 +240,13 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	g_hash_table_remove(maps, lodmap->quadtree);
-	$(void, quadtree, freeQuadtree)(lodmap->quadtree);
+	freeQuadtree(lodmap->quadtree);
 
-	$(bool, opengl, deleteOpenGLMaterial)("lodmap");
+	deleteOpenGLMaterial("lodmap");
 	freeOpenGLPrimitive(lodmap->heightmap);
-	$(void, linalg, freeVector)(lodmap->viewerPosition);
+	freeVector(lodmap->viewerPosition);
+	freeOpenGLLodMapDataSource(lodmap->source);
+
 	free(lodmap);
 }
 

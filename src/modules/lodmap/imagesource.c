@@ -136,9 +136,9 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
 /**
  * Creates an image source for an OpenGL LOD map
  *
- * @param heights				the image from which to read the height data (note that the source takes over control over this image, i.e. you must not free it)
- * @param normals				the image from which to read the normals data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it)
- * @param texture				the image from which to read the texture data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it)
+ * @param heights				the image from which to read the height data (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
+ * @param normals				the image from which to read the normals data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
+ * @param texture				the image from which to read the texture data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
  * @param baseLevel				the base level of a tile
  * @param heightRatio			the ratio to scale height values with
  * @result						the created LOD map data source or NULL on failure

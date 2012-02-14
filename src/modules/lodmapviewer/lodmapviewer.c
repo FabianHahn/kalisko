@@ -52,9 +52,9 @@
 MODULE_NAME("lodmapviewer");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Viewer application for LOD maps");
-MODULE_VERSION(0, 3, 4);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 14, 3), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("freeglut", 0, 1, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("event", 0, 2, 1), MODULE_DEPENDENCY("module_util", 0, 1, 2), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("lodmap", 0, 15, 3), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("image", 0, 5, 20), MODULE_DEPENDENCY("image_pnm", 0, 1, 9), MODULE_DEPENDENCY("image_png", 0, 1, 5));
 
 static FreeglutWindow *window = NULL;
 static OpenGLCamera *camera = NULL;
@@ -63,7 +63,6 @@ static bool keysPressed[256];
 static int currentWidth = 800;
 static int currentHeight = 600;
 static bool cameraTiltEnabled = false;
-static OpenGLLodMapDataSource *source;
 static OpenGLLodMap *lodmap;
 static bool autoUpdate = true;
 static bool autoExpand = true;
@@ -84,8 +83,8 @@ static void listener_close(void *subject, const char *event, void *data, va_list
 MODULE_INIT
 {
 	// Create window and add listeners
-	if((window = $(FreeglutWindow *, freeglut, createFreeglutWindow)("Kalisko LOD map viewer")) == NULL) {
-		$(void, freeglut, freeFreeglutWindow)(window);
+	if((window = createFreeglutWindow("Kalisko LOD map viewer")) == NULL) {
+		freeFreeglutWindow(window);
 		return false;
 	}
 
@@ -97,105 +96,48 @@ MODULE_INIT
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 
-	Store *config = $(Store *, config, getConfig)();
-	Store *configLodMapHeights;
-	char *lodMapHeights = "/tmp/kaliskomap_heights.png";
-	if((configLodMapHeights = $(Store *, store, getStorePath)(config, "lodmap/heights")) != NULL && configLodMapHeights->type == STORE_STRING) {
-		lodMapHeights = configLodMapHeights->content.string;
-	} else {
-		LOG_INFO("Config parameter 'lodmap/heights' not found, defaulting to '%s'", lodMapHeights);
-	}
-
-	Store *configLodMapTexture;
-	char *lodMapTexture = "/tmp/kaliskomap_texture.png";
-	if((configLodMapTexture = $(Store *, store, getStorePath)(config, "lodmap/texture")) != NULL && configLodMapTexture->type == STORE_STRING) {
-		lodMapTexture = configLodMapTexture->content.string;
-	} else {
-		LOG_INFO("Config parameter 'lodmap/texture' not found, defaulting to '%s'", lodMapTexture);
-	}
-
-	Store *configLodMapBaseLevel;
-	unsigned int baseLevel = 5;
-	if((configLodMapBaseLevel = $(Store *, store, getStorePath)(config, "lodmap/baseLevel")) != NULL && configLodMapBaseLevel->type == STORE_INTEGER) {
-		baseLevel = configLodMapBaseLevel->content.integer;
-	} else {
-		LOG_INFO("Config parameter 'lodmap/baseLevel' not found, defaulting to '%d'", baseLevel);
-	}
-
-	Store *configLodMapHeightRatio;
-	float heightRatio = 256.0f;
-	if((configLodMapHeightRatio = getStorePath(config, "lodmap/heightRatio")) != NULL && (configLodMapHeightRatio->type == STORE_INTEGER || configLodMapHeightRatio->type == STORE_FLOAT_NUMBER)) {
-		heightRatio = configLodMapHeightRatio->type == STORE_INTEGER ? configLodMapHeightRatio->content.integer : configLodMapHeightRatio->content.float_number;
-	} else {
-		LOG_INFO("Config parameter 'lodmap/heightRatio' not found, defaulting to '%f'", heightRatio);
-	}
-
-	Image *heights = $(Image *, image, readImageFromFile)(lodMapHeights);
-	if(heights == NULL) {
-		LOG_ERROR("Failed to load heights image from '%s'", lodMapHeights);
-		$(void, freeglut, freeFreeglutWindow)(window);
-		return false;
-	}
-
-	Image *texture = $(Image *, image, readImageFromFile)(lodMapTexture);
-	if(texture == NULL) {
-		LOG_ERROR("Failed to load texture image from '%s'", lodMapTexture);
-		$(void, image, freeImage)(heights);
-		$(void, freeglut, freeFreeglutWindow)(window);
-		return false;
-	}
-
-	source = createOpenGLLodMapImageSource(heights, NULL, texture, baseLevel, heightRatio);
-	if(source == NULL) {
-		LOG_ERROR("Failed create LOD map image source");
-		$(void, image, freeImage)(heights);
-		$(void, image, freeImage)(texture);
-		$(void, freeglut, freeFreeglutWindow)(window);
-		return false;
-	}
-
-	lodmap = createOpenGLLodMap(source, 2.2, 2);
+	Store *config = getConfig();
+	lodmap = createOpenGLLodMapFromStore(config);
 	if(lodmap == NULL) {
-		freeOpenGLLodMapDataSource(source);
-		$(void, freeglut, freeFreeglutWindow)(window);
+		freeFreeglutWindow(window);
 		return false;
 	}
 
-	camera = $(OpenGLCamera *, opengl, createOpenGLCamera)();
-	float *cameraData = $(float *, linalg, getVectorData)(camera->position);
+	camera = createOpenGLCamera();
+	float *cameraData = getVectorData(camera->position);
 	cameraData[0] = 0.5f;
 	cameraData[1] = 0.5f;
 	cameraData[2] = 0.5f;
-	$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
-	$(void, opengl, activateOpenGLCamera)(camera);
+	updateOpenGLCameraLookAtMatrix(camera);
+	activateOpenGLCamera(camera);
 		
-	$(QuadtreeNode *, quadtree, lookupQuadtreeNode)(lodmap->quadtree, 12.0, 12.0, 0);
-	$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+	lookupQuadtreeNode(lodmap->quadtree, 12.0, 12.0, 0);
+	updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 
-	perspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
-	OpenGLUniform *perspectiveUniform = $(OpenGLUniform *, opengl, createOpenGLUniformMatrix)(perspectiveMatrix);
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective");
-	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective", perspectiveUniform);
-	lightPosition = $(Vector *, linalg, createVector3)(-10.0, 100.0, -50.0);
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition");
-	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightPosition));
-	lightColor = $(Vector *, linalg, createVector4)(1.0, 1.0, 1.0, 1.0);
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor");
-	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(lightColor));
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient");
-	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient", $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.25));
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular");
-	$(bool, opengl, attachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular", $(OpenGLUniform *, opengl, createOpenGLUniformFloat)(0.4));
+	createPerspectiveMatrix(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
+	OpenGLUniform *perspectiveUniform = createOpenGLUniformMatrix(perspectiveMatrix);
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "perspective");
+	attachOpenGLUniform(getOpenGLGlobalUniforms(), "perspective", perspectiveUniform);
+	lightPosition = createVector3(-10.0, 100.0, -50.0);
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "lightPosition");
+	attachOpenGLUniform(getOpenGLGlobalUniforms(), "lightPosition", createOpenGLUniformVector(lightPosition));
+	lightColor = createVector4(1.0, 1.0, 1.0, 1.0);
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "lightColor");
+	attachOpenGLUniform(getOpenGLGlobalUniforms(), "lightColor", createOpenGLUniformVector(lightColor));
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "ambient");
+	attachOpenGLUniform(getOpenGLGlobalUniforms(), "ambient", createOpenGLUniformFloat(0.25));
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "specular");
+	attachOpenGLUniform(getOpenGLGlobalUniforms(), "specular", createOpenGLUniformFloat(0.4));
 
 
-	$(void, event, attachEventListener)(window, "keyDown", NULL, &listener_keyDown);
-	$(void, event, attachEventListener)(window, "keyUp", NULL, &listener_keyUp);
-	$(void, event, attachEventListener)(window, "display", NULL, &listener_display);
-	$(void, event, attachEventListener)(window, "update", NULL, &listener_update);
-	$(void, event, attachEventListener)(window, "reshape", NULL, &listener_reshape);
-	$(void, event, attachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
-	$(void, event, attachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
-	$(void, event, attachEventListener)(window, "close", NULL, &listener_close);
+	attachEventListener(window, "keyDown", NULL, &listener_keyDown);
+	attachEventListener(window, "keyUp", NULL, &listener_keyUp);
+	attachEventListener(window, "display", NULL, &listener_display);
+	attachEventListener(window, "update", NULL, &listener_update);
+	attachEventListener(window, "reshape", NULL, &listener_reshape);
+	attachEventListener(window, "passiveMouseMove", NULL, &listener_mouseMove);
+	attachEventListener(window, "mouseMove", NULL, &listener_mouseMove);
+	attachEventListener(window, "close", NULL, &listener_close);
 
 	glutWarpPointer(currentWidth / 2, currentHeight / 2);
 
@@ -204,29 +146,28 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(void, event, detachEventListener)(window, "keyDown", NULL, &listener_keyDown);
-	$(void, event, detachEventListener)(window, "keyUp", NULL, &listener_keyUp);
-	$(void, event, detachEventListener)(window, "display", NULL, &listener_display);
-	$(void, event, detachEventListener)(window, "update", NULL, &listener_update);
-	$(void, event, detachEventListener)(window, "reshape", NULL, &listener_reshape);
-	$(void, event, detachEventListener)(window, "passiveMouseMove", NULL, &listener_mouseMove);
-	$(void, event, detachEventListener)(window, "mouseMove", NULL, &listener_mouseMove);
-	$(void, event, detachEventListener)(window, "close", NULL, &listener_close);
-	$(void, freeglut, freeFreeglutWindow)(window);
+	detachEventListener(window, "keyDown", NULL, &listener_keyDown);
+	detachEventListener(window, "keyUp", NULL, &listener_keyUp);
+	detachEventListener(window, "display", NULL, &listener_display);
+	detachEventListener(window, "update", NULL, &listener_update);
+	detachEventListener(window, "reshape", NULL, &listener_reshape);
+	detachEventListener(window, "passiveMouseMove", NULL, &listener_mouseMove);
+	detachEventListener(window, "mouseMove", NULL, &listener_mouseMove);
+	detachEventListener(window, "close", NULL, &listener_close);
+	freeFreeglutWindow(window);
 
-	$(void, lodmap, freeOpenGLLodMap)(lodmap);
-	freeOpenGLLodMapDataSource(source);
-	$(void, opengl, freeOpenGLCamera)(camera);
-	$(void, linalg, freeMatrix)(perspectiveMatrix);
+	freeOpenGLLodMap(lodmap);
+	freeOpenGLCamera(camera);
+	freeMatrix(perspectiveMatrix);
 
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "perspective");
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightPosition");
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "lightColor");
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "ambient");
-	$(bool, opengl, detachOpenGLUniform)($(OpenGLUniformAttachment *, opengl, getOpenGLGlobalUniforms)(), "specular");
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "perspective");
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "lightPosition");
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "lightColor");
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "ambient");
+	detachOpenGLUniform(getOpenGLGlobalUniforms(), "specular");
 
-	$(void, linalg, freeVector)(lightPosition);
-	$(void, linalg, freeVector)(lightColor);
+	freeVector(lightPosition);
+	freeVector(lightColor);
 }
 
 static void listener_keyDown(void *subject, const char *event, void *data, va_list args)
@@ -239,7 +180,7 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 
 	switch(key) {
 		case 27: // escape
-			$(void, module_util, safeRevokeModule)("lodmapviewer");
+			safeRevokeModule("lodmapviewer");
 		break;
 		case 'f':
 			glutFullScreenToggle();
@@ -253,14 +194,14 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 				LOG_INFO("Set polygon rendering mode to 'GL_FILL'");
 			}
 
-			$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+			updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 		break;
 		case 'u':
 			autoUpdate = !autoUpdate;
 			LOG_INFO("%s automatic LOD map updates", autoUpdate ? "Enabled" : "Disabled");
 
 			if(autoUpdate) {
-				$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+				updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 			}
 		break;
 		case 'x':
@@ -269,9 +210,9 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		break;
 		case 't':
 			{
-				Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, currentWidth, currentHeight);
-				$(void, image, debugImage)(screenshot);
-				$(void, image, freeImage)(screenshot);
+				Image *screenshot = getOpenGLScreenshot(0, 0, currentWidth, currentHeight);
+				debugImage(screenshot);
+				freeImage(screenshot);
 			}
 		break;
 		case 'r':
@@ -296,15 +237,15 @@ static void listener_display(void *subject, const char *event, void *data, va_li
 {
 	glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	$(void, lodmap, drawOpenGLLodMap)(lodmap);
+	drawOpenGLLodMap(lodmap);
 
 	if(recording) {
-		Image *screenshot = $(Image *, opengl, getOpenGLScreenshot)(0, 0, currentWidth, currentHeight);
+		Image *screenshot = getOpenGLScreenshot(0, 0, currentWidth, currentHeight);
 		GString *name = g_string_new("record");
 		g_string_append_printf(name, "%04d.ppm", recordFrame++);
-		$(bool, image, writeImageToFile)(screenshot, name->str);
+		writeImageToFile(screenshot, name->str);
 		g_string_free(name, true);
-		$(void, image, freeImage)(screenshot);
+		freeImage(screenshot);
 	}
 }
 
@@ -314,46 +255,46 @@ static void listener_update(void *subject, const char *event, void *data, va_lis
 	bool cameraChanged = false;
 
 	if(keysPressed['w']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_FORWARD, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_FORWARD, dt);
 		cameraChanged = true;
 	}
 
 	if(keysPressed['a']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_LEFT, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_LEFT, dt);
 		cameraChanged = true;
 	}
 
 	if(keysPressed['s']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_BACK, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_BACK, dt);
 		cameraChanged = true;
 	}
 
 	if(keysPressed['d']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_RIGHT, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_RIGHT, dt);
 		cameraChanged = true;
 	}
 
 	if(keysPressed[' ']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_UP, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_UP, dt);
 		cameraChanged = true;
 	}
 
 	if(keysPressed['c']) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_DOWN, dt);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_DOWN, dt);
 		cameraChanged = true;
 	}
 
 	if(autoMove) {
-		$(void, opengl, moveOpenGLCamera)(camera, OPENGL_CAMERA_MOVE_FORWARD, 1e-2);
+		moveOpenGLCamera(camera, OPENGL_CAMERA_MOVE_FORWARD, 1e-2);
 		cameraChanged = true;
 	}
 
 	// We need to update the camera matrix if some movement happened
 	if(cameraChanged) {
-		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
+		updateOpenGLCameraLookAtMatrix(camera);
 
 		if(autoUpdate) {
-			$(void, lodmap, updateOpenGLLodMap)(lodmap, camera->position, autoExpand);
+			updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 		}
 	}
 
@@ -366,9 +307,9 @@ static void listener_reshape(void *subject, const char *event, void *data, va_li
 	int h = va_arg(args, int);
 
 	glViewport(0, 0, w, h);
-	Matrix *newPerspectiveMatrix = $(Matrix *, linalg, createPerspectiveMatrix)(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
-	$(void, linalg, assignMatrix)(perspectiveMatrix, newPerspectiveMatrix);
-	$(void, linalg, freeMatrix)(newPerspectiveMatrix);
+	Matrix *newPerspectiveMatrix = createPerspectiveMatrix(2.0 * G_PI * 50.0 / 360.0, (double) w / h, 0.1, 100.0);
+	assignMatrix(perspectiveMatrix, newPerspectiveMatrix);
+	freeMatrix(newPerspectiveMatrix);
 
 	currentWidth = w;
 	currentHeight = h;
@@ -397,18 +338,18 @@ static void listener_mouseMove(void *subject, const char *event, void *data, va_
 	int dy = y - cy;
 
 	if(dx != 0) {
-		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_LEFT, 0.005 * dx);
+		tiltOpenGLCamera(camera, OPENGL_CAMERA_TILT_LEFT, 0.005 * dx);
 		cameraChanged = true;
 	}
 
 	if(dy != 0) {
-		$(void, opengl, tiltOpenGLCamera)(camera, OPENGL_CAMERA_TILT_UP, 0.005 * dy);
+		tiltOpenGLCamera(camera, OPENGL_CAMERA_TILT_UP, 0.005 * dy);
 		cameraChanged = true;
 	}
 
 	// We need to update the camera matrix if some tilting happened
 	if(cameraChanged) {
-		$(void, opengl, updateOpenGLCameraLookAtMatrix)(camera);
+		updateOpenGLCameraLookAtMatrix(camera);
 		glutPostRedisplay();
 		glutWarpPointer(cx, cy);
 	}
@@ -416,5 +357,5 @@ static void listener_mouseMove(void *subject, const char *event, void *data, va_
 
 static void listener_close(void *subject, const char *event, void *data, va_list args)
 {
-	$(void, module_util, safeRevokeModule)("lodmapviewer");
+	safeRevokeModule("lodmapviewer");
 }

@@ -28,6 +28,7 @@
 #include "modules/heightmap/heightmap.h"
 #include "modules/quadtree/quadtree.h"
 #include "modules/linalg/Vector.h"
+#include "modules/store/store.h"
 #include "source.h"
 
 /**
@@ -82,6 +83,7 @@ typedef struct {
 	float morphStartFactor;
 } OpenGLLodMap;
 
+API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store);
 API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance);
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);

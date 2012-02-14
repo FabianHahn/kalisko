@@ -32,6 +32,8 @@
 #include "modules/heightmap/normals.h"
 #include "modules/opengl/material.h"
 #include "modules/linalg/Vector.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #define API
 #include "lodmap.h"
 #include "intersect.h"
@@ -40,7 +42,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 14, 3);
+MODULE_VERSION(0, 15, 0);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 1), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 11));
 
@@ -57,6 +59,7 @@ static GHashTable *maps;
 MODULE_INIT
 {
 	maps = g_hash_table_new(&g_direct_hash, &g_direct_equal);
+	initOpenGLLodMapDataSourceFactories();
 
 	return true;
 }
@@ -64,6 +67,40 @@ MODULE_INIT
 MODULE_FINALIZE
 {
 	g_hash_table_destroy(maps);
+	freeOpenGLLodMapDataSourceFactories();
+}
+
+/**
+ * Creates an OpenGL LOD map from a store representation
+ *
+ * @param store			the store config from which to create the LOD map
+ * @result				the created LOD map or NULL on failure
+ */
+API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store)
+{
+	Store *paramBaseRange = getStorePath(store, "lodmap/baseRange");
+	if(paramBaseRange == NULL || !(paramBaseRange->type == STORE_INTEGER || paramBaseRange->type == STORE_FLOAT_NUMBER)) {
+		LOG_ERROR("Failed to create LOD map from store: Required config float value 'lodmap/baseRange' not found!");
+		return NULL;
+	}
+
+	double baseRange = paramBaseRange->type == STORE_FLOAT_NUMBER ? paramBaseRange->content.float_number : paramBaseRange->content.integer;
+
+	Store *paramViewingDistance = getStorePath(store, "lodmap/viewingDistance");
+	if(paramViewingDistance == NULL || paramViewingDistance->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to create LOD map from store: Required config integer value 'lodmap/viewingDistance' not found!");
+		return NULL;
+	}
+
+	int viewingDistance = paramViewingDistance->content.integer;
+
+	OpenGLLodMapDataSource *source = createOpenGLLodMapDataSourceFromStore(store);
+	if(source == NULL) {
+		LOG_ERROR("Failed to create LOD map from store: Failed to create LOD map data source!");
+		return NULL;
+	}
+
+	return createOpenGLLodMap(source, baseRange, viewingDistance);
 }
 
 /**

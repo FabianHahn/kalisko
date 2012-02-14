@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,6 +22,7 @@
 #define LODMAP_SOURCE_H
 
 #include "modules/image/image.h"
+#include "modules/store/store.h"
 
 /**
  * Enum representing query types for an OpenGL LOD map data source
@@ -68,6 +69,17 @@ struct OpenGLLodMapDataSourceStruct {
 };
 
 typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
+
+/**
+ * Function pointer type to create OpenGL LOD map data sources from store configurations
+ */
+typedef OpenGLLodMapDataSource *(OpenGLLodMapDataSourceFactory)(Store *store);
+
+API void initOpenGLLodMapDataSourceFactories();
+API void freeOpenGLLodMapDataSourceFactories();
+API OpenGLLodMapDataSource *createOpenGLLodMapDataSourceFromStore(Store *store);
+API bool registerOpenGLLodMapDataSourceFactory(const char *type, OpenGLLodMapDataSourceFactory *factory);
+API bool unregisterOpenGLLodMapDataSourceFactory(const char *type);
 
 /**
  * Queries an OpenGL LOD map data source

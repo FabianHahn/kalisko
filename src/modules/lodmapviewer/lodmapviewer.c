@@ -114,7 +114,7 @@ MODULE_INIT
 	lookupQuadtreeNode(lodmap->quadtree, 12.0, 12.0, 0);
 	updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 
-	createPerspectiveMatrix(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
+	perspectiveMatrix = createPerspectiveMatrix(2.0 * G_PI * 10.0 / 360.0, (double) currentWidth / currentHeight, 0.1, 100.0);
 	OpenGLUniform *perspectiveUniform = createOpenGLUniformMatrix(perspectiveMatrix);
 	detachOpenGLUniform(getOpenGLGlobalUniforms(), "perspective");
 	attachOpenGLUniform(getOpenGLGlobalUniforms(), "perspective", perspectiveUniform);

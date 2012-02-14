@@ -25,6 +25,8 @@
 #define API
 #include "lodmap.h"
 #include "source.h"
+#include "imagesource.h"
+#include "importsource.h"
 
 /**
  * Hashtable associating string types with their associated OpenGLLodMapDataSourceFactory objects
@@ -37,6 +39,7 @@ static GHashTable *factories;
 API void initOpenGLLodMapDataSourceFactories()
 {
 	factories = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
+	registerOpenGLLodMapDataSourceFactory("image", &createOpenGLLodMapImageSourceFromStore);
 }
 
 /**
@@ -44,6 +47,7 @@ API void initOpenGLLodMapDataSourceFactories()
  */
 API void freeOpenGLLodMapDataSourceFactories()
 {
+	unregisterOpenGLLodMapDataSourceFactory("image");
 	g_hash_table_destroy(factories);
 }
 

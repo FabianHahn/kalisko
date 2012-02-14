@@ -22,7 +22,10 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/image/image.h"
+#include "modules/image/io.h"
 #include "modules/heightmap/normals.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #define API
 #include "source.h"
 #include "imagesource.h"
@@ -41,6 +44,94 @@ typedef struct {
 static void freeOpenGLLodMapImageSource(OpenGLLodMapDataSource *source);
 static Image *queryOpenGLLodMapImageSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
 static Image *getImagePatch(Image *image, int sx, int sy, int size, unsigned int level, float *minValue, float *maxValue, bool interpolate);
+
+/**
+ * Creates an image source for an OpenGL LOD map from a store representation
+ *
+ * @param store			the store config from which to create the image LOD map source
+ * @result				the created data source or NULL on failure
+ */
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
+{
+	// Read store parameters
+	Store *configLodMapHeights = getStorePath(store, "lodmap/source/heights");
+	if(configLodMapHeights == NULL || configLodMapHeights->type != STORE_STRING) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Config string parameter 'lodmap/source/heights' not found!");
+		return NULL;
+	}
+
+	const char *heightsFile = configLodMapHeights->content.string;
+
+	Store *configLodMapNormals = getStorePath(store, "lodmap/source/normals");
+	const char *normalsFile = NULL;
+	if(configLodMapNormals != NULL && configLodMapNormals->type == STORE_STRING) {
+		normalsFile = configLodMapNormals->content.string;
+	}
+
+	Store *configLodMapTexture = getStorePath(store, "lodmap/source/texture");
+	const char *textureFile = NULL;
+	if(configLodMapTexture != NULL && configLodMapTexture->type == STORE_STRING) {
+		textureFile = configLodMapTexture->content.string;
+	}
+
+	Store *configLodMapBaseLevel = getStorePath(store, "lodmap/source/baseLevel");
+	if(configLodMapBaseLevel == NULL || configLodMapBaseLevel->type != STORE_INTEGER) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Config integer parameter 'lodmap/source/baseLevel' not found!");
+		return NULL;
+	}
+
+	int baseLevel = configLodMapBaseLevel->content.integer;
+
+	Store *configLodMapHeightRatio = getStorePath(store, "lodmap/source/heightRatio");
+	if(configLodMapHeightRatio == NULL || !(configLodMapHeightRatio->type == STORE_FLOAT_NUMBER || configLodMapHeightRatio->type == STORE_INTEGER)) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Config float parameter 'lodmap/source/heightRatio' not found!");
+		return NULL;
+	}
+
+	float heightRatio = configLodMapHeightRatio->type == STORE_FLOAT_NUMBER ? configLodMapHeightRatio->content.float_number : configLodMapHeightRatio->content.integer;
+
+	// Load images from provided files
+	Image *heights = readImageFromFile(heightsFile);
+	if(heights == NULL) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified heights image from '%s'!", heightsFile);
+		return NULL;
+	}
+
+	Image *normals = NULL;
+	if(normalsFile != NULL && (normals = readImageFromFile(normalsFile)) == NULL) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified normals image from '%s'!", normalsFile);
+		freeImage(heights);
+		return NULL;
+	}
+
+	Image *texture = NULL;
+	if(textureFile != NULL && (texture = readImageFromFile(textureFile)) == NULL) {
+		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified texture image from '%s'!", textureFile);
+		freeImage(heights);
+		if(normals != NULL) {
+			freeImage(normals);
+		}
+		return NULL;
+	}
+
+	// Create the image data source
+	OpenGLLodMapDataSource *source = createOpenGLLodMapImageSource(heights, normals, texture, baseLevel, heightRatio);
+	if(source == NULL) {
+		freeImage(heights);
+
+		if(normals != NULL) {
+			freeImage(normals);
+		}
+
+		if(texture != NULL) {
+			freeImage(texture);
+		}
+
+		return NULL;
+	}
+
+	return source;
+}
 
 /**
  * Creates an image source for an OpenGL LOD map

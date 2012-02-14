@@ -24,6 +24,7 @@
 #include "modules/image/image.h"
 #include "source.h"
 
+API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store);
 API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
 
 #endif

@@ -40,6 +40,7 @@ API void initOpenGLLodMapDataSourceFactories()
 {
 	factories = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 	registerOpenGLLodMapDataSourceFactory("image", &createOpenGLLodMapImageSourceFromStore);
+	registerOpenGLLodMapDataSourceFactory("import", &createOpenGLLodMapImportSourceFromStore);
 }
 
 /**
@@ -48,6 +49,7 @@ API void initOpenGLLodMapDataSourceFactories()
 API void freeOpenGLLodMapDataSourceFactories()
 {
 	unregisterOpenGLLodMapDataSourceFactory("image");
+	unregisterOpenGLLodMapDataSourceFactory("import");
 	g_hash_table_destroy(factories);
 }
 

@@ -21,8 +21,10 @@
 #ifndef LODMAP_IMPORT_SOURCE_H
 #define LODMAP_IMPORT_SOURCE_H
 
+#include "modules/store/store.h"
 #include "source.h"
 
+API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store);
 API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path);
 
 #endif

@@ -41,57 +41,50 @@ static void freeOpenGLLodMapImportSource(OpenGLLodMapDataSource *source);
 static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
 
 /**
- * Creates an image source for an OpenGL LOD map
+ * Creates an import source for an OpenGL LOD map from a store configuration
  *
- * @param path			the path from which to configure the import data source
- * @result				the created LOD map data source or NULL on failure
+ * @param store			the store configuration from which to create the OpenGL LOD map import data source
+ * @result				the created data source or NULL on failure
  */
-API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
+API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store)
 {
-	GString *metaPath = g_string_new(path);
-	g_string_append(metaPath, "/lodmap.store");
-	Store *store = parseStoreFile(metaPath->str);
-	g_string_free(metaPath, true);
-
-	if(store == NULL) {
+	Store *pathParam = getStorePath(store, "lodmap/source/path");
+	if(pathParam == NULL || pathParam->type != STORE_STRING) {
+		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/path' not found!");
 		return NULL;
 	}
 
 	// load baseRange parameter
 	Store *baseLevelParam = getStorePath(store, "lodmap/source/baseLevel");
 	if(baseLevelParam == NULL || baseLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/baseLevel' not found in '%s/lodmap.store'", path);
-		freeStore(store);
+		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/baseLevel' not found!");
 		return NULL;
 	}
 
 	// load normalDetailLevel parameter
 	Store *normalDetailLevelParam = getStorePath(store, "lodmap/source/normalDetailLevel");
 	if(normalDetailLevelParam == NULL || normalDetailLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/normalDetailLevel' not found in '%s/lodmap.store'", path);
-		freeStore(store);
+		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/normalDetailLevel' not found!");
 		return NULL;
 	}
 
 	// load textureDetailLevel parameter
 	Store *textureDetailLevelParam = getStorePath(store, "lodmap/source/textureDetailLevel");
 	if(textureDetailLevelParam == NULL || textureDetailLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import store: Config integer value 'lodmap/source/textureDetailLevel' not found in '%s/lodmap.store'", path);
-		freeStore(store);
+		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/textureDetailLevel' not found!");
 		return NULL;
 	}
 
 	// load heightRatio parameter
 	Store *heightRatioParam = getStorePath(store, "lodmap/source/heightRatio");
 	if(heightRatioParam == NULL || !(heightRatioParam->type == STORE_INTEGER || heightRatioParam->type == STORE_FLOAT_NUMBER)) {
-		LOG_ERROR("Failed to create LOD map import store: Config float value 'lodmap/source/heightRatio' not found in '%s/lodmap.store'", path);
-		freeStore(store);
+		LOG_ERROR("Failed to create LOD map import source: Config float value 'lodmap/source/heightRatio' not found!");
 		return NULL;
 	}
 
 	// create the struct for the image source
 	OpenGLLodMapDataImportSource *source = ALLOCATE_OBJECT(OpenGLLodMapDataImportSource);
-	source->path = strdup(path);
+	source->path = strdup(pathParam->content.string);
 	source->source.baseLevel = baseLevelParam->content.integer;
 	source->source.normalDetailLevel = normalDetailLevelParam->content.integer;
 	source->source.textureDetailLevel = textureDetailLevelParam->content.integer;
@@ -101,6 +94,32 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
 	source->source.data = source;
 
 	return &source->source;
+}
+
+/**
+ * Creates an import source for an OpenGL LOD map
+ *
+ * @param path			the path from which to configure the import data source
+ * @result				the created LOD map data source or NULL on failure
+ */
+API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
+{
+	GString *metaPath = g_string_new(path);
+	g_string_append(metaPath, "/lodmap.store");
+	Store *store = parseStoreFile(metaPath->str);
+
+	if(store == NULL) {
+		LOG_ERROR("Failed to create LOD map import source: Failed to load configuration store file from '%s'", metaPath->str);
+		g_string_free(metaPath, true);
+		return NULL;
+	}
+
+	g_string_free(metaPath, true);
+
+	OpenGLLodMapDataSource *source = createOpenGLLodMapImportSourceFromStore(store);
+	freeStore(store);
+
+	return source;
 }
 
 /**

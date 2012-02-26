@@ -27,6 +27,7 @@ API void initPoll(int interval);
 API void freePoll();
 
 API bool enableSocketPolling(Socket *socket);
+API bool isSocketPollingEnabled(Socket *socket);
 API bool disableSocketPolling(Socket *socket);
 API void pollSockets();
 API bool isSocketsPolling();

@@ -74,7 +74,7 @@ API void freePoll()
  */
 API bool enableSocketPolling(Socket *socket)
 {
-	if(g_hash_table_lookup(poll_table, &socket->fd) != NULL) { // Socket with that fd is already polled
+	if(isSocketPollingEnabled(socket)) { // Socket with that fd is already polled
 		return false;
 	}
 
@@ -83,6 +83,17 @@ API bool enableSocketPolling(Socket *socket)
 
 	g_hash_table_insert(poll_table, fd, socket);
 	return true;
+}
+
+/**
+ * Checks whether polling is enabled for a certain socket
+ *
+ * @param socket		the socket for which to check whether socket polling is enabled
+ * @result				true if socket polling is enabled for the socket
+ */
+API bool isSocketPollingEnabled(Socket *socket)
+{
+	return g_hash_table_lookup(poll_table, &socket->fd) != NULL;
 }
 
 /**

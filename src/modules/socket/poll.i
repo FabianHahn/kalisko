@@ -33,6 +33,17 @@ API void pollSockets();
 API bool isSocketsPolling();
 API Socket *getPolledSocketByFd(int fd);
 
+/**
+ * Checks whether a socket is still active, i.e. that it is either connected or that it is disconnected but socket polling is still enabled
+ *
+ * @param socket		the socket that should be checked for being still active
+ * @result				true if the specified socket is still active
+ */
+static inline bool isSocketActive(Socket *socket)
+{
+	return socket->connected || isSocketPollingEnabled(socket);
+}
+
 #define SOCKET_POLL_BUFSIZE 4096
 
 #endif

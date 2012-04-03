@@ -21,6 +21,7 @@
 #include <png.h>
 #include <stdio.h>
 #include <setjmp.h>
+#include <limits.h>
 #include "dll.h"
 #include "modules/image/io.h"
 #define API
@@ -28,7 +29,7 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -108,12 +109,11 @@ static Image *readImageFilePng(const char *filename)
 	height = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
 	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-	if(bit_depth == 16) { // make sure values fit into a char
-		png_set_strip_16(png_ptr);
+	if(bit_depth < 16) {
+		png_set_packing(png_ptr); // make sure bit depths below 8 bit are expanded to a char
 	}
-
-	png_set_packing(png_ptr);
 
 	unsigned int channels = 0;
 
@@ -144,7 +144,7 @@ static Image *readImageFilePng(const char *filename)
 
 	row_pointers = ALLOCATE_OBJECTS(png_bytep, height);
 	for(unsigned int y = 0; y < height; y++) {
-		row_pointers[y] = malloc(png_get_rowbytes(png_ptr, info_ptr));
+		row_pointers[y] = malloc(rowbytes);
 	}
 
 	png_read_image(png_ptr, row_pointers);
@@ -155,13 +155,29 @@ static Image *readImageFilePng(const char *filename)
 
 	LOG_DEBUG("Read PNG image '%s' has dimension %ux%u, bit depth %d and %u channels", filename, width, height, bit_depth, channels);
 
-	Image *image = $(Image *, image, createImageByte)(width, height, channels);
-	for(unsigned int y = 0; y < height; y++) {
-		png_byte *row = row_pointers[y];
-		for(unsigned int x = 0; x < width; x++) {
-			unsigned char *ptr = &(row[x * channels]);
-			for(unsigned int c = 0; c < channels; c++) {
-				setImageByte(image, x, y, c, ptr[c]);
+	Image *image = NULL;
+	if(bit_depth == 16) { // 16-bit images need special handling
+		image = createImageFloat(width, height, channels);
+		for(unsigned int y = 0; y < height; y++) {
+			png_byte *row = row_pointers[y];
+			for(unsigned int x = 0; x < width; x++) {
+				unsigned char *ptr = &(row[2 * x * channels]); // note the "2 *" since every pixel is actually two bytes wide...
+				for(unsigned int c = 0; c < channels; c++) {
+					unsigned short value = (ptr[2 * c] << 8); // PNG stores shorts in big endian, so read the most significant byte first and shift it accordingly...
+					value |= ptr[2 * c + 1]; // ...and then mask the low-order bits to the second byte of the short
+					setImageFloat(image, x, y, c, (float) value / USHRT_MAX);
+				}
+			}
+		}
+	} else { // everything here should fit into a char
+		image = createImageByte(width, height, channels);
+		for(unsigned int y = 0; y < height; y++) {
+			png_byte *row = row_pointers[y];
+			for(unsigned int x = 0; x < width; x++) {
+				unsigned char *ptr = &(row[x * channels]);
+				for(unsigned int c = 0; c < channels; c++) {
+					setImageByte(image, x, y, c, ptr[c]);
+				}
 			}
 		}
 	}

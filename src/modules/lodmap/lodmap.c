@@ -353,7 +353,7 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	positionData[1] = 0;
 	positionData[2] = node->y; // y in model coordinates is z in world coordinates
 	tile->model->scaleX = scale;
-	tile->model->scaleY = 1.0f;
+	tile->model->scaleY = heightScale;
 	tile->model->scaleZ = scale;
 	updateOpenGLModelTransform(tile->model);
 

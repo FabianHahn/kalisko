@@ -97,7 +97,7 @@ float getMorphFactor(in vec2 vertexGrid)
 	vec2 vertexModel = vertexGrid * textureDimensionInv;
 	
 	// transform the grid vertex to world coordinates
-	float vertexHeight = heightScale * texture2D(heights, vertexModel).x;
+	float vertexHeight = texture2D(heights, vertexModel).x;
 	vec4 vertexWorld = model * vec4(vertexModel.x, vertexHeight, vertexModel.y, 1.0);
 	
 	// compute the lod distance for the vertex
@@ -121,7 +121,7 @@ void main()
 	vec2 morphedModel = morphedGrid * textureDimensionInv;
 	
 	// transform the grid vertex to world coordinates
-	float morphedHeight = heightScale * texture2DBilinearGrid(heights, morphedGrid).x;
+	float morphedHeight = texture2DBilinearGrid(heights, morphedGrid).x;
 	vec4 morphedWorld = model * vec4(morphedModel.x, morphedHeight, morphedModel.y, 1.0);
 	
 	// store output values

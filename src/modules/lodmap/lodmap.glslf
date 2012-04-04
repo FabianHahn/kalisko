@@ -27,7 +27,6 @@ uniform vec3 lightPosition;
 uniform vec4 lightColor;
 uniform float ambient;
 uniform float specular;
-uniform float heightScale;
 uniform int lodLevel;
 uniform int enableFragmentMorph;
 

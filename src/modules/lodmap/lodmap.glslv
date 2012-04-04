@@ -30,7 +30,6 @@ uniform int heightmapWidth;
 uniform int heightmapHeight;
 
 // lodmap uniforms
-uniform float heightScale;
 uniform int lodLevel;
 uniform float baseRange;
 uniform float morphStartFactor;

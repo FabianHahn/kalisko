@@ -29,7 +29,7 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -229,12 +229,29 @@ static bool writeImageFilePng(const char *filename, Image *image)
 	}
 
 	png_bytep *row_pointers = ALLOCATE_OBJECTS(png_bytep, image->height);
-	for(unsigned int y = 0; y < image->height; y++) {
-		row_pointers[y] = ALLOCATE_OBJECTS(png_byte, image->width * image->channels);
 
-		for(unsigned int x = 0; x < image->width; x++) {
-			for(unsigned int c = 0; c < image->channels; c++) {
-				row_pointers[y][image->channels * x + c] = getImageAsByte(image, x, y, c);
+	if(image->type == IMAGE_TYPE_BYTE) {
+		for(unsigned int y = 0; y < image->height; y++) {
+			row_pointers[y] = ALLOCATE_OBJECTS(png_byte, image->width * image->channels);
+
+			for(unsigned int x = 0; x < image->width; x++) {
+				for(unsigned int c = 0; c < image->channels; c++) {
+					row_pointers[y][image->channels * x + c] = getImageByte(image, x, y, c);
+				}
+			}
+		}
+	} else { // float image, save as 16-bit...
+		for(unsigned int y = 0; y < image->height; y++) {
+			row_pointers[y] = ALLOCATE_OBJECTS(png_byte, 2 * image->width * image->channels);
+
+			for(unsigned int x = 0; x < image->width; x++) {
+				for(unsigned int c = 0; c < image->channels; c++) {
+					float value = getImageFloat(image, x, y, c);
+					value = (value >= 0.0 ? (value <= 1.0 ? value : 1.0) : 0.0); // clamp to [0,1] range
+					unsigned short shortValue = value * USHRT_MAX; // scale to short range
+					row_pointers[y][2 * image->channels * x + 2 * c + 0] = (shortValue >> 8);
+					row_pointers[y][2 * image->channels * x + 2 * c + 1] = (shortValue & 0xff);
+				}
 			}
 		}
 	}
@@ -273,7 +290,7 @@ static bool writeImageFilePng(const char *filename, Image *image)
 	}
 
 	// prepare header
-	png_set_IHDR(png_ptr, info_ptr, image->width, image->height, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	png_set_IHDR(png_ptr, info_ptr, image->width, image->height, image->type == IMAGE_TYPE_BYTE ? 8 : 16, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
 	// prepare image contents
 	png_set_rows(png_ptr, info_ptr, row_pointers);

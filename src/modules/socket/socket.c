@@ -52,10 +52,9 @@
 #define API
 #include "socket.h"
 #include "poll.h"
+#include "util.h"
 
 #define IP_STR_LEN 16
-static bool setSocketNonBlocking(int fd);
-static GString *ip2str(unsigned int ip);
 
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
@@ -739,47 +738,4 @@ API Socket *socketAccept(Socket *server)
 	g_string_free(port, false);
 
 	return client;
-}
-
-/**
- * Sets a socket to non-blocking I/O mode
- *
- * @param fd		the descriptor of the socket to set non-blocking
- * @result			true if successful
- */
-static bool setSocketNonBlocking(int fd)
-{
-#ifdef WIN32
-	unsigned long nbmode = 1;
-	if(ioctlsocket(fd, FIONBIO, &nbmode) != 0) {
-		LOG_WARNING("ioctrlsocket failed on fd %d", fd);
-		return false;
-	}
-#else
-	int flags;
-
-	if((flags = fcntl(fd, F_GETFL, 0)) == -1) {
-		flags = 0; // if fcntl fails, set flags to zero
-	}
-
-	if(fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
-		LOG_WARNING("fcntl failed on fd %d", fd);
-		return false;
-	}
-#endif
-
-	return true;
-}
-
-/**
- * Converts an unsigned IP address into its string representation
- *
- * @param ip		the ip to convert
- * @result			the string representation of the IP
- */
-static GString *ip2str(unsigned int ip)
-{
-	GString *ipstr = g_string_new("");
-	g_string_append_printf(ipstr, "%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
-	return ipstr;
 }

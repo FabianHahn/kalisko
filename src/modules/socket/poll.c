@@ -48,6 +48,7 @@
 #define API
 #include "socket.h"
 #include "poll.h"
+#include "util.h"
 
 static bool pollSocket(Socket *socket, int *fd_p);
 

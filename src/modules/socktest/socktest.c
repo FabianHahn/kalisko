@@ -37,37 +37,52 @@ static Socket *server;
 MODULE_NAME("socktest");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module shows the socket API in action");
-MODULE_VERSION(0, 2, 5);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 2, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
+static void listener_socketConnected(void *subject, const char *event, void *data, va_list args);
+static void listener_socketTimeoutError(void *subject, const char *event, void *data, va_list args);
 static void listener_socketRead(void *subject, const char *event, void *data, va_list args);
 static void listener_socketDisconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_socketAccept(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
-	Socket *http = $(Socket *, socket, createClientSocket)("www.kalisko.org", "http");
-	$(bool, socket, connectSocket)(http);
-	$(bool, socket, socketWriteRaw)(http, REQUEST, sizeof(REQUEST));
-	$(bool, socket, enableSocketPolling)(http);
-	$(void, event, attachEventListener)(http, "read", NULL, &listener_socketRead);
-	$(void, event, attachEventListener)(http, "disconnect", NULL, &listener_socketDisconnect);
+	Socket *http = createClientSocket("www.kalisko.org", "http");
+	attachEventListener(http, "connected", NULL, &listener_socketConnected);
+	attachEventListener(http, "error", NULL, &listener_socketTimeoutError);
+	attachEventListener(http, "timeout", NULL, &listener_socketTimeoutError);
+	attachEventListener(http, "read", NULL, &listener_socketRead);
+	attachEventListener(http, "disconnect", NULL, &listener_socketDisconnect);
+	connectClientSocketAsync(http, 10);
 
-	server = $(Socket *, socket, createServerSocket)("1337");
-	if(!$(bool, socket, connectSocket)(server)) {
+	server = createServerSocket("1337");
+	if(!connectSocket(server)) {
 		return false;
 	}
-	$(bool, socket, enableSocketPolling)(server);
-	$(void, event, attachEventListener)(server, "accept", NULL, &listener_socketAccept);
+	enableSocketPolling(server);
+	attachEventListener(server, "accept", NULL, &listener_socketAccept);
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	$(void, event, detachEventListener)(server, "accept", NULL, &listener_socketAccept);
-	$(bool, socket, freeSocket)(server);
+	detachEventListener(server, "accept", NULL, &listener_socketAccept);
+	freeSocket(server);
+}
+
+static void listener_socketConnected(void *subject, const char *event, void *data, va_list args)
+{
+	if(socketWriteRaw(subject, REQUEST, sizeof(REQUEST))) {
+		LOG_INFO("Wrote HTTP request");
+	}
+}
+
+static void listener_socketTimeoutError(void *subject, const char *event, void *data, va_list args)
+{
+	LOG_INFO("Client socket connection failed: %s", event);
 }
 
 static void listener_socketRead(void *subject, const char *event, void *data, va_list args)
@@ -76,8 +91,7 @@ static void listener_socketRead(void *subject, const char *event, void *data, va
 	char *read = va_arg(args, char *);
 
 	if(s != NULL) {
-		printf("%s", read);
-		fflush(stdout);
+		LOG_INFO("Read %d bytes from socket %d", (int) strlen(read), s->fd);
 	}
 }
 
@@ -85,10 +99,10 @@ static void listener_socketDisconnect(void *subject, const char *event, void *da
 {
 	Socket *s = subject;
 
-	$(void, event, detachEventListener)(s, "read", NULL, &listener_socketRead);
-	$(void, event, detachEventListener)(s, "disconnect", NULL, &listener_socketDisconnect);
+	detachEventListener(s, "read", NULL, &listener_socketRead);
+	detachEventListener(s, "disconnect", NULL, &listener_socketDisconnect);
 
-	$(void, socket, freeSocket)(s);
+	freeSocket(s);
 }
 
 static void listener_socketAccept(void *subject, const char *event, void *data, va_list args)
@@ -100,7 +114,7 @@ static void listener_socketAccept(void *subject, const char *event, void *data, 
 		return;
 	}
 
-	$(void, event, attachEventListener)(s, "disconnect", NULL, &listener_socketDisconnect);
-	$(bool, socket, socketWriteRaw)(s, ANSWER, sizeof(ANSWER));
-	$(bool, socket, disconnectSocket)(s);
+	attachEventListener(s, "disconnect", NULL, &listener_socketDisconnect);
+	socketWriteRaw(s, ANSWER, sizeof(ANSWER));
+	disconnectSocket(s);
 }

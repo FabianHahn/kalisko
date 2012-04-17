@@ -50,6 +50,7 @@
 #include "poll.h"
 #include "util.h"
 
+static bool pollConnectingSocket(Socket *socket);
 static bool pollSocket(Socket *socket, int *fd_p);
 
 static GHashTable *poll_table;
@@ -96,7 +97,7 @@ API void freePoll()
 /**
  * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
  * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
- * function returns!).
+ * function returns!). If connecting faills, the "error" event will be triggered and you can either recall this function or free the socket.
  *
  * @param s			the client socket to connect
  * @result			true if successful
@@ -155,10 +156,10 @@ API bool connectClientSocketAsync(Socket *s)
 			LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
 #endif
 			freeaddrinfo(server);
-			disconnectSocket(s);
 			return false;
 		}
 	} else {
+		LOG_INFO("Direct response for asynchronous connection on socket %d", s->fd);
 		s->connected = true;
 		triggerEvent(s, "connected");
 	}
@@ -169,6 +170,7 @@ API bool connectClientSocketAsync(Socket *s)
 
 /**
  * Enables polling for a socket
+ *
  * @param socket		the socket to enable the polling for
  * @result				true if successful
  */
@@ -212,7 +214,19 @@ API bool disableSocketPolling(Socket *socket)
 API void pollSockets()
 {
 	if(!polling) {
-		polling = true; // set polling flag to lock our poll table
+		polling = true; // set polling flag to lock our poll table in order to make this function reentrancy safe
+
+		if(!g_queue_is_empty(connecting)) {
+			GQueue *connectingSockets = g_queue_copy(connecting); // copy the connecting socket list so we may modify the list while polling
+			for(GList *iter = connectingSockets->head; iter != NULL; iter = iter->next) {
+				if(pollConnectingSocket(iter->data)) { // poll the connecting socket
+					// The socket should no longer be polled
+					g_queue_remove(connecting, iter->data); // remove it from the original connecting queue
+				}
+			}
+			g_queue_free(connectingSockets); // remove our temporary iteration list
+		}
+
 		GList *sockets = g_hash_table_get_values(poll_table); // get a static list of sockets so we may modify the hash table while polling
 		for(GList *iter = sockets; iter != NULL; iter = iter->next) {
 			Socket *poll = iter->data;
@@ -229,6 +243,8 @@ API void pollSockets()
 
 /**
  * Checks whether sockets are currently being polled
+ *
+ * @result		true if sockets are currently being polled
  */
 API bool isSocketsPolling()
 {
@@ -254,6 +270,63 @@ TIMER_CALLBACK(poll)
 	pollSockets();
 	$(int, event, triggerEvent)(NULL, "sockets_polled");
 	TIMER_ADD_TIMEOUT(pollInterval, poll);
+}
+
+/**
+ * Polls a connecting socket and notifies the caller of whether it should be removed from the connecting polling queue afterwards
+ *
+ * @param socket		the connecting socket to poll
+ * @result				true if the socket should be removed from the connecting polling queue after polling
+ */
+static bool pollConnectingSocket(Socket *socket)
+{
+	assert(!socket->connected);
+	assert(socket->type == SOCKET_CLIENT);
+
+	// Initialize timeout
+	struct timeval tv = {0, 0};
+
+	// Initialize write fd set
+	fd_set fdset;
+	FD_ZERO(&fdset);
+	FD_SET(socket->fd, &fdset);
+
+	// Select socket for write flag (connected)
+	if(select(socket->fd + 1, NULL, &fdset, NULL, &tv) < 0) {
+#ifdef WIN32
+		if(WSAGetLastError() != WSAEINTR) {
+			char *error = g_win32_error_message(WSAGetLastError());
+			LOG_ERROR("Error selecting socket %d for write flag (connected) while polling: %s", socket->fd, error);
+			free(error);
+#else
+		if(errno != EINTR) {
+			LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected) while polling", socket->fd);
+#endif
+			triggerEvent(socket, "error");
+			return true;
+		}
+
+		// EINTR at this point means the socket is just not connected yet, so we can safely return and continue polling another time
+		return false;
+	} else { // there is a write flag on the socket
+		// Socket selected for write, check if we're indeed connected
+		int valopt;
+		socklen_t lon = sizeof(int);
+		if(getsockopt(socket->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
+			LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", socket->fd);
+			triggerEvent(socket, "error");
+			return true;
+		} else if(valopt != 0) { // There was a connection error
+			LOG_SYSTEM_ERROR("Asynchronous connection on socket %d failed", socket->fd);
+			triggerEvent(socket, "error");
+			return true;
+		}
+
+		LOG_INFO("Asynchronously connected socket %d", socket->fd);
+		socket->connected = true;
+		triggerEvent(socket, "connected");
+		return true;
+	}
 }
 
 /**

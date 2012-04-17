@@ -42,7 +42,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 15, 3);
+MODULE_VERSION(0, 16, 1);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 1), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 11));
 
@@ -326,6 +326,11 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
 	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level, NULL, NULL);
 
+	// determine correct scaling of the height data
+	float heightScale = lodmap->source->heightRatio / getLodMapImageSize(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT);
+	tile->minHeight *= heightScale;
+	tile->maxHeight *= heightScale;
+
 	// Create OpenGL textures
 	tile->heightsTexture = createOpenGLVertexTexture2D(tile->heights);
 	tile->normalsTexture = createOpenGLTexture2D(tile->normals, false);
@@ -338,34 +343,34 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	synchronizeOpenGLTexture(tile->textureTexture);
 
 	// Create OpenGL model
-	tile->model = $(OpenGLModel *, opengl, createOpenGLModel)(lodmap->heightmap);
-	$(bool, opengl, attachOpenGLModelMaterial)(tile->model, "lodmap");
+	tile->model = createOpenGLModel(lodmap->heightmap);
+	attachOpenGLModelMaterial(tile->model, "lodmap");
 
 	// Set model transform
 	unsigned int scale = quadtreeNodeScale(node);
-	float *positionData = $(float *, linalg, getVectorData)(tile->model->translation);
+	float *positionData = getVectorData(tile->model->translation);
 	positionData[0] = node->x;
 	positionData[1] = 0;
 	positionData[2] = node->y; // y in model coordinates is z in world coordinates
 	tile->model->scaleX = scale;
-	tile->model->scaleY = 1.0f;
+	tile->model->scaleY = heightScale;
 	tile->model->scaleZ = scale;
-	$(void, opengl, updateOpenGLModelTransform)(tile->model);
+	updateOpenGLModelTransform(tile->model);
 
 	// At this point our tile is fully loaded except for the uniforms initialization, so let's initialize our parent now so we can grab its textures
 	OpenGLLodMapTile *parentTile;
-	tile->parentOffset = $(Vector *, linalg, createVector2)(0.0f, 0.0f);
+	tile->parentOffset = createVector2(0.0f, 0.0f);
 	if(node->parent != NULL) {
-		parentTile = $(void *, quadtree, loadQuadtreeNodeData)(tree, node->parent, true);
+		parentTile = loadQuadtreeNodeData(tree, node->parent, true);
 
 		// determine our index in our parent's node
 		unsigned int parentIndex = quadtreeNodeGetParentContainingChildIndex(node);
 		if(parentIndex & 1) { // second in x direction
-			$(void, linalg, setVector)(tile->parentOffset, 0, 0.5);
+			setVector(tile->parentOffset, 0, 0.5);
 		}
 
 		if(parentIndex & 2) { // second in y direction
-			$(void, linalg, setVector)(tile->parentOffset, 1, 0.5);
+			setVector(tile->parentOffset, 1, 0.5);
 		}
 	} else {
 		parentTile = tile;
@@ -373,18 +378,18 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	// Attach uniforms to model
 	OpenGLUniformAttachment *uniforms = tile->model->uniforms;
-	OpenGLUniform *heightsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "heights");
+	OpenGLUniform *heightsTextureUniform = getOpenGLUniform(uniforms, "heights");
 	assert(heightsTextureUniform != NULL);
 	heightsTextureUniform->content.texture_value = tile->heightsTexture;
-	OpenGLUniform *normalsTextureUniform = $(OpenGLUniform *, opengl, getOpenGLUniform)(uniforms, "normals");
+	OpenGLUniform *normalsTextureUniform = getOpenGLUniform(uniforms, "normals");
 	assert(normalsTextureUniform != NULL);
 	normalsTextureUniform->content.texture_value = tile->normalsTexture;
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "texture", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(tile->textureTexture));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentNormals", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(parentTile->normalsTexture));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentTexture", $(OpenGLUniform *, opengl, createOpenGLUniformTexture)(parentTile->textureTexture));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "parentOffset", $(OpenGLUniform *, opengl, createOpenGLUniformVector)(tile->parentOffset));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "lodLevel", $(OpenGLUniform *, opengl, createOpenGLUniformInt)(node->level));
-	$(bool, opengl, attachOpenGLUniform)(uniforms, "enableFragmentMorph", $(OpenGLUniform *, opengl, createOpenGLUniformInt)(parentTile == tile ? 0 : 1));
+	attachOpenGLUniform(uniforms, "texture", createOpenGLUniformTexture(tile->textureTexture));
+	attachOpenGLUniform(uniforms, "parentNormals", createOpenGLUniformTexture(parentTile->normalsTexture));
+	attachOpenGLUniform(uniforms, "parentTexture", createOpenGLUniformTexture(parentTile->textureTexture));
+	attachOpenGLUniform(uniforms, "parentOffset", createOpenGLUniformVector(tile->parentOffset));
+	attachOpenGLUniform(uniforms, "lodLevel", createOpenGLUniformInt(node->level));
+	attachOpenGLUniform(uniforms, "enableFragmentMorph", createOpenGLUniformInt(parentTile == tile ? 0 : 1));
 
 	// Make model invisible
 	tile->model->visible = false;

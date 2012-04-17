@@ -21,6 +21,7 @@
 #include <png.h>
 #include <stdio.h>
 #include <setjmp.h>
+#include <limits.h>
 #include "dll.h"
 #include "modules/image/io.h"
 #define API
@@ -28,7 +29,7 @@
 MODULE_NAME("image_png");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing support for the PNG image data type");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
@@ -108,12 +109,11 @@ static Image *readImageFilePng(const char *filename)
 	height = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
 	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-	if(bit_depth == 16) { // make sure values fit into a char
-		png_set_strip_16(png_ptr);
+	if(bit_depth < 16) {
+		png_set_packing(png_ptr); // make sure bit depths below 8 bit are expanded to a char
 	}
-
-	png_set_packing(png_ptr);
 
 	unsigned int channels = 0;
 
@@ -144,7 +144,7 @@ static Image *readImageFilePng(const char *filename)
 
 	row_pointers = ALLOCATE_OBJECTS(png_bytep, height);
 	for(unsigned int y = 0; y < height; y++) {
-		row_pointers[y] = malloc(png_get_rowbytes(png_ptr, info_ptr));
+		row_pointers[y] = malloc(rowbytes);
 	}
 
 	png_read_image(png_ptr, row_pointers);
@@ -155,13 +155,29 @@ static Image *readImageFilePng(const char *filename)
 
 	LOG_DEBUG("Read PNG image '%s' has dimension %ux%u, bit depth %d and %u channels", filename, width, height, bit_depth, channels);
 
-	Image *image = $(Image *, image, createImageByte)(width, height, channels);
-	for(unsigned int y = 0; y < height; y++) {
-		png_byte *row = row_pointers[y];
-		for(unsigned int x = 0; x < width; x++) {
-			unsigned char *ptr = &(row[x * channels]);
-			for(unsigned int c = 0; c < channels; c++) {
-				setImageByte(image, x, y, c, ptr[c]);
+	Image *image = NULL;
+	if(bit_depth == 16) { // 16-bit images need special handling
+		image = createImageFloat(width, height, channels);
+		for(unsigned int y = 0; y < height; y++) {
+			png_byte *row = row_pointers[y];
+			for(unsigned int x = 0; x < width; x++) {
+				unsigned char *ptr = &(row[2 * x * channels]); // note the "2 *" since every pixel is actually two bytes wide...
+				for(unsigned int c = 0; c < channels; c++) {
+					unsigned short value = (ptr[2 * c] << 8); // PNG stores shorts in big endian, so read the most significant byte first and shift it accordingly...
+					value |= ptr[2 * c + 1]; // ...and then mask the low-order bits to the second byte of the short
+					setImageFloat(image, x, y, c, (float) value / USHRT_MAX);
+				}
+			}
+		}
+	} else { // everything here should fit into a char
+		image = createImageByte(width, height, channels);
+		for(unsigned int y = 0; y < height; y++) {
+			png_byte *row = row_pointers[y];
+			for(unsigned int x = 0; x < width; x++) {
+				unsigned char *ptr = &(row[x * channels]);
+				for(unsigned int c = 0; c < channels; c++) {
+					setImageByte(image, x, y, c, ptr[c]);
+				}
 			}
 		}
 	}
@@ -213,12 +229,29 @@ static bool writeImageFilePng(const char *filename, Image *image)
 	}
 
 	png_bytep *row_pointers = ALLOCATE_OBJECTS(png_bytep, image->height);
-	for(unsigned int y = 0; y < image->height; y++) {
-		row_pointers[y] = ALLOCATE_OBJECTS(png_byte, image->width * image->channels);
 
-		for(unsigned int x = 0; x < image->width; x++) {
-			for(unsigned int c = 0; c < image->channels; c++) {
-				row_pointers[y][image->channels * x + c] = getImageAsByte(image, x, y, c);
+	if(image->type == IMAGE_TYPE_BYTE) {
+		for(unsigned int y = 0; y < image->height; y++) {
+			row_pointers[y] = ALLOCATE_OBJECTS(png_byte, image->width * image->channels);
+
+			for(unsigned int x = 0; x < image->width; x++) {
+				for(unsigned int c = 0; c < image->channels; c++) {
+					row_pointers[y][image->channels * x + c] = getImageByte(image, x, y, c);
+				}
+			}
+		}
+	} else { // float image, save as 16-bit...
+		for(unsigned int y = 0; y < image->height; y++) {
+			row_pointers[y] = ALLOCATE_OBJECTS(png_byte, 2 * image->width * image->channels);
+
+			for(unsigned int x = 0; x < image->width; x++) {
+				for(unsigned int c = 0; c < image->channels; c++) {
+					float value = getImageFloat(image, x, y, c);
+					value = (value >= 0.0 ? (value <= 1.0 ? value : 1.0) : 0.0); // clamp to [0,1] range
+					unsigned short shortValue = value * USHRT_MAX; // scale to short range
+					row_pointers[y][2 * image->channels * x + 2 * c + 0] = (shortValue >> 8);
+					row_pointers[y][2 * image->channels * x + 2 * c + 1] = (shortValue & 0xff);
+				}
 			}
 		}
 	}
@@ -257,7 +290,7 @@ static bool writeImageFilePng(const char *filename, Image *image)
 	}
 
 	// prepare header
-	png_set_IHDR(png_ptr, info_ptr, image->width, image->height, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	png_set_IHDR(png_ptr, info_ptr, image->width, image->height, image->type == IMAGE_TYPE_BYTE ? 8 : 16, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
 	// prepare image contents
 	png_set_rows(png_ptr, info_ptr, row_pointers);

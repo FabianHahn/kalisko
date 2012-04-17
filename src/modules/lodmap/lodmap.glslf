@@ -52,8 +52,12 @@ vec3 getNormal(in vec2 uv, in float morph)
 {
 	vec2 parentUV = 0.5 * uv + parentOffset;
 	
-	vec3 normal = texture2D(normals, uv).xyz;
-	vec3 parentNormal = texture2D(parentNormals, parentUV).xyz;
+	vec4 normalWorld = modelNormal * vec4(texture2D(normals, uv).xyz, 1.0);
+	vec3 normal = normalize(normalWorld.xyz / normalWorld.w);
+	
+	vec4 parentNormalWorld = modelNormal * vec4(texture2D(parentNormals, parentUV).xyz, 1.0);
+	vec3 parentNormalUnscaled = parentNormalWorld.xyz / parentNormalWorld.w;
+	vec3 parentNormal = normalize(vec3(0.5 * parentNormalUnscaled.x, parentNormalUnscaled.y, 0.5 * parentNormalUnscaled.z));
 	
 	return normalize(mix(normal, parentNormal, morph));
 }

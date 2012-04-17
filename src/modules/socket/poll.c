@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -50,6 +50,14 @@
 #include "poll.h"
 #include "util.h"
 
+/** Struct to handle asynchronous connection timeouts */
+typedef struct {
+	/** The creation time of the connection timer */
+	double creationTime;
+	/** The timeout in seconds after which to timeout the connection */
+	int timeout;
+} AsyncConnectionTimer;
+
 static bool pollConnectingSocket(Socket *socket);
 static bool pollSocket(Socket *socket, int *fd_p);
 
@@ -97,12 +105,14 @@ API void freePoll()
 /**
  * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
  * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
- * function returns!). If connecting faills, the "error" event will be triggered and you can either recall this function or free the socket.
+ * function returns!). If connecting fails, the "error" event will be triggered and you can either recall this function or free the socket.
+ * If the connection times out, the "timeout" event will be triggered and you can either recall this function or free the socket.
  *
  * @param s			the client socket to connect
+ * @param timeout	time in seconds after which the connection should timeout and the "timeout" event should be triggered
  * @result			true if successful
  */
-API bool connectClientSocketAsync(Socket *s)
+API bool connectClientSocketAsync(Socket *s, int timeout)
 {
 	if(s->connected) {
 		LOG_ERROR("Cannot connect already connected socket %d", s->fd);
@@ -145,6 +155,14 @@ API bool connectClientSocketAsync(Socket *s)
 #else
 		if(errno == EINPROGRESS) {
 #endif
+			// free previous timer if present
+			free(s->custom);
+
+			AsyncConnectionTimer *timer = ALLOCATE_OBJECT(AsyncConnectionTimer);
+			timer->creationTime = getMicroTime();
+			timer->timeout = timeout;
+			s->custom = timer;
+
 			g_queue_push_tail(connecting, s); // add to connecting list
 			LOG_DEBUG("Socket %d delayed connection, queueing...", s->fd);
 		} else {
@@ -268,7 +286,7 @@ API Socket *getPolledSocketByFd(int fd)
 TIMER_CALLBACK(poll)
 {
 	pollSockets();
-	$(int, event, triggerEvent)(NULL, "sockets_polled");
+	triggerEvent(NULL, "sockets_polled");
 	TIMER_ADD_TIMEOUT(pollInterval, poll);
 }
 
@@ -282,6 +300,16 @@ static bool pollConnectingSocket(Socket *socket)
 {
 	assert(!socket->connected);
 	assert(socket->type == SOCKET_CLIENT);
+	assert(socket->custom != NULL);
+
+	// Check whether the socket has timed out yet
+	AsyncConnectionTimer *timer = socket->custom;
+
+	if(getMicroTime() - timer->creationTime > timer->timeout) { // connection timed out
+		LOG_WARNING("Asynchronous connection on socket %d timed out", socket->fd);
+		triggerEvent(socket, "timeout");
+		return false;
+	}
 
 	// Initialize timeout
 	struct timeval tv = {0, 0};
@@ -341,7 +369,7 @@ static bool pollSocket(Socket *socket, int *fd_p)
 	*fd_p = socket->fd; // backup file descriptor
 
 	if(!socket->connected) { // Socket is disconnected
-		$(int, event, triggerEvent)(socket, "disconnect");
+		triggerEvent(socket, "disconnect");
 		return true;
 	}
 
@@ -349,22 +377,22 @@ static bool pollSocket(Socket *socket, int *fd_p)
 		int ret;
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
 			if(!socket->connected) { // socket was disconnected
-				$(int, event, triggerEvent)(socket, "disconnect");
+				triggerEvent(socket, "disconnect");
 			} else { // error
-				$(int, event, triggerEvent)(socket, "error");
+				triggerEvent(socket, "error");
 			}
 
 			return true;
 		} else if(ret > 0) { // we actually read something
-			$(int, event, triggerEvent)(socket, "read", poll_buffer, ret);
+			triggerEvent(socket, "read", poll_buffer, ret);
 		}
 	} else {
 		Socket *clientSocket;
 
 		if((clientSocket = socketAccept(socket)) != NULL) {
-			$(int, event, triggerEvent)(socket, "accept", clientSocket);
+			triggerEvent(socket, "accept", clientSocket);
 		} else {
-			$(int, event, triggerEvent)(socket, "error");
+			triggerEvent(socket, "error");
 		}
 	}
 

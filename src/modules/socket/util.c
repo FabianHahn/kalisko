@@ -41,6 +41,7 @@
 
 #include "dll.h"
 #define API
+#include "socket.h"
 #include "util.h"
 
 
@@ -85,4 +86,33 @@ API GString *ip2str(unsigned int ip)
 	GString *ipstr = g_string_new("");
 	g_string_append_printf(ipstr, "%i.%i.%i.%i", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
 	return ipstr;
+}
+
+/**
+ * Closes a socket's file descriptors
+ *
+ * @param s		the socket for which to close the file descriptors
+ * @result		true if successful
+ */
+API bool closeSocket(Socket *s)
+{
+#ifdef WIN32
+	if(s->in != NULL) {
+		fclose(s->in);
+		fclose(s->out);
+	}
+#endif
+
+	if(s->fd >= 0) {
+#ifdef WIN32
+		if(closesocket(s->fd) != 0) {
+#else
+		if(close(s->fd) != 0) {
+#endif
+			LOG_SYSTEM_ERROR("Failed to close socket %d", s->fd);
+			return false;
+		}
+	}
+
+	return true;
 }

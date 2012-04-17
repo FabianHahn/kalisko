@@ -59,7 +59,7 @@
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 7, 3);
+MODULE_VERSION(0, 7, 4);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -170,6 +170,10 @@ API Socket *createShellSocket(char **args)
 	s->custom = g_strdupv(args);
 	s->type = SOCKET_SHELL;
 	s->connected = false;
+#ifdef WIN32
+	s->in = NULL;
+	s->out = NULL;
+#endif
 
 	return s;
 }
@@ -501,18 +505,7 @@ API bool disconnectSocket(Socket *s)
 	LOG_DEBUG("Disconnecting socket %d", s->fd);
 
 	if(s->connected) {
-#ifdef WIN32
-		if(s->in != NULL) {
-			fclose(s->in);
-			fclose(s->out);
-		} else if(closesocket(s->fd) != 0) {
-#else
-		if(close(s->fd) != 0) {
-#endif
-			LOG_SYSTEM_ERROR("Failed to close socket %d", s->fd);
-			return false;
-		}
-
+		closeSocket(s);
 		s->connected = false;
 
 		return true;

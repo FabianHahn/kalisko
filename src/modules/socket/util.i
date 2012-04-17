@@ -22,8 +22,10 @@
 #define SOCKET_UTIL_H
 
 #include <glib.h>
+#include "socket.h"
 
 API bool setSocketNonBlocking(int fd);
 API GString *ip2str(unsigned int ip);
+API bool closeSocket(Socket *s);
 
 #endif

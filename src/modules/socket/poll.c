@@ -144,7 +144,7 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 
 	if(!setSocketNonBlocking(s->fd)) {
 		LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-		triggerEvent(socket, "error");
+		closeSocket(s);
 		return true;
 	}
 
@@ -174,6 +174,7 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 #else
 			LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
 #endif
+			closeSocket(s);
 			freeaddrinfo(server);
 			return false;
 		}
@@ -309,6 +310,7 @@ static bool pollConnectingSocket(Socket *socket)
 
 	if(getMicroTime() - timer->creationTime > timer->timeout) { // connection timed out
 		LOG_WARNING("Asynchronous connection on socket %d timed out", socket->fd);
+		closeSocket(socket);
 		triggerEvent(socket, "timeout");
 		return false;
 	}
@@ -333,6 +335,7 @@ static bool pollConnectingSocket(Socket *socket)
 		if(errno != EINTR) {
 			LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected) while polling", socket->fd);
 #endif
+			closeSocket(socket);
 			triggerEvent(socket, "error");
 			return true;
 		}
@@ -345,10 +348,12 @@ static bool pollConnectingSocket(Socket *socket)
 		socklen_t lon = sizeof(int);
 		if(getsockopt(socket->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
 			LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", socket->fd);
+			closeSocket(socket);
 			triggerEvent(socket, "error");
 			return true;
 		} else if(valopt != 0) { // There was a connection error
 			LOG_SYSTEM_ERROR("Asynchronous connection on socket %d failed", socket->fd);
+			closeSocket(socket);
 			triggerEvent(socket, "error");
 			return true;
 		}

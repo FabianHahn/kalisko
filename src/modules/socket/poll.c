@@ -180,6 +180,7 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 		LOG_INFO("Direct response for asynchronous connection on socket %d", s->fd);
 		s->connected = true;
 		triggerEvent(s, "connected");
+		enableSocketPolling(s);
 	}
 
 	freeaddrinfo(server);
@@ -353,6 +354,7 @@ static bool pollConnectingSocket(Socket *socket)
 		LOG_INFO("Asynchronously connected socket %d", socket->fd);
 		socket->connected = true;
 		triggerEvent(socket, "connected");
+		enableSocketPolling(socket);
 		return true;
 	}
 }

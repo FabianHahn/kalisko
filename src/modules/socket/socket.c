@@ -59,7 +59,7 @@
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 7, 2);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -575,15 +575,12 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		GString *msg = g_string_new("");
-		g_string_append_len(msg, buffer, size);
-		LOG_ERROR("Cannot write to disconnected socket: %s", msg->str);
-		g_string_free(msg, true);
+		LOG_ERROR("Cannot write to disconnected socket");
 		return false;
 	}
 
 	if(s->type == SOCKET_SERVER) {
-		LOG_ERROR("Cannot write to server socket");
+		LOG_ERROR("Cannot write to server socket %d", s->fd);
 		return false;
 	}
 
@@ -613,10 +610,7 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 			disconnectSocket(s);
 			return false;
 		} else { // error
-			GString *msg = g_string_new("");
-			g_string_append_len(msg, buffer, size);
-			LOG_SYSTEM_ERROR("Failed to write to socket %d (%s)", s->fd, msg->str);
-			g_string_free(msg, true);
+			LOG_SYSTEM_ERROR("Failed to write to socket %d", s->fd);
 			return false;
 		}
 	}

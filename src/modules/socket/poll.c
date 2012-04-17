@@ -144,7 +144,8 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 
 	if(!setSocketNonBlocking(s->fd)) {
 		LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
-		return false;
+		triggerEvent(socket, "error");
+		return true;
 	}
 
 	LOG_INFO("Asynchronously connecting client socket %d to %s:%s...", s->fd, s->host, s->port);
@@ -321,7 +322,8 @@ static bool pollConnectingSocket(Socket *socket)
 	FD_SET(socket->fd, &fdset);
 
 	// Select socket for write flag (connected)
-	if(select(socket->fd + 1, NULL, &fdset, NULL, &tv) < 0) {
+	int ret;
+	if((ret = select(socket->fd + 1, NULL, &fdset, NULL, &tv)) < 0) {
 #ifdef WIN32
 		if(WSAGetLastError() != WSAEINTR) {
 			char *error = g_win32_error_message(WSAGetLastError());
@@ -337,7 +339,7 @@ static bool pollConnectingSocket(Socket *socket)
 
 		// EINTR at this point means the socket is just not connected yet, so we can safely return and continue polling another time
 		return false;
-	} else { // there is a write flag on the socket
+	} else if(ret > 0) { // there is a write flag on the socket
 		// Socket selected for write, check if we're indeed connected
 		int valopt;
 		socklen_t lon = sizeof(int);
@@ -357,6 +359,9 @@ static bool pollConnectingSocket(Socket *socket)
 		enableSocketPolling(socket);
 		return true;
 	}
+
+	// the socket doesn't have a write flag, so let's just wait until it's connected
+	return false;
 }
 
 /**

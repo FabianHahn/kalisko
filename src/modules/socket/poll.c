@@ -18,8 +18,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef WIN32
+#include <stdio.h> // _fdopen
+#include <fcntl.h> // _open_osfhandle
+#include <winsock2.h> // recv, send, getaddrinfo, socket, connect, select, timevalr
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0502
+#include <ws2tcpip.h> // getaddrinfo, addrinfo, freeaddrinfo
+#else
+#include <sys/socket.h> // recv, send, getaddrinfo, socket, connect
+#include <netdb.h> // getaddrinfo, addrinfo, freeaddrinfo
+#include <fcntl.h>
+#include <sys/select.h> // select, timeval
+#include <netinet/in.h> // FreeBSD needs this, linux doesn't care ;)
+#endif
+#include <glib.h> // GList
+#include <stdlib.h> // malloc, free
+#include <unistd.h> // close
+#include <sys/types.h> // recv, send, getaddrinfo, socket, connect
+#include <errno.h> // errno, EINTR
 #include <assert.h>
-#include <glib.h>
 
 #include "dll.h"
 #include "timer.h"
@@ -42,6 +60,11 @@ static int pollInterval;
  */
 static bool polling;
 
+/**
+ * List of currently connecting sockets
+ */
+static GQueue *connecting;
+
 TIMER_CALLBACK(poll);
 
 /**
@@ -53,6 +76,7 @@ API void initPoll(int interval)
 	pollInterval = interval;
 
 	poll_table = g_hash_table_new_full(&g_int_hash, &g_int_equal, &free, NULL);
+	connecting = g_queue_new();
 
 	TIMER_ADD_TIMEOUT(pollInterval, poll);
 
@@ -65,6 +89,81 @@ API void initPoll(int interval)
 API void freePoll()
 {
 	g_hash_table_destroy(poll_table);
+	g_queue_free(connecting);
+}
+
+/**
+ * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
+ * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
+ * function returns!).
+ *
+ * @param s			the client socket to connect
+ * @result			true if successful
+ */
+API bool connectClientSocketAsync(Socket *s)
+{
+	if(s->connected) {
+		LOG_ERROR("Cannot connect already connected socket %d", s->fd);
+		return false;
+	}
+
+	if(s->type != SOCKET_CLIENT) {
+		LOG_ERROR("Cannot asynchronously connect non-client socket");
+		return false;
+	}
+
+	struct addrinfo hints;
+	struct addrinfo *server;
+	int ret;
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC; // don't care if we use IPv4 or IPv6 to reach our destination
+	hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
+
+	if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
+		LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
+		return false;
+	}
+
+	if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
+		LOG_SYSTEM_ERROR("Failed to create socket");
+		return false;
+	}
+
+	if(!setSocketNonBlocking(s->fd)) {
+		LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+		return false;
+	}
+
+	LOG_INFO("Asynchronously connecting client socket %d to %s:%s...", s->fd, s->host, s->port);
+
+	if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
+#ifdef WIN32
+		if(WSAGetLastError() == WSAEINPROGRESS || WSAGetLastError() == WSAEWOULDBLOCK) {
+#else
+		if(errno == EINPROGRESS) {
+#endif
+			g_queue_push_tail(connecting, s); // add to connecting list
+			LOG_DEBUG("Socket %d delayed connection, queueing...", s->fd);
+		} else {
+#ifdef WIN32
+			char *error = g_win32_error_message(WSAGetLastError());
+			LOG_ERROR("Connection for socket %d failed: %s", s->fd, error);
+			free(error);
+#else
+			LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+#endif
+			freeaddrinfo(server);
+			disconnectSocket(s);
+			return false;
+		}
+	} else {
+		s->connected = true;
+		triggerEvent(s, "connected");
+	}
+
+	freeaddrinfo(server);
+	return true;
 }
 
 /**

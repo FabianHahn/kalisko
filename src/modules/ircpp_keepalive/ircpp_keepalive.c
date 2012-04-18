@@ -37,8 +37,8 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 6, 0);
-MODULE_BCVERSION(0, 3, 0);
+MODULE_VERSION(0, 7, 0);
+MODULE_BCVERSION(0, 7, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 TIMER_CALLBACK(challenge);
@@ -69,12 +69,12 @@ static GHashTable *challengeTimeouts;
 /**
  * Interval between keepalive challenges
  */
-static unsigned int keepaliveInterval = 60 * G_USEC_PER_SEC;
+static unsigned int keepaliveInterval = 60;
 
 /**
  * Timeout until the remote IRC connection has to send a PONG response to a challenge
  */
-static unsigned int keepaliveTimeout = 5 * G_USEC_PER_SEC;
+static unsigned int keepaliveTimeout = 5;
 
 
 MODULE_INIT
@@ -178,14 +178,18 @@ static void listener_reloadedConfig(void *subject, const char *event, void *data
 TIMER_CALLBACK(challenge)
 {
 	IrcProxy *proxy = custom_data;
-	GTimeVal *timeout;
+	GTimeVal *timeout = NULL;
+
+	// Remove the timer from the challenge table
+	g_hash_table_remove(challenges, proxy);
 
 	if(!proxy->irc->socket->connected) { // not our job to handle it if the socket just disconnected, we will get another event trigger for that
+		LOG_DEBUG("Keepalive timeout for disconnected socket, ignoring");
 		return;
 	}
 
 	// Schedule an expiration time for the challenge
-	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveTimeout, challenge_timeout, proxy)) == NULL) {
+	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveTimeout * G_USEC_PER_SEC, challenge_timeout, proxy)) == NULL) {
 		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
 		return;
 	}
@@ -198,26 +202,26 @@ TIMER_CALLBACK(challenge)
 	LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 
 	// Schedule a new challenge
-	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
+	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval * G_USEC_PER_SEC, challenge, proxy)) == NULL) {
 		LOG_ERROR("Failed to add IRC proxy keepalive timer for IRC proxy '%s'", proxy->name);
 		return;
 	}
 
-	// Replace the old challenge with the new one
-	g_hash_table_replace(challenges, proxy, timeout);
+	// Insert the new timer into the challenge table
+	g_hash_table_insert(challenges, proxy, timeout);
 }
 
 TIMER_CALLBACK(challenge_timeout)
 {
 	IrcProxy *proxy = custom_data;
 
-	LOG_ERROR("Keepalive challenge timed out for remote IRC connection %d of IRC proxy '%s'", proxy->irc->socket->fd, proxy->name);
+	// Remove the challenge from the challenge table
+	g_hash_table_remove(challengeTimeouts, proxy);
+
+	LOG_INFO("Keepalive challenge timed out for remote IRC connection %d of IRC proxy '%s'", proxy->irc->socket->fd, proxy->name);
 
 	// Disconnect socket so the disconnect hook will reconnect it
 	disconnectSocket(proxy->irc->socket);
-
-	// Remove the challenge from the challenge table
-	g_hash_table_remove(challengeTimeouts, &time);
 }
 
 /**
@@ -229,8 +233,12 @@ TIMER_CALLBACK(challenge_timeout)
  */
 static bool initPlugin(IrcProxy *proxy, char *name)
 {
-	if(!rescheduleKeepaliveTimer(proxy)) {
-		return false;
+	if(proxy->irc->socket->connected) { // this plugin will only reconnect the proxy's irc connection socket - if it's not connected yet, that's not our problem
+		if(!rescheduleKeepaliveTimer(proxy)) {
+			return false;
+		}
+	} else {
+		LOG_INFO("IRC proxy '%s' connection not established yet, not scheduling keepalive timeouts", proxy->name);
 	}
 
 	attachEventListener(proxy, "bouncer_reattached", NULL, &listener_bouncerReattached);
@@ -314,7 +322,7 @@ static bool rescheduleKeepaliveTimer(IrcProxy *proxy)
 	}
 
 	// Schedule a new keepalive timer
-	if((timer = TIMER_ADD_TIMEOUT_EX(keepaliveInterval, challenge, proxy)) == NULL) {
+	if((timer = TIMER_ADD_TIMEOUT_EX(keepaliveInterval * G_USEC_PER_SEC, challenge, proxy)) == NULL) {
 		LOG_ERROR("Failed to add IRC proxy keepalive timer for IRC proxy '%s'", proxy->name);
 		return false;
 	}

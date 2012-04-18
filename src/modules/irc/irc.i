@@ -52,7 +52,7 @@ typedef struct
 
 API IrcConnection *createIrcConnection(char *server, char *port, char *password, char *user, char *real, char *nick);
 API IrcConnection *createIrcConnectionByStore(Store *cfg);
-API void reconnectIrcConnection(IrcConnection *irc);
+API bool reconnectIrcConnection(IrcConnection *irc);
 API bool enableIrcConnectionThrottle(IrcConnection *irc);
 API void disableIrcConnectionThrottle(IrcConnection *irc, bool flush_output_buffer);
 API void freeIrcConnection(IrcConnection *irc);

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,9 +23,6 @@
 #include <string.h>
 #include <glib.h>
 #include "dll.h"
-#include "log.h"
-#include "memory_alloc.h"
-#include "util.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
 #include "modules/socket/socket.h"
@@ -39,12 +36,12 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 4, 12);
-MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 6, 20), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_VERSION(0, 5, 0);
+MODULE_BCVERSION(0, 5, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-TIMER_CALLBACK(reconnect);
 static void listener_throttlePoll(void *subject, const char *event, void *data, va_list args);
+static void listener_ircConnected(void *subject, const char *event, void *data, va_list args);
 static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
 static void listener_ircRead(void *subject, const char *event, void *data, va_list args);
@@ -59,7 +56,7 @@ MODULE_INIT
 	connections = g_hash_table_new(NULL, NULL);
 	throttled = g_queue_new();
 
-	$(void, event, attachEventListener)(NULL, "sockets_polled", NULL, &listener_throttlePoll);
+	attachEventListener(NULL, "sockets_polled", NULL, &listener_throttlePoll);
 
 	return true;
 }
@@ -69,31 +66,7 @@ MODULE_FINALIZE
 	g_hash_table_destroy(connections);
 	g_queue_free(throttled);
 
-	$(void, event, detachEventListener)(NULL, "sockets_polled", NULL, &listener_throttlePoll);
-}
-
-TIMER_CALLBACK(reconnect)
-{
-	IrcConnection *irc = custom_data;
-
-	if(!isSocketActive(irc->socket)) {
-		int prevfd = irc->socket->fd;
-		LOG_DEBUG("Trying to reconnect remote IRC connection with previous socket %d", prevfd);
-		// Now try to reconnect
-		if(connectSocket(irc->socket) && enableSocketPolling(irc->socket)) { // reconnect successful
-			LOG_INFO("Remote IRC connection with previous socket %d successfully reconnected as socket %d", prevfd, irc->socket->fd);
-
-			// Reauthenticate the connection
-			authenticateIrcConnection(irc);
-
-			triggerEvent(irc, "reconnect");
-		} else {
-			LOG_WARNING("Failed to reconnect IRC connection with previous socket %d", prevfd);
-			if(irc->socket->connected) { // disconnect if it is somehow connected but enabling polling didn't work
-				disconnectSocket(irc->socket);
-			}
-		}
-	}
+	detachEventListener(NULL, "sockets_polled", NULL, &listener_throttlePoll);
 }
 
 static void listener_throttlePoll(void *subject, const char *event, void *data, va_list args)
@@ -116,9 +89,9 @@ static void listener_throttlePoll(void *subject, const char *event, void *data, 
 
 		while(!g_queue_is_empty(irc->obuffer) && (irc->throttle_time - now) < 10.0) { // repeat while lines and throttle space left
 			GString *line = g_queue_pop_head(irc->obuffer); // pop the next output buffer line
-			$(int, event, triggerEvent)(irc, "send", line->str); // trigger send event
+			triggerEvent(irc, "send", line->str); // trigger send event
 			g_string_append_c(line, '\n'); // append newline
-			$(bool, socket, socketWriteRaw)(irc->socket, line->str, line->len); // send it
+			socketWriteRaw(irc->socket, line->str, line->len); // send it
 			irc->throttle_time += (2.0 + line->len) / 120.0; // penalty throttle time by line length
 			g_string_free(line, true); // free it
 		}
@@ -133,13 +106,26 @@ static void listener_throttlePoll(void *subject, const char *event, void *data, 
 	g_queue_free(dead);
 }
 
+static void listener_ircConnected(void *subject, const char *event, void *data, va_list args)
+{
+	Socket *socket = subject;
+
+	IrcConnection *irc;
+	if((irc = g_hash_table_lookup(connections, socket)) != NULL) { // This socket belongs to an IRC connection
+		// Reauthenticate the connection
+		authenticateIrcConnection(irc);
+
+		triggerEvent(irc, "reconnect");
+	}
+}
+
 static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args)
 {
 	Socket *socket = subject;
 
 	IrcConnection *irc;
 	if((irc = g_hash_table_lookup(connections, socket)) != NULL) { // This socket belongs to an IRC connection
-		$(int, event, triggerEvent)(irc, "disconnect");
+		triggerEvent(irc, "disconnect");
 	}
 }
 
@@ -164,12 +150,12 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 		char *challenge = message->trailing;
 		ircSendFirst(irc, "PONG :%s", challenge);
 	} else if(g_strcmp0(message->command, "NICK") == 0) {
-		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+		IrcUserMask *mask = parseIrcUserMask(message->prefix);
 		if(mask != NULL) {
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Our own nickname was changed
 				free(irc->nick); // free old nick
 				irc->nick = strdup(mask->nick); // store new nick
-				$(int, event, triggerEvent)(irc, "nick"); // notify listeners
+				triggerEvent(irc, "nick"); // notify listeners
 			}
 
 			free(mask);
@@ -178,7 +164,8 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 }
 
 /**
- * Creates an IRC connection
+ * Creates an IRC connection. Note that this function doesn't block and returns immediately, the "reconnect" event is triggered once the connection
+ * is establishes and the client is authenticated.
  *
  * @param server		IRC server to connect to
  * @param port			IRC server's port to connect to
@@ -202,19 +189,18 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 	irc->ibuffer = g_string_new("");
 	irc->throttle = false;
 	irc->obuffer = NULL;
-	irc->socket = $(Socket *, socket, createClientSocket)(server, port);
+	irc->socket = createClientSocket(server, port);
 
-	$(void, event, attachEventListener)(irc->socket, "read", NULL, &listener_ircRead);
-	$(void, event, attachEventListener)(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
-	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
+	attachEventListener(irc->socket, "connected", NULL, &listener_ircConnected);
+	attachEventListener(irc->socket, "read", NULL, &listener_ircRead);
+	attachEventListener(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
+	attachEventListener(irc, "line", NULL, &listener_ircLine);
 
-	if(!$(bool, socket, connectSocket)(irc->socket) || !$(bool, socket, enableSocketPolling)(irc->socket)) {
+	if(!connectClientSocketAsync(irc->socket, 10)) {
 		LOG_ERROR("Failed to connect IRC connection socket");
 		freeIrcConnection(irc);
 		return NULL;
 	}
-
-	authenticateIrcConnection(irc);
 
 	g_hash_table_insert(connections, irc->socket, irc);
 
@@ -238,48 +224,48 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	char *nick;
 	int throttle;
 
-	if((param = $(Store *, store, getStorePath)(params, "server")) == NULL || param->type != STORE_STRING) {
+	if((param = getStorePath(params, "server")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'server', aborting IRC connection");
 		return NULL;
 	}
 
 	server = param->content.string;
 
-	if((param = $(Store *, store, getStorePath)(params, "port")) == NULL || param->type != STORE_STRING) {
+	if((param = getStorePath(params, "port")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'port', aborting IRC connection");
 		return NULL;
 	}
 
 	port = param->content.string;
 
-	if((param = $(Store *, store, getStorePath)(params, "password")) != NULL && param->type == STORE_STRING) {
+	if((param = getStorePath(params, "password")) != NULL && param->type == STORE_STRING) {
 		password = param->content.string;
 	} else {
 		password = NULL;
 	}
 
-	if((param = $(Store *, store, getStorePath)(params, "user")) == NULL || param->type != STORE_STRING) {
+	if((param = getStorePath(params, "user")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'user', aborting IRC connection");
 		return NULL;
 	}
 
 	user = param->content.string;
 
-	if((param = $(Store *, store, getStorePath)(params, "real")) == NULL || param->type != STORE_STRING) {
+	if((param = getStorePath(params, "real")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'real', aborting IRC connection");
 		return NULL;
 	}
 
 	real = param->content.string;
 
-	if((param = $(Store *, store, getStorePath)(params, "nick")) == NULL || param->type != STORE_STRING) {
+	if((param = getStorePath(params, "nick")) == NULL || param->type != STORE_STRING) {
 		LOG_ERROR("Could not find required params value 'nick', aborting IRC connection");
 		return NULL;
 	}
 
 	nick = param->content.string;
 
-	if((param = $(Store *, store, getStorePath)(params, "throttle")) == NULL || param->type != STORE_INTEGER) {
+	if((param = getStorePath(params, "throttle")) == NULL || param->type != STORE_INTEGER) {
 		LOG_ERROR("Could not find required params value 'throttle', aborting IRC connection");
 		return NULL;
 	}
@@ -296,13 +282,21 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 }
 
 /**
- * Reconnects an IRC connection. Note that the actual reconnection is done inside a timer and the reconnect event is sent once the reconnection actually worked
+ * Reconnects an IRC connection. Note that this function doesn't block and returns immediately, the actual reconnection is done inside a timer and the "reconnect" event
+ * is sent once the reconnection actually worked.
  *
  * @param irc		the IRC connection to reconnect
+ * @result			true if the reconnection was successfully attempted
  */
-API void reconnectIrcConnection(IrcConnection *irc)
+API bool reconnectIrcConnection(IrcConnection *irc)
 {
-	TIMER_ADD_TIMEOUT_EX(0, reconnect, irc);
+	if(!isSocketActive(irc->socket)) {
+		if(connectClientSocketAsync(irc->socket, 10)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -370,11 +364,12 @@ API void freeIrcConnection(IrcConnection *irc)
 
 	g_hash_table_remove(connections, irc->socket);
 
-	$(void, event, detachEventListener)(irc->socket, "read", NULL, &listener_ircRead);
-	$(void, event, detachEventListener)(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
-	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
+	detachEventListener(irc->socket, "read", NULL, &listener_ircRead);
+	detachEventListener(irc->socket, "connected", NULL, &listener_ircConnected);
+	detachEventListener(irc->socket, "disconnect", NULL, &listener_ircDisconnect);
+	detachEventListener(irc, "line", NULL, &listener_ircLine);
 
-	$(void, socket, freeSocket)(irc->socket);
+	freeSocket(irc->socket);
 	free(irc->password);
 	free(irc->user);
 	free(irc->real);
@@ -405,12 +400,12 @@ API bool ircSend(IrcConnection *irc, char *message, ...)
 		return true;
 	}
 
-	$(int, event, triggerEvent)(irc, "send", buffer);
+	triggerEvent(irc, "send", buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
 
-	bool ret = $(bool, socket, socketWriteRaw)(irc->socket, nlmessage->str, nlmessage->len);
+	bool ret = socketWriteRaw(irc->socket, nlmessage->str, nlmessage->len);
 
 	g_string_free(nlmessage, true);
 
@@ -437,12 +432,12 @@ API bool ircSendFirst(IrcConnection *irc, char *message, ...)
 		return true;
 	}
 
-	$(int, event, triggerEvent)(irc, "send", buffer);
+	triggerEvent(irc, "send", buffer);
 
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
 
-	bool ret = $(bool, socket, socketWriteRaw)(irc->socket, nlmessage->str, nlmessage->len);
+	bool ret = socketWriteRaw(irc->socket, nlmessage->str, nlmessage->len);
 
 	g_string_free(nlmessage, true);
 
@@ -486,7 +481,7 @@ static void checkForBufferLine(IrcConnection *irc)
 
 	if(strstr(message, "\n") != NULL) { // message has at least one newline
 		g_string_free(irc->ibuffer, false);
-		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
+		stripDuplicateNewlines(message); // remove duplicate newlines, since server could send \r\n
 		char **parts = g_strsplit(message, "\n", 0);
 		int count = 0;
 		for(char **iter = parts; *iter != NULL; iter++) {

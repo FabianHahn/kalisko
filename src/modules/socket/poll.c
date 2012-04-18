@@ -312,7 +312,7 @@ static bool pollConnectingSocket(Socket *socket)
 		LOG_WARNING("Asynchronous connection on socket %d timed out", socket->fd);
 		closeSocket(socket);
 		triggerEvent(socket, "disconnect");
-		return false;
+		return true;
 	}
 
 	// Initialize timeout

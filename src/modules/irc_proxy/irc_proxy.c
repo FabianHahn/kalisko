@@ -41,9 +41,9 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 9);
+MODULE_VERSION(0, 3, 10);
 MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 2, 7), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static void freeIrcProxyClient(void *client_p, void *quitmsg_p);
 static void checkForBufferLine(IrcProxyClient *client);
@@ -83,23 +83,23 @@ MODULE_INIT
 	Store *config;
 	char *port = "6677";
 
-	if((config = $(Store *, config, getConfigPath)("irc/proxy/port")) != NULL && config->type == STORE_STRING) {
+	if((config = getConfigPath("irc/proxy/port")) != NULL && config->type == STORE_STRING) {
 		port = config->content.string;
 	} else {
 		LOG_INFO("Could not determine config value irc/proxy/port, using default of '%s'", port);
 	}
 
 	// Create and connect our listening server socket
-	server = $(Socket *, socket, createServerSocket)(port);
+	server = createServerSocket(port);
 
-	$(void, event, attachEventListener)(server, "accept", NULL, &listener_clientAccept);
+	attachEventListener(server, "accept", NULL, &listener_clientAccept);
 
-	if(!$(bool, socket, connectSocket)(server)) {
+	if(!connectSocket(server)) {
 		LOG_ERROR("Failed to connect IRC proxy server socket on port %s, aborting", port);
 		return false;
 	}
 
-	if(!$(bool, socket, enableSocketPolling)(server)) {
+	if(!enableSocketPolling(server)) {
 		LOG_ERROR("Failed to enable polling for IRC proxy server socket on port %s, aborting", port);
 		return false;
 	}
@@ -119,10 +119,10 @@ MODULE_FINALIZE
 	g_hash_table_destroy(proxyConnections);
 	g_hash_table_destroy(clients);
 
-	$(void, event, detachEventListener)(server, "accept", NULL, &listener_clientAccept);
+	detachEventListener(server, "accept", NULL, &listener_clientAccept);
 
 	// Free the server socket
-	$(void, socket, freeSocket)(server);
+	freeSocket(server);
 }
 
 static void listener_remoteLine(void *subject, const char *event, void *data, va_list args)
@@ -148,7 +148,7 @@ static void listener_clientAccept(void *subject, const char *event, void *data, 
 	Socket *client = va_arg(args, Socket *);
 
 	if(listener == server) { // new IRC proxy client
-		$(bool, socket, enableSocketPolling)(client); // also poll the new socket
+		enableSocketPolling(client); // also poll the new socket
 
 		LOG_INFO("New relay client %d on IRC proxy server", client->fd);
 
@@ -158,9 +158,9 @@ static void listener_clientAccept(void *subject, const char *event, void *data, 
 		pc->authenticated = false;
 		pc->ibuffer = g_string_new("");
 
-		$(void, event, attachEventListener)(pc, "line", NULL, &listener_clientLine);
-		$(void, event, attachEventListener)(client, "read", NULL, &listener_clientRead);
-		$(void, event, attachEventListener)(client, "disconnect", NULL, &listener_clientDisconnect);
+		attachEventListener(pc, "line", NULL, &listener_clientLine);
+		attachEventListener(client, "read", NULL, &listener_clientRead);
+		attachEventListener(client, "disconnect", NULL, &listener_clientDisconnect);
 
 		g_hash_table_insert(clients, client, pc); // connect the client socket to the proxy client object
 
@@ -224,7 +224,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 
 						proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", proxy->irc->socket->host, proxy->irc->nick);
 						proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
-						$(int, event, triggerEvent)(proxy, "client_authenticated", client);
+						triggerEvent(proxy, "client_authenticated", client);
 					} else {
 						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
 					}
@@ -243,7 +243,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 		return;
 	} else if(g_strcmp0(message->command, "QUIT") == 0) { // client disconnects
 		LOG_DEBUG("IRC proxy client %d sent QUIT message, disconnecting...", client->socket->fd);
-		$(bool, socket, disconnectSocket)(client->socket);
+		disconnectSocket(client->socket);
 	} else {
 		if((g_strcmp0(message->command, "PRIVMSG") == 0 || g_strcmp0(message->command, "NOTICE") == 0) && message->params_count > 0) { // potential filtered command
 			for(GList *iter = client->proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
@@ -254,7 +254,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 		}
 
 		// Relay message to IRC server
-		$(bool, irc, ircSend)(client->proxy->irc, "%s", message->raw_message);
+		ircSend(client->proxy->irc, "%s", message->raw_message);
 	}
 }
 
@@ -285,7 +285,7 @@ API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 	proxy->clients = g_queue_new();
 	proxy->relay_exceptions = g_queue_new();
 
-	$(void, event, attachEventListener)(irc, "line", NULL, &listener_remoteLine);
+	attachEventListener(irc, "line", NULL, &listener_remoteLine);
 
 	g_hash_table_insert(proxies, strdup(name), proxy); // clone name again to make it independent of the IrcProxy object
 	g_hash_table_insert(proxyConnections, irc, proxy);
@@ -344,7 +344,7 @@ API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket)
  */
 API void freeIrcProxy(IrcProxy *proxy)
 {
-	$(void, event, detachEventListener)(proxy->irc, "line", NULL, &listener_remoteLine);
+	detachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
 
 	g_hash_table_remove(proxies, proxy->name);
 	g_hash_table_remove(proxyConnections, proxy->irc);
@@ -439,7 +439,7 @@ API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...)
 	GString *nlmessage = g_string_new(buffer);
 	g_string_append_c(nlmessage, '\n');
 
-	bool ret = $(bool, socket, socketWriteRaw)(client->socket, nlmessage->str, nlmessage->len);
+	bool ret = socketWriteRaw(client->socket, nlmessage->str, nlmessage->len);
 
 	g_string_free(nlmessage, true);
 
@@ -461,14 +461,14 @@ static void freeIrcProxyClient(void *client_p, void *quitmsg_p)
 		proxyClientIrcSend(client, "QUIT :%s", quitmsg);
 	}
 
-	$(int, event, triggerEvent)(client->proxy, "client_disconnected", client);
-	$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
-	$(void, event, detachEventListener)(client->socket, "read", NULL, &listener_clientRead);
-	$(void, event, detachEventListener)(client->socket, "disconnect", NULL, &listener_clientDisconnect);
+	triggerEvent(client->proxy, "client_disconnected", client);
+	detachEventListener(client, "line", NULL, &listener_clientLine);
+	detachEventListener(client->socket, "read", NULL, &listener_clientRead);
+	detachEventListener(client->socket, "disconnect", NULL, &listener_clientDisconnect);
 
 	g_hash_table_remove(clients, client->socket); // remove ourselves from the irc proxy client sockets table
 
-	$(void, socket, freeSocket)(client->socket); // free the socket
+	freeSocket(client->socket); // free the socket
 	g_string_free(client->ibuffer, true); // free the input buffer
 
 	free(client); // actually free the client
@@ -485,7 +485,7 @@ static void checkForBufferLine(IrcProxyClient *client)
 
 	if(strstr(message, "\n") != NULL) { // message has at least one newline
 		g_string_free(client->ibuffer, false);
-		$(void, string_util, stripDuplicateNewlines)(message); // remove duplicate newlines, since server could send \r\n
+		stripDuplicateNewlines(message); // remove duplicate newlines, since server could send \r\n
 		char **parts = g_strsplit(message, "\n", 0);
 		int count = 0;
 		for(char **iter = parts; *iter != NULL; iter++) {

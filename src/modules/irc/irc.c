@@ -36,7 +36,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -290,10 +290,12 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
  */
 API bool reconnectIrcConnection(IrcConnection *irc)
 {
-	if(!isSocketActive(irc->socket)) {
+	if(!irc->socket->connected) { // note that we can't check whether the socket is active because this could be called right before the socket is removed from the polling queue...
 		if(connectClientSocketAsync(irc->socket, 10)) {
 			return true;
 		}
+	} else {
+		LOG_ERROR("Cannot reconnect already connected IRC connection with socket %d", irc->socket->fd);
 	}
 
 	return false;

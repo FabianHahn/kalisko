@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -41,13 +41,13 @@ static Store *xcall_ircSend(Store *xcall);
 MODULE_NAME("xcall_irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("XCall module for irc");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1), MODULE_DEPENDENCY("irc", 0, 4, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 5, 1), MODULE_DEPENDENCY("irc", 0, 5, 0));
 
 MODULE_INIT
 {
-	if(!$(bool, xcall, addXCallFunction)("ircSend", &xcall_ircSend)) {
+	if(!addXCallFunction("ircSend", &xcall_ircSend)) {
 		return false;
 	}
 
@@ -56,7 +56,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(bool, xcall, delXCallFunction)("ircSend");
+	delXCallFunction("ircSend");
 }
 
 /**
@@ -72,35 +72,35 @@ MODULE_FINALIZE
  */
 static Store *xcall_ircSend(Store *xcall)
 {
-	Store *ret = $(Store *, store, createStore)();
+	Store *ret = createStore();
 	Store *message;
 	Store *connectionId;
 	Socket *socket;
 	IrcConnection *connection;
 
-	if((message = $(Store *, store, getStorePath)(xcall, "message")) == NULL || message->type != STORE_STRING) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
+	if((message = getStorePath(xcall, "message")) == NULL || message->type != STORE_STRING) {
+		setStorePath(ret, "success", createStoreIntegerValue(0));
+		setStorePath(ret, "xcall/error", createStoreStringValue("Failed to read mandatory string parameter 'message'"));
 		return ret;
 	}
 
-	if((connectionId = $(Store *, store, getStorePath)(xcall, "connection")) == NULL || connectionId->type != STORE_INTEGER) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(ret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory integer parameter 'connection'"));
+	if((connectionId = getStorePath(xcall, "connection")) == NULL || connectionId->type != STORE_INTEGER) {
+		setStorePath(ret, "success", createStoreIntegerValue(0));
+		setStorePath(ret, "xcall/error", createStoreStringValue("Failed to read mandatory integer parameter 'connection'"));
 		return ret;
 	}
 
-	if((socket = $(Socket *, socket, getPolledSocketByFd)(connectionId->content.integer)) == NULL) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+	if((socket = getPolledSocketByFd(connectionId->content.integer)) == NULL) {
+		setStorePath(ret, "success", createStoreIntegerValue(0));
 		return ret;
 	}
 
-	if((connection = $(IrcConnection *, irc, getIrcConnectionBySocket)(socket)) == NULL) {
-		$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)(0));
+	if((connection = getIrcConnectionBySocket(socket)) == NULL) {
+		setStorePath(ret, "success", createStoreIntegerValue(0));
 		return ret;
 	}
 
-	$(bool, store, setStorePath)(ret, "success", $(Store *, store, createStoreIntegerValue)($(bool, irc, ircSend)(connection, "%s", message->content.string)));
+	setStorePath(ret, "success", createStoreIntegerValue(ircSend(connection, "%s", message->content.string)));
 
 	return ret;
 }

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -39,9 +39,9 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 16);
+MODULE_VERSION(0, 3, 17);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 4, 6), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -168,7 +168,7 @@ MODULE_INIT
 	GString *path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/irc_client/irc_client.xml");
 
-	GtkBuilder *builder = $(GtkBuilder *, gtk+, loadGtkBuilderGui)(path->str);
+	GtkBuilder *builder = loadGtkBuilderGui(path->str);
 
 	g_string_free(path, true);
 
@@ -183,12 +183,12 @@ MODULE_INIT
 	side_tree = GTK_WIDGET(gtk_builder_get_object(builder, "side_tree"));
 	channel_list = GTK_WIDGET(gtk_builder_get_object(builder, "channel_list"));
 
-	Store *config = $(Store *, config, getWritableConfig)();
-	if((client_config = $(Store *, store, getStorePath)(config, "irc_client")) == NULL || client_config->type != STORE_ARRAY) {
-		$(bool, store, deleteStorePath)(config, "irc_client");
+	Store *config = getWritableConfig();
+	if((client_config = getStorePath(config, "irc_client")) == NULL || client_config->type != STORE_ARRAY) {
+		deleteStorePath(config, "irc_client");
 		LOG_INFO("Writable config path 'irc_client' doesn't exist yet, creating...");
-		client_config = $(Store *, store, createStore)();
-		$(bool, store, setStorePath)(config, "irc_client", client_config);
+		client_config = createStore();
+		setStorePath(config, "irc_client", client_config);
 	}
 
 	// window
@@ -244,20 +244,20 @@ MODULE_INIT
 	gtk_widget_show_all(GTK_WIDGET(window));
 
 	// run
-	$(void, gtk+, runGtkLoop)();
+	runGtkLoop();
 
 	// log handler
-	$(void, event, attachEventListener)(NULL, "log", NULL, &listener_log);
+	attachEventListener(NULL, "log", NULL, &listener_log);
 
 	connections = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnection);
 
 	// read connections from config
 	Store *configConnections;
-	if((configConnections = $(Store *, store, getStorePath)(client_config, "connections")) == NULL || configConnections->type != STORE_ARRAY) {
-		$(bool, store, deleteStorePath)(client_config, "connections");
+	if((configConnections = getStorePath(client_config, "connections")) == NULL || configConnections->type != STORE_ARRAY) {
+		deleteStorePath(client_config, "connections");
 		LOG_INFO("Writable config path 'irc_client/connections' doesn't exist yet, creating...");
-		configConnections = $(Store *, store, createStore)();
-		$(bool, store, setStorePath)(client_config, "connections", configConnections);
+		configConnections = createStore();
+		setStorePath(client_config, "connections", configConnections);
 	}
 
 	GHashTableIter iter;
@@ -356,7 +356,7 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 		case CHAT_ELEMENT_CONNECTION:
 			do {
 				IrcClientConnection *connection = active;
-				$(bool, irc, ircSend)(connection->connection, "%s", command);
+				ircSend(connection->connection, "%s", command);
 			} while(false);
 		break;
 		case CHAT_ELEMENT_CHANNEL:
@@ -364,7 +364,7 @@ API gboolean irc_client_chat_input_activate(GtkWidget *widget, gpointer data)
 				IrcClientConnectionChannel *channel = active;
 				g_queue_push_head(channel->inputHistory, strdup(command));
 				channel->inputHistoryPosition = NULL;
-				$(bool, irc, ircSend)(channel->connection->connection, "PRIVMSG %s :%s", channel->name, command);
+				ircSend(channel->connection->connection, "PRIVMSG %s :%s", channel->name, command);
 
 				GString *msg = g_string_new("");
 				g_string_append_printf(msg, "<%s> %s", channel->connection->connection->nick, command);
@@ -456,7 +456,7 @@ API gboolean irc_client_chat_input_key_press_event(GtkWidget *widget, GdkEvent *
 
 static void listener_channel(void *subject, const char *event, void *data, va_list args)
 {
-	IrcClientConnection *connection = $(void *, property_table, getPropertyTableValue)(subject, "irc_client_connection");
+	IrcClientConnection *connection = getPropertyTableValue(subject, "irc_client_connection");
 	if(connection == NULL) {
 		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
 		return;
@@ -606,7 +606,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 
 static void finalize()
 {
-	$(void, event, detachEventListener)(NULL, "log", NULL, &listener_log);
+	detachEventListener(NULL, "log", NULL, &listener_log);
 
 	gtk_widget_destroy(GTK_WIDGET(window));
 	g_object_unref(status_buffer);
@@ -626,7 +626,7 @@ static void addIrcClientConnection(char *name, Store *config)
 	connection->name = strdup(name);
 	connection->channels = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnectionChannel);
 
-	if((connection->connection = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
+	if((connection->connection = createIrcConnectionByStore(config)) == NULL) {
 		LOG_ERROR("Failed to create IRC client connection '%s', aborting", name);
 		free(connection->name);
 		free(connection);
@@ -634,16 +634,16 @@ static void addIrcClientConnection(char *name, Store *config)
 	}
 
 	// Set reverse property
-	$(bool, property_table, setPropertyTableValue)(connection->connection, "irc_client_connection", connection);
+	setPropertyTableValue(connection->connection, "irc_client_connection", connection);
 
 	// Enable channel tracking
-	$(bool, irc_channel, enableChannelTracking)(connection->connection);
+	enableChannelTracking(connection->connection);
 
 	// Attach to events
-	$(void, event, attachEventListener)(connection->connection, "channel_join", connection, &listener_channel);
-	$(void, event, attachEventListener)(connection->connection, "channel_part", connection, &listener_channel);
-	$(void, event, attachEventListener)(connection->connection, "line", connection, &listener_ircLine);
-	$(void, event, attachEventListener)(connection->connection, "send", connection, &listener_ircSend);
+	attachEventListener(connection->connection, "channel_join", connection, &listener_channel);
+	attachEventListener(connection->connection, "channel_part", connection, &listener_channel);
+	attachEventListener(connection->connection, "line", connection, &listener_ircLine);
+	attachEventListener(connection->connection, "send", connection, &listener_ircSend);
 
 	// Create text buffer for the connection
 	connection->buffer = gtk_text_buffer_new(tags);
@@ -831,12 +831,12 @@ static void freeIrcClientConnection(void *connection_p)
 {
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
-	$(void, property_table, freePropertyTable)(connection->connection);
-	$(void, event, detachEventListener)(connection->connection, "channel_join", connection, &listener_channel);
-	$(void, event, detachEventListener)(connection->connection, "channel_part", connection, &listener_channel);
-	$(void, event, detachEventListener)(connection->connection, "line", connection, &listener_ircLine);
-	$(void, event, detachEventListener)(connection->connection, "send", connection, &listener_ircSend);
-	$(void, irc, freeIrcConnection)(connection->connection);
+	freePropertyTable(connection->connection);
+	detachEventListener(connection->connection, "channel_join", connection, &listener_channel);
+	detachEventListener(connection->connection, "channel_part", connection, &listener_channel);
+	detachEventListener(connection->connection, "line", connection, &listener_ircLine);
+	detachEventListener(connection->connection, "send", connection, &listener_ircSend);
+	freeIrcConnection(connection->connection);
 	g_object_unref(connection->buffer);
 	g_hash_table_destroy(connection->channels);
 	free(connection);

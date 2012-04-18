@@ -59,7 +59,7 @@
 MODULE_NAME("socket");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The socket module provides an API to establish network connections and transfer data over them");
-MODULE_VERSION(0, 7, 4);
+MODULE_VERSION(0, 7, 5);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -631,7 +631,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	}
 
 	if(s->type == SOCKET_SERVER || s->type == SOCKET_SERVER_BLOCK) {
-		LOG_ERROR("Cannot write to server socket");
+		LOG_ERROR("Cannot read from server socket");
 		return -1;
 	}
 
@@ -674,7 +674,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 		return -1;
 	}
 
-	((char *) buffer)[ret] = '\0'; // recv is not null terminated
+	((char *) buffer)[ret] = '\0'; // recv is not NUL-terminated
 
 	return ret;
 }
@@ -720,6 +720,7 @@ API Socket *socketAccept(Socket *server)
 	client->host = ip->str;
 	client->port = port->str;
 	client->type = SOCKET_SERVER_CLIENT;
+	client->custom = NULL;
 #ifdef WIN32
 	client->in = NULL;
 	client->out = NULL;

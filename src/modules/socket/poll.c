@@ -105,8 +105,8 @@ API void freePoll()
 /**
  * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
  * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
- * function returns!). If connecting fails, the "error" event will be triggered and you can either recall this function or free the socket.
- * If the connection times out, the "timeout" event will be triggered and you can either recall this function or free the socket.
+ * function returns!). If connecting fails due to errors or timeout, the "disconnect" event will be triggered and you can either recall this function
+ * or free the socket.
  *
  * @param s			the client socket to connect
  * @param timeout	time in seconds after which the connection should timeout and the "timeout" event should be triggered
@@ -145,7 +145,7 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 	if(!setSocketNonBlocking(s->fd)) {
 		LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
 		closeSocket(s);
-		return true;
+		return false;
 	}
 
 	LOG_INFO("Asynchronously connecting client socket %d to %s:%s...", s->fd, s->host, s->port);
@@ -311,7 +311,7 @@ static bool pollConnectingSocket(Socket *socket)
 	if(getMicroTime() - timer->creationTime > timer->timeout) { // connection timed out
 		LOG_WARNING("Asynchronous connection on socket %d timed out", socket->fd);
 		closeSocket(socket);
-		triggerEvent(socket, "timeout");
+		triggerEvent(socket, "disconnect");
 		return false;
 	}
 
@@ -336,7 +336,7 @@ static bool pollConnectingSocket(Socket *socket)
 			LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected) while polling", socket->fd);
 #endif
 			closeSocket(socket);
-			triggerEvent(socket, "error");
+			triggerEvent(socket, "disconnect");
 			return true;
 		}
 
@@ -349,12 +349,12 @@ static bool pollConnectingSocket(Socket *socket)
 		if(getsockopt(socket->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
 			LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", socket->fd);
 			closeSocket(socket);
-			triggerEvent(socket, "error");
+			triggerEvent(socket, "disconnect");
 			return true;
 		} else if(valopt != 0) { // There was a connection error
 			LOG_SYSTEM_ERROR("Asynchronous connection on socket %d failed", socket->fd);
 			closeSocket(socket);
-			triggerEvent(socket, "error");
+			triggerEvent(socket, "disconnect");
 			return true;
 		}
 
@@ -388,23 +388,29 @@ static bool pollSocket(Socket *socket, int *fd_p)
 	if(socket->type != SOCKET_SERVER && socket->type != SOCKET_SERVER_BLOCK) {
 		int ret;
 		if((ret = socketReadRaw(socket, poll_buffer, SOCKET_POLL_BUFSIZE)) < 0) {
-			if(!socket->connected) { // socket was disconnected
-				triggerEvent(socket, "disconnect");
-			} else { // error
+			if(socket->connected) { // socket is still connected, so the error was not fatal
 				triggerEvent(socket, "error");
+				return false;
+			} else { // socket was disconnected either by the peer or by a fatal error
+				triggerEvent(socket, "disconnect");
+				return true;
 			}
-
-			return true;
 		} else if(ret > 0) { // we actually read something
 			triggerEvent(socket, "read", poll_buffer, ret);
-		}
+		} // else nothing to read right now
 	} else {
 		Socket *clientSocket;
 
 		if((clientSocket = socketAccept(socket)) != NULL) {
 			triggerEvent(socket, "accept", clientSocket);
 		} else {
-			triggerEvent(socket, "error");
+			if(socket->connected) { // socket is still connected, so the error was not fatal
+				triggerEvent(socket, "error");
+				return false;
+			} else { // socket was disconnected either by the peer or by a fatal error
+				triggerEvent(socket, "disconnect");
+				return true;
+			}
 		}
 	}
 

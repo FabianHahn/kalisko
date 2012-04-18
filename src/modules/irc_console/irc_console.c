@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -35,9 +35,9 @@
 MODULE_NAME("irc_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC console using GTK+");
-MODULE_VERSION(0, 1, 8);
+MODULE_VERSION(0, 1, 9);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 2, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("gtk+", 0, 1, 2), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 // Columns
 typedef enum {
@@ -75,23 +75,23 @@ static GtkWidget *notebook;
 
 MODULE_INIT
 {
-	Store *config = $(Store *, config, getConfigPath)("irc");
+	Store *config = getConfigPath("irc");
 
 	if(config == NULL) {
 		return false;
 	}
 
-	if((irc = $(IrcConnection *, irc, createIrcConnectionByStore)(config)) == NULL) {
+	if((irc = createIrcConnectionByStore(config)) == NULL) {
 		return false;
 	}
 
-	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
-	$(void, event, attachEventListener)(irc, "send", NULL, &listener_ircSend);
+	attachEventListener(irc, "line", NULL, &listener_ircLine);
+	attachEventListener(irc, "send", NULL, &listener_ircSend);
 
-	Store *param = $(Store *, store, getStorePath)(config, "throttle");
+	Store *param = getStorePath(config, "throttle");
 
 	if(param != NULL && param->type == STORE_INTEGER && param->content.integer > 0) { // throttle irc connection
-		$(bool, irc, enableIrcConnectionThrottle)(irc);
+		enableIrcConnectionThrottle(irc);
 	}
 
 	tabs = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeConsoleTab);
@@ -112,17 +112,17 @@ MODULE_INIT
 	gtk_widget_show_all(GTK_WIDGET(window));
 
 	// run
-	$(void, gtk+, runGtkLoop)();
+	runGtkLoop();
 
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
-	$(void, event, detachEventListener)(irc, "send", NULL, &listener_ircSend);
+	detachEventListener(irc, "line", NULL, &listener_ircLine);
+	detachEventListener(irc, "send", NULL, &listener_ircSend);
 
-	$(void, irc, freeIrcConnection)(irc);
+	freeIrcConnection(irc);
 
 	gtk_widget_destroy(GTK_WIDGET(window));
 
@@ -151,7 +151,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	appendMessage("*status", message->raw_message, MESSAGE_LINE);
 
 	if(g_strcmp0(message->command, "JOIN") == 0) {
-		IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+		IrcUserMask *mask = parseIrcUserMask(message->prefix);
 		if(mask != NULL) {
 			char *nick = irc->nick;
 
@@ -165,17 +165,17 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				}
 			}
 
-			$(void, irc_parser, freeIrcUserMask)(mask);
+			freeIrcUserMask(mask);
 		}
 	} else if(g_strcmp0(message->command, "PRIVMSG") == 0) {
 		if(message->params[0] != NULL) {
-			IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+			IrcUserMask *mask = parseIrcUserMask(message->prefix);
 			if(mask != NULL) {
 				GString *msg = g_string_new("");
 				g_string_append_printf(msg, "<%s> %s", mask->nick, message->trailing);
 				appendMessage(message->params[0], msg->str, MESSAGE_LINE);
 				g_string_free(msg, true);
-				$(void, irc_parser, freeIrcUserMask)(mask);
+				freeIrcUserMask(mask);
 			}
 		}
 	}
@@ -261,9 +261,9 @@ static gboolean inputActivate(GtkWidget *widget, gpointer data)
 	char *command = (char *) gtk_entry_get_text(GTK_ENTRY(widget));
 
 	if(g_strcmp0(tab, "*status") == 0) {
-		$(void, irc, ircSend)(irc, "%s", command);
+		ircSend(irc, "%s", command);
 	} else {
-		$(void, irc, ircSend)(irc, "PRIVMSG %s :%s", tab, command);
+		ircSend(irc, "PRIVMSG %s :%s", tab, command);
 		char *nick = irc->nick;
 		GString *msg = g_string_new("");
 		g_string_append_printf(msg, "<%s> %s", nick, command);

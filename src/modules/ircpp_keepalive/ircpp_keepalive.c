@@ -37,7 +37,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 7, 0);
+MODULE_VERSION(0, 7, 1);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -188,18 +188,20 @@ TIMER_CALLBACK(challenge)
 		return;
 	}
 
-	// Schedule an expiration time for the challenge
-	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveTimeout * G_USEC_PER_SEC, challenge_timeout, proxy)) == NULL) {
-		LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
-		return;
+	if((timeout = g_hash_table_lookup(challengeTimeouts, proxy)) == NULL) { // make sure the old challenge timed out before we send a new one
+		// Schedule an expiration time for the challenge
+		if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveTimeout * G_USEC_PER_SEC, challenge_timeout, proxy)) == NULL) {
+			LOG_ERROR("Failed to add IRC proxy keepalive timeout for IRC proxy '%s'", proxy->name);
+			return;
+		}
+
+		// Add challenge to hash table
+		g_hash_table_insert(challengeTimeouts, proxy, timeout);
+
+		// Send challenge to remote IRC server
+		ircSendFirst(proxy->irc, "PING :%ld%ld", timeout->tv_sec, timeout->tv_usec);
+		LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 	}
-
-	// Add challenge to hash table
-	g_hash_table_insert(challengeTimeouts, proxy, timeout);
-
-	// Send challenge to remote IRC server
-	ircSendFirst(proxy->irc, "PING :%ld%ld", timeout->tv_sec, timeout->tv_usec);
-	LOG_DEBUG("Sending keepalive challenge to IRC connection %d: %ld%ld", proxy->irc->socket->fd, timeout->tv_sec, timeout->tv_usec);
 
 	// Schedule a new challenge
 	if((timeout = TIMER_ADD_TIMEOUT_EX(keepaliveInterval * G_USEC_PER_SEC, challenge, proxy)) == NULL) {

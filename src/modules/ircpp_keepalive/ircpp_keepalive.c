@@ -37,10 +37,11 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 7, 1);
+MODULE_VERSION(0, 8, 0);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
+TIMER_CALLBACK(reconnect);
 TIMER_CALLBACK(challenge);
 TIMER_CALLBACK(challenge_timeout);
 static void listener_bouncerReattached(void *subject, const char *event, void *data, va_list args);
@@ -75,6 +76,11 @@ static unsigned int keepaliveInterval = 60;
  * Timeout until the remote IRC connection has to send a PONG response to a challenge
  */
 static unsigned int keepaliveTimeout = 5;
+
+/**
+ * Timeout until attempting to reconnect a remote IRC connection
+ */
+static unsigned int reconnectTimeout = 5;
 
 
 MODULE_INIT
@@ -163,9 +169,8 @@ static void listener_remoteDisconnect(void *subject, const char *event, void *da
 	IrcProxy *proxy;
 	if((proxy = getIrcProxyByIrcConnection(irc)) != NULL) { // a proxy socket disconnected
 		if(isIrcProxyPluginEnabled(proxy, "keepalive")) { // plugin is enabled for this proxy
-			LOG_INFO("Remote IRC connection for IRC proxy '%s' disconnected, attempting to reconnect", proxy->name);
-			clearKeepaliveTimers(proxy);
-			reconnectIrcConnection(proxy->irc);
+			LOG_INFO("Remote IRC connection for IRC proxy '%s' disconnected, waiting %d seconds until reconnection attempt", proxy->name, reconnectTimeout);
+			TIMER_ADD_TIMEOUT_EX(reconnectTimeout * G_USEC_PER_SEC, reconnect, proxy);
 		}
 	}
 }
@@ -173,6 +178,14 @@ static void listener_remoteDisconnect(void *subject, const char *event, void *da
 static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args)
 {
 	loadConfig();
+}
+
+TIMER_CALLBACK(reconnect)
+{
+	IrcProxy *proxy = custom_data;
+
+	LOG_INFO("Attempting to reconnect IRC connection for IRC proxy '%s'", proxy->name);
+	reconnectIrcConnection(proxy->irc);
 }
 
 TIMER_CALLBACK(challenge)
@@ -349,5 +362,12 @@ static void loadConfig()
 		keepaliveTimeout = configKeepaliveTimeout->content.integer;
 	} else {
 		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", keepaliveTimeout);
+	}
+
+	Store *configReconnectTimeout = getConfigPath("irc/keepalive/reconnectTimeout");
+	if(configReconnectTimeout != NULL && configReconnectTimeout->type == STORE_INTEGER) {
+		reconnectTimeout = configReconnectTimeout->content.integer;
+	} else {
+		LOG_INFO("Could not determine config value irc/keepalive/timeout, using default value of %d", reconnectTimeout);
 	}
 }

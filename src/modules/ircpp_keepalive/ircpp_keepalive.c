@@ -37,7 +37,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 8, 0);
+MODULE_VERSION(0, 8, 1);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -184,8 +184,15 @@ TIMER_CALLBACK(reconnect)
 {
 	IrcProxy *proxy = custom_data;
 
+	if(proxy->irc->socket->connected) {
+		return; // If it's already connected, we don't have to do anything
+	}
+
 	LOG_INFO("Attempting to reconnect IRC connection for IRC proxy '%s'", proxy->name);
-	reconnectIrcConnection(proxy->irc);
+	if(!reconnectIrcConnection(proxy->irc)) { // In case it didn't even start connecting (e.g. in case of host name lookup failures), schedule another reconnection attempt
+		LOG_INFO("Reconnecting remote IRC connection for IRC proxy '%s' failed, waiting %d seconds until next reconnection attempt", proxy->name, reconnectTimeout);
+		TIMER_ADD_TIMEOUT_EX(reconnectTimeout * G_USEC_PER_SEC, reconnect, proxy);
+	}
 }
 
 TIMER_CALLBACK(challenge)

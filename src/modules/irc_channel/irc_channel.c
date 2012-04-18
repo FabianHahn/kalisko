@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -33,9 +33,9 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 9);
+MODULE_VERSION(0, 1, 10);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 3, 2), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
 static void listener_ircDisconnect(void *subject, const char *event, void *data, va_list args);
@@ -65,7 +65,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	IrcConnection *irc = subject;
 	IrcMessage *message = va_arg(args, IrcMessage *);
 
-	IrcUserMask *mask = $(IrcUserMask *, irc_parser, parseIrcUserMask)(message->prefix);
+	IrcUserMask *mask = parseIrcUserMask(message->prefix);
 	if(mask == NULL) {
 		return;
 	}
@@ -90,7 +90,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 				LOG_DEBUG("Joined channel %s on IRC connection %d", channel->name, irc->socket->fd);
 
-				$(int, event, triggerEvent)(irc, "channel_join", channel);
+				triggerEvent(irc, "channel_join", channel);
 			}
 		} else if(g_strcmp0(message->command, "PART") == 0 && (message->params_count >= 1 || message->trailing != NULL)) {
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
@@ -104,7 +104,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				if((channel = g_hash_table_lookup(tracker->channels, cname)) != NULL) {
 					g_hash_table_remove(tracker->channels, cname);
 					LOG_DEBUG("Left channel %s on IRC connection %d", cname, irc->socket->fd);
-					$(int, event, triggerEvent)(irc, "channel_part", cname);
+					triggerEvent(irc, "channel_part", cname);
 				}
 			}
 		}
@@ -145,8 +145,8 @@ API bool enableChannelTracking(IrcConnection *irc)
 
 	g_hash_table_insert(tracked, irc, tracker);
 
-	$(void, event, attachEventListener)(irc, "line", NULL, &listener_ircLine);
-	$(void, event, attachEventListener)(irc, "disconnect", NULL, &listener_ircDisconnect);
+	attachEventListener(irc, "line", NULL, &listener_ircLine);
+	attachEventListener(irc, "disconnect", NULL, &listener_ircDisconnect);
 
 	return true;
 }
@@ -168,8 +168,8 @@ API void disableChannelTracking(IrcConnection *irc)
 	g_hash_table_destroy(tracker->channels);
 	free(tracker);
 
-	$(void, event, detachEventListener)(irc, "line", NULL, &listener_ircLine);
-	$(void, event, detachEventListener)(irc, "disconnect", NULL, &listener_ircDisconnect);
+	detachEventListener(irc, "line", NULL, &listener_ircLine);
+	detachEventListener(irc, "disconnect", NULL, &listener_ircDisconnect);
 
 	g_hash_table_remove(tracked, irc);
 }

@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -51,7 +51,7 @@ MODULE_INIT
 	plugin.initialize = &initPlugin;
 	plugin.finalize = &finiPlugin;
 
-	if(!$(bool, irc_proxy_plugin, addIrcProxyPlugin)(&plugin)) {
+	if(!addIrcProxyPlugin(&plugin)) {
 		return false;
 	}
 
@@ -60,7 +60,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
+	delIrcProxyPlugin(&plugin);
 }
 
 static void listener_clientLine(void *subject, const char *event, void *data, va_list args)
@@ -68,7 +68,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 	IrcProxyClient *client = subject;
 	IrcMessage *message = va_arg(args, IrcMessage *);
 
-	if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(client->proxy, "plugin")) { // plugin is enabled for this proxy
+	if(isIrcProxyPluginEnabled(client->proxy, "plugin")) { // plugin is enabled for this proxy
 		if(g_strcmp0(message->command, "PRIVMSG") == 0 && message->params_count > 0 && g_strcmp0(message->params[0], "*plugin") == 0 && message->trailing != NULL) { // there is a message to our virtual bot
 			char **parts = g_strsplit(message->trailing, " ", 0);
 			int count;
@@ -78,42 +78,42 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 
 			if(count > 0) {
 				if(g_strcmp0(parts[0], "help") == 0) {
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :The following commands are available for the %cplugin%c IRC proxy plugin:", client->proxy->irc->nick, (char) 2, (char) 2);
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%chelp%c             displays this help message", client->proxy->irc->nick, (char) 2, (char) 2);
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%clist%c             lists all available modules", client->proxy->irc->nick, (char) 2, (char) 2);
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%cload%c [plugin]    loads a plugin", client->proxy->irc->nick, (char) 2, (char) 2);
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%cunload%c [plugin]  unloads a plugin", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :The following commands are available for the %cplugin%c IRC proxy plugin:", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%chelp%c             displays this help message", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%clist%c             lists all available modules", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%cload%c [plugin]    loads a plugin", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%cunload%c [plugin]  unloads a plugin", client->proxy->irc->nick, (char) 2, (char) 2);
 				} else if(g_strcmp0(parts[0], "list") == 0) {
-					GList *plugins = $(GList *, irc_proxy_plugin, getAvailableIrcProxyPlugins)();
+					GList *plugins = getAvailableIrcProxyPlugins();
 
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :The following IRC proxy plugins are available (bold ones are loaded):", client->proxy->irc->nick);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :The following IRC proxy plugins are available (bold ones are loaded):", client->proxy->irc->nick);
 
 					// Iterate over all plugins and check if they're loaded
 					for(GList *iter = plugins; iter != NULL; iter = iter->next) {
 						char *pname = iter->data;
 
-						if($(bool, irc_proxy_plugin, isIrcProxyPluginEnabled)(client->proxy, pname)) {
-							$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%c%s%c", client->proxy->irc->nick, (char) 2, pname, (char) 2);
+						if(isIrcProxyPluginEnabled(client->proxy, pname)) {
+							proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%c%s%c", client->proxy->irc->nick, (char) 2, pname, (char) 2);
 						} else {
-							$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, pname);
+							proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :%s", client->proxy->irc->nick, pname);
 						}
 					}
 
 					g_list_free(plugins);
 				} else if(g_strcmp0(parts[0], "load") == 0 && count > 1) {
-					if($(bool, irc_proxy_plugin, enableIrcProxyPlugin)(client->proxy, parts[1])) {
-						$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Successfully loaded IRC proxy plugin %c%s%c", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
+					if(enableIrcProxyPlugin(client->proxy, parts[1])) {
+						proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Successfully loaded IRC proxy plugin %c%s%c", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
 					} else {
-						$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Failed to load IRC proxy plugin %c%s%c, please check the error log", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
+						proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Failed to load IRC proxy plugin %c%s%c, please check the error log", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
 					}
 				} else if(g_strcmp0(parts[0], "unload") == 0 && count > 1) {
-					if($(bool, irc_proxy_plugin, disableIrcProxyPlugin)(client->proxy, parts[1])) {
-						$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Successfully unloaded IRC proxy plugin %c%s%c", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
+					if(disableIrcProxyPlugin(client->proxy, parts[1])) {
+						proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Successfully unloaded IRC proxy plugin %c%s%c", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
 					} else {
-						$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Failed to unload IRC proxy plugin %c%s%c, please check the error log", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
+						proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Failed to unload IRC proxy plugin %c%s%c, please check the error log", client->proxy->irc->nick, (char) 2, parts[1], (char) 2);
 					}
 				} else {
-					$(bool, irc_proxy, proxyClientIrcSend)(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Command not understood. Use the %chelp%c command to get alist of all available commands", client->proxy->irc->nick, (char) 2, (char) 2);
+					proxyClientIrcSend(client, ":*plugin!kalisko@kalisko.proxy PRIVMSG %s :Command not understood. Use the %chelp%c command to get alist of all available commands", client->proxy->irc->nick, (char) 2, (char) 2);
 				}
 			}
 
@@ -126,14 +126,14 @@ static void listener_clientAuthenticated(void *subject, const char *event, void 
 {
 	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
 
-	$(void, event, attachEventListener)(client, "line", NULL, &listener_clientLine);
+	attachEventListener(client, "line", NULL, &listener_clientLine);
 }
 
 static void listener_clientDisconnected(void *subject, const char *event, void *data, va_list args)
 {
 	IrcProxyClient *client = va_arg(args, IrcProxyClient *);
 
-	$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
+	detachEventListener(client, "line", NULL, &listener_clientLine);
 }
 
 /**
@@ -148,12 +148,12 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 	// Attach to existing clients
 	for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) {
 		IrcProxyClient *client = iter->data;
-		$(void, event, attachEventListener)(client, "line", NULL, &listener_clientLine);
+		attachEventListener(client, "line", NULL, &listener_clientLine);
 	}
 
-	$(void, irc_proxy, addIrcProxyRelayException)(proxy, "*plugin");
-	$(void, event, attachEventListener)(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
-	$(void, event, attachEventListener)(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
+	addIrcProxyRelayException(proxy, "*plugin");
+	attachEventListener(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
+	attachEventListener(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
 
 	return true;
 }
@@ -166,13 +166,13 @@ static bool initPlugin(IrcProxy *proxy, char *name)
  */
 static void finiPlugin(IrcProxy *proxy, char *name)
 {
-	$(void, irc_proxy, delIrcProxyRelayException)(proxy, "*plugin");
-	$(void, event, detachEventListener)(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
-	$(void, event, detachEventListener)(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
+	delIrcProxyRelayException(proxy, "*plugin");
+	detachEventListener(proxy, "client_authenticated", NULL, &listener_clientAuthenticated);
+	detachEventListener(proxy, "client_disconnected", NULL, &listener_clientDisconnected);
 
 	// Detach from remaining clients
 	for(GList *iter = proxy->clients->head; iter != NULL; iter = iter->next) {
 		IrcProxyClient *client = iter->data;
-		$(void, event, detachEventListener)(client, "line", NULL, &listener_clientLine);
+		detachEventListener(client, "line", NULL, &listener_clientLine);
 	}
 }

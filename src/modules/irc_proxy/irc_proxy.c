@@ -41,7 +41,7 @@
 MODULE_NAME("irc_proxy");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC proxy module relays IRC traffic from and to an IRC server through a server socket");
-MODULE_VERSION(0, 3, 10);
+MODULE_VERSION(0, 3, 11);
 MODULE_BCVERSION(0, 3, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -202,38 +202,48 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 	IrcMessage *message = va_arg(args, IrcMessage *);
 
 	if(!client->authenticated) { // not yet authenticated, wait for password
-		if(g_strcmp0(message->command, "PASS") == 0 && message->params_count > 0) {
-			char **parts = g_strsplit(message->params[0], ":", 0);
-			int count = 0;
-			while(parts[count] != NULL) { // count parts
-				count++;
+		if(g_strcmp0(message->command, "PASS") == 0) {
+			char *password = NULL;
+
+			if(message->params_count > 0 && message->params != NULL && message->params[0] != 0) { // password seems to be in the first param
+				password = message->params[0];
+			} else { // password must be in trailing space
+				password = message->trailing;
 			}
 
-			if(count >= 2) { // there are at least two parts
-				char *name = parts[0];
-				IrcProxy *proxy;
-
-				if((proxy = g_hash_table_lookup(proxies, name)) != NULL) { // it's a valid ID
-					if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
-						LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy '%s'", client->socket->fd, name);
-						client->authenticated = true;
-
-						// associate client and proxy
-						client->proxy = proxy;
-						g_queue_push_head(proxy->clients, client);
-
-						proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", proxy->irc->socket->host, proxy->irc->nick);
-						proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
-						triggerEvent(proxy, "client_authenticated", client);
-					} else {
-						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
-					}
-				} else {
-					proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Invalid IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
+			if(password != NULL) {
+				char **parts = g_strsplit(password, ":", 0);
+				int count = 0;
+				while(parts[count] != NULL) { // count parts
+					count++;
 				}
-			}
 
-			g_strfreev(parts);
+				if(count >= 2) { // there are at least two parts
+					char *name = parts[0];
+					IrcProxy *proxy;
+
+					if((proxy = g_hash_table_lookup(proxies, name)) != NULL) { // it's a valid ID
+						if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
+							LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy '%s'", client->socket->fd, name);
+							client->authenticated = true;
+
+							// associate client and proxy
+							client->proxy = proxy;
+							g_queue_push_head(proxy->clients, client);
+
+							proxyClientIrcSend(client, ":%s 001 %s :You were successfully authenticated and are now connected to the IRC server", proxy->irc->socket->host, proxy->irc->nick);
+							proxyClientIrcSend(client, ":%s 251 %s :There are %d clients online on this bouncer", client->proxy->irc->socket->host, proxy->irc->nick, g_queue_get_length(proxy->clients));
+							triggerEvent(proxy, "client_authenticated", client);
+						} else {
+							proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Login incorrect for IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
+						}
+					} else {
+						proxyClientIrcSend(client, ":kalisko.proxy NOTICE AUTH :*** Invalid IRC proxy ID %c%s%c", (char) 2, name, (char) 2);
+					}
+				}
+
+				g_strfreev(parts);
+			}
 		}
 	} else if(g_strcmp0(message->command, "PING") == 0) { // reply to pings
 		if(message->trailing != NULL) {

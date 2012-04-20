@@ -39,9 +39,9 @@
 MODULE_NAME("irc_client");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical IRC client using GTK+");
-MODULE_VERSION(0, 3, 17);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 8), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("event", 0, 3, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 4), MODULE_DEPENDENCY("irc_channel", 0, 1, 11), MODULE_DEPENDENCY("property_table", 0, 0, 1), MODULE_DEPENDENCY("log_event", 0, 1, 3), MODULE_DEPENDENCY("string_util", 0, 1, 4));
 
 typedef struct {
 	/** The name of the IRC client connection */
@@ -84,6 +84,7 @@ typedef enum {
 	CHAT_MESSAGE_CONNECTION_SEND,
 	CHAT_MESSAGE_CHANNEL_PRIVMSG_IN,
 	CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND,
+	CHAT_MESSAGE_CHANNEL_EVENT,
 	CHAT_MESSAGE_STATUS_LOG
 } ChatMessageType;
 
@@ -93,6 +94,7 @@ typedef enum {
 	CHAT_ELEMENT_CHANNEL
 } ChatElementType;
 
+static void listener_channelUser(void *subject, const char *event, void *data, va_list args);
 static void listener_channel(void *subject, const char *event, void *data, va_list args);
 static void listener_ircSend(void *subject, const char *event, void *data, va_list args);
 static void listener_ircLine(void *subject, const char *event, void *data, va_list args);
@@ -207,6 +209,7 @@ MODULE_INIT
 	tags = gtk_text_buffer_get_tag_table(status_buffer);
 	g_object_ref(tags);
 	gtk_text_buffer_create_tag(status_buffer, "send", "foreground", "blue", NULL);
+	gtk_text_buffer_create_tag(status_buffer, "event", "foreground", "#00AA00", NULL);
 
 	GString *welcome = $$(GString *, dumpVersion)(&_module_version);
 	g_string_prepend(welcome, "Welcome to the Kalisko IRC client ");
@@ -454,6 +457,33 @@ API gboolean irc_client_chat_input_key_press_event(GtkWidget *widget, GdkEvent *
 	return false;
 }
 
+static void listener_channelUser(void *subject, const char *event, void *data, va_list args)
+{
+	IrcClientConnection *connection = getPropertyTableValue(subject, "irc_client_connection");
+	if(connection == NULL) {
+		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
+		return;
+	}
+
+	char *channelName = va_arg(args, char *);
+	char *nick = va_arg(args, char *);
+
+	IrcClientConnectionChannel *channel = g_hash_table_lookup(connection->channels, channelName);
+	if(channel == NULL) {
+		LOG_WARNING("Received channel event for unjoined channel '%s' in IRC client connection '%s', skipping", channelName, connection->name);
+		return;
+	}
+
+	GString *msg = g_string_new("");
+	g_string_append_printf(msg, "* %s has %s channel %s", nick, g_strcmp0(event, "channel_user_join") == 0 ? "joined" : "parted", channelName);
+	appendMessage(channel->buffer, msg->str, CHAT_MESSAGE_CHANNEL_EVENT);
+	g_string_free(msg, true);
+
+	if(active_type != CHAT_ELEMENT_CHANNEL || g_strcmp0(((IrcClientConnectionChannel *) active)->name, channel->name) != 0) { // Not posted into the active channel
+		setChannelDirty(channel, true);
+	}
+}
+
 static void listener_channel(void *subject, const char *event, void *data, va_list args)
 {
 	IrcClientConnection *connection = getPropertyTableValue(subject, "irc_client_connection");
@@ -640,6 +670,8 @@ static void addIrcClientConnection(char *name, Store *config)
 	enableChannelTracking(connection->connection);
 
 	// Attach to events
+	attachEventListener(connection->connection, "channel_user_join", connection, &listener_channelUser);
+	attachEventListener(connection->connection, "channel_user_part", connection, &listener_channelUser);
 	attachEventListener(connection->connection, "channel_join", connection, &listener_channel);
 	attachEventListener(connection->connection, "channel_part", connection, &listener_channel);
 	attachEventListener(connection->connection, "line", connection, &listener_ircLine);
@@ -778,6 +810,9 @@ static void appendMessage(GtkTextBuffer *buffer, char *message, ChatMessageType 
 		case CHAT_MESSAGE_CHANNEL_PRIVMSG_SEND:
 			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "send", NULL);
 		break;
+		case CHAT_MESSAGE_CHANNEL_EVENT:
+			gtk_text_buffer_insert_with_tags_by_name(buffer, &end, message, -1, "event", NULL);
+		break;
 		default:
 			gtk_text_buffer_insert(buffer, &end, message, -1);
 		break;
@@ -832,6 +867,8 @@ static void freeIrcClientConnection(void *connection_p)
 	IrcClientConnection *connection = connection_p;
 	free(connection->name);
 	freePropertyTable(connection->connection);
+	detachEventListener(connection->connection, "channel_user_join", connection, &listener_channelUser);
+	detachEventListener(connection->connection, "channel_user_part", connection, &listener_channelUser);
 	detachEventListener(connection->connection, "channel_join", connection, &listener_channel);
 	detachEventListener(connection->connection, "channel_part", connection, &listener_channel);
 	detachEventListener(connection->connection, "line", connection, &listener_ircLine);

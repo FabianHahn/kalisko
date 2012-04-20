@@ -33,7 +33,7 @@
 MODULE_NAME("irc_channel");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The IRC channel module keeps track of channel joins and leaves as well as of their users");
-MODULE_VERSION(0, 1, 10);
+MODULE_VERSION(0, 1, 11);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -74,14 +74,14 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	IrcChannel *channel;
 	if((tracker = g_hash_table_lookup(tracked, irc)) != NULL) {
 		if(g_strcmp0(message->command, "JOIN") == 0 && (message->params_count >= 1 || message->trailing != NULL)) {
-			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
-				char *cname = NULL;
-				if(message->params_count >= 1) {
-					cname = message->params[0];
-				} else {
-					cname = message->trailing;
-				}
+			char *cname = NULL;
+			if(message->params_count >= 1) {
+				cname = message->params[0];
+			} else {
+				cname = message->trailing;
+			}
 
+			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
 				// Construct new channel
 				channel = ALLOCATE_OBJECT(IrcChannel);
 				channel->name = strdup(cname);
@@ -91,8 +91,17 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				LOG_DEBUG("Joined channel %s on IRC connection %d", channel->name, irc->socket->fd);
 
 				triggerEvent(irc, "channel_join", channel);
+			} else {
+				triggerEvent(irc, "channel_user_join", cname, mask->nick);
 			}
 		} else if(g_strcmp0(message->command, "PART") == 0 && (message->params_count >= 1 || message->trailing != NULL)) {
+			char *cname = NULL;
+			if(message->params_count >= 1) {
+				cname = message->params[0];
+			} else {
+				cname = message->trailing;
+			}
+
 			if(g_strcmp0(irc->nick, mask->nick) == 0) { // Its ourselves!
 				char *cname = NULL;
 				if(message->params_count >= 1) {
@@ -106,6 +115,8 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 					LOG_DEBUG("Left channel %s on IRC connection %d", cname, irc->socket->fd);
 					triggerEvent(irc, "channel_part", cname);
 				}
+			} else {
+				triggerEvent(irc, "channel_user_part", cname, mask->nick);
 			}
 		}
 

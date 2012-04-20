@@ -36,7 +36,7 @@
 MODULE_NAME("irc");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This module connects to an IRC server and does basic communication to keep the connection alive");
-MODULE_VERSION(0, 5, 1);
+MODULE_VERSION(0, 5, 2);
 MODULE_BCVERSION(0, 5, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 0), MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("string_util", 0, 1, 1), MODULE_DEPENDENCY("irc_parser", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -114,8 +114,6 @@ static void listener_ircConnected(void *subject, const char *event, void *data, 
 	if((irc = g_hash_table_lookup(connections, socket)) != NULL) { // This socket belongs to an IRC connection
 		// Reauthenticate the connection
 		authenticateIrcConnection(irc);
-
-		triggerEvent(irc, "reconnect");
 	}
 }
 
@@ -149,6 +147,17 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 	if(g_strcmp0(message->command, "PING") == 0) {
 		char *challenge = message->trailing;
 		ircSendFirst(irc, "PONG :%s", challenge);
+		triggerEvent(irc, "pinged");
+	} else if(g_strcmp0(message->command, "251") == 0) { // registered with server
+		if(message->params_count > 0 && message->params != NULL && message->params[0] != NULL) { // change the nick to whatever the server registered us with
+			if(g_strcmp0(irc->nick, message->params[0]) != 0) {
+				free(irc->nick);
+				irc->nick = strdup(message->params[0]);
+				triggerEvent(irc, "nick"); // notify listeners
+			}
+		}
+
+		triggerEvent(irc, "reconnect");
 	} else if(g_strcmp0(message->command, "NICK") == 0) {
 		IrcUserMask *mask = parseIrcUserMask(message->prefix);
 		if(mask != NULL) {

@@ -37,7 +37,7 @@
 MODULE_NAME("ircpp_keepalive");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that tries to keep the connection to the remote IRC server alive by pinging it in regular intervals");
-MODULE_VERSION(0, 8, 1);
+MODULE_VERSION(0, 8, 2);
 MODULE_BCVERSION(0, 7, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("socket", 0, 4, 4), MODULE_DEPENDENCY("irc", 0, 5, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -70,17 +70,17 @@ static GHashTable *challengeTimeouts;
 /**
  * Interval between keepalive challenges
  */
-static unsigned int keepaliveInterval = 60;
+static unsigned int keepaliveInterval = 120;
 
 /**
  * Timeout until the remote IRC connection has to send a PONG response to a challenge
  */
-static unsigned int keepaliveTimeout = 5;
+static unsigned int keepaliveTimeout = 10;
 
 /**
  * Timeout until attempting to reconnect a remote IRC connection
  */
-static unsigned int reconnectTimeout = 5;
+static unsigned int reconnectTimeout = 10;
 
 
 MODULE_INIT

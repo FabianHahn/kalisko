@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -45,14 +45,14 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 	// Parse num parameter
 	Store *heightmapParam;
 
-	if((heightmapParam = $(Store *, store, getStorePath)(store, "heightmap")) == NULL || heightmapParam->type != STORE_STRING) {
+	if((heightmapParam = getStorePath(store, "heightmap")) == NULL || heightmapParam->type != STORE_STRING) {
 		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': String parameter 'heightmap' not found", name);
 		return NULL;
 	}
 
 	GString *path = g_string_new(path_prefix);
 	g_string_append_printf(path, "/%s", heightmapParam->content.string);
-	Image *image = $(Image *, image, readImageFromFile)(path->str);
+	Image *image = readImageFromFile(path->str);
 	g_string_free(path, true);
 
 	if(image == NULL) {
@@ -65,7 +65,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 
 	if((primitive = createOpenGLPrimitiveHeightmap(image, image->width, image->height)) == NULL) {
 		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to create heightmap primitive from heightmap image", name);
-		$(Image *, image, freeImage)(image);
+		freeImage(image);
 		return NULL;
 	}
 

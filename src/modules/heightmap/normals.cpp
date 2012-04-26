@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,7 @@ extern "C" {
 
 static inline Vector getHeightmapVector(Image *heights, int x, int y)
 {
-	return Vector3((float) x / heights->width, getImage(heights, x, y, 0), (float) y / heights->height);
+	return Vector3((float) x, getImage(heights, x, y, 0), (float) y);
 }
 
 /**

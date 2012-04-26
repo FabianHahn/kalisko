@@ -43,13 +43,14 @@ void main()
 	vec2 heightmapPosition = uv / vec2(heightmapWidth, heightmapHeight);
 	float height = texture2D(heights, heightmapPosition).x;
 	vec4 pos4 = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
-	vec4 norm4 = vec4(texture2D(normals, heightmapPosition).xyz, 1.0);
+	vec3 norm3 = texture2D(normals, heightmapPosition).xyz;
+	vec4 norm4 = vec4(heightmapWidth * norm3.x, norm3.y, heightmapHeight * norm3.z, 1.0); // compensate scaling of heightmap to [0,1]x[0,1]
 	vec4 worldpos4 = model * pos4;
 	vec4 worldnorm4 = modelNormal * norm4;
 	vec4 worldup4 = modelNormal * vec4(0.0, 1.0, 0.0, 1.0);
 
 	world_position = worldpos4.xyz / worldpos4.w;
-	world_normal = worldnorm4.xyz / worldnorm4.w;
+	world_normal = normalize(worldnorm4.xyz / worldnorm4.w);
 	world_up = worldup4.xyz / worldup4.w;
 	world_color = vec4(heightmapPosition.x, height, heightmapPosition.y, 1.0);
 	world_uv = heightmapPosition;

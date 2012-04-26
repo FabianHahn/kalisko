@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -36,18 +36,18 @@
 MODULE_NAME("landscape");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to display randomly generated landscapes");
-MODULE_VERSION(0, 2, 10);
+MODULE_VERSION(0, 2, 11);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
+MODULE_DEPENDS(MODULE_DEPENDENCY("heightmap", 0, 4, 3), MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("random", 0, 6, 2), MODULE_DEPENDENCY("erosion", 0, 1, 2), MODULE_DEPENDENCY("image_pnm", 0, 2, 5));
 
 MODULE_INIT
 {
-	return $(bool, scene, registerOpenGLPrimitiveSceneParser)("landscape", &parseOpenGLScenePrimitiveLandscape);
+	return registerOpenGLPrimitiveSceneParser("landscape", &parseOpenGLScenePrimitiveLandscape);
 }
 
 MODULE_FINALIZE
 {
-	$(bool, scene, unregisterOpenGLPrimitiveSceneParser)("landscape");
+	unregisterOpenGLPrimitiveSceneParser("landscape");
 }
 
 /**
@@ -69,8 +69,8 @@ MODULE_FINALIZE
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, unsigned int worleyPoints, double fbmFrequency, double fbmPersistance, unsigned int fbmDepth, unsigned int erosionThermalIterations, double erosionThermalTalusAngle, unsigned int erosionHydraulicIterations)
 {
 //#define DEBUGIMAGES
-	Image *worley =	$(Image *, image, createImageFloat)(width, height, 1);
-	Image *fBm =	$(Image *, image, createImageFloat)(width, height, 1);
+	Image *worley =	createImageFloat(width, height, 1);
+	Image *fBm =	createImageFloat(width, height, 1);
 
 	// internal parameters
 	// blending ratio between worley noise and fBm
@@ -80,64 +80,64 @@ API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, u
     erosionThermalTalusAngle = erosionThermalTalusAngle / 180.f * M_PI;
 
 	// 1. create worley noise for the overall map structure (valleys, peaks and ridges)
-	RandomWorleyContext* worleyContext = $(RandomWorleyContext *, random, createWorleyContext)(worleyPoints, 2);
+	RandomWorleyContext* worleyContext = createWorleyContext(worleyPoints, 2);
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			Vector *point = $(Vector *, linalg, createVector2)((double) x / width, (double) y / height);
-			float value = $(float, random, randomWorleyDifference21)(worleyContext, point, RANDOM_WORLEY_DISTANCE_EUCLIDEAN);
-			$(void, linalg, freeVector)(point);
+			Vector *point = createVector2((double) x / width, (double) y / height);
+			float value = randomWorleyDifference21(worleyContext, point, RANDOM_WORLEY_DISTANCE_EUCLIDEAN);
+			freeVector(point);
 
 			setImage(worley, x, y, 0, value);
 		}
 	}
-	$(void, random, freeWorleyContext)(worleyContext);
+	freeWorleyContext(worleyContext);
 
-	$(void, image, normalizeImageChannel)(worley, 0);
+	normalizeImageChannel(worley, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)(worley, "01_worley.pgm"));
+	assert(writeImageToFile(worley, "01_worley.pgm"));
 #endif
 	// 2. create fBm noise to get interresting features of different frequencies
 	for(unsigned int y = 0; y < height; y++) {
 		for(unsigned int x = 0; x < width; x++) {
-			float value = $(float, random, noiseFBm)((double) x * fbmFrequency / width, (double) y * fbmFrequency / height, 0.0, fbmPersistance, fbmDepth);
+			float value = noiseFBm((double) x * fbmFrequency / width, (double) y * fbmFrequency / height, 0.0, fbmPersistance, fbmDepth);
 			setImage(fBm, x, y, 0, value);
 		}
 	}
 
-	$(void, image, normalizeImageChannel)(fBm, 0);
+	normalizeImageChannel(fBm, 0);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)(fBm, "02_fbm.pgm"));
+	assert(writeImageToFile(fBm, "02_fbm.pgm"));
 #endif
 
 	// 3. combine worley noise and fBm
-	Image *map = $(Image *, image, blendImages)(worley, fBm, mixRatio);
-	$(void, image, normalizeImageChannel)(map, 0);
+	Image *map = blendImages(worley, fBm, mixRatio);
+	normalizeImageChannel(map, 0);
 
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)(map, "03_mix.pgm"));
+	assert(writeImageToFile(map, "03_mix.pgm"));
 #endif
 
 	// 4. apply a perturbation filter to remove straight lines
 	// TODO
 
 #ifdef DEBUGIMAGES
-	//assert($(bool, image, writeImageToFile)("04_perturbed.pgm", map));
+	//assert(writeImageToFile("04_perturbed.pgm", map));
 #endif
 
 	// 5. apply erosion to make the appearance physically-based
-    $(void, erosion, erodeThermal)(map, erosionThermalTalusAngle, erosionThermalIterations);
-    $(void, erosion, erodeHydraulic)(map, erosionHydraulicIterations);
+    erodeThermal(map, erosionThermalTalusAngle, erosionThermalIterations);
+    erodeHydraulic(map, erosionHydraulicIterations);
 
 #ifdef DEBUGIMAGES
-	assert($(bool, image, writeImageToFile)(map, "05_erosion.pgm"));
+	assert(writeImageToFile(map, "05_erosion.pgm"));
 #endif
 
 	// 6. profit!
-	$(void, image, freeImage)(worley);
-	$(void, image, freeImage)(fBm);
+	freeImage(worley);
+	freeImage(fBm);
 
 	return map;
 }

@@ -47,19 +47,31 @@ varying float world_morph;
 // some globals
 vec2 textureDimension = vec2(heightmapWidth - 1, heightmapHeight - 1);
 vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
+float inverseScaleTransform = pow(2.0, float(lodLevel)); // this is the transform that we'll use to revert the x and z model transform for the normals
 
 vec3 getNormal(in vec2 uv, in float morph)
 {
-	vec2 parentUV = 0.5 * uv + parentOffset;
+	// The important issue to note here is that we're scaling the original heightmap node with range [0,1]x[0,1] up to whatever
+	// quadtree level in the LOD map we're at in both x and z direction. The problem is that the OpenGL model is too intelligent
+	// since it will try to apply the inverse transform to the normal vectors. Now recall that we're actually leaving out every
+	// other normal information we have when scaling up a node one level and reading the corresponding node's normal texture,
+	// which means that this transformation was already implicitly done. In order to prevent it from being applied twice, we need
+	// to reverse it here by scaling up all normals in x and z direction (since the inverse transform scales them down). The y
+	// transformation (that stems from the heightRatio parameter of the data source) will be correctly applied by the normal
+	// transform, however, so we better leave that one alone. 
+
+	// first do it for our own normal texture
+	vec3 normalNode = texture2D(normals, uv).xyz; // look up our normals texture
+	vec4 normalWorld = modelNormal * vec4(inverseScaleTransform * normalNode.x, normalNode.y, inverseScaleTransform * normalNode.z, 1.0); // revert the scaling done by the world transformation, then apply the world transformation
+	vec3 normal = normalize(normalWorld.xyz / normalWorld.w); // transform back from homogeneous coordinates
+
+	// now do the same for the parent texture to which we interpolate
+	vec2 parentUV = 0.5 * uv + parentOffset; // compute the UVs of this vertex inside the parent node's normal texture
+	vec3 parentNormalNode = texture2D(parentNormals, parentUV).xyz; // look up parent's normals texture
+	vec4 parentNormalWorld = modelNormal * vec4(inverseScaleTransform * parentNormalNode.x, parentNormalNode.y, inverseScaleTransform * parentNormalNode.z, 1.0); // revert the scaling done by the world transformation, then apply the world transformation
+	vec3 parentNormal = normalize(parentNormalWorld.xyz / parentNormalWorld.w); // transform back from homogeneous coordinates
 	
-	vec4 normalWorld = modelNormal * vec4(texture2D(normals, uv).xyz, 1.0);
-	vec3 normal = normalize(normalWorld.xyz / normalWorld.w);
-	
-	vec4 parentNormalWorld = modelNormal * vec4(texture2D(parentNormals, parentUV).xyz, 1.0);
-	vec3 parentNormalUnscaled = parentNormalWorld.xyz / parentNormalWorld.w;
-	vec3 parentNormal = normalize(vec3(0.5 * parentNormalUnscaled.x, parentNormalUnscaled.y, 0.5 * parentNormalUnscaled.z));
-	
-	return normalize(mix(normal, parentNormal, morph));
+	return normalize(mix(normal, parentNormal, morph)); // now mix them according to the vertex morph
 }
 
 vec4 getColor(in vec2 uv, in float morph)

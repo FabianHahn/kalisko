@@ -42,7 +42,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 16, 1);
+MODULE_VERSION(0, 16, 2);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 0), MODULE_DEPENDENCY("quadtree", 0, 11, 1), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 11));
 
@@ -123,10 +123,10 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->source = source;
-	lodmap->heightmap = $(OpenGLPrimitive *, heightmap, createOpenGLPrimitiveHeightmap)(NULL, tileSize, tileSize); // create a managed heightmap that will serve as instance for our rendered tiles
-	lodmap->quadtree = $(Quadtree *, quadtree, createQuadtree)(512, &loadLodMapTile, &freeLodMapTile, false);
+	lodmap->heightmap = createOpenGLPrimitiveHeightmap(NULL, tileSize, tileSize); // create a managed heightmap that will serve as instance for our rendered tiles
+	lodmap->quadtree = createQuadtree(512, &loadLodMapTile, &freeLodMapTile, false);
 	lodmap->selection = NULL;
-	lodmap->viewerPosition = $(Vector *, linalg, createVector3)(0.0, 0.0, 0.0);
+	lodmap->viewerPosition = createVector3(0.0, 0.0, 0.0);
 	lodmap->baseRange = baseRange;
 	lodmap->viewingDistance = viewingDistance;
 	lodmap->polygonMode = GL_FILL;
@@ -179,15 +179,15 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand)
 {
 	// update the viewer position
-	$(void, linalg, assignVector)(lodmap->viewerPosition, position);
+	assignVector(lodmap->viewerPosition, position);
 
 	// prune the quadtree to get rid of unused nodes
-	$(void, quadtree, pruneQuadtree)(lodmap->quadtree);
+	pruneQuadtree(lodmap->quadtree);
 
 	if(autoExpand) {
 		// expand the quadtree to actually cover our position
-		float *positionData = $(float *, linalg, getVectorData)(position);
-		$(void, quadtree, expandQuadtree)(lodmap->quadtree, positionData[0], positionData[2]);
+		float *positionData = getVectorData(position);
+		expandQuadtree(lodmap->quadtree, positionData[0], positionData[2]);
 	}
 
 	double range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
@@ -228,7 +228,7 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 		QuadtreeNode *node = iter->data;
 		assert(quadtreeNodeDataIsLoaded(node));
 		OpenGLLodMapTile *tile = node->data;
-		$(bool, opengl, drawOpenGLModel)(tile->model, &tile->drawOptions);
+		drawOpenGLModel(tile->model, &tile->drawOptions);
 	}
 }
 
@@ -308,7 +308,15 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 }
 
 /**
- * Loads an LOD map tile
+ * Loads an LOD map tile by creating an OpenGL model with appropriate transform for it.
+ *
+ * Every node model is derived from the same basic heightmap grid (the one in lodmap->heightmap). While the 2D vertex coordinates range
+ * from [0,tileSize]x[0,tileSize], they are actually scaled down to [0,1]x[0,1] by the vertex shader, which conveniently means that a
+ * node of level n should be scaled by just n in both x and z directions during the transformation into world coordinates.
+ * The transformation for the height values (or correspondingly the y direction) works differently: First, height values all lie in the
+ * [0,1] range, usually originating from a grayscale image, and the node level stretch generally doesn't apply to them. However, the
+ * data source provides us with a heightRatio parameter which we need to take into account and scale all levels with, no matter their
+ * level in the tree.
  *
  * @param tree			the quadtree for which to load the map tile
  * @param node			the quadtree node for which to load the map data
@@ -326,10 +334,9 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
 	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level, NULL, NULL);
 
-	// determine correct scaling of the height data
-	float heightScale = lodmap->source->heightRatio / getLodMapImageSize(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT);
-	tile->minHeight *= heightScale;
-	tile->maxHeight *= heightScale;
+	// apply correct scaling to the height limits date which will be used for 3D distance checks
+	tile->minHeight *= lodmap->source->heightRatio;
+	tile->maxHeight *= lodmap->source->heightRatio;
 
 	// Create OpenGL textures
 	tile->heightsTexture = createOpenGLVertexTexture2D(tile->heights);
@@ -347,13 +354,13 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	attachOpenGLModelMaterial(tile->model, "lodmap");
 
 	// Set model transform
-	unsigned int scale = quadtreeNodeScale(node);
+	unsigned int scale = quadtreeNodeScale(node); // retrieve the scaling level from the node
 	float *positionData = getVectorData(tile->model->translation);
 	positionData[0] = node->x;
 	positionData[1] = 0;
 	positionData[2] = node->y; // y in model coordinates is z in world coordinates
 	tile->model->scaleX = scale;
-	tile->model->scaleY = heightScale;
+	tile->model->scaleY = lodmap->source->heightRatio;
 	tile->model->scaleZ = scale;
 	updateOpenGLModelTransform(tile->model);
 
@@ -431,10 +438,10 @@ static OpenGLHeightmapDrawMode getDrawModeForIndex(int index)
 static void freeLodMapTile(Quadtree *tree, void *data)
 {
 	OpenGLLodMapTile *tile = data;
-	$(void, opengl, freeOpenGLModel)(tile->model);
-	$(void, opengl, freeOpenGLTexture)(tile->heightsTexture);
-	$(void, opengl, freeOpenGLTexture)(tile->normalsTexture);
-	$(void, opengl, freeOpenGLTexture)(tile->textureTexture);
-	$(void, linalg, freeVector)(tile->parentOffset);
+	freeOpenGLModel(tile->model);
+	freeOpenGLTexture(tile->heightsTexture);
+	freeOpenGLTexture(tile->normalsTexture);
+	freeOpenGLTexture(tile->textureTexture);
+	freeVector(tile->parentOffset);
 	free(tile);
 }

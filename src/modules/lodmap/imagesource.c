@@ -145,6 +145,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
  */
 API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio)
 {
+	unsigned int tileSize = 1 << baseLevel;
 	int normalDetailLevel = 0;
 	int textureDetailLevel = 0;
 
@@ -198,7 +199,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 
 	if(normals == NULL) { // Compute normals if not provided
 		normals = createImage(heights->width, heights->height, 3, IMAGE_TYPE_FLOAT);
-		computeHeightmapNormals(heights, normals);
+		computeHeightmapNormals(heights, normals, 1.0 / tileSize, 1.0 / tileSize);
 	}
 
 	if(texture == NULL) { // Clear texture if not provided

@@ -49,6 +49,20 @@ vec2 textureDimension = vec2(heightmapWidth - 1, heightmapHeight - 1);
 vec2 textureDimensionInv = vec2(1.0, 1.0) / textureDimension;
 float inverseScaleTransform = pow(2.0, float(lodLevel)); // this is the transform that we'll use to revert the x and z model transform for the normals
 
+vec3 computeWorldNormal(in sampler2D texture, in vec2 uv)
+{
+ 	// look up our normals texture and unpack it
+	vec3 normalNode = 2 * texture2D(texture, uv).xyz - vec3(1.0, 1.0, 1.0);
+	
+	// revert the scaling done by the world transformation, then apply the world transformation
+	vec4 normalWorld = modelNormal * vec4(inverseScaleTransform * normalNode.x, normalNode.y, inverseScaleTransform * normalNode.z, 1.0);
+	
+	 // transform back from homogeneous coordinates
+	vec3 normal = normalize(normalWorld.xyz / normalWorld.w);
+	
+	return normal;
+}
+
 vec3 getNormal(in vec2 uv, in float morph)
 {
 	// The important issue to note here is that we're scaling the original heightmap node with range [0,1]x[0,1] up to whatever
@@ -61,15 +75,11 @@ vec3 getNormal(in vec2 uv, in float morph)
 	// transform, however, so we better leave that one alone. 
 
 	// first do it for our own normal texture
-	vec3 normalNode = texture2D(normals, uv).xyz; // look up our normals texture
-	vec4 normalWorld = modelNormal * vec4(inverseScaleTransform * normalNode.x, normalNode.y, inverseScaleTransform * normalNode.z, 1.0); // revert the scaling done by the world transformation, then apply the world transformation
-	vec3 normal = normalize(normalWorld.xyz / normalWorld.w); // transform back from homogeneous coordinates
+	vec3 normal = computeWorldNormal(normals, uv);
 
 	// now do the same for the parent texture to which we interpolate
 	vec2 parentUV = 0.5 * uv + parentOffset; // compute the UVs of this vertex inside the parent node's normal texture
-	vec3 parentNormalNode = texture2D(parentNormals, parentUV).xyz; // look up parent's normals texture
-	vec4 parentNormalWorld = modelNormal * vec4(inverseScaleTransform * parentNormalNode.x, parentNormalNode.y, inverseScaleTransform * parentNormalNode.z, 1.0); // revert the scaling done by the world transformation, then apply the world transformation
-	vec3 parentNormal = normalize(parentNormalWorld.xyz / parentNormalWorld.w); // transform back from homogeneous coordinates
+	vec3 parentNormal = computeWorldNormal(parentNormals, parentUV);
 	
 	return normalize(mix(normal, parentNormal, morph)); // now mix them according to the vertex morph
 }
@@ -126,5 +136,6 @@ void main()
 
 	// gl_FragColor = vec4(0.5 * world_height, 0.25 * world_height, 0.25 * lodLevel, 1.0);
 	gl_FragColor = clamp(ac + dc + sc, 0.0, 1.0);
+	// gl_FragColor = vec4(0.5 * normal + 0.5, 1.0);
 	// gl_FragColor = vec4(world_height, 0.25, 0.25, 1.0);
 }

@@ -27,7 +27,7 @@ extern "C" {
 
 #include "modules/image/image.h"
 
-API void computeHeightmapNormals(Image *heights, Image *normals);
+API void computeHeightmapNormals(Image *heights, Image *normals, float widthScale, float heightScale);
 
 #ifdef __cplusplus
 }

@@ -42,8 +42,8 @@
 MODULE_NAME("heightmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL heightmaps");
-MODULE_VERSION(0, 4, 3);
-MODULE_BCVERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
+MODULE_BCVERSION(0, 4, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 11), MODULE_DEPENDENCY("scene", 0, 8, 0), MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("linalg", 0, 3, 3), MODULE_DEPENDENCY("image", 0, 5, 16));
 
 static void fillHeightmapTile(HeightmapTile *tile, unsigned int heightmapWidth, unsigned int x, unsigned int y);
@@ -126,7 +126,7 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	OpenGLHeightmap *heightmap = primitive->data;
 
 	if(heightmap->heights != NULL) { // there is a height field, so compute our normals and synchronize them
-		computeHeightmapNormals(heightmap->heights, heightmap->normals);
+		computeHeightmapNormals(heightmap->heights, heightmap->normals, 1.0 / heightmap->width, 1.0 / heightmap->height);
 
 		if(!synchronizeOpenGLTexture(heightmap->normalsTexture)) {
 			LOG_ERROR("Failed to initialize OpenGL heightmap: Could synchronize normals texture");

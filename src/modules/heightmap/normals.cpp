@@ -31,18 +31,20 @@ extern "C" {
 }
 #include "normals.h"
 
-static inline Vector getHeightmapVector(Image *heights, int x, int y)
+static inline Vector getHeightmapVector(Image *heights, int x, int y, float widthScale, float heightScale)
 {
-	return Vector3((float) x, getImage(heights, x, y, 0), (float) y);
+	return Vector3((float) x * widthScale, getImage(heights, x, y, 0), (float) y * heightScale);
 }
 
 /**
- * Computes the heightmap normals for a heightfield image
+ * Computes the heightmap normals for a heightfield image. The resulting normal vectors are then packed to fit into a [0,1] value range.
  *
  * @param heights			the heightfield for which to compute the normal vectors
  * @param normals			the normal map in which to write the computed normals
+ * @param widthScale		factor by which all x coordinates of the heightmap grid should be scaled when computing normals
+ * @param heightScale		factor by which all y coordinates of the heightmap grid should be scaled when computing normals
  */
-API void computeHeightmapNormals(Image *heights, Image *normals)
+API void computeHeightmapNormals(Image *heights, Image *normals, float widthScale, float heightScale)
 {
 	assert(heights->height == normals->height);
 	assert(heights->width == normals->width);
@@ -61,13 +63,13 @@ API void computeHeightmapNormals(Image *heights, Image *normals)
 			int xp1 = x + 1 >= width ? width - 1 : x + 1;
 
 			Vector normal = Vector3(0.0f, 0.0f, 0.0f);
-			Vector current = getHeightmapVector(heights, x, y);
-			Vector exp1yp0 = getHeightmapVector(heights, xp1, y) - current;
-			Vector exp1ym1 = getHeightmapVector(heights, xp1, ym1) - current;
-			Vector exp0yp1 = getHeightmapVector(heights, x, yp1) - current;
-			Vector exp0ym1 = getHeightmapVector(heights, x, ym1) - current;
-			Vector exm1yp1 = getHeightmapVector(heights, xm1, yp1) - current;
-			Vector exm1yp0 = getHeightmapVector(heights, xm1, y) - current;
+			Vector current = getHeightmapVector(heights, x, y, widthScale, heightScale);
+			Vector exp1yp0 = getHeightmapVector(heights, xp1, y, widthScale, heightScale) - current;
+			Vector exp1ym1 = getHeightmapVector(heights, xp1, ym1, widthScale, heightScale) - current;
+			Vector exp0yp1 = getHeightmapVector(heights, x, yp1, widthScale, heightScale) - current;
+			Vector exp0ym1 = getHeightmapVector(heights, x, ym1, widthScale, heightScale) - current;
+			Vector exm1yp1 = getHeightmapVector(heights, xm1, yp1, widthScale, heightScale) - current;
+			Vector exm1yp0 = getHeightmapVector(heights, xm1, y, widthScale, heightScale) - current;
 
 			// add contributions from neighboring triangles
 			normal += (exp1yp0 % exp1ym1).normalize();
@@ -78,9 +80,10 @@ API void computeHeightmapNormals(Image *heights, Image *normals)
 			normal += 2.0f * (exp0yp1 % exp1yp0).normalize();
 			normal.normalize(); // normalize it
 
-			setImage(normals, x, y, 0, normal[0]);
-			setImage(normals, x, y, 1, normal[1]);
-			setImage(normals, x, y, 2, normal[2]);
+			// pack and store
+			setImage(normals, x, y, 0, 0.5 * (normal[0] + 1));
+			setImage(normals, x, y, 1, 0.5 * (normal[1] + 1));
+			setImage(normals, x, y, 2, 0.5 * (normal[2] + 1));
 		}
 	}
 }

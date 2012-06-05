@@ -115,7 +115,7 @@ API Store *getStorePath(Store *parent, const char *pathFormat, ...)
 	if(*iter == '\0') {
 		return value;
 	} else {
-		return getStorePath(value, iter);
+		return getStorePath(value, "%s", iter);
 	}
 }
 
@@ -143,7 +143,7 @@ API bool setStorePath(Store *store, char *pathFormat, void *value, ...)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	Store *parent = getStorePath(store, parentpath);
+	Store *parent = getStorePath(store, "%s", parentpath);
 
 	int i;
 
@@ -196,7 +196,7 @@ API bool deleteStorePath(Store *store, char *path)
 
 	char *parentpath = g_strjoinv("/", parts);
 
-	Store *parent = getStorePath(store, parentpath);
+	Store *parent = getStorePath(store, "%s", parentpath);
 
 	int i;
 	void *value;

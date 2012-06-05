@@ -34,6 +34,7 @@
 #include "modules/linalg/Vector.h"
 #include "modules/store/store.h"
 #include "modules/store/path.h"
+#include "modules/store/clone.h"
 #define API
 #include "lodmap.h"
 #include "intersect.h"
@@ -42,7 +43,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 16, 7);
+MODULE_VERSION(0, 16, 8);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 11, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
@@ -76,11 +77,21 @@ MODULE_FINALIZE
  * @param store			the store config from which to create the LOD map
  * @result				the created LOD map or NULL on failure
  */
-API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store)
+API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 {
+	Store *store = cloneStore(storeConfig);
+
+	OpenGLLodMapDataSource *source = createOpenGLLodMapDataSourceFromStore(store);
+	if(source == NULL) {
+		LOG_ERROR("Failed to create LOD map from store: Failed to create LOD map data source!");
+		freeStore(store);
+		return NULL;
+	}
+
 	Store *paramBaseRange = getStorePath(store, "lodmap/baseRange");
 	if(paramBaseRange == NULL || !(paramBaseRange->type == STORE_INTEGER || paramBaseRange->type == STORE_FLOAT_NUMBER)) {
 		LOG_ERROR("Failed to create LOD map from store: Required config float value 'lodmap/baseRange' not found!");
+		freeStore(store);
 		return NULL;
 	}
 
@@ -89,20 +100,16 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store)
 	Store *paramViewingDistance = getStorePath(store, "lodmap/viewingDistance");
 	if(paramViewingDistance == NULL || paramViewingDistance->type != STORE_INTEGER) {
 		LOG_ERROR("Failed to create LOD map from store: Required config integer value 'lodmap/viewingDistance' not found!");
+		freeStore(store);
 		return NULL;
 	}
 
 	int viewingDistance = paramViewingDistance->content.integer;
 
-	OpenGLLodMapDataSource *source = createOpenGLLodMapDataSourceFromStore(store);
-	if(source == NULL) {
-		LOG_ERROR("Failed to create LOD map from store: Failed to create LOD map data source!");
-		return NULL;
-	}
-
 	OpenGLLodMap *lodmap = createOpenGLLodMap(source, baseRange, viewingDistance);
 	if(lodmap == NULL) {
 		freeOpenGLLodMapDataSource(source);
+		freeStore(store);
 		return NULL;
 	}
 
@@ -137,6 +144,7 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store)
 		reshapeQuadtree(lodmap->quadtree, rootX, rootY, rootLevel);
 	}
 
+	freeStore(store);
 	return lodmap;
 }
 

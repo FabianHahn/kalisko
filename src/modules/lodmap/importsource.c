@@ -24,6 +24,7 @@
 #include "modules/store/store.h"
 #include "modules/store/parse.h"
 #include "modules/store/path.h"
+#include "modules/store/merge.h"
 #include "modules/image/image.h"
 #include "modules/image/io.h"
 #define API
@@ -53,6 +54,22 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store
 		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/path' not found!");
 		return NULL;
 	}
+
+	GString *configPath = g_string_new(pathParam->content.string);
+	g_string_append(configPath, "/lodmap.store");
+	Store *configStore = parseStoreFile(configPath->str);
+
+	if(configStore == NULL) {
+		LOG_ERROR("Failed to create LOD map import source: Failed to load configuration store file from '%s'", configPath->str);
+		g_string_free(configPath, true);
+		return NULL;
+	}
+
+	g_string_free(configPath, true);
+
+	// merge config values into the store
+	mergeStore(store, configStore);
+	freeStore(configStore);
 
 	// load baseRange parameter
 	Store *baseLevelParam = getStorePath(store, "lodmap/source/baseLevel");

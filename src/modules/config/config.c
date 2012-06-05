@@ -67,9 +67,9 @@ static bool internalReloadConfig(bool doTriggerEvent);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
 MODULE_BCVERSION(0, 3, 8);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 12), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
 MODULE_INIT
 {
@@ -138,7 +138,7 @@ API Store *getConfig()
  */
 API Store *getConfigPath(char *path)
 {
-	return $(Store *, store, getStorePath)(config, path);
+	return getStorePath(config, "%s", path);
 }
 
 /**
@@ -395,7 +395,7 @@ static Store *loadReadOnlyConfigs()
 		checkFilesMerge(cmdConfig); // without profile
 
 		if(profilePath != NULL) {
-			Store *cmdConfigWithProfile = $(Store *, store, getStorePath)(cmdConfig, profilePath);
+			Store *cmdConfigWithProfile = getStorePath(cmdConfig, "%s", profilePath);
 
 			if(cmdConfigWithProfile == NULL) {
 				LOG_ERROR("Given CLI configuration file has not the given profile path in it: %s", cliConfigFilePath);
@@ -458,7 +458,7 @@ static Store *loadReadOnlyConfigs()
 
 		// apply profile to Store
 		if(profilePath != NULL) {
-			Store *profileConfig  = $(Store *, store, getStorePath)(retReadOnlyConfig, profilePath);
+			Store *profileConfig  = getStorePath(retReadOnlyConfig, "%s", profilePath);
 
 			if(profileConfig ==  NULL) {
 				LOG_ERROR("Given profile path does not exists: %s. Using empty read-only config", profilePath);
@@ -540,7 +540,7 @@ static void checkFilesMerge(Store *store)
 				checkFilesMerge(storeToMerge); // without a profile
 
 				if(profilePath != NULL) {
-					Store *storeToMergeProfiled = $(Store *, store, getStorePath)(storeToMerge, profilePath);
+					Store *storeToMergeProfiled = getStorePath(storeToMerge, "%s", profilePath);
 
 					if(storeToMergeProfiled != NULL) {
 						storeToMerge = storeToMergeProfiled;
@@ -577,7 +577,7 @@ static void checkFilesMerge(Store *store)
 					checkFilesMerge(storeToMerge); // without a profile
 
 					if(profilePath != NULL) {
-						Store *storeToMergeProfiled = $(Store *, store, getStorePath)(storeToMerge, profilePath);
+						Store *storeToMergeProfiled = getStorePath(storeToMerge, "%s", profilePath);
 
 						if(storeToMergeProfiled != NULL) {
 							storeToMerge = storeToMergeProfiled;

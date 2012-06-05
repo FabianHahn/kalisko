@@ -36,9 +36,9 @@
 MODULE_NAME("ircpp_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("An IRC proxy plugin that performs a predefined set of actions after reconnecting to a remote IRC server");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("store", 0, 6, 11));
+MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy", 0, 3, 0), MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_parser", 0, 1, 1), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 4, 2), MODULE_DEPENDENCY("store", 0, 6, 12));
 
 static void listener_remoteReconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_clientLine(void *subject, const char *event, void *data, va_list args);
@@ -259,10 +259,10 @@ static Store *getProxyConfig(IrcProxy *proxy)
 	Store *config = getPluginConfig();
 
 	Store *configProxy;
-	if((configProxy = getStorePath(config, proxy->name)) == NULL || configProxy->type != STORE_LIST) {
+	if((configProxy = getStorePath(config, "%s", proxy->name)) == NULL || configProxy->type != STORE_LIST) {
 		deleteStorePath(config, proxy->name);
 		configProxy = createStoreListValue(NULL);
-		setStorePath(config, proxy->name, configProxy);
+		setStorePath(config, "%s", configProxy, proxy->name);
 	}
 
 	return configProxy;

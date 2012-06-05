@@ -157,11 +157,11 @@ static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, 
 
 	switch(query) {
 		case OPENGL_LODMAP_IMAGE_HEIGHT:
-			g_string_append_printf(imageName, "/lodmap_heights_%u.%d.%d.store", level, qx, qy);
+			g_string_append_printf(imageName, "/lodmap_heights_%u.%d.%d.png", level, qx, qy);
 			channels = 1;
 		break;
 		case OPENGL_LODMAP_IMAGE_NORMALS:
-			g_string_append_printf(imageName, "/lodmap_normals_%u.%d.%d.store", level, qx, qy);
+			g_string_append_printf(imageName, "/lodmap_normals_%u.%d.%d.png", level, qx, qy);
 			channels = 3;
 		break;
 		case OPENGL_LODMAP_IMAGE_TEXTURE:

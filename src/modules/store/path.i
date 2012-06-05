@@ -21,8 +21,8 @@
 #ifndef STORE_PATH_H
 #define STORE_PATH_H
 
-API Store *getStorePath(Store *store, const char *path);
-API bool setStorePath(Store *store, char *path, void *value);
+API Store *getStorePath(Store *store, const char *pathFormat, ...) G_GNUC_PRINTF(2, 3);
+API bool setStorePath(Store *store, char *pathFormat, void *value, ...) G_GNUC_PRINTF(2, 4);
 API bool deleteStorePath(Store *store, char *path);
 API GPtrArray *splitStorePath(char *path);
 

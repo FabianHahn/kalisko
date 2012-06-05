@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdarg.h>
 #include <assert.h>
 #include <string.h>
 
@@ -29,15 +30,23 @@
 #include "parse.h"
 #include "path.h"
 
+#define MAX_PATH_LEN 4096
+
 /**
  * Fetches a store value by its path
  *
- * @param parent	the store in which the lookup takes place
- * @param path		the path to the value without a leading / to search, use integers from base 0 for list elements
- * @result			the store value, or NULL if not found
+ * @param parent		the store in which the lookup takes place
+ * @param pathFormat	the printf style path to the value without a leading / to search, use integers from base 0 for list elements
+ * @result				the store value, or NULL if not found
  */
-API Store *getStorePath(Store *parent, const char *path)
+API Store *getStorePath(Store *parent, const char *pathFormat, ...)
 {
+	va_list va;
+	char path[MAX_PATH_LEN];
+
+	va_start(va, pathFormat);
+	vsnprintf(path, MAX_PATH_LEN, pathFormat, va);
+
 	if(strlen(path) == 0) { // empty path means the parent itself
 		return parent;
 	}
@@ -113,13 +122,19 @@ API Store *getStorePath(Store *parent, const char *path)
 /**
  * Sets a value in a store path
  *
- * @param store	the store to edit
- * @param path		the path to set, will be overridden if already exists
- * @param value		the value to set
- * @result			true if successful
+ * @param store			the store to edit
+ * @param pathFormat	the printf style path to set, will be overridden if already exists
+ * @param value			the value to set
+ * @result				true if successful
  */
-API bool setStorePath(Store *store, char *path, void *value)
+API bool setStorePath(Store *store, char *pathFormat, void *value, ...)
 {
+	va_list va;
+	char path[MAX_PATH_LEN];
+
+	va_start(va, value);
+	vsnprintf(path, MAX_PATH_LEN, pathFormat, va);
+
 	bool result = false;
 	GPtrArray *array = splitStorePath(path);
 	char **parts = (char **) array->pdata;

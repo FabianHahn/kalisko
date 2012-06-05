@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 11, 1);
+MODULE_VERSION(0, 11, 2);
 MODULE_BCVERSION(0, 11, 0);
 MODULE_NODEPS;
 
@@ -69,7 +69,7 @@ API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *lo
 	quadtree->root->x = 0;
 	quadtree->root->y = 0;
 	quadtree->root->weight = 0;
-	quadtree->root->time = $$(double, getMicroTime)();
+	quadtree->root->time = getMicroTime();
 	quadtree->root->level = 0;
 	quadtree->root->parent = 0;
 	quadtree->root->children[0] = NULL;
@@ -79,6 +79,39 @@ API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *lo
 	quadtree->root->data = NULL;
 
 	return quadtree;
+}
+
+/**
+ * Reshapes a quadtree completely to a new given size. All previous nodes are freed and the reshaped tree's nodes are uninitialized
+ *
+ * @param tree			the quadtree to reshape
+ * @param rootX			the x coordinate of the new root
+ * @param rootY			the y coordinate of the new root
+ * @param rootLevel		the level of the new root
+ */
+API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
+{
+	// free all the existing nodes first
+	freeQuadtreeNode(tree, tree->root);
+
+	double time = getMicroTime();
+
+	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
+	newRoot->time = time;
+	newRoot->x = rootX;
+	newRoot->y = rootY;
+	newRoot->level = rootLevel;
+	newRoot->data = NULL;
+	newRoot->parent = NULL;
+	newRoot->children[0] = NULL;
+	newRoot->children[1] = NULL;
+	newRoot->children[2] = NULL;
+	newRoot->children[3] = NULL;
+	tree->root = newRoot;
+
+	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
+	LOG_DEBUG("Reshaping quadtree to range [%d,%d]x[%d,%d]", box.minX, box.maxX, box.minY, box.maxY);
+	fillTreeNodes(tree, tree->root, time);
 }
 
 /**
@@ -94,7 +127,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 		return; // nothing to do
 	}
 
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
 	bool isLowerX = x < box.minX;
 	bool isLowerY = y < box.minY;
@@ -151,7 +184,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
  */
 API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackback)
 {
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 	void *data = loadQuadtreeNodeDataRec(tree, node, time);
 
 	if(trackback) {
@@ -169,7 +202,7 @@ API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackbac
  */
 API void trackbackQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
 {
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 
 	for(QuadtreeNode *iter = node; iter != NULL; iter = iter->parent) {
 		iter->weight = iter->children[0]->weight + iter->children[1]->weight + iter->children[2]->weight + iter->children[3]->weight + (quadtreeNodeDataIsLoaded(iter) ? 1 : 0);
@@ -197,7 +230,7 @@ API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
 	pruneQuadtree(tree);
 
 	// Perform the lookup
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y, level);
 
 	// Return the looked up data
@@ -219,7 +252,7 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
 		expandQuadtree(tree, x, y);
 	}
 
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y, level);
 }
 
@@ -238,7 +271,7 @@ API void pruneQuadtree(Quadtree *tree)
 
 	LOG_DEBUG("Pruning %u quadtree nodes", target);
 
-	double time = $$(double, getMicroTime)();
+	double time = getMicroTime();
 	pruneQuadtreeNode(tree, tree->root, time, &target);
 
 	assert(tree->root->weight <= tree->capacity);

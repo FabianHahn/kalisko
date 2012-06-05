@@ -88,6 +88,7 @@ typedef struct {
 } QuadtreeAABB;
 
 API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData);
+API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel);
 API void expandQuadtree(Quadtree *tree, double x, double y);
 API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackback);
 API void trackbackQuadtreeNode(Quadtree *tree, QuadtreeNode *node);

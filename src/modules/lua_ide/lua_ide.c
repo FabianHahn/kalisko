@@ -746,7 +746,7 @@ static bool openScript(char *path)
 			}
 		}
 
-		setStorePath(last, "%s", createStoreStringValue(""), path_parts->pdata[path_parts->len-1]);
+		setStorePath(last, "%s", createStoreStringValue(""), (char *) path_parts->pdata[path_parts->len-1]);
 
 		saveWritableConfig(); // write back to disk
 		refreshScriptTree();

@@ -31,7 +31,7 @@
 #include "source.h"
 #include "export.h"
 
-static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path);
+static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path, Store *meta);
 
 /**
  * Exports an OpenGL LOD map to a folder by dumping both the metadata and the node data into files
@@ -47,26 +47,36 @@ bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
 		return false;
 	}
 
-	// First dump meta information
-	Store *meta = createStore();
-	setStorePath(meta, "lodmap", createStore());
-	setStorePath(meta, "lodmap/baseRange", createStoreFloatNumberValue(lodmap->baseRange));
-	setStorePath(meta, "lodmap/viewingDistance", createStoreIntegerValue(lodmap->baseRange));
+	// First dump config information
+	Store *config = createStore();
+	setStorePath(config, "lodmap", createStore());
+	setStorePath(config, "lodmap/baseRange", createStoreFloatNumberValue(lodmap->baseRange));
+	setStorePath(config, "lodmap/viewingDistance", createStoreIntegerValue(lodmap->baseRange));
 
 	OpenGLLodMapDataSource *source = lodmap->source;
-	setStorePath(meta, "lodmap/source", createStore());
-	setStorePath(meta, "lodmap/source/baseLevel", createStoreIntegerValue(source->baseLevel));
-	setStorePath(meta, "lodmap/source/normalDetailLevel", createStoreIntegerValue(source->normalDetailLevel));
-	setStorePath(meta, "lodmap/source/textureDetailLevel", createStoreIntegerValue(source->textureDetailLevel));
-	setStorePath(meta, "lodmap/source/heightRatio", createStoreFloatNumberValue(source->heightRatio));
+	setStorePath(config, "lodmap/source", createStore());
+	setStorePath(config, "lodmap/source/baseLevel", createStoreIntegerValue(source->baseLevel));
+	setStorePath(config, "lodmap/source/normalDetailLevel", createStoreIntegerValue(source->normalDetailLevel));
+	setStorePath(config, "lodmap/source/textureDetailLevel", createStoreIntegerValue(source->textureDetailLevel));
+	setStorePath(config, "lodmap/source/heightRatio", createStoreFloatNumberValue(source->heightRatio));
+
+	setStorePath(config, "lodmap/quadtree", createStore());
+	setStorePath(config, "lodmap/quadtree/rootX", createStoreIntegerValue(lodmap->quadtree->root->x));
+	setStorePath(config, "lodmap/quadtree/rootY", createStoreIntegerValue(lodmap->quadtree->root->y));
+	setStorePath(config, "lodmap/quadtree/rootLevel", createStoreIntegerValue(lodmap->quadtree->root->level));
+
+	Store *meta = createStore();
+	setStorePath(config, "lodmap/meta", meta);
+
+	// Now dump the tree contents
+	exportOpenGLLodMapQuadtreeNode(lodmap, lodmap->quadtree->root, path, meta);
 
 	GString *metaPath = g_string_new(path);
 	g_string_append(metaPath, "/lodmap.store");
-	writeStoreFile(metaPath->str, meta);
+	writeStoreFile(metaPath->str, config);
 	g_string_free(metaPath, true);
 
-	// Now dump the tree contents
-	exportOpenGLLodMapQuadtreeNode(lodmap, lodmap->quadtree->root, path);
+	freeStore(config);
 
 	return true;
 }
@@ -77,8 +87,9 @@ bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
  * @param lodmap		the OpenGL LOD map to which this node belongs
  * @param node			the current quadtree node we're visiting during the recursion
  * @param path			the target folder to export to
+ * @param meta			the current meta store to write metadata about this node to
  */
-static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path)
+static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path, Store *meta)
 {
 	// make sure the node's data is loaded before proceeding
 	if(!quadtreeNodeDataIsLoaded(node)) {
@@ -89,9 +100,13 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 
 	OpenGLLodMapTile *tile = node->data;
 
+	setStorePath(meta, "minHeight", createStoreFloatNumberValue(tile->minHeight));
+	setStorePath(meta, "maxHeight", createStoreFloatNumberValue(tile->maxHeight));
+	setStorePath(meta, "children", createStoreListValue(NULL));
+
 	// export heights
 	GString *heightsName = g_string_new(path);
-	g_string_append_printf(heightsName, "/lodmap_heights_%u.%d.%d.store", node->level, node->x, node->y);
+	g_string_append_printf(heightsName, "/lodmap_heights_%u.%d.%d.png", node->level, node->x, node->y);
 
 	if(!writeImageToFile(tile->heights, heightsName->str)) {
 		LOG_ERROR("Failed to export LOD map heights image to '%s'", heightsName->str);
@@ -101,7 +116,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 
 	// export normals
 	GString *normalsName = g_string_new(path);
-	g_string_append_printf(normalsName, "/lodmap_normals_%u.%d.%d.store", node->level, node->x, node->y);
+	g_string_append_printf(normalsName, "/lodmap_normals_%u.%d.%d.png", node->level, node->x, node->y);
 
 	if(!writeImageToFile(tile->normals, normalsName->str)) {
 		LOG_ERROR("Failed to export LOD map normals image to '%s'", normalsName->str);
@@ -122,7 +137,9 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	// Recursively export children
 	if(!quadtreeNodeIsLeaf(node)) {
 		for(unsigned int i = 0; i < 4; i++) {
-			exportOpenGLLodMapQuadtreeNode(lodmap, node->children[i], path);
+			Store *childMeta = createStore();
+			setStorePath(meta, "children/%d", childMeta, i);
+			exportOpenGLLodMapQuadtreeNode(lodmap, node->children[i], path, childMeta);
 		}
 
 		// Update node weight

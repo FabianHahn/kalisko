@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -39,9 +39,9 @@
 MODULE_NAME("lua_ide");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("A graphical Lua IDE using GTK+");
-MODULE_VERSION(0, 9, 10);
+MODULE_VERSION(0, 9, 11);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 10), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("xcall_core", 0, 4, 3));
+MODULE_DEPENDS(MODULE_DEPENDENCY("gtk+", 0, 2, 6), MODULE_DEPENDENCY("gtksourceview", 0, 1, 0), MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("store", 0, 6, 12), MODULE_DEPENDENCY("config", 0, 3, 9), MODULE_DEPENDENCY("xcall_core", 0, 4, 3));
 
 /**
  * The GTK root widget for the IDE
@@ -150,7 +150,7 @@ MODULE_INIT
 	GString *path = g_string_new($$(char *, getExecutablePath)());
 	g_string_append(path, "/modules/lua_ide/lua_ide.xml");
 
-	GtkBuilder *builder = $(GtkBuilder *, gtk+, loadGtkBuilderGui)(path->str);
+	GtkBuilder *builder = loadGtkBuilderGui(path->str);
 
 	g_string_free(path, true);
 
@@ -171,11 +171,11 @@ MODULE_INIT
 	text_input_dialog_entry = GTK_WIDGET(gtk_builder_get_object(builder, "text_input_dialog_entry"));
 
 	// script tree
-	Store *config = $(Store *, config, getWritableConfig)();
-	if((ide_config = $(Store *, store, getStorePath)(config, "lua_ide")) == NULL) {
+	Store *config = getWritableConfig();
+	if((ide_config = getStorePath(config, "lua_ide")) == NULL) {
 		LOG_INFO("Writable config path 'lua_ide' doesn't exist yet, creating...");
-		ide_config = $(Store *, store, createStore)();
-		$(bool, store, setStorePath)(config, "lua_ide", ide_config);
+		ide_config = createStore();
+		setStorePath(config, "lua_ide", ide_config);
 	}
 
 	refreshScriptTree();
@@ -233,10 +233,10 @@ MODULE_INIT
 	gtk_widget_show_all(GTK_WIDGET(window));
 
 	// run
-	$(void, gtk+, runGtkLoop)();
+	runGtkLoop();
 
 	// Lua C function
-	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
+	lua_State *state = getGlobalLuaState();
 	lua_pushcfunction(state, &lua_output);
 	lua_setglobal(state, "output");
 
@@ -520,7 +520,7 @@ static void finalize()
 		free(current_script);
 	}
 
-	lua_State *state = $(lua_State *, lua, getGlobalLuaState)();
+	lua_State *state = getGlobalLuaState();
 	lua_pushnil(state);
 	lua_setglobal(state, "output");
 
@@ -539,15 +539,15 @@ static void runScript()
 
 	char *script = gtk_text_buffer_get_text(buffer, &start, &end, false);
 
-	if(!$(bool, lua, evaluateLua)(script)) {
+	if(!evaluateLua(script)) {
 		GString *err = g_string_new("Lua error: ");
-		char *ret = $(char *, lua, popLuaString)();
+		char *ret = popLuaString();
 		g_string_append(err, ret);
 		appendConsole(err->str, MESSAGE_LUA_ERR);
 		free(ret);
 		g_string_free(err, true);
 	} else {
-		char *ret = $(char *, lua, popLuaString)();
+		char *ret = popLuaString();
 
 		if(ret != NULL) {
 			appendConsole(ret, MESSAGE_LUA_OUT);
@@ -703,7 +703,7 @@ static bool openScript(char *path)
 		}
 	}
 
-	Store *script = $(Store *, store, getStorePath)(ide_config, path);
+	Store *script = getStorePath(ide_config, "%s", path);
 
 	if(script != NULL) {
 		if(script->type == STORE_STRING) {
@@ -724,18 +724,18 @@ static bool openScript(char *path)
 			return false;
 		}
 	} else {
-		GPtrArray *path_parts = $(GPtrArray *, store, splitStorePath)(path);
+		GPtrArray *path_parts = splitStorePath(path);
 		Store *last = ide_config;
 
 		for(int i = 0; i < path_parts->len; i++) {
 			char *part = path_parts->pdata[i];
 
 			if(i != path_parts->len - 1) {
-				Store *next = $(Store *, store, getStorePath)(last, part);
+				Store *next = getStorePath(last, "%s", part);
 
 				if(next == NULL) {
-					next = $(Store *, store, createStore)();
-					$(bool, store, setStorePath)(last, part, next);
+					next = createStore();
+					setStorePath(last, "%s", next, part);
 				} else if(next->type != STORE_ARRAY) {
 					LOG_ERROR("Lua IDE config store part '%s' in path '%s' is not an array, aborting script creation", part, path);
 					g_ptr_array_free(path_parts, true);
@@ -746,9 +746,9 @@ static bool openScript(char *path)
 			}
 		}
 
-		$(bool, store, setStorePath)(last, path_parts->pdata[path_parts->len-1], $(Store *, store, createStoreStringValue)(""));
+		setStorePath(last, "%s", createStoreStringValue(""), path_parts->pdata[path_parts->len-1]);
 
-		$(void, config, saveWritableConfig)(); // write back to disk
+		saveWritableConfig(); // write back to disk
 		refreshScriptTree();
 
 		GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(script_input));
@@ -779,10 +779,10 @@ static void refreshScriptTree()
 	gtk_tree_store_clear(treestore);
 
 	Store *scripts;
-	if((scripts = $(Store *, store, getStorePath)(ide_config, "scripts")) == NULL) {
+	if((scripts = getStorePath(ide_config, "scripts")) == NULL) {
 		LOG_INFO("Lua IDE config store path 'scripts' doesn't exist yet, creating...");
-		scripts = $(Store *, store, createStore)();
-		$(bool, store, setStorePath)(ide_config, "scripts", scripts);
+		scripts = createStore();
+		setStorePath(ide_config, "scripts", scripts);
 	}
 
 	GString *path = g_string_new("scripts");
@@ -817,12 +817,12 @@ static void saveScript()
 
 	char *script = gtk_text_buffer_get_text(buffer, &start, &end, false);
 
-	Store *store = $(Store *, store, getStorePath)(ide_config, current_script);
+	Store *store = getStorePath(ide_config, "%s", current_script);
 
 	if(store != NULL && store->type == STORE_STRING) {
 		free(store->content.string);
 		store->content.string = script;
-		$(void, config, saveWritableConfig)(); // write back to disk
+		saveWritableConfig(); // write back to disk
 		LOG_INFO("Saved Lua IDE script: %s", current_script);
 	} else {
 		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script);
@@ -855,7 +855,7 @@ static void createScript(char *parent)
 
 static void createFolder(char *parent)
 {
-	Store *parentStore = $(Store *, store, getStorePath)(ide_config, parent);
+	Store *parentStore = getStorePath(ide_config, "%s", parent);
 
 	if(parentStore != NULL && parentStore->type == STORE_ARRAY) {
 		GtkDialog *dialog = GTK_DIALOG(text_input_dialog);
@@ -868,10 +868,10 @@ static void createFolder(char *parent)
 		if(result == 1) {
 			const char *entry_name = gtk_entry_get_text(GTK_ENTRY(text_input_dialog_entry));
 			if(entry_name != NULL && strlen(entry_name) > 0) {
-				if($(Store *, store, getStorePath)(parentStore, entry_name) == NULL) { // entry with that name doesn't exist yet
+				if(getStorePath(parentStore, "%s", entry_name) == NULL) { // entry with that name doesn't exist yet
 					LOG_INFO("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
-					g_hash_table_insert(parentStore->content.array, strdup(entry_name), $(Store *, store, createStore)());
-					$(void, config, saveWritableConfig)(); // write back to disk
+					g_hash_table_insert(parentStore->content.array, strdup(entry_name), createStore());
+					saveWritableConfig(); // write back to disk
 					refreshScriptTree();
 				} else {
 					LOG_ERROR("Tried to create Lua IDE folder with already existing name '%s' in '%s', aborting", entry_name, parent);
@@ -894,8 +894,8 @@ static void deleteScript(char *script)
 		return;
 	}
 
-	$(bool, store, deleteStorePath)(ide_config, script);
-	$(void, config, saveWritableConfig)(); // write back to disk
+	deleteStorePath(ide_config, script);
+	saveWritableConfig(); // write back to disk
 	refreshScriptTree();
 	LOG_INFO("Deleted Lua IDE script: %s", script);
 
@@ -916,8 +916,8 @@ static void deleteFolder(char *folder)
 		return;
 	}
 
-	$(bool, store, deleteStorePath)(ide_config, folder);
-	$(void, config, saveWritableConfig)(); // write back to disk
+	deleteStorePath(ide_config, folder);
+	saveWritableConfig(); // write back to disk
 	refreshScriptTree();
 	LOG_INFO("Deleted Lua IDE folder: %s", folder);
 }

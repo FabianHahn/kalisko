@@ -43,11 +43,11 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 16, 8);
+MODULE_VERSION(0, 16, 9);
 MODULE_BCVERSION(0, 14, 3);
-MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 11, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
+MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 12, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
-static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time);
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
 static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static OpenGLHeightmapDrawMode getDrawModeForIndex(int index);
 static void freeLodMapTile(Quadtree *tree, void *data);
@@ -163,7 +163,7 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->source = source;
 	lodmap->heightmap = createOpenGLPrimitiveHeightmap(NULL, tileSize, tileSize); // create a managed heightmap that will serve as instance for our rendered tiles
-	lodmap->quadtree = createQuadtree(512, &loadLodMapTile, &freeLodMapTile, false);
+	lodmap->quadtree = createQuadtree(&loadLodMapTile, &freeLodMapTile);
 	lodmap->selection = NULL;
 	lodmap->viewerPosition = createVector3(0.0, 0.0, 0.0);
 	lodmap->baseRange = baseRange;
@@ -200,11 +200,6 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 
 	g_hash_table_insert(maps, lodmap->quadtree, lodmap);
 
-	if(!result) {
-		freeOpenGLLodMap(lodmap);
-		return NULL;
-	}
-
 	return lodmap;
 }
 
@@ -219,9 +214,6 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 {
 	// update the viewer position
 	assignVector(lodmap->viewerPosition, position);
-
-	// prune the quadtree to get rid of unused nodes
-	pruneQuadtree(lodmap->quadtree);
 
 	if(autoExpand) {
 		// expand the quadtree to actually cover our position
@@ -239,13 +231,11 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 
 	// select the LOD map nodes to be rendered
 	if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, lodmap->quadtree->root, position, range)) {
-		double time = $$(double, getMicroTime)();
-		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root, time);
+		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
 
 		// make all selected nodes visible
 		for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
 			QuadtreeNode *node = iter->data;
-			assert(quadtreeNodeDataIsLoaded(node));
 			OpenGLLodMapTile *tile = node->data;
 			tile->model->visible = true; // make model visible for rendering
 			tile->model->polygonMode = lodmap->polygonMode; // set the parent's polygon mode
@@ -253,7 +243,6 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 
 		LOG_DEBUG("Selected %u LOD map nodes", g_list_length(lodmap->selection));
 	}
-	updateQuadtreeNodeWeight(lodmap->quadtree->root); // the root could have been loaded by intersecting it
 }
 
 /**
@@ -265,7 +254,6 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
 		QuadtreeNode *node = iter->data;
-		assert(quadtreeNodeDataIsLoaded(node));
 		OpenGLLodMapTile *tile = node->data;
 		drawOpenGLModel(tile->model, &tile->drawOptions);
 	}
@@ -297,11 +285,9 @@ API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
  * @param node			the current quadtree node we're traversing
  * @param time			the current timestamp to set for caching
  */
-static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node, double time)
+static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node)
 {
 	GList *nodes = NULL;
-
-	node->time = time; // update access time
 
 	double range = getLodMapNodeRange(lodmap, node);
 	if(!lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
@@ -321,7 +307,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
 				options.drawMode ^= drawMode; // don't draw this part if the child covers it
 
-				GList *childNodes = selectLodMapNodes(lodmap, position, child, time); // node selection
+				GList *childNodes = selectLodMapNodes(lodmap, position, child); // node selection
 				nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
 			}
 		}
@@ -329,14 +315,9 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		if(options.drawMode == OPENGL_HEIGHTMAP_DRAW_NONE) { // if all are, we're not drawn
 			drawn = false;
 		}
-
-		// update node weight (we could have loaded child nodes)
-		updateQuadtreeNodeWeight(node);
 	}
 
 	if(drawn) {
-		assert(quadtreeNodeDataIsLoaded(node));
-
 		OpenGLLodMapTile *tile = node->data;
 		tile->drawOptions = options;
 
@@ -408,7 +389,7 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	OpenGLLodMapTile *parentTile;
 	tile->parentOffset = createVector2(0.0f, 0.0f);
 	if(node->parent != NULL) {
-		parentTile = loadQuadtreeNodeData(tree, node->parent, true);
+		parentTile = node->parent->data;
 
 		// determine our index in our parent's node
 		unsigned int parentIndex = quadtreeNodeGetParentContainingChildIndex(node);

@@ -91,13 +91,6 @@ bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
  */
 static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *node, const char *path, Store *meta)
 {
-	// make sure the node's data is loaded before proceeding
-	if(!quadtreeNodeDataIsLoaded(node)) {
-		loadQuadtreeNodeData(lodmap->quadtree, node, false);
-	}
-
-	assert(quadtreeNodeDataIsLoaded(node));
-
 	OpenGLLodMapTile *tile = node->data;
 
 	setStorePath(meta, "minHeight", createStoreFloatNumberValue(tile->minHeight));
@@ -141,9 +134,6 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 			setStorePath(meta, "children/%d", childMeta, i);
 			exportOpenGLLodMapQuadtreeNode(lodmap, node->children[i], path, childMeta);
 		}
-
-		// Update node weight
-		updateQuadtreeNodeWeight(node);
 	}
 
 	LOG_INFO("Exported LOD map quadtree node (%d,%d) at level %u", node->x, node->y, node->level);

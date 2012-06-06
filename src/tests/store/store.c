@@ -59,8 +59,8 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 3, 7);
-MODULE_BCVERSION(0, 3, 7);
+MODULE_VERSION(0, 3, 8);
+MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_SUITE_BEGIN(store)
@@ -142,7 +142,7 @@ TEST_CASE(path_modify)
 	TEST_ASSERT(store != NULL);
 
 	// check some path types
-	TEST_ASSERT($(Store *, store, getStorePath)(store, "")->type == STORE_ARRAY);
+	TEST_ASSERT($(Store *, store, getStorePath)(store, "%s", "")->type == STORE_ARRAY);
 	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey")->type == STORE_LIST);
 	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey/2")->type == STORE_ARRAY);
 

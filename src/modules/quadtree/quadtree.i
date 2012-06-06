@@ -81,7 +81,6 @@ API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFre
 API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel);
 API void expandQuadtree(Quadtree *tree, double x, double y);
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
-API void pruneQuadtree(Quadtree *tree);
 API char *dumpQuadtree(Quadtree *tree);
 API void freeQuadtree(Quadtree *tree);
 

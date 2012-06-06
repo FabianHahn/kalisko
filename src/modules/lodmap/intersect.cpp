@@ -36,15 +36,21 @@ static int intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, dou
  * Checks whether a quadtree node's 3D axis aligned bounding box intersects with a sphere. Make sure to update the node's weight after calling this function since it can cause the node to become loaded.
  * Note that this function returns will not work as expected when the sphere center is located inside the bounding box.
  *
- * @param tree			the quadtree to which the node belongs
+ * @param lodmap		the LOD map to which the node belongs
  * @param node			the quadtree node which has to be intersected
  * @param position		the position of the sphere
  * @param radius		the radius of the sphere
  * @result				nonzero if the sphere intersects the axis aligned bounding box
  */
-API int lodmapQuadtreeNodeIntersectsSphere(Quadtree *tree, QuadtreeNode *node, Vector *position, double radius)
+API int lodmapQuadtreeNodeIntersectsSphere(OpenGLLodMap *lodmap, QuadtreeNode *node, Vector *position, double radius)
 {
 	OpenGLLodMapTile *tile = (OpenGLLodMapTile *) node->data;
+
+	if(tile->status == OPENGL_LODMAP_TILE_INACTIVE) { // inactive means there is not even metadata yet
+		tile->status = OPENGL_LODMAP_TILE_LOADING;
+		loadLodMapTile(node, lodmap); // load the node to make sure metadata is present
+	}
+
 	float minY = tile->minHeight;
 	float maxY = tile->maxHeight;
 

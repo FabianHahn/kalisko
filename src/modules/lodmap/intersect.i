@@ -29,7 +29,7 @@ extern "C" {
 
 #include "modules/quadtree/quadtree.h"
 
-API int lodmapQuadtreeNodeIntersectsSphere(Quadtree *tree, QuadtreeNode *node, Vector *position, double radius);
+API int lodmapQuadtreeNodeIntersectsSphere(OpenGLLodMap *lodmap, QuadtreeNode *node, Vector *position, double radius);
 
 #ifdef __cplusplus
 }

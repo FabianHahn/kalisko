@@ -43,12 +43,14 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 16, 9);
+MODULE_VERSION(0, 17, 0);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 6), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 12, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
-static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node);
+static void createLodMapTile(Quadtree *tree, QuadtreeNode *node);
+static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node);
+static void deactivateLodMapTile(OpenGLLodMapTile *tile);
 static OpenGLHeightmapDrawMode getDrawModeForIndex(int index);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -163,13 +165,14 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	OpenGLLodMap *lodmap = ALLOCATE_OBJECT(OpenGLLodMap);
 	lodmap->source = source;
 	lodmap->heightmap = createOpenGLPrimitiveHeightmap(NULL, tileSize, tileSize); // create a managed heightmap that will serve as instance for our rendered tiles
-	lodmap->quadtree = createQuadtree(&loadLodMapTile, &freeLodMapTile);
+	lodmap->quadtree = createQuadtree(&createLodMapTile, &freeLodMapTile);
 	lodmap->selection = NULL;
 	lodmap->viewerPosition = createVector3(0.0, 0.0, 0.0);
 	lodmap->baseRange = baseRange;
 	lodmap->viewingDistance = viewingDistance;
 	lodmap->polygonMode = GL_FILL;
 	lodmap->morphStartFactor = 0.8f;
+	lodmap->loadingPool = g_thread_pool_new(&loadLodMapTile, lodmap, -1, false, NULL);
 
 	// create lodmap material
 	deleteOpenGLMaterial("lodmap");
@@ -230,13 +233,26 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 	lodmap->selection = NULL;
 
 	// select the LOD map nodes to be rendered
-	if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, lodmap->quadtree->root, position, range)) {
+	if(lodmapQuadtreeNodeIntersectsSphere(lodmap, lodmap->quadtree->root, position, range)) {
 		lodmap->selection = selectLodMapNodes(lodmap, position, lodmap->quadtree->root);
 
 		// make all selected nodes visible
 		for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
 			QuadtreeNode *node = iter->data;
 			OpenGLLodMapTile *tile = node->data;
+
+			// wait until the node is fully loaded
+			g_mutex_lock(tile->mutex);
+			while(tile->status == OPENGL_LODMAP_TILE_LOADING) {
+				g_cond_wait(tile->condition, tile->mutex);
+			}
+			g_mutex_unlock(tile->mutex);
+
+			// activate if not active yet
+			if(tile->status != OPENGL_LODMAP_TILE_ACTIVE) {
+				activateLodMapTile(lodmap, node);
+			}
+
 			tile->model->visible = true; // make model visible for rendering
 			tile->model->polygonMode = lodmap->polygonMode; // set the parent's polygon mode
 		}
@@ -260,6 +276,36 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 }
 
 /**
+ * Loads an LOD map tile.
+ *
+ * @param node_p		a pointer to the quadtree node for which to load the tile
+ * @param lodmap_p		a pointer to the LOD map for which to load the tile*
+ */
+API void loadLodMapTile(void *node_p, void *lodmap_p)
+{
+	QuadtreeNode *node = node_p;
+	OpenGLLodMap *lodmap = lodmap_p;
+	OpenGLLodMapTile *tile = node->data;
+
+	assert(tile->status == OPENGL_LODMAP_TILE_LOADING);
+	g_mutex_lock(tile->mutex); // lock the node so we can properly edit it
+
+	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level, &tile->minHeight, &tile->maxHeight);
+	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
+	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level, NULL, NULL);
+
+	// apply correct scaling to the height limits date which will be used for 3D distance checks
+	tile->minHeight *= lodmap->source->heightRatio;
+	tile->maxHeight *= lodmap->source->heightRatio;
+
+	tile->status = OPENGL_LODMAP_TILE_READY;
+
+	// notify waiting threads and release the lock
+	g_cond_signal(tile->condition);
+	g_mutex_unlock(tile->mutex);
+}
+
+/**
  * Frees an OpenGL LOD map
  *
  * @param lodmap				the OpenGL LOD map to free
@@ -267,6 +313,8 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	g_hash_table_remove(maps, lodmap->quadtree);
+
+	g_thread_pool_free(lodmap->loadingPool, false, true);
 	freeQuadtree(lodmap->quadtree);
 
 	deleteOpenGLMaterial("lodmap");
@@ -290,7 +338,7 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	GList *nodes = NULL;
 
 	double range = getLodMapNodeRange(lodmap, node);
-	if(!lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
+	if(!lodmapQuadtreeNodeIntersectsSphere(lodmap, node, position, range) && node->level > lodmap->viewingDistance) { // the node is outside its LOD viewing range and beyond the viewing distance, so cut it
 		return NULL;
 	}
 
@@ -304,8 +352,14 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 			QuadtreeNode *child = node->children[i];
 			OpenGLHeightmapDrawMode drawMode = getDrawModeForIndex(i);
 			double subrange = getLodMapNodeRange(lodmap, child);
-			if(lodmapQuadtreeNodeIntersectsSphere(lodmap->quadtree, child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
+			if(lodmapQuadtreeNodeIntersectsSphere(lodmap, child, position, subrange)) { // the child node is insite its LOD viewing range for the current viewer position
 				options.drawMode ^= drawMode; // don't draw this part if the child covers it
+
+				OpenGLLodMapTile *childTile = child->data;
+				if(childTile->status == OPENGL_LODMAP_TILE_META) { // we need to load this node
+					childTile->status = OPENGL_LODMAP_TILE_LOADING;
+					g_thread_pool_push(lodmap->loadingPool, child, NULL);
+				}
 
 				GList *childNodes = selectLodMapNodes(lodmap, position, child); // node selection
 				nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
@@ -321,6 +375,11 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 		OpenGLLodMapTile *tile = node->data;
 		tile->drawOptions = options;
 
+		if(tile->status == OPENGL_LODMAP_TILE_META) { // we need to load this node
+			tile->status = OPENGL_LODMAP_TILE_LOADING;
+			g_thread_pool_push(lodmap->loadingPool, tile, NULL);
+		}
+
 		nodes = g_list_append(nodes, node); // select ourselves
 	}
 
@@ -328,7 +387,34 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 }
 
 /**
- * Loads an LOD map tile by creating an OpenGL model with appropriate transform for it.
+ * Creates an LOD map tile
+ *
+ * @param tree			the quadtree for which to create the map tile
+ * @param node			the quadtree node for which to create the map data
+ */
+static void createLodMapTile(Quadtree *tree, QuadtreeNode *node)
+{
+	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
+	tile->status = OPENGL_LODMAP_TILE_INACTIVE;
+	tile->mutex = g_mutex_new();
+	tile->condition = g_cond_new();
+	tile->heights = NULL;
+	tile->heightsTexture = NULL;
+	tile->normals = NULL;
+	tile->normalsTexture = NULL;
+	tile->texture = NULL;
+	tile->textureTexture = NULL;
+	tile->parentOffset = NULL;
+	tile->minHeight = 0.0f;
+	tile->maxHeight = 0.0f;
+	tile->model = NULL;
+	tile->drawOptions.drawMode = OPENGL_HEIGHTMAP_DRAW_NONE;
+
+	node->data = tile;
+}
+
+/**
+ * Activates a loaded LOD map tile by creating an OpenGL model with appropriate transform for it.
  *
  * Every node model is derived from the same basic heightmap grid (the one in lodmap->heightmap). While the 2D vertex coordinates range
  * from [0,tileSize]x[0,tileSize], they are actually scaled down to [0,1]x[0,1] by the vertex shader, which conveniently means that a
@@ -338,25 +424,14 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
  * data source provides us with a heightRatio parameter which we need to take into account and scale all levels with, no matter their
  * level in the tree.
  *
- * @param tree			the quadtree for which to load the map tile
- * @param node			the quadtree node for which to load the map data
- * @result				the loaded LOD map tile
+ * @param lodmap		the LOD map for which to active the tile
+ * @param node			the quadtree node for which to activate the tile
  */
-static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
+static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node)
 {
-	OpenGLLodMap *lodmap = g_hash_table_lookup(maps, tree);
-	assert(lodmap != NULL);
+	OpenGLLodMapTile *tile = node->data;
 
-	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
-	node->data = tile;
-
-	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level, &tile->minHeight, &tile->maxHeight);
-	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
-	tile->texture = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_TEXTURE, node->x, node->y, node->level, NULL, NULL);
-
-	// apply correct scaling to the height limits date which will be used for 3D distance checks
-	tile->minHeight *= lodmap->source->heightRatio;
-	tile->maxHeight *= lodmap->source->heightRatio;
+	assert(tile->status == OPENGL_LODMAP_TILE_READY);
 
 	// Create OpenGL textures
 	tile->heightsTexture = createOpenGLVertexTexture2D(tile->heights);
@@ -386,10 +461,23 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 	updateOpenGLModelTransform(tile->model);
 
 	// At this point our tile is fully loaded except for the uniforms initialization, so let's initialize our parent now so we can grab its textures
+
 	OpenGLLodMapTile *parentTile;
 	tile->parentOffset = createVector2(0.0f, 0.0f);
 	if(node->parent != NULL) {
 		parentTile = node->parent->data;
+
+		// wait until the node is fully loaded
+		g_mutex_lock(parentTile->mutex);
+		while(parentTile->status == OPENGL_LODMAP_TILE_LOADING) {
+			g_cond_wait(parentTile->condition, parentTile->mutex);
+		}
+		g_mutex_unlock(parentTile->mutex);
+
+		// activate if not active yet
+		if(parentTile->status != OPENGL_LODMAP_TILE_ACTIVE) {
+			activateLodMapTile(lodmap, node->parent);
+		}
 
 		// determine our index in our parent's node
 		unsigned int parentIndex = quadtreeNodeGetParentContainingChildIndex(node);
@@ -421,6 +509,35 @@ static void loadLodMapTile(Quadtree *tree, QuadtreeNode *node)
 
 	// Make model invisible
 	tile->model->visible = false;
+
+	tile->status = OPENGL_LODMAP_TILE_ACTIVE;
+}
+
+/**
+ * Deactivates a loaded LOD map tile
+ *
+ * @param tile			the LOD map tile to deactivate
+ */
+static void deactivateLodMapTile(OpenGLLodMapTile *tile)
+{
+	assert(tile->status == OPENGL_LODMAP_TILE_ACTIVE);
+
+	freeOpenGLModel(tile->model);
+	tile->model = NULL;
+
+	freeOpenGLTexture(tile->heightsTexture);
+	tile->heightsTexture = NULL;
+
+	freeOpenGLTexture(tile->normalsTexture);
+	tile->normalsTexture = NULL;
+
+	freeOpenGLTexture(tile->textureTexture);
+	tile->textureTexture = NULL;
+
+	freeVector(tile->parentOffset);
+	tile->parentOffset = NULL;
+
+	tile->status = OPENGL_LODMAP_TILE_READY;
 }
 
 /**
@@ -459,10 +576,17 @@ static OpenGLHeightmapDrawMode getDrawModeForIndex(int index)
 static void freeLodMapTile(Quadtree *tree, void *data)
 {
 	OpenGLLodMapTile *tile = data;
-	freeOpenGLModel(tile->model);
-	freeOpenGLTexture(tile->heightsTexture);
-	freeOpenGLTexture(tile->normalsTexture);
-	freeOpenGLTexture(tile->textureTexture);
-	freeVector(tile->parentOffset);
+
+	g_mutex_free(tile->mutex);
+	g_cond_free(tile->condition);
+
+	if(tile->status == OPENGL_LODMAP_TILE_ACTIVE) {
+		deactivateLodMapTile(tile);
+	} else if(tile->status == OPENGL_LODMAP_TILE_READY) {
+		freeImage(tile->heights);
+		freeImage(tile->normals);
+		freeImage(tile->texture);
+	}
+
 	free(tile);
 }

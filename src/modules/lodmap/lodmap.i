@@ -21,6 +21,7 @@
 #ifndef LODMAP_LODMAP_H
 #define LODMAP_LODMAP_H
 
+#include <glib.h>
 #include <GL/glew.h>
 #include "modules/opengl/primitive.h"
 #include "modules/opengl/model.h"
@@ -32,9 +33,27 @@
 #include "source.h"
 
 /**
+ * Enum encoding the current status of an OpenGL LOD map tile
+ */
+typedef enum {
+	OPENGL_LODMAP_TILE_INACTIVE,
+	OPENGL_LODMAP_TILE_META,
+	OPENGL_LODMAP_TILE_LOADING,
+	OPENGL_LODMAP_TILE_READY,
+	OPENGL_LODMAP_TILE_ACTIVE,
+	OPENGL_LODMAP_TILE_UNLOADING,
+} OpenGLLodMapTileStatus;
+
+/**
  * Struct representing an OpenGL LOD map tile
  */
 typedef struct {
+	/** The status of this tile */
+	OpenGLLodMapTileStatus status;
+	/** The mutex for multithreaded access to this tile */
+	GMutex *mutex;
+	/** The locking condition for multithreaded access to this tile */
+	GCond *condition;
 	/** The height field of the tile */
 	Image *heights;
 	/** The height texture of the tile */
@@ -81,12 +100,15 @@ typedef struct {
 	GLuint polygonMode;
 	/** The factor of the LOD range at which the vertex morphing should start */
 	float morphStartFactor;
+	/** The thread pool used for node loading */
+	GThreadPool *loadingPool;
 } OpenGLLodMap;
 
 API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store);
 API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance);
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
+API void loadLodMapTile(void *node_p, void *lodmap_p);
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 
 /**

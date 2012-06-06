@@ -27,15 +27,12 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 11, 2);
-MODULE_BCVERSION(0, 11, 0);
+MODULE_VERSION(0, 12, 0);
+MODULE_BCVERSION(0, 12, 0);
 MODULE_NODEPS;
 
-static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time);
-static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
-static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level);
-static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time);
-static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target);
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double x, double y, unsigned int level);
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node);
 static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string, unsigned int level);
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node);
 
@@ -51,32 +48,27 @@ MODULE_FINALIZE
 /**
  * Creates a new quadtree
  *
- * @param capacity				the caching capacity of the quadtree
- * @param load					the load function to use for the quadtree data
+ * @param load					the create function to use for the quadtree data
  * @param free					the free function to use for the quadtree data
- * @param preloadChildData		specifies whether the load function expects its child nodes to be already loaded
  * @result						the created quadtree
  */
-API Quadtree *createQuadtree(unsigned int capacity, QuadtreeDataLoadFunction *load, QuadtreeDataFreeFunction *free, bool preloadChildData)
+API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFreeFunction *free)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
-	quadtree->capacity = capacity;
-	quadtree->load = load;
+	quadtree->create = create;
 	quadtree->free = free;
-	quadtree->preloadChildData = preloadChildData;
-	quadtree->pruneFactor = 0.75f;
 	quadtree->root = ALLOCATE_OBJECT(QuadtreeNode);
 	quadtree->root->x = 0;
 	quadtree->root->y = 0;
-	quadtree->root->weight = 0;
-	quadtree->root->time = getMicroTime();
 	quadtree->root->level = 0;
-	quadtree->root->parent = 0;
+	quadtree->root->parent = NULL;
 	quadtree->root->children[0] = NULL;
 	quadtree->root->children[1] = NULL;
 	quadtree->root->children[2] = NULL;
 	quadtree->root->children[3] = NULL;
 	quadtree->root->data = NULL;
+
+	create(quadtree, quadtree->root);
 
 	return quadtree;
 }
@@ -94,10 +86,7 @@ API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
 	// free all the existing nodes first
 	freeQuadtreeNode(tree, tree->root);
 
-	double time = getMicroTime();
-
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
-	newRoot->time = time;
 	newRoot->x = rootX;
 	newRoot->y = rootY;
 	newRoot->level = rootLevel;
@@ -109,9 +98,11 @@ API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
 	newRoot->children[3] = NULL;
 	tree->root = newRoot;
 
+	tree->create(tree, newRoot);
+
 	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
 	LOG_DEBUG("Reshaping quadtree to range [%d,%d]x[%d,%d]", box.minX, box.maxX, box.minY, box.maxY);
-	fillTreeNodes(tree, tree->root, time);
+	fillTreeNodes(tree, tree->root);
 }
 
 /**
@@ -127,7 +118,6 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 		return; // nothing to do
 	}
 
-	double time = getMicroTime();
 	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
 	bool isLowerX = x < box.minX;
 	bool isLowerY = y < box.minY;
@@ -135,7 +125,6 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	LOG_DEBUG("Expanding quadtree from range [%d,%d]x[%d,%d] to cover point (%f,%f)", box.minX, box.maxX, box.minY, box.maxY, x, y);
 
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
-	newRoot->time = time;
 	newRoot->level = tree->root->level + 1;
 	newRoot->data = NULL;
 	newRoot->parent = NULL;
@@ -165,76 +154,13 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 
 	tree->root->parent = newRoot;
 	tree->root = newRoot;
-	fillTreeNodes(tree, tree->root, time);
 
-	// update node weight
-	newRoot->weight = newRoot->children[0]->weight + newRoot->children[1]->weight + newRoot->children[2]->weight + newRoot->children[3]->weight + (quadtreeNodeDataIsLoaded(newRoot) ? 1 : 0);
+	tree->create(tree, newRoot);
+
+	fillTreeNodes(tree, tree->root);
 
 	// recursively expand to make sure we include the point
 	expandQuadtree(tree, x, y);
-}
-
-/**
- * Loads the data for a quadtree node. If preloadChildData is set, recursively loads the child nodes' data first.
- *
- * @param tree			the quadtree in which to load a node's data
- * @param node			the quadtree node for which to load the data
- * @param trackback		specifies whether the path to the root node should be tracked back and all node weights and access times should be updated accordingly (not doing this leaves the quadtree in a consistent state, but you might want to do this yourself for efficiency reasons)
- * @result				the loaded node data
- */
-API void *loadQuadtreeNodeData(Quadtree *tree, QuadtreeNode *node, bool trackback)
-{
-	double time = getMicroTime();
-	void *data = loadQuadtreeNodeDataRec(tree, node, time);
-
-	if(trackback) {
-		trackbackQuadtreeNode(tree, node);
-	}
-
-	return data;
-}
-
-/**
- * Tracks back a quadtree node by following its parent path back to the root and updates all node weights and access times accordingly
- *
- * @param tree			the tree in which the node is located
- * @param node			the node from which to track back
- */
-API void trackbackQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
-{
-	double time = getMicroTime();
-
-	for(QuadtreeNode *iter = node; iter != NULL; iter = iter->parent) {
-		iter->weight = iter->children[0]->weight + iter->children[1]->weight + iter->children[2]->weight + iter->children[3]->weight + (quadtreeNodeDataIsLoaded(iter) ? 1 : 0);
-		iter->time = time;
-	}
-}
-
-/**
- * Lookup a node's data in the quadtree
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param y				the y coordinate to lookup
- * @param level			the depth level at which to lookup the node data
- * @result				the looked up quadtree node's data
- */
-API void *lookupQuadtree(Quadtree *tree, double x, double y, unsigned int level)
-{
-	if(!quadtreeContainsPoint(tree, x, y)) {
-		// tree doesn't contain this part yet, so expand first...
-		expandQuadtree(tree, x, y);
-	}
-
-	// Prune the quadtree if necessary
-	pruneQuadtree(tree);
-
-	// Perform the lookup
-	double time = getMicroTime();
-	void *data = lookupQuadtreeRec(tree, tree->root, time, x, y, level);
-
-	// Return the looked up data
-	return data;
 }
 
 /**
@@ -252,29 +178,7 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
 		expandQuadtree(tree, x, y);
 	}
 
-	double time = getMicroTime();
-	return lookupQuadtreeNodeRec(tree, tree->root, time, x, y, level);
-}
-
-/**
- * Prune a quadtree by unloading cached leaf node data
- *
- * @param tree		the quadtree to prune
- */
-API void pruneQuadtree(Quadtree *tree)
-{
-	if(tree->root->weight <= (tree->capacity - 1)) { // make sure to prune already at capacity - 1 elements since we could lookup one more in a subsequent lookup
-		return; // nothing to do
-	}
-
-	unsigned int target = tree->root->weight - floor(tree->capacity * tree->pruneFactor);
-
-	LOG_DEBUG("Pruning %u quadtree nodes", target);
-
-	double time = getMicroTime();
-	pruneQuadtreeNode(tree, tree->root, time, &target);
-
-	assert(tree->root->weight <= tree->capacity);
+	return lookupQuadtreeNodeRec(tree, tree->root, x, y, level);
 }
 
 /**
@@ -286,7 +190,7 @@ API void pruneQuadtree(Quadtree *tree)
 API char *dumpQuadtree(Quadtree *tree)
 {
 	GString *string = g_string_new("");
-	g_string_append_printf(string, "Quadtree: capacity = %u\n", tree->capacity);
+	g_string_append_printf(string, "Quadtree:\n");
 
 	// dump all the nodes
 	dumpQuadtreeNode(tree, tree->root, string, 0);
@@ -313,100 +217,18 @@ API void freeQuadtree(Quadtree *tree)
 }
 
 /**
- * Recursively loads the data for a quadtree node.
- * Note that this operation only updates the access time and the node weight of this node's subtree where appropriate, but not the values of the parent chain.
- * This means that if you want the tree weights to be consistent, you must track back the path to the root yourself and recursively update these nodes' weights.
- *
- * @param tree			the quadtree in which to load a node's data
- * @param node			the quadtree node for which to load the data
- * @param time			the current timestamp to set for caching
- * @result				the loaded node data
- */
-static void *loadQuadtreeNodeDataRec(Quadtree *tree, QuadtreeNode *node, double time)
-{
-	if(quadtreeNodeDataIsLoaded(node)) {
-		return node->data; // nothing to do if we're already loaded
-	}
-
-	QuadtreeAABB box = quadtreeNodeAABB(node);
-
-	if(node->level > 0 && tree->preloadChildData) {
-		LOG_DEBUG("Preloading quadtree children of node with range [%d,%d]x[%d,%d]...", box.minX, box.maxX, box.minY, box.maxY);
-
-		// Make sure the children are already loaded before loading this one
-		for(unsigned int i = 0; i < 4; i++) {
-			if(!quadtreeNodeDataIsLoaded(node->children[i])) {
-				loadQuadtreeNodeDataRec(tree, node->children[i], time);
-			}
-		}
-	}
-
-	LOG_DEBUG("Loading quadtree node data for range [%d,%d]x[%d,%d] at level %u", box.minX, box.maxX, box.minY, box.maxY, node->level);
-	tree->load(tree, node);
-
-	// update node weight
-	if(quadtreeNodeIsLeaf(node)) {
-		node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
-	} else {
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
-	}
-
-	return node->data;
-}
-
-/**
- * Recursively lookup the data of a node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
- *
- * @param tree			the quadtree to lookup
- * @param node			the current node we're traversing
- * @param time			the current timestamp to set for caching
- * @param x				the x coordinate to lookup
- * @param y				the y coordinate to lookup
- * @param level			the depth level at which to lookup the node data
- * @result				the looked up quadtree node data
- */
-static void *lookupQuadtreeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
-{
-	assert(quadtreeNodeContainsPoint(node, x, y));
-
-	node->time = time; // update access time
-
-	if(node->level <= level) { // we hit the desired level
-		if(!quadtreeNodeDataIsLoaded(node)) { // make sure the data is loaded
-			loadQuadtreeNodeDataRec(tree, node, time);
-		}
-		return node->data;
-	} else {
-		assert(!quadtreeNodeIsLeaf(node));
-
-		int index = quadtreeNodeGetContainingChildIndex(node, x, y);
-		QuadtreeNode *child = node->children[index];
-		void *data = lookupQuadtreeRec(tree, child, time, x, y, level);
-
-		// update node weight
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
-
-		// return looked up data
-		return data;
-	}
-}
-
-/**
  * Recursively lookup a node in a quadtree. Make sure that the node actually contains the point you're looking for before calling this function.
  *
  * @param tree			the quadtree to lookup
  * @param node			the current node we're traversing
- * @param time			the current timestamp to set for caching
  * @param x				the x coordinate to lookup
  * @param y				the y coordinate to lookup
  * @param level			the depth level at which to lookup the node
  * @result				the looked up quadtree node
  */
-static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double time, double x, double y, unsigned int level)
+static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, double x, double y, unsigned int level)
 {
 	assert(quadtreeNodeContainsPoint(node, x, y));
-
-	node->time = time; // update access time
 
 	if(node->level <= level) { // we hit the desired level
 		return node;
@@ -415,7 +237,7 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
 
 		int index = quadtreeNodeGetContainingChildIndex(node, x, y);
 		QuadtreeNode *child = node->children[index];
-		return lookupQuadtreeNodeRec(tree, child, time, x, y, level);
+		return lookupQuadtreeNodeRec(tree, child, x, y, level);
 	}
 }
 
@@ -424,9 +246,8 @@ static QuadtreeNode *lookupQuadtreeNodeRec(Quadtree *tree, QuadtreeNode *node, d
  *
  * @param tree			the tree to fill with nodes
  * @param node			the current node we're traversing
- * @param time			the current timestamp used for caching
  */
-static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
+static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node)
 {
 	if(quadtreeNodeIsLeaf(node)) { // exit condition, reached leaf
 		return;
@@ -436,8 +257,6 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 		if(node->children[i] == NULL) { // if child node doesn't exist yet, create it
 			node->children[i] = ALLOCATE_OBJECT(QuadtreeNode);
 			node->children[i]->level = node->level - 1;
-			node->children[i]->weight = 0;
-			node->children[i]->time = time;
 			node->children[i]->parent = node;
 
 			unsigned int scale = quadtreeNodeScale(node->children[i]);
@@ -450,57 +269,11 @@ static void fillTreeNodes(Quadtree *tree, QuadtreeNode *node, double time)
 			node->children[i]->children[1] = NULL;
 			node->children[i]->children[2] = NULL;
 			node->children[i]->children[3] = NULL;
+
+			tree->create(tree, node->children[i]);
 		}
 
-		fillTreeNodes(tree, node->children[i], time); // recursively fill the child nodes
-	}
-}
-
-/**
- * Recursively prunes a quadtree node by unloading cached leaf node data
- *
- * @param tree			the tree to prune
- * @param node			the current node we're traversing
- * @param time			the current timestamp used for caching
- * @param target		a pointer to the number of nodes we still have to prune
- */
-static void pruneQuadtreeNode(Quadtree *tree, QuadtreeNode *node, double time, unsigned int *target)
-{
-	if(!quadtreeNodeIsLeaf(node)) { // prune lower levels first
-		while(*target > 0) {
-			// determine child that wasn't accessed the longest
-			int minChild = -1;
-			double minTime = time;
-			for(int i = 0; i < 4; i++) {
-				if(node->children[i]->weight > 0 && (minChild == -1 || node->children[i]->time <= minTime)) {
-					minChild = i;
-					minTime = node->children[i]->time;
-				}
-			}
-
-			if(minChild == -1) { // all of the children were pruned
-				break;
-			}
-
-			// prune the child with the oldest access time
-			pruneQuadtreeNode(tree, node->children[minChild], time, target);
-		}
-	}
-
-	// prune ourselves
-	if(quadtreeNodeDataIsLoaded(node) && *target > 0) {
-		QuadtreeAABB box = quadtreeNodeAABB(node);
-		LOG_DEBUG("Pruning quadtree node covering range [%d,%d]x[%d,%d] with access time %f", box.minX, box.maxX, box.minY, box.maxY, node->time);
-		tree->free(tree, node->data);
-		node->data = NULL;
-		*target = *target - 1;
-	}
-
-	// update node weight
-	if(quadtreeNodeIsLeaf(node)) {
-		node->weight = quadtreeNodeDataIsLoaded(node) ? 1 : 0;
-	} else {
-		node->weight = node->children[0]->weight + node->children[1]->weight + node->children[2]->weight + node->children[3]->weight + (quadtreeNodeDataIsLoaded(node) ? 1 : 0);
+		fillTreeNodes(tree, node->children[i]); // recursively fill the child nodes
 	}
 }
 
@@ -519,7 +292,7 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
 	}
 
 	QuadtreeAABB box = quadtreeNodeAABB(node);
-	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d], weight = %u, time = %f, loaded = %s\n", box.minX, box.maxX, box.minY, box.maxY, node->weight, node->time, quadtreeNodeDataIsLoaded(node) ? "yes" : "no");
+	g_string_append_printf(string, "Quadtree node: range = [%d,%d]x[%d,%d]\n", box.minX, box.maxX, box.minY, box.maxY);
 
 	if(!quadtreeNodeIsLeaf(node)) {
 		for(unsigned int i = 0; i < 4; i++) {
@@ -536,15 +309,14 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
  */
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
 {
-	if(quadtreeNodeIsLeaf(node)) {
-		if(quadtreeNodeDataIsLoaded(node)) {
-			tree->free(tree, node->data); // free this node's data
-		}
-	} else {
+	if(!quadtreeNodeIsLeaf(node)) {
 		for(int i = 0; i < 4; i++) {
 			freeQuadtreeNode(tree, node->children[i]);
 		}
 	}
+
+	// free this node's data
+	tree->free(tree, node->data);
 
 	// free the node if all the children are or the data is freed
 	free(node);

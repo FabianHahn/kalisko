@@ -26,31 +26,29 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 2, 10);
-MODULE_BCVERSION(0, 2, 10);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 11, 0));
+MODULE_VERSION(0, 3, 0);
+MODULE_BCVERSION(0, 3, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 12, 0));
 
 static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
 
 TEST_CASE(expand);
 TEST_CASE(data);
-TEST_CASE(cache);
 
 TEST_SUITE_BEGIN(quadtree)
 	TEST_CASE_ADD(expand);
 	TEST_CASE_ADD(data);
-	TEST_CASE_ADD(cache);
 TEST_SUITE_END
 
 TEST_CASE(expand)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(100, NULL, NULL, false);
+	Quadtree *tree = createQuadtree(&testDataLoadFunction, &testDataFreeFunction);
 	QuadtreeNode *origRoot = tree->root;
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
 
-	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0, 0);
+	QuadtreeNode *node = lookupQuadtreeNode(tree, 1.0, 1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, 1.0, 1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(node, 1.0, 1.0));
 	QuadtreeAABB box = quadtreeNodeAABB(node);
@@ -72,13 +70,13 @@ TEST_CASE(expand)
 	TEST_ASSERT(box2.minY == 1);
 	TEST_ASSERT(box2.maxY == 2);
 
-	QuadtreeNode *node2 = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 1.0, 1.0, 0);
+	QuadtreeNode *node2 = lookupQuadtreeNode(tree, 1.0, 1.0, 0);
 	TEST_ASSERT(node == node2);
 
 	TEST_ASSERT(!quadtreeContainsPoint(tree, -1.0, -1.0));
 	origRoot = tree->root;
 
-	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, -1.0, -1.0, 0);
+	node = lookupQuadtreeNode(tree, -1.0, -1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, -1.0, -1.0));
 	TEST_ASSERT(quadtreeNodeContainsPoint(node, -1.0, -1.0));
 	box = quadtreeNodeAABB(node);
@@ -95,67 +93,30 @@ TEST_CASE(expand)
 	TEST_ASSERT(box0.maxY == 0);
 
 	// cleanup
-	$(void, quadtree, freeQuadtree)(tree);
+	freeQuadtree(tree);
 
 	TEST_PASS;
 }
 
 TEST_CASE(data)
 {
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(100, &testDataLoadFunction, &testDataFreeFunction, false);
+	Quadtree *tree = createQuadtree(&testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);
 
-	QuadtreeNode *data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
-	QuadtreeNode *node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
+	QuadtreeNode *data = lookupQuadtree(tree, 0.0, 0.0, 0);
+	QuadtreeNode *node = lookupQuadtreeNode(tree, 0.0, 0.0, 0);
 	TEST_ASSERT(data == node);
 
-	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 1.0, 0);
-	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 1.0, 0);
+	data = lookupQuadtree(tree, 0.0, 1.0, 0);
+	node = lookupQuadtreeNode(tree, 0.0, 1.0, 0);
 	TEST_ASSERT(data == node);
 
-	data = $(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
-	node = $(QuadtreeNode *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
+	data = lookupQuadtree(tree, 0.0, 0.0, 0);
+	node = lookupQuadtreeNode(tree, 0.0, 0.0, 0);
 	TEST_ASSERT(data == node);
 
 	// cleanup
-	$(void, quadtree, freeQuadtree)(tree);
-
-	TEST_PASS;
-}
-
-TEST_CASE(cache)
-{
-	Quadtree *tree = $(Quadtree *, quadtree, createQuadtree)(1, &testDataLoadFunction, &testDataFreeFunction, false);
-	TEST_ASSERT(tree != NULL);
-	TEST_ASSERT(tree->root->weight == 0);
-
-	// just load a node
-	QuadtreeNode *node = $(void *, quadtree, lookupQuadtreeNode)(tree, 0.0, 0.0, 0);
-	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node));
-	TEST_ASSERT(tree->root->weight == 0);
-	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
-	TEST_ASSERT(quadtreeNodeDataIsLoaded(node));
-	TEST_ASSERT(tree->root->weight == 1);
-
-	// now load another one and prune the first one
-	QuadtreeNode *node2 = $(void *, quadtree, lookupQuadtreeNode)(tree, 1.0, 0.0, 0);
-	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node2));
-	TEST_ASSERT(tree->root->weight == 1);
-	$(void *, quadtree, lookupQuadtree)(tree, 1.0, 0.0, 0);
-	TEST_ASSERT(quadtreeNodeDataIsLoaded(node2));
-	TEST_ASSERT(tree->root->weight == 1);
-
-	// original node should be unloaded now
-	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node));
-
-	// do the reverse
-	$(void *, quadtree, lookupQuadtree)(tree, 0.0, 0.0, 0);
-	TEST_ASSERT(!quadtreeNodeDataIsLoaded(node2));
-	TEST_ASSERT(quadtreeNodeDataIsLoaded(node));
-	TEST_ASSERT(tree->root->weight == 1);
-
-	// cleanup
-	$(void, quadtree, freeQuadtree)(tree);
+	freeQuadtree(tree);
 
 	TEST_PASS;
 }

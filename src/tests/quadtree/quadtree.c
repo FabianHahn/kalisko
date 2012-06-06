@@ -26,9 +26,9 @@
 MODULE_NAME("test_quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the quadtree module");
-MODULE_VERSION(0, 3, 0);
-MODULE_BCVERSION(0, 3, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 12, 0));
+MODULE_VERSION(0, 3, 1);
+MODULE_BCVERSION(0, 3, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 12, 2));
 
 static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
@@ -44,7 +44,6 @@ TEST_SUITE_END
 TEST_CASE(expand)
 {
 	Quadtree *tree = createQuadtree(&testDataLoadFunction, &testDataFreeFunction);
-	QuadtreeNode *origRoot = tree->root;
 	TEST_ASSERT(tree != NULL);
 	TEST_ASSERT(!quadtreeContainsPoint(tree, 1.0, 1.0));
 
@@ -57,7 +56,6 @@ TEST_CASE(expand)
 	TEST_ASSERT(box.minY == 1);
 	TEST_ASSERT(box.maxY == 2);
 	TEST_ASSERT(tree->root->level == 1);
-	TEST_ASSERT(tree->root->children[0] == origRoot);
 	TEST_ASSERT(tree->root->children[3] == node);
 	QuadtreeAABB box1 = quadtreeNodeAABB(tree->root->children[1]);
 	TEST_ASSERT(box1.minX == 1);
@@ -74,7 +72,7 @@ TEST_CASE(expand)
 	TEST_ASSERT(node == node2);
 
 	TEST_ASSERT(!quadtreeContainsPoint(tree, -1.0, -1.0));
-	origRoot = tree->root;
+	QuadtreeNode *origRoot = tree->root;
 
 	node = lookupQuadtreeNode(tree, -1.0, -1.0, 0);
 	TEST_ASSERT(quadtreeContainsPoint(tree, -1.0, -1.0));

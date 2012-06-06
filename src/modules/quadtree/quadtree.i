@@ -149,6 +149,10 @@ static inline QuadtreeAABB quadtreeNodeAABB(QuadtreeNode *node)
  */
 static inline bool quadtreeNodeContainsPoint(QuadtreeNode *node, double x, double y)
 {
+	if(node == NULL) {
+		return false;
+	}
+
 	QuadtreeAABB box = quadtreeNodeAABB(node);
 	return x >= box.minX && x < box.maxX && y >= box.minY && y < box.maxY;
 }

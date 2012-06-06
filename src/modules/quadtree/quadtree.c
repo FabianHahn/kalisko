@@ -27,7 +27,7 @@
 MODULE_NAME("quadtree");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module providing a quad tree data structure");
-MODULE_VERSION(0, 12, 1);
+MODULE_VERSION(0, 12, 2);
 MODULE_BCVERSION(0, 12, 0);
 MODULE_NODEPS;
 
@@ -57,18 +57,7 @@ API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFre
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
 	quadtree->create = create;
 	quadtree->free = free;
-	quadtree->root = ALLOCATE_OBJECT(QuadtreeNode);
-	quadtree->root->x = 0;
-	quadtree->root->y = 0;
-	quadtree->root->level = 0;
-	quadtree->root->parent = NULL;
-	quadtree->root->children[0] = NULL;
-	quadtree->root->children[1] = NULL;
-	quadtree->root->children[2] = NULL;
-	quadtree->root->children[3] = NULL;
-	quadtree->root->data = NULL;
-
-	create(quadtree, quadtree->root);
+	quadtree->root = NULL;
 
 	return quadtree;
 }
@@ -114,6 +103,20 @@ API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
  */
 API void expandQuadtree(Quadtree *tree, double x, double y)
 {
+	if(tree->root == NULL) {
+		tree->root = ALLOCATE_OBJECT(QuadtreeNode);
+		tree->root->x = 0;
+		tree->root->y = 0;
+		tree->root->level = 0;
+		tree->root->parent = NULL;
+		tree->root->children[0] = NULL;
+		tree->root->children[1] = NULL;
+		tree->root->children[2] = NULL;
+		tree->root->children[3] = NULL;
+		tree->root->data = NULL;
+		tree->create(tree, tree->root);
+	}
+
 	if(quadtreeContainsPoint(tree, x, y)) {
 		return; // nothing to do
 	}
@@ -309,6 +312,10 @@ static void dumpQuadtreeNode(Quadtree *tree, QuadtreeNode *node, GString *string
  */
 static void freeQuadtreeNode(Quadtree *tree, QuadtreeNode *node)
 {
+	if(node == NULL) {
+		return;
+	}
+
 	if(!quadtreeNodeIsLeaf(node)) {
 		for(int i = 0; i < 4; i++) {
 			freeQuadtreeNode(tree, node->children[i]);

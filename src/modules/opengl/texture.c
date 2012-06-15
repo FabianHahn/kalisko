@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2011, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -49,6 +49,7 @@ API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 	texture->internalFormat = -1;
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
 	texture->wrappingMode = OPENGL_TEXTURE_WRAPPING_REPEAT;
+	texture->managed = true;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
@@ -132,10 +133,10 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	Image *image;
 	switch(images[0]->type) {
 		case IMAGE_TYPE_BYTE:
-			image = $(Image *, image, createImageByte)(images[0]->width, size * images[0]->height, images[0]->channels);
+			image = createImageByte(images[0]->width, size * images[0]->height, images[0]->channels);
 		break;
 		case IMAGE_TYPE_FLOAT:
-			image = $(Image *, image, createImageFloat)(images[0]->width, size * images[0]->height, images[0]->channels);
+			image = createImageFloat(images[0]->width, size * images[0]->height, images[0]->channels);
 		break;
 		default:
 			LOG_ERROR("Failed to create OpenGL 2D texture array: Unsupported image type '%d'", images[0]->type);
@@ -147,7 +148,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	for(unsigned int i = 0; i < size; i++) {
 		if(images[i]->type != images[0]->type || images[i]->width != images[0]->width || images[i]->height != images[0]->height || images[i]->channels != images[0]->channels) {
 			LOG_ERROR("Failed to create OpenGL 2D texture array: Image '%u' doesn't match the parameters of the first image", i);
-			$(void, image, freeImage)(image);
+			freeImage(image);
 			return NULL;
 		}
 
@@ -172,6 +173,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	texture->internalFormat = -1;
 	texture->samplingMode = OPENGL_TEXTURE_SAMPLING_MIPMAP_LINEAR;
 	texture->wrappingMode = OPENGL_TEXTURE_WRAPPING_REPEAT;
+	texture->managed = true;
 
 	// Create texture
 	glGenTextures(1, &texture->texture);
@@ -349,7 +351,10 @@ API void freeOpenGLTexture(OpenGLTexture *texture)
 {
 	assert(texture != NULL);
 
-	$(void, image, freeImage)(texture->image);
+	if(texture->managed) {
+		freeImage(texture->image);
+	}
+
 	glDeleteTextures(1, &texture->texture);
 	free(texture);
 }

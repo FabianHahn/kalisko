@@ -82,6 +82,8 @@ typedef struct {
 	GLuint format;
 	/** The internal texture format to use for this texture */
 	GLuint internalFormat;
+	/** Specifies whether the texture image should be freed along with the texture */
+	bool managed;
 } OpenGLTexture;
 
 API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init);

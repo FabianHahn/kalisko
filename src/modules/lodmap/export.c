@@ -93,6 +93,25 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 {
 	OpenGLLodMapTile *tile = node->data;
 
+	switch(tile->status) {
+		case OPENGL_LODMAP_TILE_INACTIVE:
+		case OPENGL_LODMAP_TILE_META:
+			tile->status = OPENGL_LODMAP_TILE_LOADING;
+			loadLodMapTile(node, lodmap); // load the node
+		break;
+		case OPENGL_LODMAP_TILE_LOADING:
+			// wait until the node is fully loaded
+			g_mutex_lock(tile->mutex);
+			while(tile->status == OPENGL_LODMAP_TILE_LOADING) {
+				g_cond_wait(tile->condition, tile->mutex);
+			}
+			g_mutex_unlock(tile->mutex);
+		break;
+		default:
+			// nothing to do
+		break;
+	}
+
 	setStorePath(meta, "minHeight", createStoreFloatNumberValue(tile->minHeight));
 	setStorePath(meta, "maxHeight", createStoreFloatNumberValue(tile->maxHeight));
 	setStorePath(meta, "children", createStoreListValue(NULL));

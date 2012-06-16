@@ -32,7 +32,7 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 4, 0);
+MODULE_VERSION(0, 4, 1);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
@@ -201,12 +201,14 @@ API int triggerEvent(void *subject, const char *event, ...)
 	GHashTable *events;
 
 	if((events = g_hash_table_lookup(subjects, subject)) == NULL) {
+		g_static_rec_mutex_unlock(&mutex);
 		return -1;
 	}
 
 	GQueue *queue;
 
 	if((queue = g_hash_table_lookup(events, event)) == NULL) {
+		g_static_rec_mutex_unlock(&mutex);
 		return -1;
 	}
 
@@ -248,12 +250,14 @@ API int getEventListenerCount(void *subject, const char *event)
 	GHashTable *events;
 
 	if((events = g_hash_table_lookup(subjects, subject)) == NULL) { // Create events if it doesn't exist yet
+		g_static_rec_mutex_unlock(&mutex);
 		return 0;
 	}
 
 	GQueue *queue;
 
 	if((queue = g_hash_table_lookup(events, event)) == NULL) { // Create queue if it doesn't exist yet
+		g_static_rec_mutex_unlock(&mutex);
 		return 0;
 	}
 

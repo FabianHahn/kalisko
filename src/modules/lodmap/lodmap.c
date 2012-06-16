@@ -43,14 +43,16 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 17, 0);
+MODULE_VERSION(0, 18, 0);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 12), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 12, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
 static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, QuadtreeNode *node);
+static void preloadLodMapNode(OpenGLLodMap *lodmap, QuadtreeNode *node);
 static void createLodMapTile(Quadtree *tree, QuadtreeNode *node);
 static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node);
 static void deactivateLodMapTile(OpenGLLodMapTile *tile);
+static void unloadLodMapTile(OpenGLLodMapTile *tile);
 static OpenGLHeightmapDrawMode getDrawModeForIndex(int index);
 static void freeLodMapTile(Quadtree *tree, void *data);
 
@@ -225,8 +227,6 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 	}
 
 	double range = getLodMapNodeRange(lodmap, lodmap->quadtree->root);
-	QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree->root);
-	LOG_DEBUG("Updating LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level);
 
 	// free our previous selection list
 	g_list_free(lodmap->selection);
@@ -257,9 +257,11 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 			tile->model->polygonMode = lodmap->polygonMode; // set the parent's polygon mode
 		}
 
-		LOG_DEBUG("Selected %u LOD map nodes", g_list_length(lodmap->selection));
+		QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree->root);
+		LOG_DEBUG("Updated LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels: %d nodes selected", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level, g_list_length(lodmap->selection));
 	}
 }
+
 
 /**
  * Draws an OpenGL LOD map
@@ -363,6 +365,8 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 
 				GList *childNodes = selectLodMapNodes(lodmap, position, child); // node selection
 				nodes = g_list_concat(nodes, childNodes); // append the child's nodes to our selection
+			} else { // not in viewing range yet, but might be soon, so preload it
+				preloadLodMapNode(lodmap, child);
 			}
 		}
 
@@ -384,6 +388,57 @@ static GList *selectLodMapNodes(OpenGLLodMap *lodmap, Vector *position, Quadtree
 	}
 
 	return nodes;
+}
+
+
+/**
+ * Preloads a given LOD map node and unloads its children if they were previously preloaded
+ *
+ * @param lodmap		the LOD map for which to preload nodes
+ * @param node			the quadtree node which we should preload
+ */
+static void preloadLodMapNode(OpenGLLodMap *lodmap, QuadtreeNode *node)
+{
+	OpenGLLodMapTile *tile = node->data;
+	QuadtreeAABB box = quadtreeNodeAABB(node);
+
+	switch(tile->status) {
+		case OPENGL_LODMAP_TILE_ACTIVE:
+			deactivateLodMapTile(tile);
+		break;
+		case OPENGL_LODMAP_TILE_INACTIVE:
+		case OPENGL_LODMAP_TILE_META:
+			LOG_DEBUG("Preloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d) - %d threads active", box.minX, box.maxX, box.minY, box.maxY, node->level, g_thread_pool_get_num_threads(lodmap->loadingPool));
+			tile->status = OPENGL_LODMAP_TILE_LOADING;
+			g_thread_pool_push(lodmap->loadingPool, node, NULL);
+		break;
+		default:
+			// nothing to do
+		break;
+	}
+
+	if(!quadtreeNodeIsLeaf(node)) { // if this node has children, we can unload their data
+		for(unsigned int i = 0; i < 4; i++) {
+			QuadtreeNode *child = node->children[i];
+			OpenGLLodMapTile *childTile = child->data;
+			QuadtreeAABB childBox = quadtreeNodeAABB(child);
+
+			switch(childTile->status) {
+				case OPENGL_LODMAP_TILE_ACTIVE:
+					LOG_DEBUG("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
+					deactivateLodMapTile(childTile);
+					unloadLodMapTile(childTile);
+				break;
+				case OPENGL_LODMAP_TILE_READY:
+					LOG_DEBUG("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
+					unloadLodMapTile(childTile);
+				break;
+				default:
+					// nothing to do
+				break;
+			}
+		}
+	}
 }
 
 /**
@@ -517,7 +572,7 @@ static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node)
 }
 
 /**
- * Deactivates a loaded LOD map tile
+ * Deactivates an active LOD map tile
  *
  * @param tile			the LOD map tile to deactivate
  */
@@ -541,6 +596,22 @@ static void deactivateLodMapTile(OpenGLLodMapTile *tile)
 	tile->parentOffset = NULL;
 
 	tile->status = OPENGL_LODMAP_TILE_READY;
+}
+
+/**
+ * Unloads a loaded LOD map tile
+ *
+ * @param tile			the LOD map tile to unload
+ */
+static void unloadLodMapTile(OpenGLLodMapTile *tile)
+{
+	assert(tile->status == OPENGL_LODMAP_TILE_READY);
+
+	freeImage(tile->heights);
+	freeImage(tile->normals);
+	freeImage(tile->texture);
+
+	tile->status = OPENGL_LODMAP_TILE_META;
 }
 
 /**

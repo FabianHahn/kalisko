@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2012, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,20 +18,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HTTPSERVER_HTTPSERVER_H
-#define HTTPSERVER_HTTPVERVER_H
+#include "dll.h"
 
-#include "modules/socket/socket.h"
+#define API
+#include "httpserver_demo.h"
 
-/**
- * Struct to represent an HTTP server
- */
-typedef struct
+MODULE_NAME("httpserver_demo");
+MODULE_AUTHOR("Dino Wernli");
+MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
+MODULE_VERSION(0, 0, 1);
+MODULE_BCVERSION(0, 0, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
+
+MODULE_INIT
 {
-    /** A socket which accepts new client connections */
-    Socket *server_socket;
-} HttpServer;
+	LOG_INFO("Http server demo module loaded");
+  helloWorld();
+	return true;
+}
 
-API HttpServer *createHttpServer(Socket *server_socket);
+MODULE_FINALIZE
+{
+	printf("Http server demo module unloaded");
+}
 
-#endif
+API void helloWorld()
+{
+  LOG_INFO("Hello world!!");
+}

@@ -18,20 +18,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HTTPSERVER_HTTPSERVER_H
-#define HTTPSERVER_HTTPVERVER_H
+#ifndef HTTPSERVER_DEMO_HTTPSERVER_DEMO_H
+#define HTTPSERVER_DEMO_HTTPSERVER_DEMO_H
 
-#include "modules/socket/socket.h"
-
-/**
- * Struct to represent an HTTP server
- */
-typedef struct
-{
-    /** A socket which accepts new client connections */
-    Socket *server_socket;
-} HttpServer;
-
-API HttpServer *createHttpServer(Socket *server_socket);
+API void helloWorld();
 
 #endif

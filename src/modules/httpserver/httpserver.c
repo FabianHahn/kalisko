@@ -20,12 +20,11 @@
 
 #include "dll.h"
 #include "httpserver.h"
-#include "modules/socket/socket.h"
 #define API
 
 MODULE_NAME("httpserver");
 MODULE_AUTHOR("Dino Wernli");
-MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
+MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0));
@@ -33,13 +32,13 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0));
 MODULE_INIT
 {
 	HttpServer *server = createHttpServer(NULL);
-	LOG_INFO("Hello World!!");
+	LOG_INFO("loaded");
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	printf("Goodbye World!!");
+	printf("httpserver unloaded");
 }
 
 /**

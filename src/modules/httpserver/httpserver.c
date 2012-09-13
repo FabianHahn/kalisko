@@ -52,23 +52,19 @@ typedef struct
 } RequestHandlerMapping;
 
 /**
- * Creates an IRC connection by storing the passed parameters.
+ * Creates an HTTP server on the specified port. The caller takes responsibility for freeing the returned pointer
  *
- * @param server_socket		the socket to use in order to accept new connections
- * @result					the created HTTP server
+ * @param port    the port to which the new server should be bound
+ * @result				the create HTTP server
  */
 API HttpServer *createHttpServer(char* port)
 {
 	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
-	server->server_socket = createServerSocket(port);
+	server->server_socket = createServerSocket(port);  // TODO: possibly provide a cleanup method which destroys the socket
   enableSocketPolling(server->server_socket);
   attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
 
-  GString *log = g_string_new("Created HttpServer on port ");
-  g_string_append(log, port);
-	LOG_DEBUG(log->str);
-  g_string_free(log, true);
-
+	LOG_DEBUG("Created HttpServer on port %s", port);
   return server;
 }
 
@@ -87,11 +83,7 @@ API bool startHttpServer(HttpServer *server)
   }
 
   if (connectSocket(server->server_socket)) {
-    GString *log = g_string_new("Started HttpServer on port ");
-    g_string_append(log, server->server_socket->port);
-    LOG_DEBUG(log->str);
-    g_string_free(log, true);
-
+    LOG_DEBUG("Started HttpServer on port %s", server->server_socket->port);
     return true;
   }
   return false;

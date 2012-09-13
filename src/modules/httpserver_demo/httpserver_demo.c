@@ -19,6 +19,7 @@
  */
 
 #include <glib.h>
+#include <stdlib.h>
 #include "dll.h"
 
 #define API
@@ -39,6 +40,7 @@ MODULE_INIT
   server = createHttpServer(PORT);
   if (!startHttpServer(server)) {
     LOG_ERROR("Failed to start HTTP server");
+    return false;
   }
 	return true;
 }
@@ -46,4 +48,5 @@ MODULE_INIT
 MODULE_FINALIZE
 {
   stopHttpServer(server);
+  free(server);
 }

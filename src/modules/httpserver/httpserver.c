@@ -18,11 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include "dll.h"
 
 #define API
 #include "httpserver.h"
 #include "modules/event/event.h"
+#include "modules/socket/poll.h"
 
 MODULE_NAME("httpserver");
 MODULE_AUTHOR("Dino Wernli");
@@ -31,7 +33,6 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-static void listener_socketDisconnect(void *subject, const char *event, void *data, va_list args);
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
@@ -62,6 +63,12 @@ API HttpServer *createHttpServer(char* port)
 	server->server_socket = createServerSocket(port);
   enableSocketPolling(server->server_socket);
   attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
+
+  GString *log = g_string_new("Created HttpServer on port ");
+  g_string_append(log, port);
+	LOG_DEBUG(log->str);
+  g_string_free(log, true);
+
   return server;
 }
 
@@ -78,7 +85,16 @@ API bool startHttpServer(HttpServer *server)
   if (!server->server_socket) {
     return false;
   }
-  return connectSocket(server->server_socket);
+
+  if (connectSocket(server->server_socket)) {
+    GString *log = g_string_new("Started HttpServer on port ");
+    g_string_append(log, server->server_socket->port);
+    LOG_DEBUG(log->str);
+    g_string_free(log, true);
+
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -92,26 +108,22 @@ API bool stopHttpServer(HttpServer *server)
   return disconnectSocket(server->server_socket);
 }
 
-static void listener_socketDisconnect(void *subject, const char *event, void *data, va_list args)
-{
-	Socket *s = subject;
-	detachEventListener(s, "disconnect", NULL, &listener_socketDisconnect);
-	freeSocket(s);
-}
-
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)
 {
 	Socket *srv = subject;
 	Socket *s = va_arg(args, Socket *);
-
-  LOG_DEBUG("Accepting new connection");
-
 	if(srv == NULL) {
 		return;
 	};
 
-	attachEventListener(s, "disconnect", NULL, &listener_socketDisconnect);
-  char *ANSWER = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<head></head><body>Hello world</body>\r\n";
-	socketWriteRaw(s, ANSWER, strlen(ANSWER) * sizeof(char));
+  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
+  GString *response = g_string_new("");
+  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n", content->len);
+  g_string_append(response, content->str);
+
+	socketWriteRaw(s, response->str, response->len * sizeof(char));
 	disconnectSocket(s);
+
+  g_string_free(content, true);
+  g_string_free(response, true);
 }

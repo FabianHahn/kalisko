@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include "dll.h"
 
 #define API
@@ -35,17 +36,14 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
 
 MODULE_INIT
 {
-	LOG_INFO("Http server demo module loaded");
-
   server = createHttpServer(PORT);
   if (!startHttpServer(server)) {
     LOG_ERROR("Failed to start HTTP server");
   }
-
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	printf("Http server demo module unloaded");
+  stopHttpServer(server);
 }

@@ -21,7 +21,10 @@
 #include "dll.h"
 
 #define API
-#include "httpserver_demo.h"
+#include "modules/httpserver/httpserver.h"
+
+#define PORT "1337"
+static HttpServer *server;
 
 MODULE_NAME("httpserver_demo");
 MODULE_AUTHOR("Dino Wernli");
@@ -33,16 +36,16 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
 MODULE_INIT
 {
 	LOG_INFO("Http server demo module loaded");
-  helloWorld();
+
+  server = createHttpServer(PORT);
+  if (!startHttpServer(server)) {
+    LOG_ERROR("Failed to start HTTP server");
+  }
+
 	return true;
 }
 
 MODULE_FINALIZE
 {
 	printf("Http server demo module unloaded");
-}
-
-API void helloWorld()
-{
-  LOG_INFO("Hello world!!");
 }

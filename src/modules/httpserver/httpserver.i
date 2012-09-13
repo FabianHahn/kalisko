@@ -24,6 +24,37 @@
 #include "modules/socket/socket.h"
 
 /**
+ * Enum to represent the types of http request which can come in
+ */
+typedef enum
+{
+  HTTP_REQUEST_METHOD_GET,
+  HTTP_REQUEST_METHOD_POST
+} HttpRequestMethod;
+
+/**
+ * Struct to represent an HTTP request
+ */
+typedef struct
+{
+  HttpRequestMethod method;
+  char *url;
+} HttpRequest;
+
+/**
+ * Struct to represent an HTTP response
+ */
+typedef struct
+{
+  char *content;
+} HttpResponse;
+
+/** 
+ * A type of function which can respond to Http requests by populating a response struct
+ */
+typedef bool (HttpRequestHandler) (HttpRequest *request, HttpResponse *response);
+
+/**
  * Struct to represent an HTTP server
  */
 typedef struct
@@ -32,6 +63,11 @@ typedef struct
     Socket *server_socket;
 } HttpServer;
 
-API HttpServer *createHttpServer(Socket *server_socket);
+API HttpServer *createHttpServer(char *port);
+
+API void registerRequestHandler(char *url_regexp, HttpRequestHandler *handler);
+
+API bool startHttpServer(HttpServer *server);
+API bool stopHttpServer(HttpServer *server);
 
 #endif

@@ -59,15 +59,16 @@ typedef bool (HttpRequestHandler) (HttpRequest *request, HttpResponse *response)
  */
 typedef struct
 {
-    /** A socket which accepts new client connections */
+    /** Accepts new client connections */
     Socket *server_socket;
+
+    /** Stores pairs of regular expressions and request handlers */
+    GArray *handler_mapping;
 } HttpServer;
 
 API HttpServer *createHttpServer(char *port);
-
-API void registerRequestHandler(char *url_regexp, HttpRequestHandler *handler);
-
+API void freeHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
-API bool stopHttpServer(HttpServer *server);
+API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler);
 
 #endif

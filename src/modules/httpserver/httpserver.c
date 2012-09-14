@@ -60,17 +60,26 @@ typedef struct
 API HttpServer *createHttpServer(char* port)
 {
 	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
-	server->server_socket = createServerSocket(port);  // TODO: possibly provide a cleanup method which destroys the socket
-  enableSocketPolling(server->server_socket);
-  attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
-
-	LOG_DEBUG("Created HttpServer on port %s", port);
+	server->server_socket = createServerSocket(port);  // TODO: possibly provide a cleanup method which destroys the socket 
+  server->handler_mapping = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));
+	
+  LOG_DEBUG("Created HttpServer on port %s", port);
   return server;
 }
 
-API void registerRequestHandler(char *url_regexp, HttpRequestHandler *handler)
+API void freeHttpServer(HttpServer *server)
 {
-  // TODO: figure out how best to store the request handlers in the HTTP server
+  // TODO: disconnect and free the server socket
+  // TODO: clean up the handler mappings
+  // TODO: free the server struct
+  /* 
+   * stolen from stopHttpServer
+   *
+  if (!server->server_socket) {
+    return false;
+  }
+  return disconnectSocket(server->server_socket);
+  */
 }
 
 /**
@@ -81,23 +90,32 @@ API bool startHttpServer(HttpServer *server)
   if (!server->server_socket) {
     return false;
   }
+  enableSocketPolling(server->server_socket);
+  attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
 
-  if (connectSocket(server->server_socket)) {
-    LOG_DEBUG("Started HttpServer on port %s", server->server_socket->port);
-    return true;
+  if (!connectSocket(server->server_socket)) {
+    return false;
   }
-  return false;
+  LOG_DEBUG("Started HttpServer on port %s", server->server_socket->port);
+  return true;
 }
 
 /**
- * Causes the server to stop accepting connections
+ * Causes the passed request handler to be called when an HttpRequest with a matching URL comes in. Note that the passed string is copied.
+ *
+ * @param server      the server in question
+ * @param url_regexp  the regular expression used to determine whether the request matches
+ * @param handler     a handler function to be called for matching requests
  */
-API bool stopHttpServer(HttpServer *server)
+API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler)
 {
-  if (!server->server_socket) {
-    return false;
-  }
-  return disconnectSocket(server->server_socket);
+  RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
+  GString *copy = g_string_new(url_regexp);
+  mapping->regexp = g_string_free(copy, FALSE);
+  mapping->handler = handler;
+  
+  // TODO: add a mapping struct to the list of the server
+  //server->
 }
 
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)

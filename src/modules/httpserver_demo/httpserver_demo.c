@@ -47,6 +47,5 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-  stopHttpServer(server);
-  free(server);
+  freeHttpServer(server);
 }

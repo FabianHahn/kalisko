@@ -64,6 +64,10 @@ API HttpServer *createHttpServer(char* port)
 	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
 	server->server_socket = createServerSocket(port); 
   server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
+
+  enableSocketPolling(server->server_socket);
+  attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
+
   return server;
 }
 
@@ -76,6 +80,8 @@ API void freeHttpServer(HttpServer *server)
 
   // Clean up the server socket
   disconnectSocket(server->server_socket);
+  detachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
+  disableSocketPolling(server->server_socket);
   freeSocket(server->server_socket); 
 
   // Clean up all the created handler mappings
@@ -87,7 +93,7 @@ API void freeHttpServer(HttpServer *server)
   }
   free(mappings);
 
-  // Finallt, clean up the server struct itself
+  // Finally, clean up the server struct itself
   free(server);
 }
 
@@ -96,9 +102,6 @@ API void freeHttpServer(HttpServer *server)
  */
 API bool startHttpServer(HttpServer *server)
 {
-  enableSocketPolling(server->server_socket);
-  attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
-
   if (!connectSocket(server->server_socket)) {
     LOG_DEBUG("Unable to connect server socket on port %s", server->server_socket->port);
     return false;
@@ -133,6 +136,10 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 	if(srv == NULL || s == NULL) {
 		return;
 	};
+
+  // TODO
+  // Attach read listener to socket
+  // Return
 
   GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
   GString *response = g_string_new("");

@@ -23,6 +23,8 @@
 
 #include "modules/socket/socket.h"
 
+#include <glib.h>
+
 /**
  * Enum to represent the types of http request which can come in
  */
@@ -39,6 +41,9 @@ typedef struct
 {
   HttpRequestMethod method;
   char *url;
+
+  /** Used as intermediate storage for incomplete lines coming out of the socket stream */
+  GString *line_buffer;
 } HttpRequest;
 
 /**

@@ -33,15 +33,21 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
+/** Maps a socket to an HttpRequest struct which is currently under construction because the stream is being read */
+static GHashTable *pending_requests;
+
+static void listener_readRequest(void *subject, const char *event, void *data, va_list args);
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args);
 
 MODULE_INIT
 {
-		return true;
+  pending_requests = g_hash_table_new(g_int_hash, g_int_equal);  
+  return true;
 }
 
 MODULE_FINALIZE
 {
+  g_hash_table_destroy(pending_requests);
 }
 
 /** Struct used to map regular expressions to function which respond to HTTP requests */
@@ -136,18 +142,38 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 	if(srv == NULL || s == NULL) {
 		return;
 	};
+  enableSocketPolling(s);
 
-  // TODO
-  // Attach read listener to socket
-  // Return
+  // Create an empty HttpRequest struct and map the socket to the struct
+  HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
+  request->line_buffer = g_string_new("");
+  g_hash_table_insert(pending_requests, s, request);
 
+  // Now that the data structures are present, attach the read listener
+  attachEventListener(s, "read", NULL, &listener_readRequest);
+
+  // TODO: refactor this out
   GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
   GString *response = g_string_new("");
   g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", content->len, content->str);
 
 	socketWriteRaw(s, response->str, response->len * sizeof(char));
-	disconnectSocket(s);  // TODO: free the socket, check API for how to do that cleanly
+	disconnectSocket(s);
 
   g_string_free(content, true);
   g_string_free(response, true);
+}
+
+static void listener_readRequest(void *subject, const char *event, void *data, va_list args)
+{
+  char *message = va_arg(args, char *);
+  HttpRequest *request = g_hash_table_lookup(pending_requests, subject);
+
+  if (request == NULL) {
+    LOG_DEBUG("Read from socket without a mapped HttpRequest struct. Ignoring...");
+    return;
+  }
+
+  g_string_append(request->line_buffer, message);
+  // TODO: Call some function on request which checks the buffer an extracts new lines
 }

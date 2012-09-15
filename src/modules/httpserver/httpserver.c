@@ -52,56 +52,63 @@ typedef struct
 } RequestHandlerMapping;
 
 /**
- * Creates an HTTP server on the specified port. The caller takes responsibility for freeing the returned pointer
+ * Creates an HTTP server on the specified port. The server does not accept any connections until startHttpServer() is called. The caller takes responsibility for eventually calling freeHttpServer() on the returned pointer.
  *
  * @param port    the port to which the new server should be bound
- * @result				the create HTTP server
+ * @result				the created HTTP server
  */
 API HttpServer *createHttpServer(char* port)
 {
+  LOG_DEBUG("Creating HttpServer on port %s", port);
+
 	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
-	server->server_socket = createServerSocket(port);  // TODO: possibly provide a cleanup method which destroys the socket 
-  server->handler_mapping = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));
-	
-  LOG_DEBUG("Created HttpServer on port %s", port);
+	server->server_socket = createServerSocket(port); 
+  server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
   return server;
 }
 
+/**
+ * Stops and tears down the internals of an HTTP server and releases the associated memory. Also frees the server struct itself.
+ */
 API void freeHttpServer(HttpServer *server)
 {
-  // TODO: disconnect and free the server socket
-  // TODO: clean up the handler mappings
-  // TODO: free the server struct
-  /* 
-   * stolen from stopHttpServer
-   *
-  if (!server->server_socket) {
-    return false;
+  LOG_DEBUG("Freeing HttpServer on port %s", server->server_socket->port);
+
+  // Clean up the server socket
+  disconnectSocket(server->server_socket);
+  freeSocket(server->server_socket); 
+
+  // Clean up all the created handler mappings
+  GArray *mappings = server->handler_mappings;
+  for (int i = 0; i < mappings->len; ++i) {
+    RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+    free(mapping->regexp);
+    free(mapping);
   }
-  return disconnectSocket(server->server_socket);
-  */
+  free(mappings);
+
+  // Finallt, clean up the server struct itself
+  free(server);
 }
 
 /**
- * Causes the server to start accepting connections
+ * Causes the server to start accepting connections.
  */
 API bool startHttpServer(HttpServer *server)
 {
-  if (!server->server_socket) {
-    return false;
-  }
   enableSocketPolling(server->server_socket);
   attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
 
   if (!connectSocket(server->server_socket)) {
+    LOG_DEBUG("Unable to connect server socket on port %s", server->server_socket->port);
     return false;
   }
-  LOG_DEBUG("Started HttpServer on port %s", server->server_socket->port);
+  LOG_DEBUG("Starting HttpServer on port %s", server->server_socket->port);
   return true;
 }
 
 /**
- * Causes the passed request handler to be called when an HttpRequest with a matching URL comes in. Note that the passed string is copied.
+ * Causes the passed request handler to be called when an HttpRequest with a matching URL comes in. Note that the caller retains ownership of all passed parameters (url_regexp is copied).
  *
  * @param server      the server in question
  * @param url_regexp  the regular expression used to determine whether the request matches
@@ -109,30 +116,30 @@ API bool startHttpServer(HttpServer *server)
  */
 API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler)
 {
+  LOG_DEBUG("Mapping HTTP request handler for URLs matching %s.", url_regexp);
+
   RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
   GString *copy = g_string_new(url_regexp);
   mapping->regexp = g_string_free(copy, FALSE);
   mapping->handler = handler;
-  
-  // TODO: add a mapping struct to the list of the server
-  //server->
+
+  g_array_append_val(server->handler_mappings, mapping);
 }
 
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)
 {
 	Socket *srv = subject;
 	Socket *s = va_arg(args, Socket *);
-	if(srv == NULL) {
+	if(srv == NULL || s == NULL) {
 		return;
 	};
 
   GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
   GString *response = g_string_new("");
-  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n", content->len);
-  g_string_append(response, content->str);
+  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", content->len, content->str);
 
 	socketWriteRaw(s, response->str, response->len * sizeof(char));
-	disconnectSocket(s);
+	disconnectSocket(s);  // TODO: free the socket, check API for how to do that cleanly
 
   g_string_free(content, true);
   g_string_free(response, true);

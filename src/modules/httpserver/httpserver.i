@@ -63,7 +63,7 @@ typedef struct
     Socket *server_socket;
 
     /** Stores pairs of regular expressions and request handlers */
-    GArray *handler_mapping;
+    GArray *handler_mappings;
 } HttpServer;
 
 API HttpServer *createHttpServer(char *port);

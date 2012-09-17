@@ -44,6 +44,7 @@ typedef struct
 
   /** Used as intermediate storage for incomplete lines coming out of the socket stream */
   GString *line_buffer;
+  bool parsing_complete;
 } HttpRequest;
 
 /**

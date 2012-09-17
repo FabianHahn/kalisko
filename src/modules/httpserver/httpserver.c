@@ -25,13 +25,14 @@
 #include "httpserver.h"
 #include "modules/event/event.h"
 #include "modules/socket/poll.h"
+#include "modules/string_util/string_util.h"
 
 MODULE_NAME("httpserver");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("string_util", 0, 1, 1));
 
 /** Maps a socket to an HttpRequest struct which is currently under construction because the stream is being read */
 static GHashTable *pending_requests;
@@ -146,22 +147,58 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 
   // Create an empty HttpRequest struct and map the socket to the struct
   HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
+  request->parsing_complete = false;
   request->line_buffer = g_string_new("");
   g_hash_table_insert(pending_requests, s, request);
 
   // Now that the data structures are present, attach the read listener
   attachEventListener(s, "read", NULL, &listener_readRequest);
+}
 
-  // TODO: refactor this out
-  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
-  GString *response = g_string_new("");
-  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", content->len, content->str);
+/** Parses one line as an HTTP request. Can handle empty lines. */
+static void parseLine(HttpRequest *request, char *line)
+{
+	LOG_DEBUG("Parsing HTTP line: %s", line);
+	LOG_DEBUG("Line length: %lu", strlen(line));
+	if (strlen(line) == 1) {
+		LOG_DEBUG("Character code: %d", *line);
+		request->parsing_complete = true;
+		return;
+	}
 
-	socketWriteRaw(s, response->str, response->len * sizeof(char));
-	disconnectSocket(s);
+	if(strlen(line) == 0) {
+		LOG_DEBUG("Got empty line");
+		request->parsing_complete = true;
+		return;
+	}
+  	// TODO: parse one line of an HTTP request
+}
 
-  g_string_free(content, true);
-  g_string_free(response, true);
+// TODO: This code is very similar to a function from irc.c. Remember to refactor this once the common method becomes an API function.
+static void checkForNewLine(HttpRequest *request)
+{
+	char *message = request->line_buffer->str;
+	if (strstr(message, "\n") == NULL) {
+	  	// No newline in the string, just do nothing
+		return;
+	}
+	g_string_free(request->line_buffer, false);
+	// TODO: the call below unintetionally strips the double newline which ends the request
+	// stripDuplicateNewlines(message);
+	
+	char **parts = g_strsplit(message, "\n", 0);
+	int count = 0;
+	for(char **iter = parts; *iter != NULL; iter++) {
+		count++;
+	}
+
+	// Put the last part back into the buffer and process all complete lines
+	request->line_buffer = g_string_new(parts[count - 1]);
+	for(int i = 0; i < count - 1; i++) {
+		parseLine(request, parts[i]);
+	}
+
+	free(message);
 }
 
 static void listener_readRequest(void *subject, const char *event, void *data, va_list args)
@@ -175,5 +212,21 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
   }
 
   g_string_append(request->line_buffer, message);
-  // TODO: Call some function on request which checks the buffer an extracts new lines
+  checkForNewLine(request);
+  if(request->parsing_complete) {
+	  // TODO: Go through the request handlers, match the regular expression and execute a handler to respond
+	  // TODO: Clean up socket and detach handlers etc
+	
+	  // ***** Placeholder ******
+	  Socket *s = subject;
+	  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
+	  GString *response = g_string_new("");
+	  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", (unsigned long)content->len, content->str);
+
+	  socketWriteRaw(s, response->str, response->len * sizeof(char));
+	  disconnectSocket(s);
+
+	  g_string_free(content, true);
+	  g_string_free(response, true);
+  }
 }

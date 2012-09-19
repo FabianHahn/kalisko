@@ -25,14 +25,13 @@
 #include "httpserver.h"
 #include "modules/event/event.h"
 #include "modules/socket/poll.h"
-#include "modules/string_util/string_util.h"
 
 MODULE_NAME("httpserver");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("string_util", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 /** Maps a socket to an HttpRequest struct which is currently under construction because the stream is being read */
 static GHashTable *pending_requests;
@@ -148,6 +147,7 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   // Create an empty HttpRequest struct and map the socket to the struct
   HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
   request->parsing_complete = false;
+  request->valid = false;
   request->line_buffer = g_string_new("");
   g_hash_table_insert(pending_requests, s, request);
 
@@ -155,49 +155,85 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   attachEventListener(s, "read", NULL, &listener_readRequest);
 }
 
+static bool parseMethod(HttpRequest *request, char *method)
+{
+  if(strcmp("GET", method) == 0) {
+    request->method = HTTP_REQUEST_METHOD_GET;
+    LOG_DEBUG("Request method is GET");
+    return true;
+  }
+  if(strcmp("POST", method) == 0) {
+    request->method = HTTP_REQUEST_METHOD_POST;
+    LOG_DEBUG("Request method is POST");
+    return true;
+  }
+  return false;
+}
+
+static bool parseUrl(HttpRequest *request, char *url)
+{
+  // TODO: implement this
+  LOG_DEBUG("Request URL is %s", url);
+  return true;
+}
+
 /** Parses one line as an HTTP request. Can handle empty lines. */
 static void parseLine(HttpRequest *request, char *line)
 {
 	LOG_DEBUG("Parsing HTTP line: %s", line);
-	LOG_DEBUG("Line length: %lu", strlen(line));
-	if (strlen(line) == 1) {
-		LOG_DEBUG("Character code: %d", *line);
-		request->parsing_complete = true;
-		return;
-	}
-
 	if(strlen(line) == 0) {
 		LOG_DEBUG("Got empty line");
 		request->parsing_complete = true;
 		return;
 	}
-  	// TODO: parse one line of an HTTP request
+
+  // For now, only detect lines of the form <METHOD> <URL> HTTP/<NUMBER>. Parsing one of these makes the request "valid"
+  // TODO: extract parsing logic into an own file
+  GRegex *regexp = g_regex_new("^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$", 0, 0, NULL);
+  GMatchInfo *match_info;
+
+  // TODO: figure out what happens exactly if the request is already valid
+  if(g_regex_match(regexp, line, 0, &match_info)) {
+    gchar *method = g_match_info_fetch(match_info, 1);
+    gchar *url = g_match_info_fetch(match_info, 2);
+
+    if(parseMethod(request, method) && parseUrl(request, url)) {
+      request->valid = true;
+    }
+
+    free(method);
+    free(url);
+  }
+
+  g_match_info_free(match_info);
+  g_regex_unref(regexp);
 }
 
-// TODO: This code is very similar to a function from irc.c. Remember to refactor this once the common method becomes an API function.
 static void checkForNewLine(HttpRequest *request)
 {
 	char *message = request->line_buffer->str;
 	if (strstr(message, "\n") == NULL) {
-	  	// No newline in the string, just do nothing
+	  // No newline in the string, just do nothing
 		return;
 	}
+
 	g_string_free(request->line_buffer, false);
-	// TODO: the call below unintetionally strips the double newline which ends the request
-	// stripDuplicateNewlines(message);
-	
 	char **parts = g_strsplit(message, "\n", 0);
 	int count = 0;
-	for(char **iter = parts; *iter != NULL; iter++) {
-		count++;
+	for(char **iter = parts; *iter != NULL; ++iter) {
+		++count;
 	}
 
 	// Put the last part back into the buffer and process all complete lines
 	request->line_buffer = g_string_new(parts[count - 1]);
 	for(int i = 0; i < count - 1; i++) {
+    // Remove all leading and trailing \r characters. In lack of a removeTrailingChars function, we first transform \r into spaces and then call strstrip().
+    g_strdelimit(parts[i], "\r", ' ');
+    g_strstrip(parts[i]);
 		parseLine(request, parts[i]);
 	}
 
+  g_strfreev(parts);
 	free(message);
 }
 
@@ -215,6 +251,7 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
   checkForNewLine(request);
   if(request->parsing_complete) {
 	  // TODO: Go through the request handlers, match the regular expression and execute a handler to respond
+    // TODO: Send a "bad request answer if": parsing_complete && !valid
 	  // TODO: Clean up socket and detach handlers etc
 	
 	  // ***** Placeholder ******

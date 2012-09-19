@@ -40,11 +40,21 @@ typedef enum
 typedef struct
 {
   HttpRequestMethod method;
+
+  /** Store the URL of the request without the trailing parameters */
   char *url;
+
+  /** Stores the parameters of the request */
+  GHashTable *parameters;
 
   /** Used as intermediate storage for incomplete lines coming out of the socket stream */
   GString *line_buffer;
+
+  /** Stores whether or not an empty line has been seen (and thus the stream is expected to end). */
   bool parsing_complete;
+
+  /** Stores whether or not the minimal necessary data required to respond to the request has been parsed successfully. */
+  bool valid;
 } HttpRequest;
 
 /**

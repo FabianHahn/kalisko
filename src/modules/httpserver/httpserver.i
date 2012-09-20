@@ -25,6 +25,9 @@
 
 #include <glib.h>
 
+/* Forward declaration to allow HttpRequest to reference a server */
+struct s_HttpServer;
+
 /**
  * Enum to represent the types of http request which can come in
  */
@@ -39,6 +42,9 @@ typedef enum
  */
 typedef struct
 {
+  /** The server which accepted the client with this request */
+  struct s_HttpServer *server;
+
   HttpRequestMethod method;
 
   /** Store the URL of the request without the trailing parameters */
@@ -62,6 +68,7 @@ typedef struct
  */
 typedef struct
 {
+    int status_code;
   char *content;
 } HttpResponse;
 
@@ -73,7 +80,7 @@ typedef bool (HttpRequestHandler) (HttpRequest *request, HttpResponse *response)
 /**
  * Struct to represent an HTTP server
  */
-typedef struct
+typedef struct s_HttpServer
 {
     /** Accepts new client connections */
     Socket *server_socket;

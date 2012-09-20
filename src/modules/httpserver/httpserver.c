@@ -26,6 +26,9 @@
 #include "modules/event/event.h"
 #include "modules/socket/poll.h"
 
+#define FILE_NOT_FOUND_STATUS_CODE 404
+#define BAD_REQUEST_STATUS_CODE 501
+
 MODULE_NAME("httpserver");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
@@ -72,7 +75,7 @@ API HttpServer *createHttpServer(char* port)
   server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
 
   enableSocketPolling(server->server_socket);
-  attachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
+  attachEventListener(server->server_socket, "accept", server, &listener_serverSocketAccept);
 
   return server;
 }
@@ -89,6 +92,8 @@ API void freeHttpServer(HttpServer *server)
   detachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
   disableSocketPolling(server->server_socket);
   freeSocket(server->server_socket); 
+
+  // TODO: instead of doing the following, mark the server as to be cleaned up and to the actual cleanup once there are no more connections (from the client socket read callback)
 
   // Clean up all the created handler mappings
   GArray *mappings = server->handler_mappings;
@@ -144,14 +149,13 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 	};
   enableSocketPolling(s);
 
-  // Create an empty HttpRequest struct and map the socket to the struct
   HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
   request->parsing_complete = false;
   request->valid = false;
   request->line_buffer = g_string_new("");
-  g_hash_table_insert(pending_requests, s, request);
+  request->server = data;
 
-  // Now that the data structures are present, attach the read listener
+  g_hash_table_insert(pending_requests, s, request);
   attachEventListener(s, "read", NULL, &listener_readRequest);
 }
 
@@ -237,11 +241,65 @@ static void checkForNewLine(HttpRequest *request)
 	free(message);
 }
 
+/** Sends the provided response to the client */
+static void sendResponse(HttpResponse *response, Socket *client)
+{
+	// TODO: implement
+}
+
+/** Sends to the client a response which consists only of the status code and has no other content */
+static void sendStatusResponse(int code, Socket *client)
+{
+	HttpResponse response;
+	response.content = NULL;
+	response.status_code = code;
+	sendResponse(&response, client);
+}
+
+/** Reads the data in request and sends an appropriate response to the client (only if the request is well-formed) */
+static void handleRequest(HttpRequest *request, Socket *client)
+{
+  // ***** Placeholder ******
+  // TODO: remove the rest here once handling is implemented properly
+  Socket *s = client;
+  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
+  GString *response = g_string_new("");
+  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", (unsigned long)content->len, content->str);
+
+  socketWriteRaw(s, response->str, response->len * sizeof(char));
+  disconnectSocket(s);
+
+  g_string_free(content, true);
+  g_string_free(response, true);
+  return;
+  /*************************/
+
+  if(!request->valid) {
+    sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
+	return;
+  }
+
+	// Go through all handlers and execute the first one which matches the requested URL
+	HttpServer *server = request->server;
+	GArray *mappings = server->handler_mappings;
+	for (int i = 0; i < mappings->len; ++i) {
+	  RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+	  if(g_regex_match_simple(mapping->regexp, request->url, 0, 0)) {
+		HttpResponse response;
+		mapping->handler(request, &response);
+		sendResponse(&response, client);
+		return;
+	  }
+	}
+
+	// If we got this far, there is no handler registered for this request
+	sendStatusResponse(FILE_NOT_FOUND_STATUS_CODE, client);
+}
+
 static void listener_readRequest(void *subject, const char *event, void *data, va_list args)
 {
   char *message = va_arg(args, char *);
   HttpRequest *request = g_hash_table_lookup(pending_requests, subject);
-
   if (request == NULL) {
     LOG_DEBUG("Read from socket without a mapped HttpRequest struct. Ignoring...");
     return;
@@ -249,21 +307,9 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
 
   g_string_append(request->line_buffer, message);
   checkForNewLine(request);
+
   if(request->parsing_complete) {
-	  // TODO: Go through the request handlers, match the regular expression and execute a handler to respond
-    // TODO: Send a "bad request answer if": parsing_complete && !valid
-	  // TODO: Clean up socket and detach handlers etc
-	
-	  // ***** Placeholder ******
-	  Socket *s = subject;
-	  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
-	  GString *response = g_string_new("");
-	  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", (unsigned long)content->len, content->str);
-
-	  socketWriteRaw(s, response->str, response->len * sizeof(char));
-	  disconnectSocket(s);
-
-	  g_string_free(content, true);
-	  g_string_free(response, true);
+    handleRequest(request, subject);
+    // TODO: Disconnect and clean up the client socket and detach handlers etc
   }
 }

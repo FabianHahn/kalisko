@@ -70,8 +70,10 @@ API HttpServer *createHttpServer(char* port)
 {
   LOG_DEBUG("Creating HttpServer on port %s", port);
 
-	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
-	server->server_socket = createServerSocket(port); 
+  HttpServer *server = ALLOCATE_OBJECT(HttpServer);
+  server->state = SERVER_STATE_CREATED;
+  server->open_connections = 0;
+  server->server_socket = createServerSocket(port); 
   server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
 
   enableSocketPolling(server->server_socket);
@@ -80,8 +82,28 @@ API HttpServer *createHttpServer(char* port)
   return server;
 }
 
+static void tryFreeServer(HttpServer *server)
+{
+	if(server->open_connections == 0) {
+	  LOG_DEBUG("Freeing HTTP server resources");
+
+	  // Clean up all the created handler mappings
+	  GArray *mappings = server->handler_mappings;
+	  for (int i = 0; i < mappings->len; ++i) {
+		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+		free(mapping->regexp);
+		free(mapping);
+	  }
+	  free(mappings);
+
+	  // Finally, clean up the server struct itself
+	  free(server);
+	}
+}
+
 /**
  * Stops and tears down the internals of an HTTP server and releases the associated memory. Also frees the server struct itself.
+ * TODO: rename this to stopHttpServer which guarantees that memory will be freed eventually
  */
 API void freeHttpServer(HttpServer *server)
 {
@@ -93,19 +115,8 @@ API void freeHttpServer(HttpServer *server)
   disableSocketPolling(server->server_socket);
   freeSocket(server->server_socket); 
 
-  // TODO: instead of doing the following, mark the server as to be cleaned up and to the actual cleanup once there are no more connections (from the client socket read callback)
-
-  // Clean up all the created handler mappings
-  GArray *mappings = server->handler_mappings;
-  for (int i = 0; i < mappings->len; ++i) {
-    RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
-    free(mapping->regexp);
-    free(mapping);
-  }
-  free(mappings);
-
-  // Finally, clean up the server struct itself
-  free(server);
+  server->state = SERVER_STATE_FREEING;
+  tryFreeServer(server);
 }
 
 /**
@@ -118,6 +129,7 @@ API bool startHttpServer(HttpServer *server)
     return false;
   }
   LOG_DEBUG("Starting HttpServer on port %s", server->server_socket->port);
+  server->state = SERVER_STATE_RUNNING;
   return true;
 }
 
@@ -155,6 +167,9 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   request->line_buffer = g_string_new("");
   request->server = data;
 
+  request->server->open_connections++;
+	LOG_DEBUG("Server connections: %lu", request->server->open_connections);
+
   g_hash_table_insert(pending_requests, s, request);
   attachEventListener(s, "read", NULL, &listener_readRequest);
 }
@@ -176,8 +191,10 @@ static bool parseMethod(HttpRequest *request, char *method)
 
 static bool parseUrl(HttpRequest *request, char *url)
 {
-  // TODO: implement this
+  // TODO: implement actually splitting arguments etc
   LOG_DEBUG("Request URL is %s", url);
+  GString *url_copy = g_string_new(url);
+  request->url = g_string_free(url_copy, false);
   return true;
 }
 
@@ -244,7 +261,23 @@ static void checkForNewLine(HttpRequest *request)
 /** Sends the provided response to the client */
 static void sendResponse(HttpResponse *response, Socket *client)
 {
-	// TODO: implement
+	// TODO: factor out constant strings, ad support for proper return codes
+  GString *content = g_string_new(response->content);
+  GString *answer = g_string_new("");
+
+  // 200 OK
+  g_string_append(answer, "HTTP/1.0 200 OK \r\n");
+  if(response->content != NULL) {
+  	g_string_append_printf(answer, "Content-Type: text/html\r\nContent-length: %lu\r\n", (unsigned long)content->len);	
+  }
+  g_string_append(answer, "\r\n");
+  if(response->content != NULL) {
+	g_string_append(answer, content->str);
+  }
+
+  socketWriteRaw(client, answer->str, answer->len * sizeof(char));
+  g_string_free(content, true);
+  g_string_free(answer, true);
 }
 
 /** Sends to the client a response which consists only of the status code and has no other content */
@@ -259,21 +292,6 @@ static void sendStatusResponse(int code, Socket *client)
 /** Reads the data in request and sends an appropriate response to the client (only if the request is well-formed) */
 static void handleRequest(HttpRequest *request, Socket *client)
 {
-  // ***** Placeholder ******
-  // TODO: remove the rest here once handling is implemented properly
-  Socket *s = client;
-  GString *content = g_string_new("<!DOCTYPE HTML>\r\n<html><head></head><body>Hello world</body></html>\r\n");
-  GString *response = g_string_new("");
-  g_string_append_printf(response, "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-length: %lu\r\nConnection: close\r\n\r\n%s", (unsigned long)content->len, content->str);
-
-  socketWriteRaw(s, response->str, response->len * sizeof(char));
-  disconnectSocket(s);
-
-  g_string_free(content, true);
-  g_string_free(response, true);
-  return;
-  /*************************/
-
   if(!request->valid) {
     sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
 	return;
@@ -311,5 +329,10 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
   if(request->parsing_complete) {
     handleRequest(request, subject);
     // TODO: Disconnect and clean up the client socket and detach handlers etc
+	HttpServer *server = request->server;
+	server->open_connections--;
+	if(server->state == SERVER_STATE_FREEING) {
+		tryFreeServer(server);
+	}
   }
 }

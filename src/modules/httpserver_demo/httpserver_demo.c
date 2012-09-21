@@ -26,7 +26,7 @@
 #include "modules/httpserver/httpserver.h"
 
 #define PORT "1337"
-static HttpServer *server;
+#define MATCH_EVERYTHING ".*"
 
 MODULE_NAME("httpserver_demo");
 MODULE_AUTHOR("Dino Wernli");
@@ -35,14 +35,23 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
 
+static HttpServer *server;
+
+static bool demoHandler(HttpRequest *request, HttpResponse *response)
+{
+    response->content = "Hi. I am the demo handler.\n\nAnd btw, hello world!";
+    return true;
+}
+
 MODULE_INIT
 {
   server = createHttpServer(PORT);
+  registerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
   if (!startHttpServer(server)) {
     LOG_ERROR("Failed to start HTTP server");
     return false;
   }
-	return true;
+    return true;
 }
 
 MODULE_FINALIZE

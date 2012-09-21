@@ -68,7 +68,7 @@ typedef struct
  */
 typedef struct
 {
-    int status_code;
+  int status_code;
   char *content;
 } HttpResponse;
 
@@ -77,11 +77,27 @@ typedef struct
  */
 typedef bool (HttpRequestHandler) (HttpRequest *request, HttpResponse *response);
 
+typedef enum {
+    /** State between creation and startHttpServer call. The server should be configured in this state */
+    SERVER_STATE_CREATED,
+
+    /** State between calling startHttpServer and freeHttpServer. The server accepts and handles incoming requests */
+    SERVER_STATE_RUNNING,
+
+    /** State after calling freeHttpServer. In this state, the server just waits for the final connections to end and does not accept any new ones */
+    SERVER_STATE_FREEING
+} HttpServerState;
+
 /**
  * Struct to represent an HTTP server
  */
 typedef struct s_HttpServer
 {
+    HttpServerState state;
+
+    /** Stores how many connections to clients are currently open */
+    unsigned long open_connections;
+
     /** Accepts new client connections */
     Socket *server_socket;
 

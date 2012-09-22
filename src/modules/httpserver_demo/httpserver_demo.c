@@ -37,10 +37,27 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
 
 static HttpServer *server;
 
+/** Prints a standard message, loops over all passed parameters and prints them. */
 static bool demoHandler(HttpRequest *request, HttpResponse *response)
 {
-    response->content = "Hi. I am the demo handler.\n\nAnd btw, hello world!";
-    return true;
+  // TODO: Place this functionality in the library
+  GString *content = g_string_new("Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
+  
+  GHashTable *params = getParameters(request);
+  if(g_hash_table_size(params) > 0) {
+    g_string_append(content, "Parameters:<br/>");
+
+    GHashTableIter iter;
+    gpointer vkey, vvalue;
+    g_hash_table_iter_init (&iter, params);
+    while (g_hash_table_iter_next (&iter, &vkey, &vvalue)) {
+      char *key = vkey, *value = vvalue;
+      g_string_append_printf(content, "Key: %s, Value: %s<br/>", key, value);
+    } 
+  }
+
+  response->content = g_string_free(content, false);
+  return true;
 }
 
 MODULE_INIT

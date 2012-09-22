@@ -166,7 +166,7 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   request->valid = false;
   request->line_buffer = g_string_new("");
   request->server = data;
-  request->parameters = g_hash_table_new(g_int_hash, g_int_equal);  
+  request->parameters = g_hash_table_new_full(g_int_hash, g_int_equal, &free, &free);  
 
   request->server->open_connections++;
 	LOG_DEBUG("Server connections: %lu", request->server->open_connections);
@@ -208,6 +208,7 @@ static bool parseParameter(HttpRequest *request, char *keyvalue)
       LOG_DEBUG("Failed to unescape %s: %s", parts[0], parts[1]);
       success = false;
     } else {
+      // TODO: handle the case where the key already has a value (using g_hash_table_replace)
       g_hash_table_insert(params, unescaped_key, unescaped_value);
       success = true;
     }
@@ -400,3 +401,29 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
 	}
   }
 }
+
+
+/** Returns whether or not the request has a value associated with key. */
+API bool hasParameter(HttpRequest *request, char *key)
+{
+  return g_hash_table_contains(request->parameters, key);
+}
+
+/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible for freeing the returned string */
+API char *getParameter(HttpRequest *request, char *key)
+{
+  char *original = g_hash_table_lookup(request->parameters, key);
+  if(original == NULL) {
+    return NULL;
+  } else {
+    GString *copy = g_string_new(original);
+    return g_string_free(copy, true);
+  }
+}
+
+/** Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable. The caller must not free the returned pointer. */
+API GHashTable *getParameters(HttpRequest *request)
+{
+  return request->parameters;
+}
+

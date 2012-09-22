@@ -106,9 +106,15 @@ typedef struct s_HttpServer
     GArray *handler_mappings;
 } HttpServer;
 
+/* Methods used for configuring and running servers */
 API HttpServer *createHttpServer(char *port);
 API void freeHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
 API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler);
+
+/* Accessor methods for HttpRequest. Note that these are all read-only */
+API bool hasParameter(HttpRequest *request, char *key);
+API char *getParameter(HttpRequest *request, char *key);
+API GHashTable *getParameters(HttpRequest *request);
 
 #endif

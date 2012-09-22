@@ -48,6 +48,7 @@ typedef struct
   HttpRequestMethod method;
 
   /** Store the URL of the request without the trailing parameters */
+  /** TODO: rename this to path */
   char *url;
 
   /** Stores the parameters of the request */

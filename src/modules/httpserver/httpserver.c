@@ -166,11 +166,12 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   request->valid = false;
   request->line_buffer = g_string_new("");
   request->server = data;
+  request->parameters = g_hash_table_new(g_int_hash, g_int_equal);  
 
   request->server->open_connections++;
 	LOG_DEBUG("Server connections: %lu", request->server->open_connections);
 
-  g_hash_table_insert(pending_requests, s, request);
+  g_hash_table_insert(pending_requests, s, request);  // TODO: figure out whether this call need cleanup
   attachEventListener(s, "read", NULL, &listener_readRequest);
 }
 
@@ -189,21 +190,84 @@ static bool parseMethod(HttpRequest *request, char *method)
   return false;
 }
 
+// Parses a single parameter from a string of the form "key=value". Returns whether or not parsing was successful.
+static bool parseParameter(HttpRequest *request, char *keyvalue)
+{
+  char **parts = g_strsplit(keyvalue, "=", 0);
+  int count = 0;
+  bool success = true;
+  for(char **iter = parts; *iter != NULL; ++iter) {
+    ++count;
+  }
+
+  GHashTable *params = request->parameters;
+  if(count == 2) {
+    char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
+    char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
+    if(unescaped_key == NULL || unescaped_value == NULL) {
+      LOG_DEBUG("Failed to unescape %s: %s", parts[0], parts[1]);
+      success = false;
+    } else {
+      g_hash_table_insert(params, unescaped_key, unescaped_value);
+      success = true;
+    }
+  } else {
+    success = false;
+  }
+
+  g_strfreev(parts);
+  return success;
+}
+
+// Parses parameters from a string of the form "key1=value1&key2=value2". Return whether or not parsing was successful.
+static bool parseParameters(HttpRequest *request, char *query_part)
+{
+  char **parts = g_strsplit(query_part, "&", 0);
+  bool success = true;
+  for(char **iter = parts; *iter != NULL; ++iter) {
+    success &= parseParameter(request, *iter);
+  }
+  g_strfreev(parts);
+  return success;
+}
+
 static bool parseUrl(HttpRequest *request, char *url)
 {
-  // TODO: implement actually splitting arguments etc
   LOG_DEBUG("Request URL is %s", url);
-  GString *url_copy = g_string_new(url);
-  request->url = g_string_free(url_copy, false);
-  return true;
+  bool success = true;
+
+  if(strstr(url, "?") != NULL) {
+    // Extract parameters
+    char **parts = g_strsplit(url, "?", 0);
+    int count = 0;
+    for(char **iter = parts; *iter != NULL; ++iter) {
+      ++count;
+    }
+    
+    if(count == 2) {
+      // Unescape the path part (which is the part before the ?)
+      // TODO: possibly disallow special characters not allowed as file names (replace second param)
+      request->url = g_uri_unescape_string(parts[0], NULL);
+
+      // Parse the parameter part
+      // TODO: handle a fragment part
+      success &= parseParameters(request, parts[1]);
+    } else {
+      success = false;
+    }
+    g_strfreev(parts);
+  } else {
+    // No parameters
+    request->url = g_uri_unescape_string(url, NULL);
+  }
+  return success;
 }
 
 /** Parses one line as an HTTP request. Can handle empty lines. */
 static void parseLine(HttpRequest *request, char *line)
 {
-	LOG_DEBUG("Parsing HTTP line: %s", line);
+	// LOG_DEBUG("Parsing HTTP line: %s", line);
 	if(strlen(line) == 0) {
-		LOG_DEBUG("Got empty line");
 		request->parsing_complete = true;
 		return;
 	}
@@ -294,7 +358,7 @@ static void handleRequest(HttpRequest *request, Socket *client)
 {
   if(!request->valid) {
     sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
-	return;
+	  return;
   }
 
 	// Go through all handlers and execute the first one which matches the requested URL
@@ -303,10 +367,10 @@ static void handleRequest(HttpRequest *request, Socket *client)
 	for (int i = 0; i < mappings->len; ++i) {
 	  RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 	  if(g_regex_match_simple(mapping->regexp, request->url, 0, 0)) {
-		HttpResponse response;
-		mapping->handler(request, &response);
-		sendResponse(&response, client);
-		return;
+      HttpResponse response;
+      mapping->handler(request, &response);
+      sendResponse(&response, client);
+      return;
 	  }
 	}
 

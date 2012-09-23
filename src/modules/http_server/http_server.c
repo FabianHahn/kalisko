@@ -23,6 +23,7 @@
 
 #define API
 #include "http_server.h"
+#include "http_parser.h"
 #include "modules/event/event.h"
 #include "modules/socket/poll.h"
 
@@ -38,6 +39,7 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 
 
 static void listener_readRequest(void *subject, const char *event, void *data, va_list args);
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args);
+static void tryFreeServer(HttpServer *server);
 
 MODULE_INIT
 {
@@ -75,25 +77,6 @@ API HttpServer *createHttpServer(char* port)
 	attachEventListener(server->server_socket, "accept", server, &listener_serverSocketAccept);
 
 	return server;
-}
-
-static void tryFreeServer(HttpServer *server)
-{
-	if(server->open_connections == 0) {
-		LOG_DEBUG("Freeing HTTP server resources");
-
-		// Clean up all the created handler mappings
-		GArray *mappings = server->handler_mappings;
-		for (int i = 0; i < mappings->len; ++i) {
-			RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
-			free(mapping->regexp);
-			free(mapping);
-		}
-		free(mappings);
-
-		// Finally, clean up the server struct itself
-		free(server);
-	}
 }
 
 /**
@@ -145,6 +128,25 @@ API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, H
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
+static void tryFreeServer(HttpServer *server)
+{
+	if(server->open_connections == 0) {
+		LOG_DEBUG("Freeing HTTP server resources");
+
+		// Clean up all the created handler mappings
+		GArray *mappings = server->handler_mappings;
+		for (int i = 0; i < mappings->len; ++i) {
+			RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+			free(mapping->regexp);
+			free(mapping);
+		}
+		free(mappings);
+
+		// Finally, clean up the server struct itself
+		free(server);
+	}
+}
+
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)
 {
 	Socket *srv = subject;
@@ -165,133 +167,6 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 
 	attachEventListener(s, "read", request, &listener_readRequest);
 	request->server->open_connections++;
-}
-
-static bool parseMethod(HttpRequest *request, char *method)
-{
-	if(strcmp("GET", method) == 0) {
-		request->method = HTTP_REQUEST_METHOD_GET;
-		LOG_DEBUG("Request method is GET");
-		return true;
-	}
-	if(strcmp("POST", method) == 0) {
-		request->method = HTTP_REQUEST_METHOD_POST;
-		LOG_DEBUG("Request method is POST");
-		return true;
-	}
-	return false;
-}
-
-// Parses a single parameter from a string of the form "key=value". Returns whether or not parsing was successful.
-static bool parseParameter(HttpRequest *request, char *keyvalue)
-{
-	char **parts = g_strsplit(keyvalue, "=", 0);
-	int count = 0;
-	bool success = true;
-	for(char **iter = parts; *iter != NULL; ++iter) {
-		++count;
-	}
-
-	GHashTable *params = request->parameters;
-	if(count == 2) {
-		char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
-		char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
-
-		if(unescaped_key == NULL || unescaped_value == NULL) {
-			LOG_DEBUG("Failed to unescape %s: %s", parts[0], parts[1]);
-			success = false;
-		} else {
-			// TODO: handle the case where the key already has a value (using g_hash_table_replace)
-			g_hash_table_replace(params, unescaped_key, unescaped_value);
-			success = true;
-		}
-	} else {
-		success = false;
-	}
-
-	g_strfreev(parts);
-	return success;
-}
-
-// Parses parameters from a string of the form "key1=value1&key2=value2". Return whether or not parsing was successful.
-static bool parseParameters(HttpRequest *request, char *query_part)
-{
-	char **parts = g_strsplit(query_part, "&", 0);
-	bool success = true;
-	for(char **iter = parts; *iter != NULL; ++iter) {
-		success &= parseParameter(request, *iter);
-	}
-	g_strfreev(parts);
-	return success;
-}
-
-static bool parseUri(HttpRequest *request, char *uri)
-{
-	LOG_DEBUG("Request URI is %s", uri);
-	request->uri = g_strdup(uri);
-	bool success = true;
-
-	if(strstr(uri, "?") == NULL) {
-		// Copy the entire uri as hierarchical part
-		request->hierarchical = g_strdup(uri);
-	} else {
-		// Extract parameters
-		char **parts = g_strsplit(uri, "?", 0);
-		int count = 0;
-		for(char **iter = parts; *iter != NULL; ++iter) {
-			LOG_DEBUG("Iterating through part: %s", *iter);
-			++count;
-		}
-		
-		if(count == 2) {
-			// Unescape the hierarchical part (which is the part before the ?)
-			// TODO: possibly disallow special characters not allowed as file names (replace second param)
-			request->hierarchical = g_uri_unescape_string(parts[0], NULL);
-			if(request->hierarchical == NULL) {
-				LOG_DEBUG("Failed to unescape hierarchical part %s", parts[0]);
-				success = false;
-			}
-
-			// Parse the parameter part
-			// TODO: handle a fragment part
-			success &= parseParameters(request, parts[1]);
-		} else {
-			success = false;
-		}
-		g_strfreev(parts);
-	}
-	return success;
-}
-
-/** Parses one line as an HTTP request. Can handle empty lines. */
-static void parseLine(HttpRequest *request, char *line)
-{
-	// LOG_DEBUG("Parsing HTTP line: %s", line);
-	if(strlen(line) == 0) {
-		request->parsing_complete = true;
-		return;
-	}
-
-	// For now, only detect lines of the form <METHOD> <URI> HTTP/<NUMBER>. Parsing one of these makes the request "valid"
-	// TODO: extract parsing logic into an own file
-	GRegex *regexp = g_regex_new("^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$", 0, 0, NULL);
-	GMatchInfo *match_info;
-
-	// TODO: figure out what happens exactly if the request is already valid
-	if(g_regex_match(regexp, line, 0, &match_info)) {
-		gchar *method = g_match_info_fetch(match_info, 1);
-		gchar *uri = g_match_info_fetch(match_info, 2);
-
-		if(parseMethod(request, method) && parseUri(request, uri)) {
-			request->valid = true;
-		}
-
-		free(method);
-		free(uri);
-	}
-
-	g_match_info_free(match_info);
-	g_regex_unref(regexp);
 }
 
 static void checkForNewLine(HttpRequest *request)

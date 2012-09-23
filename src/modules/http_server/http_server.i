@@ -19,7 +19,7 @@
  */
 
 #ifndef HTTPSERVER_HTTPSERVER_H
-#define HTTPSERVER_HTTPVERVER_H
+#define HTTPSERVER_HTTPSERVER_H
 
 #include "modules/socket/socket.h"
 

@@ -23,7 +23,7 @@
 #include "dll.h"
 
 #define API
-#include "modules/httpserver/http_server.h"
+#include "modules/http_server/http_server.h"
 
 #define PORT "1337"
 #define MATCH_EVERYTHING "/test.*"
@@ -73,5 +73,5 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	freeHttpServer(server);
+	destroyHttpServer(server);
 }

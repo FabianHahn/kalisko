@@ -110,7 +110,7 @@ typedef struct s_HttpServer
 
 /* Methods used for configuring and running servers */
 API HttpServer *createHttpServer(char *port);
-API void freeHttpServer(HttpServer *server);
+API void destroyHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
 API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler);
 

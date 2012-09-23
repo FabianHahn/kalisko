@@ -86,9 +86,8 @@ API void destroyHttpServer(HttpServer *server)
 	LOG_DEBUG("Freeing HttpServer on port %s", server->server_socket->port);
 
 	// Clean up the server socket
-	disconnectSocket(server->server_socket);
-	detachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
 	disableSocketPolling(server->server_socket);
+	detachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
 	freeSocket(server->server_socket); 
 
 	server->state = SERVER_STATE_FREEING;
@@ -118,7 +117,7 @@ API bool startHttpServer(HttpServer *server)
  */
 API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
 {
-	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s.", hierarchical_regexp);
+	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
 
 	RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
 	mapping->regexp = g_strdup(hierarchical_regexp);
@@ -139,7 +138,7 @@ static void tryFreeServer(HttpServer *server)
 			free(mapping->regexp);
 			free(mapping);
 		}
-		free(mappings);
+		g_array_free(mappings, true);
 
 		// Finally, clean up the server struct itself
 		free(server);

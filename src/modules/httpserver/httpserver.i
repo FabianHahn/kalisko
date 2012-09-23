@@ -47,9 +47,11 @@ typedef struct
 
   HttpRequestMethod method;
 
-  /** Store the URL of the request without the trailing parameters */
-  /** TODO: rename this to path */
-  char *url;
+  /** Store the entire URI of the request in its raw form (without unescaping), e.g. /the/hierarchical/part?key=value&foo=bar */
+  char *uri;
+
+  /** Stores the hierarchical part of the URI, e.g. /the/hierarchical/part */
+  char *hierarchical;
 
   /** Stores the parameters of the request */
   GHashTable *parameters;
@@ -110,7 +112,7 @@ typedef struct s_HttpServer
 API HttpServer *createHttpServer(char *port);
 API void freeHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
-API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler);
+API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler);
 
 /* Accessor methods for HttpRequest. Note that these are all read-only */
 API bool hasParameter(HttpRequest *request, char *key);

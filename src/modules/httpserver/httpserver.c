@@ -134,19 +134,18 @@ API bool startHttpServer(HttpServer *server)
 }
 
 /**
- * Causes the passed request handler to be called when an HttpRequest with a matching URL comes in. Note that the caller retains ownership of all passed parameters (url_regexp is copied).
+ * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
  *
  * @param server      the server in question
- * @param url_regexp  the regular expression used to determine whether the request matches
+ * @param uri_regexp  the regular expression used to determine whether the request matches
  * @param handler     a handler function to be called for matching requests
  */
-API void registerRequestHandler(HttpServer *server, char *url_regexp, HttpRequestHandler *handler)
+API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
 {
-  LOG_DEBUG("Mapping HTTP request handler for URLs matching %s.", url_regexp);
+  LOG_DEBUG("Mapping HTTP request handler for URIs matching %s.", hierarchical_regexp);
 
   RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
-  GString *copy = g_string_new(url_regexp);
-  mapping->regexp = g_string_free(copy, FALSE);
+  mapping->regexp = g_strdup(hierarchical_regexp);
   mapping->handler = handler;
 
   g_array_append_val(server->handler_mappings, mapping);
@@ -166,7 +165,9 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
   request->valid = false;
   request->line_buffer = g_string_new("");
   request->server = data;
-  request->parameters = g_hash_table_new_full(g_int_hash, g_int_equal, &free, &free);  
+  request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);  
+  request->uri = NULL;
+  request->hierarchical = NULL;
 
   request->server->open_connections++;
 	LOG_DEBUG("Server connections: %lu", request->server->open_connections);
@@ -204,12 +205,13 @@ static bool parseParameter(HttpRequest *request, char *keyvalue)
   if(count == 2) {
     char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
     char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
+
     if(unescaped_key == NULL || unescaped_value == NULL) {
       LOG_DEBUG("Failed to unescape %s: %s", parts[0], parts[1]);
       success = false;
     } else {
       // TODO: handle the case where the key already has a value (using g_hash_table_replace)
-      g_hash_table_insert(params, unescaped_key, unescaped_value);
+      g_hash_table_replace(params, unescaped_key, unescaped_value);
       success = true;
     }
   } else {
@@ -232,23 +234,32 @@ static bool parseParameters(HttpRequest *request, char *query_part)
   return success;
 }
 
-static bool parseUrl(HttpRequest *request, char *url)
+static bool parseUri(HttpRequest *request, char *uri)
 {
-  LOG_DEBUG("Request URL is %s", url);
+  LOG_DEBUG("Request URI is %s", uri);
+  request->uri = g_strdup(uri);
   bool success = true;
 
-  if(strstr(url, "?") != NULL) {
+  if(strstr(uri, "?") == NULL) {
+    // Copy the entire uri as hierarchical part
+    request->hierarchical = g_strdup(uri);
+  } else {
     // Extract parameters
-    char **parts = g_strsplit(url, "?", 0);
+    char **parts = g_strsplit(uri, "?", 0);
     int count = 0;
     for(char **iter = parts; *iter != NULL; ++iter) {
+      LOG_DEBUG("Iterating through part: %s", *iter);
       ++count;
     }
     
     if(count == 2) {
-      // Unescape the path part (which is the part before the ?)
+      // Unescape the hierarchical part (which is the part before the ?)
       // TODO: possibly disallow special characters not allowed as file names (replace second param)
-      request->url = g_uri_unescape_string(parts[0], NULL);
+      request->hierarchical = g_uri_unescape_string(parts[0], NULL);
+      if(request->hierarchical == NULL) {
+        LOG_DEBUG("Failed to unescape hierarchical part %s", parts[0]);
+        success = false;
+      }
 
       // Parse the parameter part
       // TODO: handle a fragment part
@@ -257,9 +268,6 @@ static bool parseUrl(HttpRequest *request, char *url)
       success = false;
     }
     g_strfreev(parts);
-  } else {
-    // No parameters
-    request->url = g_uri_unescape_string(url, NULL);
   }
   return success;
 }
@@ -273,7 +281,7 @@ static void parseLine(HttpRequest *request, char *line)
 		return;
 	}
 
-  // For now, only detect lines of the form <METHOD> <URL> HTTP/<NUMBER>. Parsing one of these makes the request "valid"
+  // For now, only detect lines of the form <METHOD> <URI> HTTP/<NUMBER>. Parsing one of these makes the request "valid"
   // TODO: extract parsing logic into an own file
   GRegex *regexp = g_regex_new("^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$", 0, 0, NULL);
   GMatchInfo *match_info;
@@ -281,14 +289,14 @@ static void parseLine(HttpRequest *request, char *line)
   // TODO: figure out what happens exactly if the request is already valid
   if(g_regex_match(regexp, line, 0, &match_info)) {
     gchar *method = g_match_info_fetch(match_info, 1);
-    gchar *url = g_match_info_fetch(match_info, 2);
+    gchar *uri = g_match_info_fetch(match_info, 2);
 
-    if(parseMethod(request, method) && parseUrl(request, url)) {
+    if(parseMethod(request, method) && parseUri(request, uri)) {
       request->valid = true;
     }
 
     free(method);
-    free(url);
+    free(uri);
   }
 
   g_match_info_free(match_info);
@@ -358,16 +366,19 @@ static void sendStatusResponse(int code, Socket *client)
 static void handleRequest(HttpRequest *request, Socket *client)
 {
   if(!request->valid) {
+    LOG_DEBUG("Could not parse request, responding with bad request");
     sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
 	  return;
   }
 
-	// Go through all handlers and execute the first one which matches the requested URL
+  LOG_DEBUG("Hierarchical part of request: %s", request->hierarchical);
+
+	// Go through all handlers and execute the first one which matches the requested URI
 	HttpServer *server = request->server;
 	GArray *mappings = server->handler_mappings;
 	for (int i = 0; i < mappings->len; ++i) {
 	  RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
-	  if(g_regex_match_simple(mapping->regexp, request->url, 0, 0)) {
+	  if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
       HttpResponse response;
       mapping->handler(request, &response);
       sendResponse(&response, client);
@@ -376,6 +387,7 @@ static void handleRequest(HttpRequest *request, Socket *client)
 	}
 
 	// If we got this far, there is no handler registered for this request
+  LOG_DEBUG("No handler, responding with file not found");
 	sendStatusResponse(FILE_NOT_FOUND_STATUS_CODE, client);
 }
 
@@ -416,8 +428,7 @@ API char *getParameter(HttpRequest *request, char *key)
   if(original == NULL) {
     return NULL;
   } else {
-    GString *copy = g_string_new(original);
-    return g_string_free(copy, true);
+    return g_strdup(original);
   }
 }
 

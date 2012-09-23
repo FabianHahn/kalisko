@@ -33,6 +33,7 @@ struct s_HttpServer;
  */
 typedef enum
 {
+  HTTP_REQUEST_METHOD_UNKNOWN,
   HTTP_REQUEST_METHOD_GET,
   HTTP_REQUEST_METHOD_POST
 } HttpRequestMethod;
@@ -62,8 +63,6 @@ typedef struct
   /** Stores whether or not an empty line has been seen (and thus the stream is expected to end). */
   bool parsing_complete;
 
-  /** Stores whether or not the minimal necessary data required to respond to the request has been parsed successfully. */
-  bool valid;
 } HttpRequest;
 
 /**

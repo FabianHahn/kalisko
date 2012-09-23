@@ -23,126 +23,113 @@
 
 #include "http_parser.h"
 
-// Parses a single parameter from a string of the form "key=value". Returns whether or not parsing was successful.
-static bool parseParameter(HttpRequest *request, char *keyvalue)
+#define MATCH_HTTP_REQUEST_LINE "^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$"
+#define HTTP_GET "GET"
+#define HTTP_POST "POST"
+
+static int countParts(char **parts)
 {
-	char **parts = g_strsplit(keyvalue, "=", 0);
-	int count = 0;
-	bool success = true;
+  int count = 0;
 	for(char **iter = parts; *iter != NULL; ++iter) {
 		++count;
 	}
+  return count;
+}
 
+// Parses a single parameter from a string of the form "key=value". Returns whether or not parsing was successful.
+static void parseParameter(HttpRequest *request, char *keyvalue)
+{
 	GHashTable *params = request->parameters;
-	if(count == 2) {
+	char **parts = g_strsplit(keyvalue, "=", 0);
+	if(countParts(parts) == 2) {
 		char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
 		char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
 
 		if(unescaped_key == NULL || unescaped_value == NULL) {
-			LOG_DEBUG("Failed to unescape %s: %s", parts[0], parts[1]);
-			success = false;
+			LOG_DEBUG("Failed to unescape %s skipping", keyvalue);
 		} else {
 			// TODO: handle the case where the key already has a value (using g_hash_table_replace)
 			g_hash_table_replace(params, unescaped_key, unescaped_value);
-			success = true;
 		}
 	} else {
-		success = false;
-	}
+    LOG_DEBUG("Not exactly one = in %s, skipping", keyvalue);
+  }
 
 	g_strfreev(parts);
-	return success;
 }
 
 // Parses parameters from a string of the form "key1=value1&key2=value2". Return whether or not parsing was successful.
-static bool parseParameters(HttpRequest *request, char *query_part)
+static void parseParameters(HttpRequest *request, char *query_part)
 {
 	char **parts = g_strsplit(query_part, "&", 0);
-	bool success = true;
 	for(char **iter = parts; *iter != NULL; ++iter) {
-		success &= parseParameter(request, *iter);
+		parseParameter(request, *iter);
 	}
 	g_strfreev(parts);
-	return success;
 }
 
-static bool parseUri(HttpRequest *request, char *uri)
+static void parseUri(HttpRequest *request, char *uri)
 {
 	LOG_DEBUG("Request URI is %s", uri);
 	request->uri = g_strdup(uri);
-	bool success = true;
 
 	if(strstr(uri, "?") == NULL) {
 		// Copy the entire uri as hierarchical part
-		request->hierarchical = g_strdup(uri);
+	  request->hierarchical = g_uri_unescape_string(uri, NULL);
+		if(request->hierarchical == NULL) {
+			LOG_DEBUG("Failed to unescape hierarchical part %s", uri);
+		}
 	} else {
 		// Extract parameters
 		char **parts = g_strsplit(uri, "?", 0);
-		int count = 0;
-		for(char **iter = parts; *iter != NULL; ++iter) {
-			++count;
-		}
-		
-		if(count == 2) {
+		if(countParts(parts) == 2) {
 			// Unescape the hierarchical part (which is the part before the ?)
 			// TODO: possibly disallow special characters not allowed as file names (replace second param)
 			request->hierarchical = g_uri_unescape_string(parts[0], NULL);
 			if(request->hierarchical == NULL) {
 				LOG_DEBUG("Failed to unescape hierarchical part %s", parts[0]);
-				success = false;
 			}
 
 			// Parse the parameter part
 			// TODO: handle a fragment part
-			success &= parseParameters(request, parts[1]);
+			parseParameters(request, parts[1]);
 		} else {
-			success = false;
 		}
 		g_strfreev(parts);
 	}
-	return success;
 }
 
-static bool parseMethod(HttpRequest *request, char *method)
+static void parseMethod(HttpRequest *request, char *method)
 {
-	if(strcmp("GET", method) == 0) {
+  LOG_DEBUG("Request method is %s", method);
+	if(strcmp(HTTP_GET, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_GET;
-		LOG_DEBUG("Request method is GET");
-		return true;
-	}
-	if(strcmp("POST", method) == 0) {
+	} else if(strcmp(HTTP_POST, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_POST;
-		LOG_DEBUG("Request method is POST");
-		return true;
 	}
-	return false;
 }
 
 /** Parses one line as an HTTP request. Can handle empty lines. */
 API void parseLine(HttpRequest *request, char *line)
 {
 	// LOG_DEBUG("Parsing HTTP line: %s", line);
+  // An empty line indicates the end of the request
 	if(strlen(line) == 0) {
 		request->parsing_complete = true;
 		return;
 	}
 
-	// For now, only detect lines of the form <METHOD> <URI> HTTP/<NUMBER>. Parsing one of these makes the request "valid"
-	// TODO: extract parsing logic into an own file
-	GRegex *regexp = g_regex_new("^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$", 0, 0, NULL);
+	// Only detect lines of the form <METHOD> <URI> HTTP/<NUMBER>
+	GRegex *regexp = g_regex_new(MATCH_HTTP_REQUEST_LINE, 0, 0, NULL);
 	GMatchInfo *match_info;
-
-	// TODO: figure out what happens exactly if the request is already valid
 	if(g_regex_match(regexp, line, 0, &match_info)) {
-		gchar *method = g_match_info_fetch(match_info, 1);
-		gchar *uri = g_match_info_fetch(match_info, 2);
-
-		if(parseMethod(request, method) && parseUri(request, uri)) {
-			request->valid = true;
-		}
-
+		char *method = g_match_info_fetch(match_info, 1);
+    parseMethod(request, method);
 		free(method);
-		free(uri);
+
+		char *uri = g_match_info_fetch(match_info, 2);
+    parseUri(request, uri);
+    free(uri);
 	}
 
 	g_match_info_free(match_info);

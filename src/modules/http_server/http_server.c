@@ -75,7 +75,6 @@ API HttpServer *createHttpServer(char* port)
 
 	enableSocketPolling(server->server_socket);
 	attachEventListener(server->server_socket, "accept", server, &listener_serverSocketAccept);
-
 	return server;
 }
 
@@ -149,24 +148,21 @@ static void tryFreeServer(HttpServer *server)
 
 static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)
 {
-	Socket *srv = subject;
-	Socket *s = va_arg(args, Socket *);
-	if(srv == NULL || s == NULL) {
-		return;
-	};
-	enableSocketPolling(s);
+	HttpServer *server = data;
+	server->open_connections++;
 
 	HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
-	request->parsing_complete = false;
-	request->valid = false;
-	request->line_buffer = g_string_new("");
-	request->server = data;
-	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);  
+	request->server = server;
+	request->method = HTTP_REQUEST_METHOD_UNKNOWN;
 	request->uri = NULL;
 	request->hierarchical = NULL;
+	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);  
+	request->line_buffer = g_string_new("");
+	request->parsing_complete = false;
 
+	Socket *s = va_arg(args, Socket *);
+	enableSocketPolling(s);
 	attachEventListener(s, "read", request, &listener_readRequest);
-	request->server->open_connections++;
 }
 
 static void checkForNewLine(HttpRequest *request)
@@ -254,13 +250,11 @@ API GHashTable *getParameters(HttpRequest *request)
 /** Reads the data in request and sends an appropriate response to the client (only if the request is well-formed) */
 static void handleRequest(HttpRequest *request, Socket *client)
 {
-	if(!request->valid) {
+	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
 		LOG_DEBUG("Could not parse request, responding with bad request");
 		sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
 		return;
 	}
-
-	LOG_DEBUG("Hierarchical part of request: %s", request->hierarchical);
 
 	// Go through all handlers and execute the first one which matches the requested URI
 	HttpServer *server = request->server;
@@ -276,7 +270,7 @@ static void handleRequest(HttpRequest *request, Socket *client)
 	}
 
 	// If we got this far, there is no handler registered for this request
-	LOG_DEBUG("No handler, responding with file not found");
+	LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
 	sendStatusResponse(FILE_NOT_FOUND_STATUS_CODE, client);
 }
 

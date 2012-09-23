@@ -23,17 +23,17 @@
 #include "dll.h"
 
 #define API
-#include "modules/httpserver/httpserver.h"
+#include "modules/httpserver/http_server.h"
 
 #define PORT "1337"
 #define MATCH_EVERYTHING "/test.*"
 
-MODULE_NAME("httpserver_demo");
+MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("httpserver", 0, 0, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 0, 1));
 
 static HttpServer *server;
 

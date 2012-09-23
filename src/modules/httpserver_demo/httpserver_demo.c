@@ -6,9 +6,9 @@
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
- *     @li Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- *     @li Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
- *       in the documentation and/or other materials provided with the distribution.
+ *		 @li Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *		 @li Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+ *			 in the documentation and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
@@ -40,38 +40,38 @@ static HttpServer *server;
 /** Prints a standard message, loops over all passed parameters and prints them. */
 static bool demoHandler(HttpRequest *request, HttpResponse *response)
 {
-  // TODO: Place this functionality in the library
-  GString *content = g_string_new("Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
-  
-  GHashTable *params = getParameters(request);
-  if(g_hash_table_size(params) > 0) {
-    g_string_append(content, "Parameters:<br/>");
+	// TODO: Place this functionality in the library
+	GString *content = g_string_new("Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
+	
+	GHashTable *params = getParameters(request);
+	if(g_hash_table_size(params) > 0) {
+		g_string_append(content, "Parameters:<br/>");
 
-    GHashTableIter iter;
-    gpointer vkey, vvalue;
-    g_hash_table_iter_init (&iter, params);
-    while (g_hash_table_iter_next (&iter, &vkey, &vvalue)) {
-      char *key = vkey, *value = vvalue;
-      g_string_append_printf(content, "Key: %s, Value: %s<br/>", key, value);
-    } 
-  }
+		GHashTableIter iter;
+		gpointer vkey, vvalue;
+		g_hash_table_iter_init (&iter, params);
+		while (g_hash_table_iter_next (&iter, &vkey, &vvalue)) {
+			char *key = vkey, *value = vvalue;
+			g_string_append_printf(content, "Key: %s, Value: %s<br/>", key, value);
+		} 
+	}
 
-  response->content = g_string_free(content, false);
-  return true;
+	response->content = g_string_free(content, false);
+	return true;
 }
 
 MODULE_INIT
 {
-  server = createHttpServer(PORT);
-  registerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
-  if (!startHttpServer(server)) {
-    LOG_ERROR("Failed to start HTTP server");
-    return false;
-  }
-    return true;
+	server = createHttpServer(PORT);
+	registerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
+	if (!startHttpServer(server)) {
+		LOG_ERROR("Failed to start HTTP server");
+		return false;
+	}
+	return true;
 }
 
 MODULE_FINALIZE
 {
-  freeHttpServer(server);
+	freeHttpServer(server);
 }

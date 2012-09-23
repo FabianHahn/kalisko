@@ -80,7 +80,6 @@ static bool parseUri(HttpRequest *request, char *uri)
 		char **parts = g_strsplit(uri, "?", 0);
 		int count = 0;
 		for(char **iter = parts; *iter != NULL; ++iter) {
-			LOG_DEBUG("Iterating through part: %s", *iter);
 			++count;
 		}
 		
@@ -120,7 +119,7 @@ static bool parseMethod(HttpRequest *request, char *method)
 }
 
 /** Parses one line as an HTTP request. Can handle empty lines. */
-void parseLine(HttpRequest *request, char *line)
+API void parseLine(HttpRequest *request, char *line)
 {
 	// LOG_DEBUG("Parsing HTTP line: %s", line);
 	if(strlen(line) == 0) {

@@ -24,6 +24,6 @@
 #define API
 #include "http_server.h"
 
-void parseLine(HttpRequest *request, char *line);
+API void parseLine(HttpRequest *request, char *line);
 
 #endif

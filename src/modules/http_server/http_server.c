@@ -228,6 +228,29 @@ static void sendStatusResponse(int code, Socket *client)
 	sendResponse(&response, client);
 }
 
+/** Returns whether or not the request has a value associated with key. */
+API bool hasParameter(HttpRequest *request, char *key)
+{
+	return g_hash_table_contains(request->parameters, key);
+}
+
+/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible for freeing the returned string */
+API char *getParameter(HttpRequest *request, char *key)
+{
+	char *original = g_hash_table_lookup(request->parameters, key);
+	if(original == NULL) {
+		return NULL;
+	} else {
+		return g_strdup(original);
+	}
+}
+
+/** Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable. The caller must not free the returned pointer. */
+API GHashTable *getParameters(HttpRequest *request)
+{
+	return request->parameters;
+}
+
 /** Reads the data in request and sends an appropriate response to the client (only if the request is well-formed) */
 static void handleRequest(HttpRequest *request, Socket *client)
 {
@@ -278,27 +301,3 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
 		}
 	}
 }
-
-/** Returns whether or not the request has a value associated with key. */
-API bool hasParameter(HttpRequest *request, char *key)
-{
-	return g_hash_table_contains(request->parameters, key);
-}
-
-/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible for freeing the returned string */
-API char *getParameter(HttpRequest *request, char *key)
-{
-	char *original = g_hash_table_lookup(request->parameters, key);
-	if(original == NULL) {
-		return NULL;
-	} else {
-		return g_strdup(original);
-	}
-}
-
-/** Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable. The caller must not free the returned pointer. */
-API GHashTable *getParameters(HttpRequest *request)
-{
-	return request->parameters;
-}
-

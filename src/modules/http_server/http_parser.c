@@ -69,14 +69,21 @@ static void parseParameters(HttpRequest *request, char *query_part)
 	g_strfreev(parts);
 }
 
+// Convenience method to free the old pointer if necessary and have it point to the new string
+static void replaceString(char **old, char *new)
+{
+	free(*old);
+	*old = new;
+}
+
 static void parseUri(HttpRequest *request, char *uri)
 {
 	LOG_DEBUG("Request URI is %s", uri);
-	request->uri = g_strdup(uri);
+	replaceString(&request->uri, g_strdup(uri));
 
 	if(strstr(uri, "?") == NULL) {
 		// Copy the entire uri as hierarchical part
-	  request->hierarchical = g_uri_unescape_string(uri, NULL);
+		replaceString(&request->hierarchical, g_uri_unescape_string(uri, NULL));
 		if(request->hierarchical == NULL) {
 			LOG_DEBUG("Failed to unescape hierarchical part %s", uri);
 		}
@@ -86,7 +93,7 @@ static void parseUri(HttpRequest *request, char *uri)
 		if(countParts(parts) == 2) {
 			// Unescape the hierarchical part (which is the part before the ?)
 			// TODO: possibly disallow special characters not allowed as file names (replace second param)
-			request->hierarchical = g_uri_unescape_string(parts[0], NULL);
+			replaceString(&request->hierarchical, g_uri_unescape_string(parts[0], NULL));
 			if(request->hierarchical == NULL) {
 				LOG_DEBUG("Failed to unescape hierarchical part %s", parts[0]);
 			}

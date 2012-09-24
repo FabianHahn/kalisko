@@ -58,6 +58,23 @@ typedef struct
 	HttpRequestHandler *handler;
 } RequestHandlerMapping;
 
+static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler)
+{	
+	RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
+	mapping->regexp = g_strdup(regexp);
+	mapping->handler = handler;
+	return mapping;
+}
+
+// Takes a void pointer in order to pass it as free function to g_array (without warnings)
+static void freeRequestHandlerMapping(void *mapping)
+{
+	LOG_DEBUG("Free handler mapping");
+	RequestHandlerMapping *rhm = mapping;
+	free(rhm->regexp);
+	free(rhm);
+}
+
 /**
  * Creates an HTTP server on the specified port. The server does not accept any connections until startHttpServer() is called. The caller takes responsibility for eventually calling destoryHttpServer() on the returned pointer.
  *
@@ -72,7 +89,8 @@ API HttpServer *createHttpServer(char* port)
 	server->state = SERVER_STATE_CREATED;
 	server->open_connections = 0;
 	server->server_socket = createServerSocket(port); 
-	server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
+	server->handler_mappings = g_array_new(false, false, sizeof(RequestHandlerMapping*));	
+	g_array_set_clear_func(server->handler_mappings, &freeRequestHandlerMapping);
 
 	enableSocketPolling(server->server_socket);
 	attachEventListener(server->server_socket, "accept", server, &clientAccepted);
@@ -119,11 +137,7 @@ API bool startHttpServer(HttpServer *server)
 API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
 {
 	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
-
-	RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
-	mapping->regexp = g_strdup(hierarchical_regexp);
-	mapping->handler = handler;
-
+	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler);
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
@@ -156,6 +170,7 @@ static void tryFreeServer(HttpServer *server)
 		LOG_DEBUG("Freeing HTTP server resources");
 
 		// Clean up all the created handler mappings. Note that this cannot be done by passing a "clear function" to the array since the regexp string of each mapping must be freed as well
+		/*
 		GArray *mappings = server->handler_mappings;
 		for (int i = 0; i < mappings->len; ++i) {
 			RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
@@ -163,6 +178,8 @@ static void tryFreeServer(HttpServer *server)
 			free(mapping);
 		}
 		g_array_free(mappings, true);
+		*/
+		g_array_free(server->handler_mappings, true);
 
 		// Finally, clean up the server struct itself
 		free(server);

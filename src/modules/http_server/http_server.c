@@ -104,7 +104,7 @@ API void destroyHttpServer(HttpServer *server)
 
 	// Clean up the server socket
 	disableSocketPolling(server->server_socket);
-	detachEventListener(server->server_socket, "accept", NULL, &clientAccepted);
+	detachEventListener(server->server_socket, "accept", server, &clientAccepted);
 	freeSocket(server->server_socket); 
 
 	server->state = SERVER_STATE_FREEING;

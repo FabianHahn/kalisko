@@ -27,8 +27,9 @@
 #include "modules/event/event.h"
 #include "modules/socket/poll.h"
 
-#define FILE_NOT_FOUND_STATUS_CODE 404
-#define BAD_REQUEST_STATUS_CODE 501
+#define OK_STATUS_STRING "200 OK"
+#define FILE_NOT_FOUND_STATUS_STRING "404 Not Found"
+#define BAD_REQUEST_STATUS_STRING "400 Bad Request"
 
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
@@ -235,31 +236,23 @@ static void checkForNewLine(HttpRequest *request)
 /** Sends the provided response to the client */
 static void sendResponse(HttpResponse *response, Socket *client)
 {
-	// TODO: factor out constant strings, ad support for proper return codes
 	GString *content = g_string_new(response->content);
 	GString *answer = g_string_new("");
-
-	// 200 OK
-	g_string_append(answer, "HTTP/1.0 200 OK \r\n");
-	if(response->content != NULL) {
-		g_string_append_printf(answer, "Content-Type: text/html\r\nContent-length: %lu\r\n", (unsigned long)content->len);	
-	}
-	g_string_append(answer, "\r\n");
-	if(response->content != NULL) {
-		g_string_append(answer, content->str);
-	}
-
+	g_string_append_printf(answer, "HTTP/1.0 %s \r\nContent-Type: text/html\r\nContent-length: %lu\r\n\r\n%s", 
+												 response->status_string, 
+												 (unsigned long)content->len, 
+												 content->str);	
 	socketWriteRaw(client, answer->str, answer->len * sizeof(char));
 	g_string_free(content, true);
 	g_string_free(answer, true);
 }
 
-/** Sends to the client a response which consists only of the status code and has no other content */
-static void sendStatusResponse(int code, Socket *client)
+/** Sends to the client a response which consists of the status string in the header and in the body */
+static void sendStatusResponse(char *status_string, Socket *client)
 {
 	HttpResponse response;
-	response.content = NULL;
-	response.status_code = code;
+	response.content = status_string;
+	response.status_string = status_string;
 	sendResponse(&response, client);
 }
 
@@ -268,7 +261,7 @@ static void handleRequest(HttpRequest *request, Socket *client)
 {
 	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
 		LOG_DEBUG("Could not parse request, responding with bad request");
-		sendStatusResponse(BAD_REQUEST_STATUS_CODE, client);
+		sendStatusResponse(BAD_REQUEST_STATUS_STRING, client);
 		return;
 	}
 
@@ -279,15 +272,17 @@ static void handleRequest(HttpRequest *request, Socket *client)
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
 			HttpResponse response;
-			mapping->handler(request, &response);
-			sendResponse(&response, client);
-			return;
+			response.status_string = OK_STATUS_STRING;
+			if(mapping->handler(request, &response)) {
+				sendResponse(&response, client);
+				return;
+			}	
 		}
 	}
 
 	// If we got this far, there is no handler registered for this request
 	LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
-	sendStatusResponse(FILE_NOT_FOUND_STATUS_CODE, client);
+	sendStatusResponse(FILE_NOT_FOUND_STATUS_STRING, client);
 }
 
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)

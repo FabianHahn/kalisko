@@ -70,7 +70,8 @@ typedef struct
  */
 typedef struct
 {
-  int status_code;
+  /* TODO: remove possible memory leaks due to clients replacing these fields */
+  char *status_string;
   char *content;
 } HttpResponse;
 

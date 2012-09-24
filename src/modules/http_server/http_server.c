@@ -66,13 +66,18 @@ static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequ
 	return mapping;
 }
 
-// Takes a void pointer in order to pass it as free function to g_array (without warnings)
-static void freeRequestHandlerMapping(void *mapping)
+// Takes a void pointer in order to pass it as free function to g_array (without warnings). WARNING: this does not free the pointer itself. This is the behavior request by g_array
+static void freeRequestHandlerMappingContent(void *mapping)
 {
-	LOG_DEBUG("Free handler mapping");
 	RequestHandlerMapping *rhm = mapping;
 	free(rhm->regexp);
-	free(rhm);
+}
+
+// A proper free function for RequestHandlerMapping
+static void freeRequestHandlerMapping(RequestHandlerMapping *mapping)
+{
+	freeRequestHandlerMappingContent(mapping);
+	free(mapping);
 }
 
 /**
@@ -90,7 +95,7 @@ API HttpServer *createHttpServer(char* port)
 	server->open_connections = 0;
 	server->server_socket = createServerSocket(port); 
 	server->handler_mappings = g_array_new(false, false, sizeof(RequestHandlerMapping*));	
-	g_array_set_clear_func(server->handler_mappings, &freeRequestHandlerMapping);
+	g_array_set_clear_func(server->handler_mappings, &freeRequestHandlerMappingContent);
 
 	enableSocketPolling(server->server_socket);
 	attachEventListener(server->server_socket, "accept", server, &clientAccepted);

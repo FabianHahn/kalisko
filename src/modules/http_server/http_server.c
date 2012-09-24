@@ -37,8 +37,9 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
-static void listener_readRequest(void *subject, const char *event, void *data, va_list args);
-static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args);
+static void clientSocketRead(void *subject, const char *event, void *data, va_list args);
+static void clientAccepted(void *subject, const char *event, void *data, va_list args);
+static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args);
 static void tryFreeServer(HttpServer *server);
 
 MODULE_INIT
@@ -74,7 +75,7 @@ API HttpServer *createHttpServer(char* port)
 	server->handler_mappings = g_array_new(FALSE, FALSE, sizeof(RequestHandlerMapping*));	
 
 	enableSocketPolling(server->server_socket);
-	attachEventListener(server->server_socket, "accept", server, &listener_serverSocketAccept);
+	attachEventListener(server->server_socket, "accept", server, &clientAccepted);
 	return server;
 }
 
@@ -87,7 +88,7 @@ API void destroyHttpServer(HttpServer *server)
 
 	// Clean up the server socket
 	disableSocketPolling(server->server_socket);
-	detachEventListener(server->server_socket, "accept", NULL, &listener_serverSocketAccept);
+	detachEventListener(server->server_socket, "accept", NULL, &clientAccepted);
 	freeSocket(server->server_socket); 
 
 	server->state = SERVER_STATE_FREEING;
@@ -126,12 +127,35 @@ API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, H
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
+/** Returns whether or not the request has a value associated with key. */
+API bool hasParameter(HttpRequest *request, char *key)
+{
+	return g_hash_table_contains(request->parameters, key);
+}
+
+/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible for freeing the returned string */
+API char *getParameter(HttpRequest *request, char *key)
+{
+	char *original = g_hash_table_lookup(request->parameters, key);
+	if(original == NULL) {
+		return NULL;
+	} else {
+		return g_strdup(original);
+	}
+}
+
+/** Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable. The caller must not free the returned pointer. */
+API GHashTable *getParameters(HttpRequest *request)
+{
+	return request->parameters;
+}
+
 static void tryFreeServer(HttpServer *server)
 {
-	if(server->open_connections == 0) {
+	if(server->state == SERVER_STATE_FREEING && server->open_connections == 0) {
 		LOG_DEBUG("Freeing HTTP server resources");
 
-		// Clean up all the created handler mappings
+		// Clean up all the created handler mappings. Note that this cannot be done by passing a "clear function" to the array since the regexp string of each mapping must be freed as well
 		GArray *mappings = server->handler_mappings;
 		for (int i = 0; i < mappings->len; ++i) {
 			RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
@@ -145,11 +169,8 @@ static void tryFreeServer(HttpServer *server)
 	}
 }
 
-static void listener_serverSocketAccept(void *subject, const char *event, void *data, va_list args)
+static HttpRequest *createHttpRequest(HttpServer *server)
 {
-	HttpServer *server = data;
-	server->open_connections++;
-
 	HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
 	request->server = server;
 	request->method = HTTP_REQUEST_METHOD_UNKNOWN;
@@ -158,10 +179,28 @@ static void listener_serverSocketAccept(void *subject, const char *event, void *
 	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);  
 	request->line_buffer = g_string_new("");
 	request->parsing_complete = false;
+	return request;
+}
+
+static void destroyHttpRequest(HttpRequest *request)
+{
+	free(request->uri);
+	free(request->hierarchical);
+	g_hash_table_destroy(request->parameters);	// Frees all the key and value strings
+	g_string_free(request->line_buffer, true);
+	free(request);
+}
+
+static void clientAccepted(void *subject, const char *event, void *data, va_list args)
+{
+	HttpServer *server = data;
+	server->open_connections++;
+	HttpRequest *request = createHttpRequest(server);
 
 	Socket *s = va_arg(args, Socket *);
+	attachEventListener(s, "read", request, &clientSocketRead);
+	attachEventListener(s, "disconnect", request, &clientSocketDisconnected);
 	enableSocketPolling(s);
-	attachEventListener(s, "read", request, &listener_readRequest);
 }
 
 static void checkForNewLine(HttpRequest *request)
@@ -223,29 +262,6 @@ static void sendStatusResponse(int code, Socket *client)
 	sendResponse(&response, client);
 }
 
-/** Returns whether or not the request has a value associated with key. */
-API bool hasParameter(HttpRequest *request, char *key)
-{
-	return g_hash_table_contains(request->parameters, key);
-}
-
-/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible for freeing the returned string */
-API char *getParameter(HttpRequest *request, char *key)
-{
-	char *original = g_hash_table_lookup(request->parameters, key);
-	if(original == NULL) {
-		return NULL;
-	} else {
-		return g_strdup(original);
-	}
-}
-
-/** Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable. The caller must not free the returned pointer. */
-API GHashTable *getParameters(HttpRequest *request)
-{
-	return request->parameters;
-}
-
 /** Reads the data in request and sends an appropriate response to the client (only if the request is well-formed) */
 static void handleRequest(HttpRequest *request, Socket *client)
 {
@@ -273,7 +289,22 @@ static void handleRequest(HttpRequest *request, Socket *client)
 	sendStatusResponse(FILE_NOT_FOUND_STATUS_CODE, client);
 }
 
-static void listener_readRequest(void *subject, const char *event, void *data, va_list args)
+static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)
+{	
+	Socket *client_socket = subject;
+	HttpRequest *request = data;
+	HttpServer *server = request->server;
+	
+	detachEventListener(client_socket, "read", request, &clientSocketRead);
+	detachEventListener(client_socket, "disconnect", request, &clientSocketDisconnected);
+	freeSocket(client_socket);
+	destroyHttpRequest(request);
+
+	server->open_connections--;
+	tryFreeServer(server);	// This might have been the last request, attempt to free the server
+}
+
+static void clientSocketRead(void *subject, const char *event, void *data, va_list args)
 {
 	char *message = va_arg(args, char *);
 	HttpRequest *request = data;
@@ -283,14 +314,5 @@ static void listener_readRequest(void *subject, const char *event, void *data, v
 
 	if(request->parsing_complete) {
 		handleRequest(request, subject);
-		// TODO: Disconnect and clean up the client socket and detach handlers etc
-		HttpServer *server = request->server;
-		// TODO: Free the request object
-		// TODO: Possibly attach a disconnect event listener instead of freeing stuff here
-
-		server->open_connections--;
-		if(server->state == SERVER_STATE_FREEING) {
-			tryFreeServer(server);
-		}
 	}
 }

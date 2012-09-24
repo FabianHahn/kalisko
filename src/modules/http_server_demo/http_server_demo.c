@@ -26,7 +26,7 @@
 #include "modules/http_server/http_server.h"
 
 #define PORT "1337"
-#define MATCH_EVERYTHING "/test.*"
+#define MATCH_EVERYTHING "^/test.*"
 
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");

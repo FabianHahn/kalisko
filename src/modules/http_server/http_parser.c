@@ -41,19 +41,20 @@ static void parseParameter(HttpRequest *request, char *keyvalue)
 {
 	GHashTable *params = request->parameters;
 	char **parts = g_strsplit(keyvalue, "=", 0);
-	if(countParts(parts) == 2) {
+	if(countParts(parts) != 2) {
+    LOG_DEBUG("Not exactly one = in %s, skipping", keyvalue);
+	} else {
 		char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
 		char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
 
 		if(unescaped_key == NULL || unescaped_value == NULL) {
 			LOG_DEBUG("Failed to unescape %s skipping", keyvalue);
+			free(unescaped_key);
+			free(unescaped_value);
 		} else {
-			// TODO: handle the case where the key already has a value (using g_hash_table_replace)
-			g_hash_table_replace(params, unescaped_key, unescaped_value);
+			g_hash_table_replace(params, unescaped_key, unescaped_value); // Frees an old key or value if present
 		}
-	} else {
-    LOG_DEBUG("Not exactly one = in %s, skipping", keyvalue);
-  }
+	}
 
 	g_strfreev(parts);
 }

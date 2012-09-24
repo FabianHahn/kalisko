@@ -170,7 +170,7 @@ API void appendContent(HttpResponse *response, char *new_content)
 	GString *content = g_string_new(response->content);
 	free(response->content);
 	g_string_append(content, new_content);
-	response->content = g_string_free(content, false);
+	response->content = g_string_free(content, true);
 }
 
 /** Resets the content of the response to the empty string */

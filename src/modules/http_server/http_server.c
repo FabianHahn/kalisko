@@ -73,13 +73,6 @@ static void freeRequestHandlerMappingContent(void *mapping)
 	free(rhm->regexp);
 }
 
-// A proper free function for RequestHandlerMapping
-static void freeRequestHandlerMapping(RequestHandlerMapping *mapping)
-{
-	freeRequestHandlerMappingContent(mapping);
-	free(mapping);
-}
-
 /**
  * Creates an HTTP server on the specified port. The server does not accept any connections until startHttpServer() is called. The caller takes responsibility for eventually calling destoryHttpServer() on the returned pointer.
  *
@@ -172,21 +165,7 @@ API GHashTable *getParameters(HttpRequest *request)
 static void tryFreeServer(HttpServer *server)
 {
 	if(server->state == SERVER_STATE_FREEING && server->open_connections == 0) {
-		LOG_DEBUG("Freeing HTTP server resources");
-
-		// Clean up all the created handler mappings. Note that this cannot be done by passing a "clear function" to the array since the regexp string of each mapping must be freed as well
-		/*
-		GArray *mappings = server->handler_mappings;
-		for (int i = 0; i < mappings->len; ++i) {
-			RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
-			free(mapping->regexp);
-			free(mapping);
-		}
-		g_array_free(mappings, true);
-		*/
-		g_array_free(server->handler_mappings, true);
-
-		// Finally, clean up the server struct itself
+		g_array_free(server->handler_mappings, true); 	// Frees all RequestHandlerMapping structs 
 		free(server);
 	}
 }

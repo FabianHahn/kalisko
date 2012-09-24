@@ -117,7 +117,7 @@ static void parseMethod(HttpRequest *request, char *method)
 	}
 }
 
-/** Parses one line as an HTTP request. Can handle empty lines. */
+/** Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines. */
 API void parseLine(HttpRequest *request, char *line)
 {
 	// LOG_DEBUG("Parsing HTTP line: %s", line);

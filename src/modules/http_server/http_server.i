@@ -46,6 +46,7 @@ typedef struct
   /** The server which accepted the client with this request */
   struct s_HttpServer *server;
 
+  /** Represents the method of this request */
   HttpRequestMethod method;
 
   /** Store the entire URI of the request in its raw form (without unescaping), e.g. /the/hierarchical/part?key=value&foo=bar */
@@ -70,8 +71,10 @@ typedef struct
  */
 typedef struct
 {
-  /* TODO: remove possible memory leaks due to clients replacing these fields */
+  /** Contains the variable part of the status line, for instance "200 OK" */
   char *status_string;
+
+  /** Contains the string sent to the client as response body */
   char *content;
 } HttpResponse;
 
@@ -96,6 +99,7 @@ typedef enum {
  */
 typedef struct s_HttpServer
 {
+    /** Represents the current state of the server */
     HttpServerState state;
 
     /** Stores how many connections to clients are currently open */
@@ -118,5 +122,9 @@ API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, H
 API bool hasParameter(HttpRequest *request, char *key);
 API char *getParameter(HttpRequest *request, char *key);
 API GHashTable *getParameters(HttpRequest *request);
+
+/* Mutator methods for HttpResponse */
+API void appendContent(HttpResponse *response, char *content);
+API void clearContent(HttpResponse *response);
 
 #endif

@@ -127,7 +127,7 @@ API bool startHttpServer(HttpServer *server)
 }
 
 /**
- * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
+ * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in. In order to determine the matching precedence, matches are tested in the order in which they were registered. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
  *
  * @param server			the server in question
  * @param uri_regexp	the regular expression used to determine whether the request matches
@@ -161,6 +161,23 @@ API char *getParameter(HttpRequest *request, char *key)
 API GHashTable *getParameters(HttpRequest *request)
 {
 	return request->parameters;
+}
+
+/** Adds new_content to the already present response content */
+API void appendContent(HttpResponse *response, char *new_content)
+{
+	// TODO: Currently, the runtime if quadratic in the number of calls to this method. Implementing this as an array of strings which are all merged at the end would make this linear
+	GString *content = g_string_new(response->content);
+	free(response->content);
+	g_string_append(content, new_content);
+	response->content = g_string_free(content, false);
+}
+
+/** Resets the content of the response to the empty string */
+API void clearContent(HttpResponse *response)
+{
+	free(response->content);
+	response->content = g_strdup("");
 }
 
 static void tryFreeServer(HttpServer *server)
@@ -272,11 +289,13 @@ static void handleRequest(HttpRequest *request, Socket *client)
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
 			HttpResponse response;
+			response.content = g_strdup("");
 			response.status_string = OK_STATUS_STRING;
 			if(mapping->handler(request, &response)) {
 				sendResponse(&response, client);
 				return;
 			}	
+			free(response.content);
 		}
 	}
 

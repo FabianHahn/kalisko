@@ -21,5 +21,6 @@
 #ifndef CURL_CURL_H
 #define CURL_CURL_H
 
+API GString *curlRequestUrl(const char *url);
 
 #endif

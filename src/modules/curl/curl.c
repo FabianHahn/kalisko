@@ -19,6 +19,7 @@
  */
 
 #include <curl/curl.h>
+#include <glib.h>
 
 #include "dll.h"
 
@@ -28,9 +29,11 @@
 MODULE_NAME("curl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("CURL library access");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
+
+size_t writeCurlData(void *buffer, size_t size, size_t nmemb, void *userp);
 
 MODULE_INIT
 {
@@ -43,3 +46,41 @@ MODULE_FINALIZE
 {
 	curl_global_cleanup();
 }
+
+/**
+ * Requests an URL using the CURL library and returns the results as a string
+ *
+ * @param url		the url to request
+ * @result			the resulting page as a string or NULL on failure
+ */
+API GString *curlRequestUrl(const char *url)
+{
+	GString *result = g_string_new("");
+	char error[CURL_ERROR_SIZE];
+
+	CURL *curl = curl_easy_init();
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeCurlData);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, result);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
+
+	if(curl_easy_perform(curl) != 0) {
+		LOG_ERROR("Failed to read URL '%s': %s", url, error);
+		g_string_free(result, true);
+		return NULL;
+	}
+
+	curl_easy_cleanup(curl);
+
+	return result;
+}
+
+size_t writeCurlData(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	GString *result = (GString *) userp;
+
+	g_string_append_len(result, buffer, size * nmemb);
+
+	return size * nmemb;
+}
+

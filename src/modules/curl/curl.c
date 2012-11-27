@@ -29,7 +29,7 @@
 MODULE_NAME("curl");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("CURL library access");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -63,6 +63,8 @@ API GString *curlRequestUrl(const char *url)
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeCurlData);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, result);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
+
+	LOG_DEBUG("Requesting URL '%s'...", url);
 
 	if(curl_easy_perform(curl) != 0) {
 		LOG_ERROR("Failed to read URL '%s': %s", url, error);

@@ -31,7 +31,7 @@
 MODULE_NAME("xml");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("libxml2 library access");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -76,6 +76,8 @@ API xmlDocPtr parseXmlString(const char *xml)
  */
 API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath)
 {
+	LOG_DEBUG("Attempting to evaluate XPath expression '%s'...", xpath);
+
 	xmlXPathContextPtr context;
 	if((context = xmlXPathNewContext(document)) == NULL) {
 		LOG_ERROR("Failed to create XPath context for document");
@@ -93,7 +95,7 @@ API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath)
 	xmlNodeSetPtr nodeset = result->nodesetval;
 	GQueue *results = g_queue_new();
 
-	if(xmlXPathNodeSetIsEmpty(nodeset)){
+	if(!xmlXPathNodeSetIsEmpty(nodeset)) {
 		for(int i = 0; i < nodeset->nodeNr; i++) {
 			xmlChar *resultString = xmlNodeListGetString(document, nodeset->nodeTab[i]->xmlChildrenNode, 1);
 			g_queue_push_tail(results, g_string_new((char *) resultString));
@@ -104,6 +106,45 @@ API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath)
 	xmlXPathFreeObject(result);
 
 	return results;
+}
+
+/**
+ * Evaluates an XPath expression on a parsed XML document tree, but returns only the first result
+ *
+ * @param document			the document in which to evaluate the XPath expression
+ * @param xpath				the XPath expression to evaluate
+ * @result					the first matching result or NULL on failure
+ */
+API GString *evaluateXPathExpressionFirst(xmlDocPtr document, const char *xpath)
+{
+	GQueue *results;
+	if((results = evaluateXPathExpression(document, xpath)) == NULL) {
+		return NULL;
+	}
+
+	if(g_queue_is_empty(results)) {
+		LOG_ERROR("Failed to return first XPath expression result, empty result set");
+		return NULL;
+	}
+
+	GString *result = g_queue_pop_head(results);
+	freeXPathExpressionResults(results);
+
+	return result;
+}
+
+/**
+ * Frees a results list as returned by evaluateXPathExpression
+ *
+ * @param results			the results list to free
+ */
+API void freeXPathExpressionResults(GQueue *results)
+{
+	for(GList *iter = results->head; iter != NULL; iter = iter->next) {
+		g_string_free(iter->data, true);
+	}
+
+	g_queue_free(results);
 }
 
 static void libxmlErrorHandler(void *context, const char *message, ...)

@@ -26,5 +26,7 @@
 
 API xmlDocPtr parseXmlString(const char *xml);
 API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath);
+API GString *evaluateXPathExpressionFirst(xmlDocPtr document, const char *xpath);
+API void freeXPathExpressionResults(GQueue *results);
 
 #endif

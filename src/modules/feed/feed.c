@@ -28,14 +28,13 @@
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1));
 
 MODULE_INIT
 {
 	GString *xml = curlRequestUrl("http://generations.fr/winradio/prog.xml");
-	LOG_INFO("XML output: %s", xml->str);
 
 	xmlDocPtr document = parseXmlString(xml->str);
 	GString *title = evaluateXPathExpressionFirst(document, "/prog/morceau[@id='1']/chanson");

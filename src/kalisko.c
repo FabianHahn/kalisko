@@ -41,8 +41,6 @@
 
 int main(int argc, char **argv)
 {
-	g_thread_init(NULL);
-
 	setArgc(argc);
 	setArgv(argv);
 

@@ -21,4 +21,10 @@
 #ifndef XML_XML_H
 #define XML_XML_H
 
+#include <libxml/tree.h>
+#include <glib.h>
+
+API xmlDocPtr parseXmlString(const char *xml);
+API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath);
+
 #endif

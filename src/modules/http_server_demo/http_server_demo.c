@@ -31,9 +31,9 @@
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 0, 1));
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 0));
 
 static bool demoHandler(HttpRequest *request, HttpResponse *response);
 
@@ -57,25 +57,25 @@ MODULE_FINALIZE
 
 /**
  * Prints a standard message, loops over all passed parameters and prints them.
+ *
+ * @param request			the HTTP request that should be handled
+ * @param response			the HTTP response that will be sent back to the client
+ * @result					true if successful
  */
 static bool demoHandler(HttpRequest *request, HttpResponse *response)
 {
-	appendContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
+	appendHttpResponseContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
 
 	GHashTable *params = getParameters(request);
 	if(g_hash_table_size(params) > 0) {
-		appendContent(response, "Parameters:<br/>");
+		appendHttpResponseContent(response, "Parameters:<br/>");
 
 		GHashTableIter iter;
-		gpointer vkey, vvalue;
+		char *key;
+		char *value;
 		g_hash_table_iter_init(&iter, params);
-		while(g_hash_table_iter_next(&iter, &vkey, &vvalue)) {
-			char *key = vkey, *value = vvalue;
-			GString *content = g_string_new("");
-			g_string_append_printf(content, "Key: %s, Value: %s<br/>", key, value);
-
-			appendContent(response, content->str);
-			g_string_free(content, true);
+		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
+			appendHttpResponseContent(response, "Key: %s, Value: %s<br/>", key, value);
 		}
 	}
 	return true;

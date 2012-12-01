@@ -35,8 +35,8 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
+MODULE_BCVERSION(0, 1, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 /** Struct used to map regular expressions to function which respond to HTTP requests */
@@ -134,7 +134,7 @@ API bool startHttpServer(HttpServer *server)
  * @param uri_regexp		the regular expression used to determine whether the request matches
  * @param handler			a handler function to be called for matching requests
  */
-API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
+API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
 {
 	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
 	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler);
@@ -143,16 +143,25 @@ API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, H
 
 /**
  * Returns whether or not the request has a value associated with key.
+ *
+ * @param request			the request to check
+ * @param key				the key to check
+ * @result					true if such a parameter exists
  */
-API bool hasParameter(HttpRequest *request, char *key)
+API bool checkHttpRequestParameter(HttpRequest *request, char *key)
 {
 	return g_hash_table_contains(request->parameters, key);
 }
 
-/** Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible
- *  for freeing the returned string.
+/**
+ * Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible
+ * for freeing the returned string.
+ *
+ * @param request			the request for which the parameter should be returned
+ * @param key				the key of the parameter that should be returned
+ * @result					the returned parameter of NULL on failure
  */
-API char *getParameter(HttpRequest *request, char *key)
+API char *getHttpRequestParameter(HttpRequest *request, char *key)
 {
 	char *original = g_hash_table_lookup(request->parameters, key);
 	if(original == NULL) {
@@ -160,16 +169,6 @@ API char *getParameter(HttpRequest *request, char *key)
 	} else {
 		return g_strdup(original);
 	}
-}
-
-/**
- * Returns a pointer to the GHashTable representing the parameters (for advanced use such as iterating over
- * the key-value pairs). It is the responsibility of the caller not to change the state of the GHashTable.
- * The caller must not free the returned pointer.
- */
-API GHashTable *getParameters(HttpRequest *request)
-{
-	return request->parameters;
 }
 
 /**

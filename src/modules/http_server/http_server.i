@@ -104,12 +104,11 @@ typedef struct HttpServerStruct
 API HttpServer *createHttpServer(char *port);
 API void destroyHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
-API void registerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler);
+API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler);
 
 /* Accessor methods for HttpRequest. Note that these are all read-only */
-API bool hasParameter(HttpRequest *request, char *key);
-API char *getParameter(HttpRequest *request, char *key);
-API GHashTable *getParameters(HttpRequest *request);
+API bool checkHttpRequestParameter(HttpRequest *request, char *key);
+API char *getHttpRequestParameter(HttpRequest *request, char *key);
 
 /* Mutator methods for HttpResponse */
 API HttpResponse *createHttpResponse(const char *status, const char *content);

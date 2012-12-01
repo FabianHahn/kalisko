@@ -31,9 +31,9 @@
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
-MODULE_VERSION(0, 1, 0);
+MODULE_VERSION(0, 1, 1);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 0));
+MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 1));
 
 static bool demoHandler(HttpRequest *request, HttpResponse *response);
 
@@ -42,7 +42,7 @@ static HttpServer *server;
 MODULE_INIT
 {
 	server = createHttpServer(PORT);
-	registerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
+	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
 	if(!startHttpServer(server)) {
 		LOG_ERROR("Failed to start HTTP server");
 		return false;
@@ -66,17 +66,17 @@ static bool demoHandler(HttpRequest *request, HttpResponse *response)
 {
 	appendHttpResponseContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
 
-	GHashTable *params = getParameters(request);
-	if(g_hash_table_size(params) > 0) {
+	if(g_hash_table_size(request->parameters) > 0) {
 		appendHttpResponseContent(response, "Parameters:<br/>");
 
 		GHashTableIter iter;
 		char *key;
 		char *value;
-		g_hash_table_iter_init(&iter, params);
+		g_hash_table_iter_init(&iter, request->parameters);
 		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			appendHttpResponseContent(response, "Key: %s, Value: %s<br/>", key, value);
 		}
 	}
+
 	return true;
 }

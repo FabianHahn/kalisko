@@ -21,12 +21,12 @@
 #ifndef HTTPSERVER_HTTPSERVER_H
 #define HTTPSERVER_HTTPSERVER_H
 
+#include <glib.h>
+#include <stdarg.h>
 #include "modules/socket/socket.h"
 
-#include <glib.h>
-
 /* Forward declaration to allow HttpRequest to reference a server */
-struct s_HttpServer;
+struct HttpServerStruct;
 
 /**
  * Enum to represent the types of http request which can come in
@@ -44,7 +44,7 @@ typedef enum
 typedef struct
 {
 	/** The server which accepted the client with this request */
-	struct s_HttpServer *server;
+	struct HttpServerStruct *server;
 	/** Represents the method of this request */
 	HttpRequestMethod method;
 	/** Store the entire URI of the request in its raw form (without unescaping), e.g. /the/hierarchical/part?key=value&foo=bar */
@@ -65,9 +65,9 @@ typedef struct
 typedef struct
 {
 	/** Contains the variable part of the status line, for instance "200 OK" */
-	char *status_string;
+	char *status;
 	/** Contains the string sent to the client as response body */
-	char *content;
+	GString *content;
 } HttpResponse;
 
 /** 
@@ -88,7 +88,7 @@ typedef enum
 /**
  * Struct to represent an HTTP server
  */
-typedef struct s_HttpServer
+typedef struct HttpServerStruct
 {
 	/** Represents the current state of the server */
 	HttpServerState state;
@@ -112,7 +112,9 @@ API char *getParameter(HttpRequest *request, char *key);
 API GHashTable *getParameters(HttpRequest *request);
 
 /* Mutator methods for HttpResponse */
-API void appendContent(HttpResponse *response, char *content);
-API void clearContent(HttpResponse *response);
+API HttpResponse *createHttpResponse(const char *status, const char *content);
+API void appendHttpResponseContent(HttpResponse *response, char *content, ...);
+API void clearHttpResponseContent(HttpResponse *response);
+API void freeHttpResponse(HttpResponse *response);
 
 #endif

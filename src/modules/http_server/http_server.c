@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdarg.h>
 #include <glib.h>
 #include "dll.h"
 
@@ -34,8 +35,8 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 0, 1);
-MODULE_BCVERSION(0, 0, 1);
+MODULE_VERSION(0, 1, 0);
+MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 /** Struct used to map regular expressions to function which respond to HTTP requests */
@@ -53,9 +54,9 @@ static HttpRequest *createHttpRequest(HttpServer *server);
 static void destroyHttpRequest(HttpRequest *request);
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
 static void checkForNewLine(HttpRequest *request);
-static void sendResponse(HttpResponse *response, Socket *client);
-static void sendStatusResponse(char *status_string, Socket *client);
-static void handleRequest(HttpRequest *request, Socket *client);
+static bool sendResponse(Socket *client, HttpResponse *response);
+static bool sendStatusResponse(Socket *client, const char *status);
+static void handleRequest(Socket *client, HttpRequest *request);
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args);
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args);
 
@@ -172,24 +173,55 @@ API GHashTable *getParameters(HttpRequest *request)
 }
 
 /**
- * Adds new_content to the already present response content
+ * Create a HTTP response object
+ *
+ * @param status			the status string to initialize the HTTP response with
+ * @param content			the content string to initialize the HTTP response with
+ * @result					the created HTTP response object
  */
-API void appendContent(HttpResponse *response, char *new_content)
+API HttpResponse *createHttpResponse(const char *status, const char *content)
 {
-	// TODO: Currently, the runtime is quadratic in the number of calls to this method. Implementing this as an array of strings which are all merged at the end would make this linear
-	GString *content = g_string_new(response->content);
-	free(response->content);
-	g_string_append(content, new_content);
-	response->content = g_string_free(content, true);
+	HttpResponse *response = ALLOCATE_OBJECT(HttpResponse);
+	response->status = strdup(status);
+	response->content = g_string_new(content);
+
+	return response;
+}
+
+/**
+ * Adds content to a HTTP response object
+ *
+ * @param response			the HTTP response to add the content to
+ * @param content			the printf-style content to append to the response
+ */
+API void appendHttpResponseContent(HttpResponse *response, char *content, ...)
+{
+	va_list va;
+	va_start(va, content);
+
+	g_string_append_vprintf(response->content, content, va);
 }
 
 /**
  * Resets the content of the response to the empty string
+ *
+ * @param response			the HTTP response to clear
  */
-API void clearContent(HttpResponse *response)
+API void clearHttpResponseContent(HttpResponse *response)
 {
-	free(response->content);
-	response->content = g_strdup("");
+	g_string_assign(response->content, "");
+}
+
+/**
+ * Frees a HTTP response object
+ *
+ * @param response			the HTTP response to free
+ */
+API void freeHttpResponse(HttpResponse *response)
+{
+	free(response->status);
+	g_string_free(response->content, true);
+	free(response);
 }
 
 static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler)
@@ -281,36 +313,45 @@ static void checkForNewLine(HttpRequest *request)
 
 /**
  * Sends the provided response to the client
+ *
+ * @param client			the client socket to send the response to
+ * @param response			the HTTP response to send to the client
+ * @result					true if successful
  */
-static void sendResponse(HttpResponse *response, Socket *client)
+static bool sendResponse(Socket *client, HttpResponse *response)
 {
-	GString *content = g_string_new(response->content);
 	GString *answer = g_string_new("");
-	g_string_append_printf(answer, "HTTP/1.0 %s \r\nContent-Type: text/html\r\nContent-length: %lu\r\n\r\n%s", response->status_string, (unsigned long) content->len, content->str);
-	socketWriteRaw(client, answer->str, answer->len * sizeof(char));
-	g_string_free(content, true);
+	g_string_append_printf(answer, "HTTP/1.0 %s \r\nContent-Type: text/html\r\nContent-length: %lu\r\n\r\n%s", response->status, (unsigned long) response->content->len, response->content->str);
+	bool result = socketWriteRaw(client, answer->str, answer->len * sizeof(char));
 	g_string_free(answer, true);
+
+	return result;
 }
 
 /**
  * Sends to the client a response which consists of the status string in the header and in the body
+ *
+ * @param client			the client socket to send the status response to
+ * @param status			the status string to send
+ * @result					true if successful
  */
-static void sendStatusResponse(char *status_string, Socket *client)
+static bool sendStatusResponse(Socket *client, const char *status)
 {
-	HttpResponse response;
-	response.content = status_string;
-	response.status_string = status_string;
-	sendResponse(&response, client);
+	HttpResponse *response = createHttpResponse(status, status);
+	bool result = sendResponse(client, response);
+	freeHttpResponse(response);
+
+	return result;
 }
 
 /**
  * Reads the data in request and sends an appropriate response to the client (only if the request is well-formed)
  */
-static void handleRequest(HttpRequest *request, Socket *client)
+static void handleRequest(Socket *client, HttpRequest *request)
 {
 	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
 		LOG_DEBUG("Could not parse request, responding with bad request");
-		sendStatusResponse(BAD_REQUEST_STATUS_STRING, client);
+		sendStatusResponse(client, BAD_REQUEST_STATUS_STRING);
 		return;
 	}
 
@@ -320,20 +361,17 @@ static void handleRequest(HttpRequest *request, Socket *client)
 	for(int i = 0; i < mappings->len; ++i) {
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
-			HttpResponse response;
-			response.content = g_strdup("");
-			response.status_string = OK_STATUS_STRING;
-			if(mapping->handler(request, &response)) {
-				sendResponse(&response, client);
-				return;
+			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
+			if(mapping->handler(request, response)) {
+				sendResponse(client, response);
 			}
-			free(response.content);
+			freeHttpResponse(response);
 		}
 	}
 
 	// If we got this far, there is no handler registered for this request
 	LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
-	sendStatusResponse(FILE_NOT_FOUND_STATUS_STRING, client);
+	sendStatusResponse(client, FILE_NOT_FOUND_STATUS_STRING);
 }
 
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)
@@ -360,6 +398,6 @@ static void clientSocketRead(void *subject, const char *event, void *data, va_li
 	checkForNewLine(request);
 
 	if(request->parsing_complete) {
-		handleRequest(request, subject);
+		handleRequest(subject, request);
 	}
 }

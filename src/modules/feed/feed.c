@@ -23,25 +23,40 @@
 #include "dll.h"
 #include "modules/curl/curl.h"
 #include "modules/xml/xml.h"
+#include "modules/http_server/http_server.h"
 #define API
 #include "feed.h"
 
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
 TIMER_CALLBACK(feed_update);
+static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata_p);
+static bool feedHandler(HttpRequest *request, HttpResponse *response, void *userdata_p);
 static bool compareFeedContentEntries(GHashTable *first, GHashTable *second);
 static void freeFeed(void *feed_p);
 
 /** GHashTable associating feed names with Feed objects */
-GHashTable *feeds;
+static GHashTable *feeds;
+
+/** HTTP Server to serve feeds */
+static HttpServer *http;
 
 MODULE_INIT
 {
+	http = createHttpServer("1337");
+	registerHttpServerRequestHandler(http, "^/[^/]*", &indexHandler, NULL);
+
+	if(!startHttpServer(http)) {
+		LOG_ERROR("Failed to start feed HTTP server");
+		destroyHttpServer(http);
+		return false;
+	}
+
 	feeds = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeFeed);
 	TIMER_ADD_TIMEOUT(0, feed_update);
 
@@ -136,6 +151,11 @@ API bool createFeed(const char *name, const char *url)
 	feed->enabled = false;
 
 	g_hash_table_insert(feeds, strdup(name), feed);
+
+	GString *regex = g_string_new("");
+	g_string_append_printf(regex, "^/feeds/%s.*", name);
+	registerHttpServerRequestHandler(http, regex->str, &feedHandler, feed);
+	g_string_free(regex, true);
 
 	return true;
 }
@@ -244,6 +264,57 @@ API bool deleteFeed(const char *name)
 	return g_hash_table_remove(feeds, name);
 }
 
+static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata_p)
+{
+	appendHttpResponseContent(response, "Currently tracked feeds:<br/><br/>");
+
+	GHashTableIter iter;
+	char *name;
+	Feed *feed;
+	g_hash_table_iter_init(&iter, feeds);
+	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &feed)) {
+		appendHttpResponseContent(response, "<a href=\"feeds/%s\">%s</a><br />", name, name);
+	}
+
+	return true;
+}
+
+static bool feedHandler(HttpRequest *request, HttpResponse *response, void *userdata_p)
+{
+	Feed *feed = userdata_p;
+
+	appendHttpResponseContent(response, "<h3>Feed %s</h3>\n<table>\n<tr>\n", feed->name);
+
+	GHashTableIter iter;
+	char *field;
+	char *expression;
+	g_hash_table_iter_init(&iter, feeds);
+	while(g_hash_table_iter_next(&iter, (void **) &field, (void **) &expression)) {
+		appendHttpResponseContent(response, "<th>%s</th>", field);
+	}
+
+	appendHttpResponseContent(response, "\n</tr>\n");
+
+	for(GList *iter = feed->content->head; iter != NULL; iter = iter->next) {
+		GHashTable *entry = iter->data;
+
+		appendHttpResponseContent(response, "<tr>\n");
+
+		GHashTableIter iter2;
+		char *value;
+		g_hash_table_iter_init(&iter2, entry);
+		while(g_hash_table_iter_next(&iter2, (void **) &field, (void **) &value)) {
+			appendHttpResponseContent(response, "<td>%s</td>", value);
+		}
+
+		appendHttpResponseContent(response, "</tr>\n");
+	}
+
+	appendHttpResponseContent(response, "</table>\n");
+
+	return true;
+}
+
 /**
  * Compares two feed content entries
  *
@@ -269,6 +340,8 @@ static bool compareFeedContentEntries(GHashTable *first, GHashTable *second)
 
 static void freeFeed(void *feed_p)
 {
+	// TODO: unregister HTTP handler once http_server supports it
+
 	Feed *feed = feed_p;
 	free(feed->name);
 	free(feed->url);

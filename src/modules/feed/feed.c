@@ -30,7 +30,7 @@
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
@@ -114,7 +114,7 @@ TIMER_CALLBACK(feed_update)
 
 		if(!g_queue_is_empty(feed->content)) {
 			// Check if the new content element is different from the last recorded one
-			GHashTable *last = g_queue_peek_tail(feed->content);
+			GHashTable *last = g_queue_peek_head(feed->content);
 			if(compareFeedContentEntries(last, entry)) {
 				g_hash_table_destroy(entry);
 				LOG_DEBUG("Feed entry for feed '%s' already exists, skipping", feed->name);
@@ -122,11 +122,11 @@ TIMER_CALLBACK(feed_update)
 			}
 		}
 
-		g_queue_push_tail(feed->content, entry);
+		g_queue_push_head(feed->content, entry);
 		LOG_DEBUG("Added new feed content entry for '%s'", feed->name);
 
 		if(g_queue_get_length(feed->content) > FEED_LIMIT) {
-			GHashTable *first = g_queue_pop_head(feed->content);
+			GHashTable *first = g_queue_pop_tail(feed->content);
 			g_hash_table_destroy(first);
 		}
 	}
@@ -309,7 +309,7 @@ static bool feedHandler(HttpRequest *request, HttpResponse *response, void *user
 {
 	Feed *feed = userdata_p;
 
-	appendHttpResponseContent(response, "<html>\n<head>\n<style>table {\nborder-collapse:collapse;\n}\ntd {\nborder: 1px solid black;\npadding: 2px 5px;\n}\nth {\nborder: 1px solid black;\npadding: 2px 5px;\n}\n</style>\n</head>\n<body>\n<h3>Feed %s</h3>\n<table>\n<tr>\n", feed->name);
+	appendHttpResponseContent(response, "<html>\n<head>\n<style>table {\nborder-collapse:collapse;\n}\ntd {\nborder: 1px solid black;\npadding: 2px 5px;\n}\nth {\nborder: 1px solid black;\npadding: 2px 5px;\n}\n</style>\n</head>\n<body>\n<h3>Feed '%s'</h3>\n<table>\n<tr>\n", feed->name);
 
 	for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
 		FeedField *field = iter->data;

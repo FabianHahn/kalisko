@@ -62,7 +62,7 @@ API int removeModuleTimers(const char *module);
  * @param TIME			the time when the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD(TIME, CALLBACK) $$(GTimeVal *, addTimer)(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+#define TIMER_ADD(TIME, CALLBACK) addTimer(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
 
 /**
  * @see addTimer
@@ -70,14 +70,14 @@ API int removeModuleTimers(const char *module);
  * @param CALLBACK		the callback to schedule
  * @param CDATA			custom data to be passed to the callback
  */
-#define TIMER_ADD_EX(TIME, CALLBACK, CDATA) $$(GTimeVal *, addTimer)(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
+#define TIMER_ADD_EX(TIME, CALLBACK, CDATA) addTimer(STR(KALISKO_MODULE), (TIME), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see addTimeout
  * @param TIME			the timeout in microseconds after which the callback should be executed
  * @param CALLBACK		the callback to schedule
  */
-#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) $$(GTimeVal *, addTimeout)(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
+#define TIMER_ADD_TIMEOUT(TIMEOUT, CALLBACK) addTimeout(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), NULL)
 
 /**
  * @see addTimeout
@@ -85,17 +85,17 @@ API int removeModuleTimers(const char *module);
  * @param CALLBACK		the callback to schedule
  * @param CDATA			custom data to be passed to the callback
  */
-#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK, CDATA) $$(GTimeVal *, addTimeout)(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
+#define TIMER_ADD_TIMEOUT_EX(TIMEOUT, CALLBACK, CDATA) addTimeout(STR(KALISKO_MODULE), (TIMEOUT), &TIMER_CALLBACK_NAME(CALLBACK), (CDATA))
 
 /**
  * @see delTimer
  * @param TIME			the scheduled time of the callback to be deleted
  */
-#define TIMER_DEL(TIME) $$(bool, delTimer)((TIME))
+#define TIMER_DEL(TIME) delTimer((TIME))
 
 /**
  * Removes all timers registered by this module
  */
-#define TIMERS_CLEAR $$(int, removeModuleTimers)(STR(KALISKO_MODULE))
+#define TIMERS_CLEAR removeModuleTimers(STR(KALISKO_MODULE))
 
 #endif

@@ -360,20 +360,23 @@ static void handleRequest(Socket *client, HttpRequest *request)
 	// Go through all handlers and execute the first one which matches the requested URI
 	HttpServer *server = request->server;
 	GArray *mappings = server->handler_mappings;
-	for(int i = 0; i < mappings->len; ++i) {
+	bool handled = false;
+	for(int i = 0; !handled && i < mappings->len; ++i) {
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
 			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
 			if(mapping->handler(request, response, mapping->userdata)) {
 				sendResponse(client, response);
+				handled = true;
 			}
 			freeHttpResponse(response);
 		}
 	}
 
-	// If we got this far, there is no handler registered for this request
-	LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
-	sendStatusResponse(client, FILE_NOT_FOUND_STATUS_STRING);
+	if(!handled) {
+		LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
+		sendStatusResponse(client, FILE_NOT_FOUND_STATUS_STRING);
+	}
 }
 
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)

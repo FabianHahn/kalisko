@@ -31,18 +31,18 @@
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
-MODULE_VERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 1));
+MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
-static bool demoHandler(HttpRequest *request, HttpResponse *response);
+static bool demoHandler(HttpRequest *request, HttpResponse *response, void *userdata);
 
 static HttpServer *server;
 
 MODULE_INIT
 {
 	server = createHttpServer(PORT);
-	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &demoHandler);
+	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &demoHandler, NULL);
 	if(!startHttpServer(server)) {
 		LOG_ERROR("Failed to start HTTP server");
 		return false;
@@ -60,9 +60,10 @@ MODULE_FINALIZE
  *
  * @param request			the HTTP request that should be handled
  * @param response			the HTTP response that will be sent back to the client
+ * @param userdata			custom userdata
  * @result					true if successful
  */
-static bool demoHandler(HttpRequest *request, HttpResponse *response)
+static bool demoHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
 	appendHttpResponseContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
 

@@ -73,7 +73,7 @@ typedef struct
 /** 
  * A type of function which can respond to Http requests by populating a response struct
  */
-typedef bool (HttpRequestHandler)(HttpRequest *request, HttpResponse *response);
+typedef bool (HttpRequestHandler)(HttpRequest *request, HttpResponse *response, void *userdata);
 
 typedef enum
 {
@@ -104,7 +104,7 @@ typedef struct HttpServerStruct
 API HttpServer *createHttpServer(char *port);
 API void destroyHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
-API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler);
+API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata);
 
 /* Accessor methods for HttpRequest. Note that these are all read-only */
 API bool checkHttpRequestParameter(HttpRequest *request, char *key);

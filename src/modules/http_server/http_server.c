@@ -35,8 +35,8 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
 /** Struct used to map regular expressions to function which respond to HTTP requests */
@@ -44,10 +44,11 @@ typedef struct
 {
 	char *regexp;
 	HttpRequestHandler *handler;
+	void *userdata;
 } RequestHandlerMapping;
 
 
-static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler);
+static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata);
 static void freeRequestHandlerMappingContent(void *mapping);
 static void tryFreeServer(HttpServer *server);
 static HttpRequest *createHttpRequest(HttpServer *server);
@@ -133,11 +134,12 @@ API bool startHttpServer(HttpServer *server)
  * @param server			the server in question
  * @param uri_regexp		the regular expression used to determine whether the request matches
  * @param handler			a handler function to be called for matching requests
+ * @param userdata			custom userdata
  */
-API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler)
+API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
 {
 	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
-	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler);
+	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler, userdata);
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
@@ -223,11 +225,12 @@ API void freeHttpResponse(HttpResponse *response)
 	free(response);
 }
 
-static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler)
+static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata)
 {
 	RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
 	mapping->regexp = g_strdup(regexp);
 	mapping->handler = handler;
+	mapping->userdata = userdata;
 	return mapping;
 }
 
@@ -361,7 +364,7 @@ static void handleRequest(Socket *client, HttpRequest *request)
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
 			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
-			if(mapping->handler(request, response)) {
+			if(mapping->handler(request, response, mapping->userdata)) {
 				sendResponse(client, response);
 			}
 			freeHttpResponse(response);

@@ -30,9 +30,11 @@
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
+
+#define FEED_LIMIT 200
 
 TIMER_CALLBACK(feed_update);
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata_p);
@@ -122,9 +124,14 @@ TIMER_CALLBACK(feed_update)
 
 		g_queue_push_tail(feed->content, entry);
 		LOG_DEBUG("Added new feed content entry for '%s'", feed->name);
+
+		if(g_queue_get_length(feed->content) > FEED_LIMIT) {
+			GHashTable *first = g_queue_pop_head(feed->content);
+			g_hash_table_destroy(first);
+		}
 	}
 
-	TIMER_ADD_TIMEOUT(10 * G_USEC_PER_SEC, feed_update);
+	TIMER_ADD_TIMEOUT(60 * G_USEC_PER_SEC, feed_update);
 }
 
 /**

@@ -35,7 +35,7 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 1, 2);
+MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -323,7 +323,7 @@ static void checkForNewLine(HttpRequest *request)
 static bool sendResponse(Socket *client, HttpResponse *response)
 {
 	GString *answer = g_string_new("");
-	g_string_append_printf(answer, "HTTP/1.0 %s \r\nContent-Type: text/html\r\nContent-length: %lu\r\n\r\n%s", response->status, (unsigned long) response->content->len, response->content->str);
+	g_string_append_printf(answer, "HTTP/1.0 %s \r\nContent-Type: text/html; charset=utf-8\r\nContent-length: %lu\r\n\r\n%s", response->status, (unsigned long) response->content->len, response->content->str);
 	bool result = socketWriteRaw(client, answer->str, answer->len * sizeof(char));
 	g_string_free(answer, true);
 
@@ -364,6 +364,7 @@ static void handleRequest(Socket *client, HttpRequest *request)
 	for(int i = 0; !handled && i < mappings->len; ++i) {
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
+			LOG_DEBUG("%s matches %s", mapping->regexp, request->hierarchical);
 			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
 			if(mapping->handler(request, response, mapping->userdata)) {
 				sendResponse(client, response);

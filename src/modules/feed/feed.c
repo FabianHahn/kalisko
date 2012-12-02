@@ -30,7 +30,7 @@
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
@@ -49,7 +49,7 @@ static HttpServer *http;
 MODULE_INIT
 {
 	http = createHttpServer("1337");
-	registerHttpServerRequestHandler(http, "^/[^/]*", &indexHandler, NULL);
+	registerHttpServerRequestHandler(http, "^/[^/]*$", &indexHandler, NULL);
 
 	if(!startHttpServer(http)) {
 		LOG_ERROR("Failed to start feed HTTP server");
@@ -61,6 +61,7 @@ MODULE_INIT
 	TIMER_ADD_TIMEOUT(0, feed_update);
 
 	createFeed("generations", "http://generations.fr/winradio/prog.xml");
+	addFeedField("generations", "time", "/prog/morceau[@id='1']/date_prog");
 	addFeedField("generations", "artist", "/prog/morceau[@id='1']/chanteur");
 	addFeedField("generations", "title", "/prog/morceau[@id='1']/chanson");
 	enableFeed("generations");
@@ -97,15 +98,12 @@ TIMER_CALLBACK(feed_update)
 
 		GHashTable *entry = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
 
-		GHashTableIter iter2;
-		char *field;
-		char *expression;
-		g_hash_table_iter_init(&iter2, feed->fields);
-		while(g_hash_table_iter_next(&iter2, (void **) &field, (void **) &expression)) {
-			GString *value = evaluateXPathExpressionFirst(document, expression);
+		for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+			FeedField *field = iter->data;
+			GString *value = evaluateXPathExpressionFirst(document, field->expression);
 			if(value != NULL) {
-				LOG_DEBUG("Feed '%s' field '%s' value: %s", name, field, value->str);
-				g_hash_table_insert(entry, strdup(field), value->str);
+				LOG_DEBUG("Feed '%s' field '%s' value: %s", name, field->name, value->str);
+				g_hash_table_insert(entry, strdup(field->name), value->str);
 				g_string_free(value, false);
 			}
 		}
@@ -146,14 +144,14 @@ API bool createFeed(const char *name, const char *url)
 	Feed *feed = ALLOCATE_OBJECT(Feed);
 	feed->name = strdup(name);
 	feed->url = strdup(url);
-	feed->fields = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &free);
+	feed->fields = g_queue_new();
 	feed->content = g_queue_new();
 	feed->enabled = false;
 
 	g_hash_table_insert(feeds, strdup(name), feed);
 
 	GString *regex = g_string_new("");
-	g_string_append_printf(regex, "^/feeds/%s.*", name);
+	g_string_append_printf(regex, "^/feeds/%s.*$", name);
 	registerHttpServerRequestHandler(http, regex->str, &feedHandler, feed);
 	g_string_free(regex, true);
 
@@ -164,11 +162,11 @@ API bool createFeed(const char *name, const char *url)
  * Adds a field to a feed
  *
  * @param name			the name of the feed to add the field to
- * @param field			the name of the field to add to the feed
+ * @param fieldName		the name of the field to add to the feed
  * @param expression	the expression for the field that should be added
  * @result				true if successful
  */
-API bool addFeedField(const char *name, const char *field, const char *expression)
+API bool addFeedField(const char *name, const char *fieldName, const char *expression)
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
@@ -181,12 +179,20 @@ API bool addFeedField(const char *name, const char *field, const char *expressio
 		return false;
 	}
 
-	if(g_hash_table_lookup(feed->fields, field) != NULL) {
-		LOG_ERROR("Failed to add field '%s' to feed '%s': A field with that name already exists", name, field);
-		return false;
+	for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+		FeedField *field = iter->data;
+
+		if(g_strcmp0(field->name, fieldName) == 0) {
+			LOG_ERROR("Failed to add field '%s' to feed '%s': A field with that name already exists", name, fieldName);
+			return false;
+		}
 	}
 
-	g_hash_table_insert(feed->fields, strdup(field), strdup(expression));
+	FeedField *field = ALLOCATE_OBJECT(FeedField);
+	field->name = strdup(fieldName);
+	field->expression = strdup(expression);
+	g_queue_push_tail(feed->fields, field);
+
 	return true;
 }
 
@@ -194,10 +200,10 @@ API bool addFeedField(const char *name, const char *field, const char *expressio
  * Deletes a field from a feed
  *
  * @param name			the name of the feed to delete the field from
- * @param field			the name of the field to delete
+ * @param fieldName		the name of the field to delete
  * @result				true if successful
  */
-API bool deleteFeedField(const char *name, const char *field)
+API bool deleteFeedField(const char *name, const char *fieldName)
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
@@ -210,7 +216,20 @@ API bool deleteFeedField(const char *name, const char *field)
 		return false;
 	}
 
-	return g_hash_table_remove(feed->fields, field);
+	for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+		FeedField *field = iter->data;
+
+		if(g_strcmp0(field->name, fieldName) == 0) {
+			free(field->name);
+			free(field->expression);
+			free(field);
+			g_queue_delete_link(feed->fields, iter);
+			return true;
+		}
+	}
+
+	LOG_ERROR("Failed to delete field '%s' from feed '%s': A field with that name doesn't exist", fieldName, name);
+	return false;
 }
 
 /**
@@ -283,14 +302,11 @@ static bool feedHandler(HttpRequest *request, HttpResponse *response, void *user
 {
 	Feed *feed = userdata_p;
 
-	appendHttpResponseContent(response, "<h3>Feed %s</h3>\n<table>\n<tr>\n", feed->name);
+	appendHttpResponseContent(response, "<html>\n<head>\n<style>table {\nborder-collapse:collapse;\n}\ntd {\nborder: 1px solid black;\npadding: 2px 5px;\n}\nth {\nborder: 1px solid black;\npadding: 2px 5px;\n}\n</style>\n</head>\n<body>\n<h3>Feed %s</h3>\n<table>\n<tr>\n", feed->name);
 
-	GHashTableIter iter;
-	char *field;
-	char *expression;
-	g_hash_table_iter_init(&iter, feeds);
-	while(g_hash_table_iter_next(&iter, (void **) &field, (void **) &expression)) {
-		appendHttpResponseContent(response, "<th>%s</th>", field);
+	for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+		FeedField *field = iter->data;
+		appendHttpResponseContent(response, "<th>%s</th>", field->name);
 	}
 
 	appendHttpResponseContent(response, "\n</tr>\n");
@@ -300,17 +316,15 @@ static bool feedHandler(HttpRequest *request, HttpResponse *response, void *user
 
 		appendHttpResponseContent(response, "<tr>\n");
 
-		GHashTableIter iter2;
-		char *value;
-		g_hash_table_iter_init(&iter2, entry);
-		while(g_hash_table_iter_next(&iter2, (void **) &field, (void **) &value)) {
-			appendHttpResponseContent(response, "<td>%s</td>", value);
+		for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+			FeedField *field = iter->data;
+			appendHttpResponseContent(response, "<td>%s</td>", g_hash_table_lookup(entry, field->name));
 		}
 
 		appendHttpResponseContent(response, "</tr>\n");
 	}
 
-	appendHttpResponseContent(response, "</table>\n");
+	appendHttpResponseContent(response, "</table>\n</body>\n</html>");
 
 	return true;
 }
@@ -345,7 +359,14 @@ static void freeFeed(void *feed_p)
 	Feed *feed = feed_p;
 	free(feed->name);
 	free(feed->url);
-	g_hash_table_destroy(feed->fields);
+
+	for(GList *iter = feed->fields->head; iter != NULL; iter = iter->next) {
+		FeedField *field = iter->data;
+		free(field->name);
+		free(field->expression);
+		free(field);
+	}
+	g_queue_free(feed->fields);
 
 	for(GList *iter = feed->content->head; iter != NULL; iter = iter->next) {
 		g_hash_table_destroy(iter->data);

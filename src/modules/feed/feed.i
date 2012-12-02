@@ -22,12 +22,19 @@
 #define FEED_FEED_H
 
 typedef struct {
+	/** The name of the field */
+	char *name;
+	/** The XPath expression for the field */
+	char *expression;
+} FeedField;
+
+typedef struct {
 	/** The name of the feed */
 	char *name;
 	/** The URL of the feed */
 	char *url;
-	/** The fields of the feed associating names of the fields with a corresponding XPath expression */
-	GHashTable *fields;
+	/** The fields of the feed consisting of FeedField objects */
+	GQueue *fields;
 	/** The content list of the feed consisting of GHashTable items associating field names with field values */
 	GQueue *content;
 	/** Whether the feed is enabled */
@@ -35,8 +42,8 @@ typedef struct {
 } Feed;
 
 API bool createFeed(const char *name, const char *url);
-API bool addFeedField(const char *name, const char *field, const char *expression);
-API bool deleteFeedField(const char *name, const char *field);
+API bool addFeedField(const char *name, const char *fieldName, const char *expression);
+API bool deleteFeedField(const char *name, const char *fieldName);
 API bool enableFeed(const char *name);
 API Feed *getFeed(const char *name);
 API bool deleteFeed(const char *name);

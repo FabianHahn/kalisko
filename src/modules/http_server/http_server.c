@@ -235,7 +235,7 @@ static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequ
 }
 
 /**
- * Takes a void pointer in order to pass it as free function to g_array (without warnings). WARNING: this does not free the pointer itself. This is the behavior request by g_array
+ * Takes a void pointer in order to pass it as free function to g_array (without warnings). WARNING: this does not free the pointer itself. This is the behavior requested by g_array
  */
 static void freeRequestHandlerMappingContent(void *mapping)
 {

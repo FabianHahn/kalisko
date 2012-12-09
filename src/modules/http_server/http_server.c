@@ -54,7 +54,7 @@ static void tryFreeServer(HttpServer *server);
 static HttpRequest *createHttpRequest(HttpServer *server);
 static void destroyHttpRequest(HttpRequest *request);
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
-static void checkForNewLine(HttpRequest *request);
+static void processAvailableLines(HttpRequest *request);
 static bool sendResponse(Socket *client, HttpResponse *response);
 static bool sendStatusResponse(Socket *client, const char *status);
 static void handleRequest(Socket *client, HttpRequest *request);
@@ -260,7 +260,6 @@ static HttpRequest *createHttpRequest(HttpServer *server)
 	request->hierarchical = NULL;
 	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);
 	request->line_buffer = g_string_new("");
-	request->parsing_complete = false;
 	request->content_length = -1;
 	request->got_empty_line = false;
 	return request;
@@ -287,7 +286,7 @@ static void clientAccepted(void *subject, const char *event, void *data, va_list
 	enableSocketPolling(s);
 }
 
-static void checkForNewLine(HttpRequest *request)
+static void processAvailableLines(HttpRequest *request)
 {
 	char *message = request->line_buffer->str;
 	if(strstr(message, "\n") == NULL) {
@@ -309,9 +308,6 @@ static void checkForNewLine(HttpRequest *request)
 		g_strdelimit(parts[i], "\r", ' ');
 		g_strstrip(parts[i]);
 		parseHttpRequestLine(request, parts[i]);
-		if(request->got_empty_line) {
-			request->parsing_complete = true;
-		}
 	}
 
 	g_strfreev(parts);
@@ -406,9 +402,16 @@ static void clientSocketRead(void *subject, const char *event, void *data, va_li
 	HttpRequest *request = data;
 
 	g_string_append(request->line_buffer, message);
-	checkForNewLine(request);
+	processAvailableLines(request);
 
-	if(request->parsing_complete) {
-		handleRequest(subject, request);
+	if(request->got_empty_line) {
+		if(request->method == HTTP_REQUEST_METHOD_GET) {
+			// Empty line in GET request indicates the end of the request.
+			handleRequest(subject, request);
+		} else if(request->method == HTTP_REQUEST_METHOD_POST) {
+			// TODO: If the buffer size is at least content_length, parse body and handle
+			// Else, do nothing (note: how does this interact with processAvailableLines?)
+			handleRequest(subject, request);
+		}
 	}
 }

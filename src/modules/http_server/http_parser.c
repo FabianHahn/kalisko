@@ -18,13 +18,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h> // atoi
 #include <glib.h>
 #include "dll.h"
 
 #include "http_parser.h"
 
 #define MATCH_HTTP_REQUEST_LINE "^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$"
-#define MATCH_CONTENT_LENGTH_LINE "^Content-Length: (\\d)$"
+#define MATCH_CONTENT_LENGTH_LINE "^Content-Length: ([\\d]+).*$"
 
 #define HTTP_GET "GET"
 #define HTTP_POST "POST"
@@ -51,7 +52,6 @@ API void parseHttpRequestLine(HttpRequest *request, char *line)
 	// An empty line indicates the end of the request
 	if(strlen(line) == 0) {
 		request->got_empty_line = true;
-		return;
 	}
 }
 
@@ -95,9 +95,12 @@ static void tryParseContentLength(HttpRequest *request, char *line)
 	GMatchInfo *match_info;
 
 	if(g_regex_match(regexp, line, 0, &match_info)) {
-		char *length = g_match_info_fetch(match_info, 1);
-		// TODO: Parse the length and set it in the request struct.
-		free(length);
+		char *content_length_str = g_match_info_fetch(match_info, 1);
+
+		// Returns 0 on failure, which is fine for us.
+		request->content_length = atoi(content_length_str);
+		LOG_DEBUG("Parsed content length: %d", request->content_length);
+		free(content_length_str);
 	}
 
 	g_match_info_free(match_info);
@@ -192,10 +195,13 @@ static void parseUri(HttpRequest *request, char *uri)
 
 static void parseMethod(HttpRequest *request, char *method)
 {
-	LOG_DEBUG("Request method is %s", method);
 	if(strcmp(HTTP_GET, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_GET;
+		LOG_DEBUG("Request method is %s", HTTP_GET);
 	} else if(strcmp(HTTP_POST, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_POST;
+		LOG_DEBUG("Request method is %s", HTTP_POST);
+	} else {
+		LOG_WARNING("Unrecognized request method %s", method);
 	}
 }

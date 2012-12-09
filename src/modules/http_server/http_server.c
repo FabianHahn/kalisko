@@ -262,6 +262,7 @@ static HttpRequest *createHttpRequest(HttpServer *server)
 	request->line_buffer = g_string_new("");
 	request->parsing_complete = false;
 	request->content_length = -1;
+	request->got_empty_line = false;
 	return request;
 }
 
@@ -308,6 +309,9 @@ static void checkForNewLine(HttpRequest *request)
 		g_strdelimit(parts[i], "\r", ' ');
 		g_strstrip(parts[i]);
 		parseHttpRequestLine(request, parts[i]);
+		if(request->got_empty_line) {
+			request->parsing_complete = true;
+		}
 	}
 
 	g_strfreev(parts);

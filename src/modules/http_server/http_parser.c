@@ -50,7 +50,7 @@ API void parseHttpRequestLine(HttpRequest *request, char *line)
 
 	// An empty line indicates the end of the request
 	if(strlen(line) == 0) {
-		request->parsing_complete = true;
+		request->got_empty_line = true;
 		return;
 	}
 }

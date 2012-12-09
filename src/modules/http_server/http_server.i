@@ -59,6 +59,8 @@ typedef struct
 	bool parsing_complete;
 	/** Stores the body content length (only applicable to requests with a body) */
 	int content_length;
+	/** Stores whether an empty line has been seen for this request */
+	bool got_empty_line;
 } HttpRequest;
 
 /**

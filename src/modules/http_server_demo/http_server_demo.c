@@ -26,7 +26,14 @@
 #include "modules/http_server/http_server.h"
 
 #define PORT "1337"
-#define MATCH_EVERYTHING "^/test.*"
+
+#define MIRROR_REGEXP "^/mirror.*"
+#define MIRROR_URL "/mirror"
+
+#define POST_DEMO_REGEXP "^/postdemo.*"
+#define POST_DEMO_URL "/postdemo"
+
+#define MATCH_EVERYTHING "/.*"
 
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
@@ -35,14 +42,23 @@ MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
-static bool demoHandler(HttpRequest *request, HttpResponse *response, void *userdata);
+static void appendHeader(HttpResponse *response);
+
+static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *userdata);
+static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *userdata);
+static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata);
 
 static HttpServer *server;
+static int post_demo_counter;
 
 MODULE_INIT
 {
+	post_demo_counter = 0;
+
 	server = createHttpServer(PORT);
-	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &demoHandler, NULL);
+	registerHttpServerRequestHandler(server, MIRROR_REGEXP, &mirrorHandler, NULL);
+	registerHttpServerRequestHandler(server, POST_DEMO_REGEXP, &postDemoHandler, NULL);
+	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &indexHandler, NULL);
 	if(!startHttpServer(server)) {
 		LOG_ERROR("Failed to start HTTP server");
 		return false;
@@ -55,6 +71,11 @@ MODULE_FINALIZE
 	destroyHttpServer(server);
 }
 
+static void appendHeader(HttpResponse *response)
+{
+	appendHttpResponseContent(response, "<h1>Kalisko Webserver Demo</h1>");
+}
+
 /**
  * Prints a standard message, loops over all passed parameters and prints them.
  *
@@ -63,8 +84,9 @@ MODULE_FINALIZE
  * @param userdata			custom userdata
  * @result					true if successful
  */
-static bool demoHandler(HttpRequest *request, HttpResponse *response, void *userdata)
+static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
+	appendHeader(response);
 	appendHttpResponseContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
 
 	if(g_hash_table_size(request->parameters) > 0) {
@@ -81,3 +103,45 @@ static bool demoHandler(HttpRequest *request, HttpResponse *response, void *user
 
 	return true;
 }
+
+/**
+ * Demonstrates the POST support of the server.
+ *
+ * @param request			the HTTP request that should be handled
+ * @param response			the HTTP response that will be sent back to the client
+ * @param userdata			custom userdata
+ * @result					true if successful
+ */
+static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *userdata)
+{
+	appendHeader(response);
+	appendHttpResponseContent(response, "The counter is at %d<br/><br/>", post_demo_counter);
+
+	appendHttpResponseContent(response, "<form action=\"%s\" method=\"POST\">", POST_DEMO_URL);
+	appendHttpResponseContent(response, "Increment by ");
+	appendHttpResponseContent(response, "<input type=\"text\" name=\"increment\"><br>");
+	appendHttpResponseContent(response, "<input type=\"submit\" value=\"Increment\"><br>");
+	appendHttpResponseContent(response, "</form>");
+
+	return true;
+}
+
+
+/**
+ * Displays a default page and lists all supported functionality of this demo.
+ *
+ * @param request			the HTTP request that should be handled
+ * @param response			the HTTP response that will be sent back to the client
+ * @param userdata			custom userdata
+ * @result					true if successful
+ */
+static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata)
+{
+	appendHeader(response);
+	appendHttpResponseContent(response, "<a href=%s>Mirror</a>", MIRROR_URL);
+	appendHttpResponseContent(response, "<br/>");
+	appendHttpResponseContent(response, "<a href=%s>Post demo</a>", POST_DEMO_URL);
+	return true;
+}
+
+

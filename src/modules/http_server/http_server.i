@@ -55,8 +55,10 @@ typedef struct
 	GHashTable *parameters;
 	/** Used as intermediate storage for incomplete lines coming out of the socket stream */
 	GString *line_buffer;
-	/** Stores whether or not an empty line has been seen (and thus the stream is expected to end). */
+	/** Stores whether or not an empty line has been seen (and thus the stream is expected to end) */
 	bool parsing_complete;
+	/** Stores the body content length (only applicable to requests with a body) */
+	int content_length;
 } HttpRequest;
 
 /**

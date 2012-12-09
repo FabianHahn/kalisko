@@ -261,6 +261,7 @@ static HttpRequest *createHttpRequest(HttpServer *server)
 	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);
 	request->line_buffer = g_string_new("");
 	request->parsing_complete = false;
+	request->content_length = -1;
 	return request;
 }
 

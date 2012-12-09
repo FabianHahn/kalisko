@@ -24,6 +24,8 @@
 #include "http_parser.h"
 
 #define MATCH_HTTP_REQUEST_LINE "^(GET|POST)[ ]+(.+)[ ]+HTTP/\\d\\.\\d$"
+#define MATCH_CONTENT_LENGTH_LINE "^Content-Length: (\\d)$"
+
 #define HTTP_GET "GET"
 #define HTTP_POST "POST"
 
@@ -34,21 +36,42 @@ static void replaceString(char **old, char *new);
 static void parseUri(HttpRequest *request, char *uri);
 static void parseMethod(HttpRequest *request, char *method);
 
+static void tryParseMethodLine(HttpRequest *request, char *line);
+static void tryParseContentLength(HttpRequest *request, char *line);
+
 /**
  * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
  */
-API void parseLine(HttpRequest *request, char *line)
+API void parseHttpRequestLine(HttpRequest *request, char *line)
 {
 	// LOG_DEBUG("Parsing HTTP line: %s", line);
+	tryParseMethodLine(request, line);
+	tryParseContentLength(request, line);
+
 	// An empty line indicates the end of the request
 	if(strlen(line) == 0) {
 		request->parsing_complete = true;
 		return;
 	}
+}
 
-	// Only detect lines of the form <METHOD> <URI> HTTP/<NUMBER>
+/**
+ * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
+ */
+API void parseHttpRequestBody(HttpRequest *request, char *body)
+{
+	// TODO: Implement this.
+}
+
+
+/**
+ * Attempts to parse the given line as a method line, i.e. a line of the form <METHOD> <URI> HTTP/<NUMBER>.
+ */
+static void tryParseMethodLine(HttpRequest *request, char *line)
+{
 	GRegex *regexp = g_regex_new(MATCH_HTTP_REQUEST_LINE, 0, 0, NULL);
 	GMatchInfo *match_info;
+
 	if(g_regex_match(regexp, line, 0, &match_info)) {
 		char *method = g_match_info_fetch(match_info, 1);
 		parseMethod(request, method);
@@ -57,6 +80,24 @@ API void parseLine(HttpRequest *request, char *line)
 		char *uri = g_match_info_fetch(match_info, 2);
 		parseUri(request, uri);
 		free(uri);
+	}
+
+	g_match_info_free(match_info);
+	g_regex_unref(regexp);
+}
+
+/**
+ * Attempts to parse the given line as a Content-Length line, i.e. a line of the form Content-length: XX.
+ */
+static void tryParseContentLength(HttpRequest *request, char *line)
+{
+	GRegex *regexp = g_regex_new(MATCH_CONTENT_LENGTH_LINE, 0, 0, NULL);
+	GMatchInfo *match_info;
+
+	if(g_regex_match(regexp, line, 0, &match_info)) {
+		char *length = g_match_info_fetch(match_info, 1);
+		// TODO: Parse the length and set it in the request struct.
+		free(length);
 	}
 
 	g_match_info_free(match_info);

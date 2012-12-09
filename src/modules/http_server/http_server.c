@@ -306,7 +306,7 @@ static void checkForNewLine(HttpRequest *request)
 		// Remove all leading and trailing \r characters. In lack of a removeTrailingChars function, we first transform \r into spaces and then call strstrip().
 		g_strdelimit(parts[i], "\r", ' ');
 		g_strstrip(parts[i]);
-		parseLine(request, parts[i]);
+		parseHttpRequestLine(request, parts[i]);
 	}
 
 	g_strfreev(parts);

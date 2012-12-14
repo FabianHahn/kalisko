@@ -60,7 +60,7 @@ API void parseHttpRequestLine(HttpRequest *request, char *line)
  */
 API void parseHttpRequestBody(HttpRequest *request, char *body)
 {
-	// TODO: Implement this.
+	parseParameters(request, body);
 }
 
 

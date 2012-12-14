@@ -286,9 +286,18 @@ static void clientAccepted(void *subject, const char *event, void *data, va_list
 	enableSocketPolling(s);
 }
 
+/**
+ * Reads the buffer line by line until an empty line is parsed. After that, does nothing.
+ */
 static void processAvailableLines(HttpRequest *request)
 {
 	char *message = request->line_buffer->str;
+
+	if(request->got_empty_line) {
+		// Accumulating content body in buffer, do nothing
+		return;
+	}
+
 	if(strstr(message, "\n") == NULL) {
 		// No newline in the string, just do nothing
 		return;
@@ -304,10 +313,15 @@ static void processAvailableLines(HttpRequest *request)
 	// Put the last part back into the buffer and process all complete lines
 	request->line_buffer = g_string_new(parts[count - 1]);
 	for(int i = 0; i < count - 1; i++) {
-		// Remove all leading and trailing \r characters. In lack of a removeTrailingChars function, we first transform \r into spaces and then call strstrip().
-		g_strdelimit(parts[i], "\r", ' ');
-		g_strstrip(parts[i]);
-		parseHttpRequestLine(request, parts[i]);
+		if(request->got_empty_line) {
+			// Empty line occurred, switch to accumulating content body, just put the string back into the buffer
+			g_string_append(request->line_buffer, message);
+		} else {
+			// Remove all leading and trailing \r characters. In lack of a removeTrailingChars function, we first transform \r into spaces and then call strstrip()
+			g_strdelimit(parts[i], "\r", ' ');
+			g_strstrip(parts[i]);
+			parseHttpRequestLine(request, parts[i]);
+		}
 	}
 
 	g_strfreev(parts);
@@ -404,14 +418,20 @@ static void clientSocketRead(void *subject, const char *event, void *data, va_li
 	g_string_append(request->line_buffer, message);
 	processAvailableLines(request);
 
-	if(request->got_empty_line) {
-		if(request->method == HTTP_REQUEST_METHOD_GET) {
-			// Empty line in GET request indicates the end of the request.
-			handleRequest(subject, request);
-		} else if(request->method == HTTP_REQUEST_METHOD_POST) {
-			// TODO: If the buffer size is at least content_length, parse body and handle
-			// Else, do nothing (note: how does this interact with processAvailableLines?)
-			handleRequest(subject, request);
-		}
+	if(!request->got_empty_line) {
+		// Still no empty line, so nothing to do yet
+		return;
+	}
+
+	if(request->method == HTTP_REQUEST_METHOD_GET) {
+		// Empty line in GET request indicates the end of the request.
+		handleRequest(subject, request);
+		return;
+	}
+
+	if(request->method == HTTP_REQUEST_METHOD_POST && request->line_buffer->len >= request->content_length) {
+		parseHttpRequestBody(request, request->line_buffer->str);
+		handleRequest(subject, request);
+		return;
 	}
 }

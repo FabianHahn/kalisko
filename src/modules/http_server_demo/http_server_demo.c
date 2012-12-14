@@ -18,6 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h> // atoi
 #include <glib.h>
 #include <stdlib.h>
 #include "dll.h"
@@ -114,15 +115,23 @@ static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *us
  */
 static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
+	char *increment_param_key = "increment";
+
+	if(request->method == HTTP_REQUEST_METHOD_POST) {
+		char *increment = getHttpRequestParameter(request, increment_param_key);
+		if(increment != NULL) {
+			// If this fails, just increment by 0, which is ok.
+			post_demo_counter += atoi(increment);
+		}
+	}
+
 	appendHeader(response);
 	appendHttpResponseContent(response, "The counter is at %d<br/><br/>", post_demo_counter);
-
 	appendHttpResponseContent(response, "<form action=\"%s\" method=\"POST\">", POST_DEMO_URL);
 	appendHttpResponseContent(response, "Increment by ");
 	appendHttpResponseContent(response, "<input type=\"text\" name=\"increment\"><br>");
 	appendHttpResponseContent(response, "<input type=\"submit\" value=\"Increment\"><br>");
 	appendHttpResponseContent(response, "</form>");
-
 	return true;
 }
 

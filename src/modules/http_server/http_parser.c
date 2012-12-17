@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2012, Kalisko Project Leaders
+ * Copyright (c) 2012, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -99,7 +100,6 @@ static void tryParseContentLength(HttpRequest *request, char *line)
 
 		// Returns 0 on failure, which is fine for us.
 		request->content_length = atoi(content_length_str);
-		LOG_DEBUG("Parsed content length: %d", request->content_length);
 		free(content_length_str);
 	}
 

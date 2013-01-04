@@ -1,5 +1,6 @@
 """
 Copyright (c) 2008, Kalisko Project Leaders
+Copyright (c) 2012, Google Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -15,11 +16,17 @@ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; 
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+
 import os
 import re
-import kic
 
-kic.buildInterfaces()
+from util.kic import kic
+
+ABSOLUTE_PATH = os.getcwd()
+KIC_BINARY_PATH = os.path.join(ABSOLUTE_PATH, 'util', 'kic')
+INTERFACES_ROOT_PATH = os.path.join(ABSOLUTE_PATH, 'src')
+
+kic.buildInterfaces(KIC_BINARY_PATH, INTERFACES_ROOT_PATH)
 
 modules = os.listdir('src/modules')
 

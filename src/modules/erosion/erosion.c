@@ -116,13 +116,6 @@ static inline void erodeThermalCell(Image* hMap, unsigned int x, unsigned int y,
 	setImage(hMap, x, y, 0, hNew);
 }
 
-/**
- * Erodes the height map using thermal weathering.
- *
- * @param height_map	height map of the erosion surface
- * @param talusAngle	critical angle of response
- * @param steps			number of iteration steps
- */
 API void erodeThermal(Image* hMap, double talusAngle, unsigned int steps)
 {
 	assert(hMap != NULL);
@@ -223,12 +216,6 @@ static inline void waterFlowCell(Image* hMap, Image* waterMap, Image* sedimentMa
 	setImage(waterMap, x, y, 0, w - (MIN(w, deltaA)));
 }
 
-/**
- * Erodes the height map using hydraulic erosion.
- *
- * @param height_map	height map of the erosion surface
- * @param steps			number of iteration steps
- */
 API void erodeHydraulic(Image* hMap, unsigned int steps)
 {
 	assert(hMap != NULL);

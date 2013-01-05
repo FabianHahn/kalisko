@@ -47,12 +47,6 @@ MODULE_FINALIZE
 	curl_global_cleanup();
 }
 
-/**
- * Requests an URL using the CURL library and returns the results as a string
- *
- * @param url		the url to request
- * @result			the resulting page as a string or NULL on failure
- */
 API GString *curlRequestUrl(const char *url)
 {
 	GString *result = g_string_new("");

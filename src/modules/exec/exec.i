@@ -22,7 +22,22 @@
 #ifndef EXEC_EXEC_H
 #define EXEC_EXEC_H
 
+
+/**
+ * Executes a shell command and returns its output. Note that this function blocks until the command finished its execution.
+ * For now, this command just splits arguments by spaces, that is, no arguments containing spaces are possible
+ *
+ * @param command			the command to execute
+ * @result					the output of the command, or NULL if failed
+ */
 API GString *executeShellCommand(char *command);
+
+/**
+ * Executes a shell command by a list of arguments and returns its output. Note that this function blocks until the command finished its execution.
+ *
+ * @param command			the command args to execute
+ * @result					the output of the command, or NULL if failed
+ */
 API GString *executeShellCommandArgs(char **args);
 
 #endif

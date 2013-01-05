@@ -24,7 +24,22 @@
 #include <stdlib.h>
 #include "modules/image/image.h"
 
+
+/**
+ * Erodes the height map using thermal weathering.
+ *
+ * @param height_map	height map of the erosion surface
+ * @param talusAngle	critical angle of response
+ * @param steps			number of iteration steps
+ */
 API void erodeThermal(Image* hMap, double talusAngle, unsigned int steps);
+
+/**
+ * Erodes the height map using hydraulic erosion.
+ *
+ * @param height_map	height map of the erosion surface
+ * @param steps			number of iteration steps
+ */
 API void erodeHydraulic(Image* heightMap, unsigned int steps);
 
 #endif

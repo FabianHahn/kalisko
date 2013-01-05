@@ -21,6 +21,13 @@
 #ifndef CURL_CURL_H
 #define CURL_CURL_H
 
+
+/**
+ * Requests an URL using the CURL library and returns the results as a string
+ *
+ * @param url		the url to request
+ * @result			the resulting page as a string or NULL on failure
+ */
 API GString *curlRequestUrl(const char *url);
 
 #endif

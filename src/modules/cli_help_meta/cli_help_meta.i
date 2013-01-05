@@ -22,6 +22,13 @@
 #ifndef CLI_HELP_META_CLI_HELP_META_H
 #define CLI_HELP_META_CLI_HELP_META_H
 
+
+/**
+ * Reads the given file and loads from it the CLI Help information.
+ *
+ * @param filePath	The file to read
+ * @return true on success otherwise false
+ */
 API bool loadCliHelpMetaFile(char *filePath);
 
 #endif

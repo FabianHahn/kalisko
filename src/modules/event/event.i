@@ -55,10 +55,70 @@ typedef struct
 	void *custom;
 } EventListenerEntry;
 
+
+/**
+ * Attaches an event listener to a subject
+ *
+ * This function is thread-safe
+ *
+ * @param subject		the subject to attach the event listener to
+ * @param event			the event to attach the event listener to
+ * @param custom		custom data passed to the listener when the event is triggered
+ * @param listener		the listener to attach
+ */
 API void attachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+
+/**
+ * Attaches an event listener to a subject while allowing to specify a priority
+ *
+ * The priority parameter specifies the position in the event listener queue. The
+ * event listener with the lower priority will be called first, while events attached
+ * without priority are classified as EVENT_LISTENER_PRIORITY_NORMAL. Use the
+ * EventListenerPriority enum for a predefined set of priorities.
+ *
+ * This function is thread-safe
+ *
+ * @param subject		the subject to attach the event listener to
+ * @param event			the event to attach the event listener to
+ * @param priority		the priority of the event listener
+ * @param custom		custom data passed to the listener when the event is triggered
+ * @param listener		the listener to attach
+ */
 API void attachEventListenerWithPriority(void *subject, const char *event, int priority, void *custom, EventListener *listener);
+
+/**
+ * Detach an event listener from a subject.
+ *
+ * This function is thread-safe.
+ *
+ * @param subject		the subject to detach the event listener from
+ * @param event			the event to detach the event listener from
+ * @param custom		custom data passed to the listener when the event was triggered
+ * @param listener		the listener to attach
+ */
 API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener);
+
+/**
+ * Triggers an event and notifies all its listeners.
+ *
+ * This function is both reentrant and thread-safe, meaning you can freely trigger more events while executing an event listener.
+ *
+ * @param subject		the subject for which the event should be triggered
+ * @param event			the event that should be triggered
+ * @param ...			the data to pass to the listeners
+ * @result				the number of listeners notified, -1 on error
+ */
 API int triggerEvent(void *subject, const char *event, ...);
+
+/**
+ * Returns the listener count for an event on a subject
+ *
+ * This function is thread-safe.
+ *
+ * @param subject		the subject to which the event belongs
+ * @param event			the vent to lookup the listener count for
+ * @result				the number of listeners for that event
+ */
 API int getEventListenerCount(void *subject, const char *event);
 
 #endif

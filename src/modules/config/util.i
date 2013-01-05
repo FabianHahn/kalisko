@@ -24,7 +24,21 @@
 
 #include "modules/store/store.h"
 
+
+/**
+ * Returns the path to the Kalisko specific system wide configuration directory. This directory must not exist
+ * yet.
+ *
+ * @return	The Kalisko specific folder path for system wide
+ * 			configurations. This string must be freed.
+ */
 API char *getGlobalKaliskoConfigPath();
+
+/**
+ * Returns the path to the per user config directory. This directory must not exist yet.
+ *
+ * @return	The directory for kalisko user config files. This string must be freed.
+ */
 API char *getUserKaliskoConfigPath();
 
 #endif

@@ -149,19 +149,6 @@ static void listener_modulesLoaded(void *subject, const char *event, void *data,
 	$(void, table, freeTable)(table);
 }
 
-/**
- * Adds a new help entry for the given short / long command line option.
- *
- * Altough shortOpt and longOpt are optional one of them must be given.
- * All strings must be \0 terminated and encoded in UTF-8 (and because of that
- * also ASCII is allowed).
- *
- * @param moduleName	The name of the module owning the option. Required.
- * @param shortOpt		The short option without a prepended dash (so without the '-'). Optional.
- * @param longOpt		The long option without a prepended double dash (so without the '--'). Optional.
- * @param briefHelp		The short help. Required.
- * @return True if the help was added, false on error.
- */
 API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *briefHelp)
 {
 	// Check params
@@ -194,17 +181,6 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 	return true;
 }
 
-/**
- * Adds a new help entry for the given command line argument.
- *
- * All strings must be \0 terminated and encoded in UTF-8 (and because of that
- * also ASCII is allowed).
- *
- * @param moduleName	The name of the module owning the argument. Required.
- * @param name			The name of the argument. Required.
- * @param briefHelp		The short help. Required.
- * @return True if the help was added, false on error.
- */
 API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp)
 {
 	// Check params

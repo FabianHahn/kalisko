@@ -64,12 +64,6 @@ MODULE_FINALIZE
 
 }
 
-/**
- * Reads the given file and loads from it the CLI Help information.
- *
- * @param filePath	The file to read
- * @return true on success otherwise false
- */
 API bool loadCliHelpMetaFile(char *filePath)
 {
 	Store *store = $(Store *, store, parseStoreFile)(filePath);

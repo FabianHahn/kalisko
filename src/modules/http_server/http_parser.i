@@ -25,7 +25,15 @@
 #define API
 #include "http_server.h"
 
+
+/**
+ * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
+ */
 API void parseHttpRequestLine(HttpRequest *request, char *line);
+
+/**
+ * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
+ */
 API void parseHttpRequestBody(HttpRequest *request, char *line);
 
 #endif

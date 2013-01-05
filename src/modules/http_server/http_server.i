@@ -104,19 +104,92 @@ typedef struct HttpServerStruct
 } HttpServer;
 
 /* Methods used for configuring and running servers */
+
+/**
+ * Creates an HTTP server on the specified port. The server does not accept any connections until
+ * startHttpServer() is called. The caller takes responsibility for eventually calling
+ * destoryHttpServer() on the returned pointer.
+ *
+ * @param port			the port to which the new server should be bound
+ * @result				the created HTTP server
+ */
 API HttpServer *createHttpServer(char *port);
+
+/**
+ * Stops and tears down the HTTP server. Waits for accepted connections to disconnect (if any)
+ * and frees all memory associated with the server.
+ */
 API void destroyHttpServer(HttpServer *server);
+
+/**
+ * Causes the server to start accepting connections.
+ */
 API bool startHttpServer(HttpServer *server);
+
+/**
+ * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in.
+ * In order to determine the matching precedence, matches are tested in the order in which they were
+ * registered. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
+ *
+ * @param server			the server in question
+ * @param uri_regexp		the regular expression used to determine whether the request matches
+ * @param handler			a handler function to be called for matching requests
+ * @param userdata			custom userdata
+ */
 API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata);
 
 /* Accessor methods for HttpRequest. Note that these are all read-only */
+
+/**
+ * Returns whether or not the request has a value associated with key.
+ *
+ * @param request			the request to check
+ * @param key				the key to check
+ * @result					true if such a parameter exists
+ */
 API bool checkHttpRequestParameter(HttpRequest *request, char *key);
+
+/**
+ * Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible
+ * for freeing the returned string.
+ *
+ * @param request			the request for which the parameter should be returned
+ * @param key				the key of the parameter that should be returned
+ * @result					the returned parameter of NULL on failure
+ */
 API char *getHttpRequestParameter(HttpRequest *request, char *key);
 
 /* Mutator methods for HttpResponse */
+
+/**
+ * Create a HTTP response object
+ *
+ * @param status			the status string to initialize the HTTP response with
+ * @param content			the content string to initialize the HTTP response with
+ * @result					the created HTTP response object
+ */
 API HttpResponse *createHttpResponse(const char *status, const char *content);
+
+/**
+ * Adds content to a HTTP response object
+ *
+ * @param response			the HTTP response to add the content to
+ * @param content			the printf-style content to append to the response
+ */
 API void appendHttpResponseContent(HttpResponse *response, char *content, ...);
+
+/**
+ * Resets the content of the response to the empty string
+ *
+ * @param response			the HTTP response to clear
+ */
 API void clearHttpResponseContent(HttpResponse *response);
+
+/**
+ * Frees a HTTP response object
+ *
+ * @param response			the HTTP response to free
+ */
 API void freeHttpResponse(HttpResponse *response);
 
 #endif

@@ -41,9 +41,6 @@ static void parseMethod(HttpRequest *request, char *method);
 static void tryParseMethodLine(HttpRequest *request, char *line);
 static void tryParseContentLength(HttpRequest *request, char *line);
 
-/**
- * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
- */
 API void parseHttpRequestLine(HttpRequest *request, char *line)
 {
 	// LOG_DEBUG("Parsing HTTP line: %s", line);
@@ -56,9 +53,6 @@ API void parseHttpRequestLine(HttpRequest *request, char *line)
 	}
 }
 
-/**
- * Parses one line of an HTTP request and modifies the request accordingly. Can handle empty lines.
- */
 API void parseHttpRequestBody(HttpRequest *request, char *body)
 {
 	parseParameters(request, body);

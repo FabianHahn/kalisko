@@ -72,14 +72,6 @@ MODULE_FINALIZE
 
 }
 
-/**
- * Creates an HTTP server on the specified port. The server does not accept any connections until
- * startHttpServer() is called. The caller takes responsibility for eventually calling
- * destoryHttpServer() on the returned pointer.
- *
- * @param port			the port to which the new server should be bound
- * @result				the created HTTP server
- */
 API HttpServer *createHttpServer(char* port)
 {
 	LOG_DEBUG("Creating HttpServer on port %s", port);
@@ -96,10 +88,6 @@ API HttpServer *createHttpServer(char* port)
 	return server;
 }
 
-/**
- * Stops and tears down the HTTP server. Waits for accepted connections to disconnect (if any)
- * and frees all memory associated with the server.
- */
 API void destroyHttpServer(HttpServer *server)
 {
 	LOG_DEBUG("Freeing HttpServer on port %s", server->server_socket->port);
@@ -113,9 +101,6 @@ API void destroyHttpServer(HttpServer *server)
 	tryFreeServer(server);
 }
 
-/**
- * Causes the server to start accepting connections.
- */
 API bool startHttpServer(HttpServer *server)
 {
 	if(!connectSocket(server->server_socket)) {
@@ -127,16 +112,6 @@ API bool startHttpServer(HttpServer *server)
 	return true;
 }
 
-/**
- * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in.
- * In order to determine the matching precedence, matches are tested in the order in which they were
- * registered. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
- *
- * @param server			the server in question
- * @param uri_regexp		the regular expression used to determine whether the request matches
- * @param handler			a handler function to be called for matching requests
- * @param userdata			custom userdata
- */
 API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
 {
 	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
@@ -144,26 +119,11 @@ API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
-/**
- * Returns whether or not the request has a value associated with key.
- *
- * @param request			the request to check
- * @param key				the key to check
- * @result					true if such a parameter exists
- */
 API bool checkHttpRequestParameter(HttpRequest *request, char *key)
 {
 	return g_hash_table_contains(request->parameters, key);
 }
 
-/**
- * Returns the value associated with key if there is one, and NULL otherwise. The caller is responsible
- * for freeing the returned string.
- *
- * @param request			the request for which the parameter should be returned
- * @param key				the key of the parameter that should be returned
- * @result					the returned parameter of NULL on failure
- */
 API char *getHttpRequestParameter(HttpRequest *request, char *key)
 {
 	char *original = g_hash_table_lookup(request->parameters, key);
@@ -174,13 +134,6 @@ API char *getHttpRequestParameter(HttpRequest *request, char *key)
 	}
 }
 
-/**
- * Create a HTTP response object
- *
- * @param status			the status string to initialize the HTTP response with
- * @param content			the content string to initialize the HTTP response with
- * @result					the created HTTP response object
- */
 API HttpResponse *createHttpResponse(const char *status, const char *content)
 {
 	HttpResponse *response = ALLOCATE_OBJECT(HttpResponse);
@@ -190,12 +143,6 @@ API HttpResponse *createHttpResponse(const char *status, const char *content)
 	return response;
 }
 
-/**
- * Adds content to a HTTP response object
- *
- * @param response			the HTTP response to add the content to
- * @param content			the printf-style content to append to the response
- */
 API void appendHttpResponseContent(HttpResponse *response, char *content, ...)
 {
 	va_list va;
@@ -204,21 +151,11 @@ API void appendHttpResponseContent(HttpResponse *response, char *content, ...)
 	g_string_append_vprintf(response->content, content, va);
 }
 
-/**
- * Resets the content of the response to the empty string
- *
- * @param response			the HTTP response to clear
- */
 API void clearHttpResponseContent(HttpResponse *response)
 {
 	g_string_assign(response->content, "");
 }
 
-/**
- * Frees a HTTP response object
- *
- * @param response			the HTTP response to free
- */
 API void freeHttpResponse(HttpResponse *response)
 {
 	free(response->status);

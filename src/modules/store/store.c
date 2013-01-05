@@ -46,21 +46,11 @@ MODULE_FINALIZE
 
 }
 
-/**
- * Creates an empty store
- *
- * @result			the created store
- */
 API Store *createStore()
 {
 	return createStoreArrayValue(NULL);
 }
 
-/**
- * A GDestroyNotify function to free a store node value
- *
- * @param store		the store node value to free
- */
 API void freeStore(void *store)
 {
 	Store *value = store;
@@ -88,12 +78,6 @@ API void freeStore(void *store)
 }
 
 
-/**
- * Returns a node value's actual content
- *
- * @param value		the store node value
- * @result 			the node value's content
- */
 API void *getStoreValueContent(Store *value)
 {
 	switch(value->type) {
@@ -112,12 +96,6 @@ API void *getStoreValueContent(Store *value)
 	}
 }
 
-/**
- * Escapes a store string for output in a dump
- *
- * @param string		the string to escape
- * @result				the escaped string, must be freed with g_string_free
- */
 API GString *escapeStoreString(char *string)
 {
 	GString *escaped = g_string_new("");
@@ -133,12 +111,6 @@ API GString *escapeStoreString(char *string)
 	return escaped;
 }
 
-/**
- * Creates a string value to be used in a store
- *
- * @param string		the content string
- * @result				the created node value, must be freed with freeStore or by the store system
- */
 API Store *createStoreStringValue(const char *string)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
@@ -148,12 +120,6 @@ API Store *createStoreStringValue(const char *string)
 	return value;
 }
 
-/**
- * Creates an integer value to be used in a store
- *
- * @param integer		the content integer
- * @result				the created node value, must be freed with freeStore or by the store system
- */
 API Store *createStoreIntegerValue(int integer)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
@@ -163,12 +129,6 @@ API Store *createStoreIntegerValue(int integer)
 	return value;
 }
 
-/**
- * Creates a float number value to be used in a store
- *
- * @param float_number	the content float number
- * @result				the created node value, must be freed with freeStore or by the store system
- */
 API Store *createStoreFloatNumberValue(double float_number)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
@@ -178,12 +138,6 @@ API Store *createStoreFloatNumberValue(double float_number)
 	return value;
 }
 
-/**
- * Creates a list value to be used in a store
- *
- * @param list			the content list or NULL for an empty list
- * @result				the created node value, must be freed with freeStore or by the store system
- */
 API Store *createStoreListValue(GQueue *list)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
@@ -198,12 +152,6 @@ API Store *createStoreListValue(GQueue *list)
 	return value;
 }
 
-/**
- * Creates an array value to be used in a store
- *
- * @param array			the content array or NULL if an empty one should be created
- * @result				the created node value, must be freed with freeStore or by the store system
- */
 API Store *createStoreArrayValue(GHashTable *array)
 {
 	Store *value = ALLOCATE_OBJECT(Store);
@@ -218,11 +166,6 @@ API Store *createStoreArrayValue(GHashTable *array)
 	return value;
 }
 
-/**
- * Creates an empty store nodes table to be used as a section or an array in a store
- *
- * @result			the created nodes table, must be freed with g_hash_table_destroy or the store system
- */
 API GHashTable *createStoreNodes()
 {
 	return g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeStore);

@@ -135,12 +135,6 @@ static void listener_ircDisconnect(void *subject, const char *event, void *data,
 }
 
 
-/**
- * Enables channel tracking for an IRC connection
- *
- * @param irc		the IRC connection to enable tracking for
- * @result			true if successful
- */
 API bool enableChannelTracking(IrcConnection *irc)
 {
 	IrcChannelTracker *tracker;
@@ -162,11 +156,6 @@ API bool enableChannelTracking(IrcConnection *irc)
 	return true;
 }
 
-/**
- * Disables channel tracking for an IRC connection
- *
- * @param irc		the IRC connection to disable tracking for
- */
 API void disableChannelTracking(IrcConnection *irc)
 {
 	IrcChannelTracker *tracker;
@@ -185,13 +174,6 @@ API void disableChannelTracking(IrcConnection *irc)
 	g_hash_table_remove(tracked, irc);
 }
 
-/**
- * Retrieves a tracked IRC channel from a tracked IRC connection
- *
- * @param irc		the IRC connection that tracks the channels
- * @param name		the name of the channel to retrieve
- * @result			the IRC channel or NULL if that channel is not tracked
- */
 API IrcChannel *getTrackedChannel(IrcConnection *irc, char *name)
 {
 	IrcChannelTracker *tracker;
@@ -204,12 +186,6 @@ API IrcChannel *getTrackedChannel(IrcConnection *irc, char *name)
 	return g_hash_table_lookup(tracker->channels, name);
 }
 
-/**
- * Retrieves all tracked IRC channels from a tracked IRC connection
- *
- * @param irc		the IRC connection that tracks the channels
- * @result			a list of tracked IRC channels, must be freed with g_list_free but not be modified
- */
 API GList *getTrackedChannels(IrcConnection *irc)
 {
 	IrcChannelTracker *tracker;

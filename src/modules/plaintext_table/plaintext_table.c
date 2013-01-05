@@ -54,25 +54,11 @@ MODULE_FINALIZE
 
 }
 
-/**
- * Creates a new Table which is prepared to create
- * output for the CLI or a plaintext file.
- *
- * @return the specialised Table
- */
 API Table *newPlaintextTable()
 {
 	return newPlaintextTableFull(MODULE_TABLE_DEFAULT_ALLOC_ROWS, MODULE_TABLE_DEFAULT_ALLOC_COLS);
 }
 
-/**
- * Creates a new Table which is prepared to create
- * output for the CLI or plaintext files.
- *
- * @see newTableFull
- * @param preAllocRows		Amount of rows to allocate
- * @param preAllocCols		Amount of columns to allocate
- */
 API Table *newPlaintextTableFull(int preAllocRows, int preAllocCols)
 {
 	Table *table = $(Table *, table, newTableFull)(preAllocRows, preAllocCols);

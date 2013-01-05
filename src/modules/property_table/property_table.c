@@ -51,16 +51,6 @@ MODULE_FINALIZE
 	g_hash_table_destroy(subjects);
 }
 
-/**
- * Returns the value found in the table for the given subject and corresponding
- * to the given key.
- *
- * If no value exists NULL is returned.
- *
- * @param subject	The subject to find the corresponding subject specific table
- * @param key		The key to find the value in the table
- * @return NULL if no value was found otherwise the value
- */
 API void *getPropertyTableValue(void *subject, char *key)
 {
 	GHashTable *table;
@@ -72,13 +62,6 @@ API void *getPropertyTableValue(void *subject, char *key)
 	return NULL;
 }
 
-/**
- * Sets, replaces or deletes the given value in the subject specific table using the given key.
- *
- * @param subject	The subject to find the corresponding subject specific table
- * @param key		The key to find the value in the table
- * @param value		The value to set or NULL if the key-value pair should be removed
- */
 API void setPropertyTableValue(void *subject, char *key, void *value)
 {
 	GHashTable *table;
@@ -96,22 +79,11 @@ API void setPropertyTableValue(void *subject, char *key, void *value)
 	}
 }
 
-/**
- * Frees the table corresponding to the given subject.
- *
- * @param subject	The subject for which the table has to be freed.
- */
 API void freePropertyTable(void *subject)
 {
 	g_hash_table_remove(subjects, subject);
 }
 
-/**
- * Dumps all tables and their content into a string. It should only be used for
- * testing proposes.
- *
- * @return The dump as a string. This string must be freed.
- */
 API char *dumpPropertyTables()
 {
 	GString *str = g_string_new("");

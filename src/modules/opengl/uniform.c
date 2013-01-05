@@ -34,39 +34,22 @@
  */
 static OpenGLUniformAttachment *globalUniforms;
 
-/**
- * Initializes the OpenGL uniforms
- */
 API void initOpenGLUniforms()
 {
 	globalUniforms = createOpenGLUniformAttachment();
 	globalUniforms->staticLocation = false;
 }
 
-/**
- * Frees the OpenGL uniforms
- */
 API void freeOpenGLUniforms()
 {
 	freeOpenGLUniformAttachment(globalUniforms);
 }
 
-/**
- * Retrieves the global OpenGL uniform attachment point
- *
- * @result			the global OpenGL uniform attachment point
- */
 API OpenGLUniformAttachment *getOpenGLGlobalUniforms()
 {
 	return globalUniforms;
 }
 
-/**
- * Creates an int valued OpenGL uniform
- *
- * @param value			the value of the uniform
- * @result				the created uniform
- */
 API OpenGLUniform *createOpenGLUniformInt(int value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -77,12 +60,6 @@ API OpenGLUniform *createOpenGLUniformInt(int value)
 	return uniform;
 }
 
-/**
- * Creates an int pointer valued OpenGL uniform
- *
- * @param value			the value of the uniform
- * @result				the created uniform
- */
 API OpenGLUniform *createOpenGLUniformIntPointer(int *value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -93,12 +70,6 @@ API OpenGLUniform *createOpenGLUniformIntPointer(int *value)
 	return uniform;
 }
 
-/**
- * Creates a float valued OpenGL uniform
- *
- * @param value			the value of the uniform
- * @result				the created uniform
- */
 API OpenGLUniform *createOpenGLUniformFloat(double value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -109,12 +80,6 @@ API OpenGLUniform *createOpenGLUniformFloat(double value)
 	return uniform;
 }
 
-/**
- * Creates a float pointer valued OpenGL uniform
- *
- * @param value			the value of the uniform
- * @result				the created uniform
- */
 API OpenGLUniform *createOpenGLUniformFloatPointer(float *value)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -125,12 +90,6 @@ API OpenGLUniform *createOpenGLUniformFloatPointer(float *value)
 	return uniform;
 }
 
-/**
- * Creates a vector valued OpenGL uniform
- *
- * @param value			the value of the uniform, must be a 4-vector
- * @result				the created uniform or NULL on failure
- */
 API OpenGLUniform *createOpenGLUniformVector(Vector *value)
 {
 	unsigned int size = $(unsigned int, linalg, getVectorSize)(value);
@@ -147,12 +106,6 @@ API OpenGLUniform *createOpenGLUniformVector(Vector *value)
 	return uniform;
 }
 
-/**
- * Creates a matrix valued OpenGL uniform
- *
- * @param value			the value of the uniform, must be a 4x4-matrix
- * @result				the created uniform or NULL on failure
- */
 API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value)
 {
 	unsigned int rows = $(unsigned int, linalg, getMatrixRows)(value);
@@ -170,12 +123,6 @@ API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value)
 	return uniform;
 }
 
-/**
- * Creates a texture valued OpenGL uniform
- *
- * @param value			the value of the uniform, must be an OpenGL texture
- * @result				the created uniform or NULL on failure
- */
 API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture)
 {
 	OpenGLUniform *uniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -186,12 +133,6 @@ API OpenGLUniform *createOpenGLUniformTexture(OpenGLTexture *texture)
 	return uniform;
 }
 
-/**
- * Copies an OpenGL uniform
- *
- * @param uniform			the OpenGL uniform to be copied
- * @result					the duplicated uniform
- */
 API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform)
 {
 	OpenGLUniform *newUniform = ALLOCATE_OBJECT(OpenGLUniform);
@@ -202,12 +143,6 @@ API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform)
 	return newUniform;
 }
 
-/**
- * Uses a uniform in the current shader program
- *
- * @param uniform		the uniform to use
- * @result				true if successful
- */
 API bool useOpenGLUniform(OpenGLUniform *uniform)
 {
 	if(uniform->location == -1) {
@@ -252,11 +187,6 @@ API bool useOpenGLUniform(OpenGLUniform *uniform)
 	return true;
 }
 
-/**
- * Creates an OpenGL uniform attachment point
- *
- * @result		the created uniform attachment point
- */
 API OpenGLUniformAttachment *createOpenGLUniformAttachment()
 {
 	OpenGLUniformAttachment *attachment = ALLOCATE_OBJECT(OpenGLUniformAttachment);
@@ -266,14 +196,6 @@ API OpenGLUniformAttachment *createOpenGLUniformAttachment()
 	return attachment;
 }
 
-/**
- * Attaches an OpenGL uniform to a uniform attachment point
- *
- * @param attachment		the OpenGL uniform attachment point to attach the uniform to
- * @param name				the name of the uniform to be added
- * @param uniform			the uniform to be added
- * @result					true if successful
- */
 API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name, OpenGLUniform *uniform)
 {
 	if(g_hash_table_lookup(attachment->uniforms, name) != NULL) {
@@ -288,38 +210,16 @@ API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *na
 	return true;
 }
 
-/**
- * Retrieves an OpenGL uniform from an OpenGL uniform attachment point
- *
- * @param attachment		the OpenGL uniform attachment point from which to retrieve an OpenGL uniform
- * @param name				the name of the OpenGL uniform to retrieve
- * @result					the retrieved OpenGL uniform or NULL if no such uniform could be found attached to the attachment point
- */
 API OpenGLUniform *getOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name)
 {
 	return g_hash_table_lookup(attachment->uniforms, name);
 }
 
-/**
- * Detaches an OpeNGL uniform from a uniform attachment point
- *
- * @param attachment			the OpenGL uniform attachment point to detach the uniform from
- * @param name					the name of the uniform to be detached
- * @result						true if successful
- */
 API bool detachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name)
 {
 	return g_hash_table_remove(attachment->uniforms, name);
 }
 
-/**
- * Uses all uniforms in an OpenGL uniform attachment point
- *
- * @param attachment			the OpenGL uniform attachment point for which to use all uniforms
- * @param program				the OpenGL shader program for which the uniforms should be used
- * @param textureIndex			a pointer the texture index to start from, will be updated to reflect the new texture index to start from for further attachments
- * @result						true if successful
- */
 API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint program, unsigned int *textureIndex)
 {
 	// Iterate over all uniforms for this shaders and use them
@@ -357,11 +257,6 @@ API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint 
 	return true;
 }
 
-/**
- * Frees an OpenGL uniform attachment point
- *
- * @param attachment			the attachment point to free
- */
 API void freeOpenGLUniformAttachment(OpenGLUniformAttachment *attachment)
 {
 	g_hash_table_destroy(attachment->uniforms);

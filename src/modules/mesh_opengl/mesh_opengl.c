@@ -64,13 +64,6 @@ typedef struct {
 	OpenGLPrimitive primitive;
 } OpenGLMesh;
 
-/**
- * Creates a new OpenGL primitive from a mesh
- *
- * @param mesh			the actual mesh geometry to use
- * @param usage			specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
- * @result				the created OpenGL mesh primitive object or NULL on failure
- */
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 {
 	OpenGLMesh *openglmesh = ALLOCATE_OBJECT(OpenGLMesh);
@@ -95,12 +88,6 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 	return &openglmesh->primitive;
 }
 
-/**
- * Synchronizing a primitive mesh with its associated OpenGL buffer objects
- *
- * @param primitive			the mesh primitive to be synchronized
- * @result					true if successful
- */
 API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
@@ -122,12 +109,6 @@ API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 	return true;
 }
 
-/**
- * Draws an OpenGL mesh primitive
- *
- * @param primitive			the mesh primitive to draw
- * @param options_p			a pointer to custom options to be considered for this draw call
- */
 API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
@@ -161,11 +142,6 @@ API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p)
 	return true;
 }
 
-/**
- * Frees an OpenGL mesh primitive
- *
- * @param primitive			the mesh primitive to free
- */
 API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {

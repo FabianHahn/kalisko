@@ -45,6 +45,14 @@ static inline int randomUniformInteger(int min, int max)
 	return min + (max - min) * randomUniform();
 }
 
+
+/**
+ * Returns a random gaussian number with specified distribution
+ *
+ * @param mean		the mean value of the gaussian distribution
+ * @param std		the standard deviation of the gaussian distribution
+ * @result			the gaussian random number
+ */
 API float randomGaussian(double mean, double std);
 API unsigned int *randomPermutation(unsigned int size);
 

@@ -105,13 +105,6 @@ MODULE_FINALIZE
 	freePoll();
 }
 
-/**
- * Create a client socket
- *
- * @param host		the host to connect to
- * @param port		the port to connect to
- * @result			the created socket
- */
 API Socket *createClientSocket(char *host, char *port)
 {
 	Socket *s = ALLOCATE_OBJECT(Socket);
@@ -130,12 +123,6 @@ API Socket *createClientSocket(char *host, char *port)
 	return s;
 }
 
-/**
- * Create a server socket
- *
- * @param port		the port for server connections
- * @result			the created socket
- */
 API Socket *createServerSocket(char *port)
 {
 	Socket *s = ALLOCATE_OBJECT(Socket);
@@ -154,12 +141,6 @@ API Socket *createServerSocket(char *port)
 	return s;
 }
 
-/**
- * Create a shell socket
- *
- * @param args			the shell command arguments, terminated by NULL
- * @result				the created socket
- */
 API Socket *createShellSocket(char **args)
 {
 	Socket *s = ALLOCATE_OBJECT(Socket);
@@ -178,12 +159,6 @@ API Socket *createShellSocket(char **args)
 	return s;
 }
 
-/**
- * Connects a socket
- *
- * @param s			the socket to connect
- * @result			true if successful, false on error
- */
 API bool connectSocket(Socket *s)
 {
 	if(s->connected) {
@@ -492,14 +467,6 @@ API bool connectSocket(Socket *s)
 	return true;
 }
 
-/**
- * Disconnects a socket. Call this function to get rid of a socket inside a socket_read hook, then free it inside a socket_disconnect listener.
- * See the documentation of freeSocket for further details on this issue.
- * @see freeSocket
- *
- * @param s			the socket to disconnect
- * @result			true if successful, false on error
- */
 API bool disconnectSocket(Socket *s)
 {
 	LOG_DEBUG("Disconnecting socket %d", s->fd);
@@ -515,14 +482,6 @@ API bool disconnectSocket(Socket *s)
 	}
 }
 
-/**
- * Frees a socket. Note that this function MUST NOT be called from a (descendent of a) socket_read hook since further listeners expect the socket
- * to still be existing. If you want to get rid of a socket after a read event, listen to the socket_disconnect hook and disconnect it with disconnectSocket().
- * Then, free it inside the socket_disconnect hook using this function. If you don't want to adhere to this rule, you might as well shoot yourself in the foot.
- * @see disconnectSocket
- *
- * @param s			the socket to free
- */
 API void freeSocket(Socket *s)
 {
 	// disconnect the socket first if it's still connected
@@ -552,14 +511,6 @@ API void freeSocket(Socket *s)
 	free(s);
 }
 
-/**
- * Writes directly into a socket
- *
- * @param s				the socket to write to
- * @param buffer		the buffer to send
- * @param size			the buffer's size
- * @result				true if successful, false on error
- */
 API bool socketWriteRaw(Socket *s, void *buffer, int size)
 {
 	int left = size;
@@ -611,14 +562,6 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	return true;
 }
 
-/**
- * Reads directly from a socket
- *
- * @param s				the socket to read from
- * @param buffer		the buffer to read into
- * @param size			the buffer's size
- * @result				number of bytes read, -1 on error
- */
 API int socketReadRaw(Socket *s, void *buffer, int size)
 {
 	int ret;
@@ -679,12 +622,6 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	return ret;
 }
 
-/**
- * Accepts a client socket from a listening server socket
- *
- * @param server		the server socket
- * @return Socket		the accepted socket
- */
 API Socket *socketAccept(Socket *server)
 {
 	struct sockaddr_in address;

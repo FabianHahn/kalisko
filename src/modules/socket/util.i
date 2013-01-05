@@ -24,8 +24,29 @@
 #include <glib.h>
 #include "socket.h"
 
+
+/**
+ * Sets a socket to non-blocking I/O mode
+ *
+ * @param fd		the descriptor of the socket to set non-blocking
+ * @result			true if successful
+ */
 API bool setSocketNonBlocking(int fd);
+
+/**
+ * Converts an unsigned IP address into its string representation
+ *
+ * @param ip		the ip to convert
+ * @result			the string representation of the IP
+ */
 API GString *ip2str(unsigned int ip);
+
+/**
+ * Closes a socket's file descriptors
+ *
+ * @param s		the socket for which to close the file descriptors
+ * @result		true if successful
+ */
 API bool closeSocket(Socket *s);
 
 #endif

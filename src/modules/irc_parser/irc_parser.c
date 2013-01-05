@@ -47,12 +47,6 @@ MODULE_FINALIZE
 {
 }
 
-/**
- * This function parses an IRC message as described in RFC 1459 (Chapter 2.3.1).
- *
- * @param message	An IRC message. Has to be on heap.
- * @return 			A struct containing the different parts of the message. If an error occured NULL is returned.
- */
 API IrcMessage *parseIrcMessage(char *message)
 {
 	IrcMessage *ircMessage = ALLOCATE_OBJECT(IrcMessage);
@@ -129,15 +123,6 @@ API IrcMessage *parseIrcMessage(char *message)
 	return ircMessage;
 }
 
-/**
- * Parses the prefix part of an IRC message to extract the different parts of a user mask. The returned user mask
- * could be the server name (as the nick) and not a real user mask as there is no way to determine what the prefix is exactly.
- *
- * See for further information RFC 1459.
- *
- * @param prefix	The prefix part of an IRC message.
- * @return 			A struct containing the different parts of a user mask or NULL if an error occurred.
- */
 API IrcUserMask *parseIrcUserMask(char *prefix)
 {
 	if(!prefix) {
@@ -170,11 +155,6 @@ API IrcUserMask *parseIrcUserMask(char *prefix)
 	return mask;
 }
 
-/**
- * Frees the given IrcMessage.
- *
- * @param message	The IrcMessage to free.
- */
 API void freeIrcMessage(IrcMessage *message)
 {
 	if(message->command) {
@@ -200,11 +180,6 @@ API void freeIrcMessage(IrcMessage *message)
 	free(message);
 }
 
-/**
- * Frees the given IrcUserMask.
- *
- * @param userMask	The IrcUserMask to free.
- */
 API void freeIrcUserMask(IrcUserMask *userMask)
 {
 	if(userMask->host) {

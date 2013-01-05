@@ -50,22 +50,6 @@ MODULE_FINALIZE
 	unregisterOpenGLPrimitiveSceneParser("landscape");
 }
 
-/**
- * Generates a random landscape heightmap from procedural noise
- *
- * A reasonable value for each parameter is provided in brackets.
- *
- * @param width							the width of the heightmap to generate
- * @param height						the height of the heightmap to generate
- * @param worleyPoints					number of worley points (16)
- * @param fbmFrequency					the frequency of the franctional Brownian noise (4)
- * @param fbmPersistance				the persistence of the franctional Brownian noise (0.5)
- * @param fbmDepth						the number of octaves to overlay for the fractional Brownian noise (6)
- * @param erosionThermalIterations		number of thermal iterations (50)
- * @param erosionThermalTalusAngle		the angle of response in degrees (40)
- * @param erosionHydraulicIterations	number of hydraulic iterations (80)
- * @return								the created landscape heightmap or NULL on error
- */
 API Image *generateLandscapeHeightmap(unsigned int width, unsigned int height, unsigned int worleyPoints, double fbmFrequency, double fbmPersistance, unsigned int fbmDepth, unsigned int erosionThermalIterations, double erosionThermalTalusAngle, unsigned int erosionHydraulicIterations)
 {
 //#define DEBUGIMAGES

@@ -22,6 +22,27 @@
 #ifndef STRING_FORMAT_STRING_FORMAT_H
 #define STRING_FORMAT_STRING_FORMAT_H
 
+
+/**
+ * Formats a string with a set of tokens by the specified replacement strings.
+ *
+ * The parameter list after 'format' consists of key-value pairs of strings. This list
+ * is terminated by 'NULL'. The first one is always the key which is searched in
+ * 'format' and will be replaced by the value (second parameter). If in 'format'
+ * a key exists that was not given by the parameter list, it will be removed in
+ * the returned string.
+ *
+ * @code
+ * 	format_string("{foo} {bar} {PI}", "foo", "Hello", "bar", "World", NULL);
+ * @endcode
+ * would return
+ * @code
+ * 	"Hello World "
+ * @endcode
+ *
+ * @param format	A string with tokens to be replaced.
+ * @param ...		List of key-value pairs of parameters terminated by NULL.
+ */
 API char *formatString(char *format, ...) G_GNUC_NULL_TERMINATED;
 
 #endif

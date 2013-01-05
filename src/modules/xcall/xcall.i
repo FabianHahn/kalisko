@@ -29,10 +29,46 @@
  */
 typedef Store *(XCallFunction)(Store *xcall);
 
+
+/**
+ * Adds a new XCall function
+ *
+ * @param name		the name of the hook
+ * @param func		the xcall to add
+ * @result			true if successful, false if the xcall already exists
+ */
 API bool addXCallFunction(const char *name, XCallFunction *func);
+
+/**
+ * Deletes an existing xcall
+ *
+ * @param name		the name of the xcall
+ * @result			true if successful, if the xcall was not found
+ */
 API bool delXCallFunction(const char *name);
+
+/**
+ * Checks whether an XCall function exists
+ *
+ * @param name		the name of the xcall function
+ * @result			true if it exists
+ */
 API bool existsXCallFunction(const char *name);
+
+/**
+ * Invokes an xcall
+ *
+ * @param xcall		a store containing the xcall
+ * @result			a store containing the result of the xcall, must be freed by the caller with freeStore
+ */
 API Store *invokeXCall(Store *xcall) G_GNUC_WARN_UNUSED_RESULT;
+
+/**
+ * Invokes an xcall by a string store
+ *
+ * @param xcallstr	a store string containing the xcall
+ * @result			a store containing the result of the xcall, must be freed by the caller with freeStore
+ */
 API Store *invokeXCallByString(const char *xcallstr) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

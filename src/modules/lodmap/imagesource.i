@@ -24,7 +24,25 @@
 #include "modules/image/image.h"
 #include "source.h"
 
+
+/**
+ * Creates an image source for an OpenGL LOD map from a store representation
+ *
+ * @param store			the store config from which to create the image LOD map source
+ * @result				the created data source or NULL on failure
+ */
 API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store);
+
+/**
+ * Creates an image source for an OpenGL LOD map
+ *
+ * @param heights				the image from which to read the height data (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
+ * @param normals				the image from which to read the normals data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
+ * @param texture				the image from which to read the texture data or NULL if unused (note that the source takes over control over this image, i.e. you must not free it once this function succeeded)
+ * @param baseLevel				the base level of a tile
+ * @param heightRatio			the ratio to scale height values with
+ * @result						the created LOD map data source or NULL on failure
+ */
 API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image *normals, Image *texture, unsigned int baseLevel, float heightRatio);
 
 #endif

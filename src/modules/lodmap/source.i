@@ -75,10 +75,40 @@ typedef struct OpenGLLodMapDataSourceStruct OpenGLLodMapDataSource;
  */
 typedef OpenGLLodMapDataSource *(OpenGLLodMapDataSourceFactory)(Store *store);
 
+
+/**
+ * Initializes the OpenGL LOD map data source factories
+ */
 API void initOpenGLLodMapDataSourceFactories();
+
+/**
+ * Frees the OpenGL LOD map data source factories
+ */
 API void freeOpenGLLodMapDataSourceFactories();
+
+/**
+ * Creates an OpenGL LOD map data source from a store configuration
+ *
+ * @param store			the store configuration from which to create the data source
+ * @result				the created data source of NULL on failure
+ */
 API OpenGLLodMapDataSource *createOpenGLLodMapDataSourceFromStore(Store *store);
+
+/**
+ * Registers an OpenGL LOD map data source factory for a given data source type
+ *
+ * @param type			the type for which to register the factory
+ * @param factory		the factory to register
+ * @result				true if successful
+ */
 API bool registerOpenGLLodMapDataSourceFactory(const char *type, OpenGLLodMapDataSourceFactory *factory);
+
+/**
+ * Unregisters an OpenGL LOD map data source factory for a given data source type
+ *
+ * @param type			the type for which to unregister the factory
+ * @result				true if successful
+ */
 API bool unregisterOpenGLLodMapDataSourceFactory(const char *type);
 
 /**

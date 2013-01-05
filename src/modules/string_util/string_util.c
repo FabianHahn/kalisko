@@ -49,11 +49,6 @@ MODULE_FINALIZE
 
 }
 
-/**
- * Replaces all multiple spaces by a single one within the given string.
- *
- * @param str	The string in which the multiple whitespaces should be replaced.
- */
 API void stripDuplicateWhitespace(char *str)
 {
 	size_t len = strlen(str) + 1 /* Consider nullbyte */;
@@ -81,11 +76,6 @@ API void stripDuplicateWhitespace(char *str)
 	}
 }
 
-/**
- * Replaces all multiple newlines by a single newline within the given string.
- *
- * @param str	The string in which the multiple whitespaces should be replaced.
- */
 API void stripDuplicateNewlines(char *str)
 {
 	size_t len = strlen(str) + 1 /* Consider nullbyte */;
@@ -113,11 +103,6 @@ API void stripDuplicateNewlines(char *str)
 	}
 }
 
-/**
- * Converts a string into a valid filename by replacing all non-alphanumeric non-# characters by underscores
- *
- * @param str		the string to convert to a filename
- */
 API void convertToFilename(char *str)
 {
 	unsigned int len = strlen(str);

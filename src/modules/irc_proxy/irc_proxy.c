@@ -268,14 +268,6 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 	}
 }
 
-/**
- * Creates an IRC proxy relaying data for an IRC connection
- *
- * @param name			the global unique name to use for this IRC proxy
- * @param irc			the IRC connection to relay (should already be connected)
- * @param password		password to use for client connections
- * @result				the created IRC proxy, or NULL on failure
- */
 API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 {
 	if(g_hash_table_lookup(proxies, name) != NULL) { // IRC proxy with that ID already exists
@@ -303,55 +295,26 @@ API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 	return proxy;
 }
 
-/**
- * Returns a list of all IRC proxies created
- *
- * @result		a list of all created IRC proxies, must not be modified but freed with g_list_free after use
- */
 API GList *getIrcProxies()
 {
 	return g_hash_table_get_values(proxies);
 }
 
-/**
- * Retrieves an IRC proxy by its remote IRC connection
- *
- * @param irc	the IRC connection to lookup
- * @result		the IRC proxy or NULL if no proxy is enabled for this connection
- */
 API IrcProxy *getIrcProxyByIrcConnection(IrcConnection *irc)
 {
 	return g_hash_table_lookup(proxyConnections, irc);
 }
 
-/**
- * Retrieves an IRC proxy by its global unique name
- *
- * @param name		the name to look up
- * @result			the IRC proxy or NULL if not found
- */
 API IrcProxy *getIrcProxyByName(char *name)
 {
 	return g_hash_table_lookup(proxies, name);
 }
 
-/**
- * Retrieves an IRC proxy client by its socket
- *
- * @param socket		the socket to look up
- * @result				the IRC proxy client, or NULL if none was found for this socket
- */
 API IrcProxyClient *getIrcProxyClientBySocket(Socket *socket)
 {
 	return g_hash_table_lookup(clients, socket);
 }
 
-/**
- * Frees an IRC proxy. Note that this doesn't disconnect or free the used IRC connection
- *
- * @param proxy			the IRC proxy to free
- * @result				true if successful
- */
 API void freeIrcProxy(IrcProxy *proxy)
 {
 	detachEventListener(proxy->irc, "line", NULL, &listener_remoteLine);
@@ -373,26 +336,11 @@ API void freeIrcProxy(IrcProxy *proxy)
 	free(proxy);
 }
 
-/**
- * Adds a relay exception to an IRC proxy. NOTICE and PRIVMSG messages to this target will not be relayed to the remote IRC connection.
- * Use this to implement virtual bots for custom modules in your bouncer
- *
- * @param proxy			the IRC proxy to add the exception for
- * @param exception		the target to which no messages should be relayed
- */
 API void addIrcProxyRelayException(IrcProxy *proxy, char *exception)
 {
 	g_queue_push_tail(proxy->relay_exceptions, strdup(exception));
 }
 
-/**
- * Removes a relay exception to an IRC proxy.
- * @see addIrcProxyRelayException
- *
- * @param proxy			the IRC proxy to remove the exception for
- * @param exception		the target to which messages should be relayed again
- * @result				true if successful
- */
 API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception)
 {
 	for(GList *iter = proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
@@ -406,14 +354,6 @@ API bool delIrcProxyRelayException(IrcProxy *proxy, char *exception)
 	return false;
 }
 
-/**
- * Checks if a proxy has a certain relay exception
- * @see addIrcProxyRelayException
- *
- * @param proxy			the IRC proxy to check for an exception
- * @param exception		the target that should be checked
- * @result				true if the parameter is a relay exception
- */
 API bool hasIrcProxyRelayException(IrcProxy *proxy, char *exception)
 {
 	for(GList *iter = proxy->relay_exceptions->head; iter != NULL; iter = iter->next) {
@@ -425,13 +365,6 @@ API bool hasIrcProxyRelayException(IrcProxy *proxy, char *exception)
 	return false;
 }
 
-/**
- * Sends a message to an IRC client socket
- *
- * @param client		the socket of the IRC client
- * @param message		printf-style message to send to the socket
- * @result				true if successful, false on error
- */
 API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...)
 {
 

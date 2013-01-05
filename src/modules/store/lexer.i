@@ -26,8 +26,31 @@
 #include "parse.h"
 #include "parser.h"
 
+
+/**
+ * Lexes a token from a store
+ *
+ * @param lval		the lexer value target
+ * @param lloc		the lexer location
+ * @param parser	the parser context to lex from
+ * @result			the lexed token
+ */
 API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser);
+
+/**
+ * Lexes a store string and dumps the result
+ *
+ * @param string		the store string to lex and dump
+ * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
+ */
 API GString *lexStoreString(char *string);
+
+/**
+ * Lexes a store file and dumps the result
+ *
+ * @param filename		the store file to lex and dump
+ * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
+ */
 API GString *lexStoreFile(char *filename);
 
 #endif

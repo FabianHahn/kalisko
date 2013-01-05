@@ -29,12 +29,6 @@
 
 static void cloneStoreArrayNode(void *key_p, void *value_p, void *data_p);
 
-/**
- * Clones a store and returns a second, identical one
- *
- * @param source	the store to copy from
- * @result			an identical store
- */
 API Store *cloneStore(Store *source)
 {
 	assert(source != NULL);

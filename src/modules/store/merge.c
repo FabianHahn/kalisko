@@ -29,13 +29,6 @@
 
 static void mergeIntoArray(void *key_p, void *value_p, void *data_p);
 
-/**
- * Imports the content of the import store into the target store
- *
- * @param target	the store to merge to
- * @param import	the store to import from
- * @result			true if successful
- */
 API bool mergeStore(Store *target, Store *import)
 {
 	assert(target != NULL);

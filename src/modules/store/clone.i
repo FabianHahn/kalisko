@@ -22,6 +22,13 @@
 #ifndef STORE_CLONE_H
 #define STORE_CLONE_H
 
+
+/**
+ * Clones a store and returns a second, identical one
+ *
+ * @param source	the store to copy from
+ * @result			an identical store
+ */
 API Store *cloneStore(Store *source);
 
 #endif

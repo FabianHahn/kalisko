@@ -68,33 +68,16 @@ MODULE_FINALIZE
 	freeLuaXCall();
 }
 
-/**
- * Evaluates a lua command
- *
- * @param command		Lua code to evaluate
- * @result				true if successful
- */
 API bool evaluateLua(char *command)
 {
 	return luaL_dostring(state, command) == 0;
 }
 
-/**
- * Evaluates a lua script
- *
- * @param filename		filename of the Lua script to evaluate
- * @result				true if successful
- */
 API bool evaluateLuaScript(char *filename)
 {
 	return luaL_dofile(state, filename) == 0;
 }
 
-/**
- * Pops the last returned string from Lua's stack
- *
- * @result		the last string on the stack, must be freed by the caller. returns NULL if top stack element is no string
- */
 API char *popLuaString()
 {
 	if(!lua_isstring(state, -1)) {
@@ -106,11 +89,6 @@ API char *popLuaString()
 	return string;
 }
 
-/**
- * Pops the last returned store from Lua's stack
- *
- * @result		the last store on the stack, must be freed by the caller, returns NULL if top stack element is no store
- */
 API Store *popLuaStore()
 {
 	if(!lua_istable(state, -1)) {
@@ -125,11 +103,6 @@ API Store *popLuaStore()
 	return ret;
 }
 
-/**
- * Returns the currently active global Lua state
- *
- * @result		the currently active global Lua state - changes will effect all scripts in this context immediately
- */
 API lua_State *getGlobalLuaState()
 {
 	return state;

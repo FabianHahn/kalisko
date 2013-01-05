@@ -26,13 +26,66 @@
 typedef Image *(ImageIOReadHandler)(const char *filename);
 typedef bool (ImageIOWriteHandler)(const char *filename, Image *image);
 
+
+/**
+ * Initializes the image IO system
+ */
 API void initImageIO();
+
+/**
+ * Frees the image IO system
+ */
 API void freeImageIO();
+
+/**
+ * Adds a image IO reading handler for a specific file extension
+ *
+ * @param extension			the file extension to which this handler should be registered
+ * @param handler			the handler to register
+ * @result					true if successful
+ */
 API bool addImageIOReadHandler(const char *extension, ImageIOReadHandler *handler);
+
+/**
+ * Removes a image IO reading handler from a specific file extension
+ *
+ * @param extension			the file extension for which the handler should be unregistered
+ * @result					true if successful
+ */
 API bool deleteImageIOReadHandler(const char *extension);
+
+/**
+ * Reads a image from a file by using the appropriate handler
+ *
+ * @param filename			the image file that should be loaded
+ * @result					the loaded image or NULL on error
+ */
 API Image *readImageFromFile(const char *filename);
+
+/**
+ * Adds a image IO writing handler for a specific file extension
+ *
+ * @param extension			the file extension to which this handler should be registered
+ * @param handler			the handler to register
+ * @result					true if successful
+ */
 API bool addImageIOWriteHandler(const char *extension, ImageIOWriteHandler *handler);
+
+/**
+ * Removes a image IO writing handler from a specific file extension
+ *
+ * @param extension			the file extension for which the handler should be unregistered
+ * @result					true if successful
+ */
 API bool deleteImageIOWriteHandler(const char *extension);
+
+/**
+ * Writes an OpenGL image to a file by using the appropriate handler
+ *
+ * @param image				the image to be written
+ * @param filename			the file into which the image should be written
+ * @result					true if successful
+ */
 API bool writeImageToFile(Image *image, const char *filename);
 
 #endif

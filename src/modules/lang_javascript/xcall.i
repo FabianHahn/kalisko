@@ -22,7 +22,18 @@
 #ifndef LANG_JAVASCRIPT_XCALL_H
 #define LANG_JAVASCRIPT_XCALL_H
 
+
+/**
+ * Modifies given context and global object to be able to use XCall in JavaScript.
+ *
+ * @param context
+ * @param globalObject
+ */
 API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject);
+
+/**
+ * Initialize needed variables, structures and so on.
+ */
 API void jsXCallInit();
 
 #endif

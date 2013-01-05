@@ -56,9 +56,6 @@ static GHashTable *stateFunctions;
  */
 static GHashTable *functionState;
 
-/**
- * Initializes the Lua XCall interface
- */
 API void initLuaXCall()
 {
 	// Register global xcall functions
@@ -69,9 +66,6 @@ API void initLuaXCall()
 	functionState = g_hash_table_new(&g_str_hash, &g_str_equal);
 }
 
-/**
- * Frees the Lua XCall interface
- */
 API void freeLuaXCall()
 {
 	// Unregister global xcall functions
@@ -83,12 +77,6 @@ API void freeLuaXCall()
 	g_hash_table_destroy(functionState);
 }
 
-/**
- * Registers the lua xcall C functions for an interpreter
- *
- * @param state		the lua interpreter state to register the xcall functions with
- * @result			true if successful
- */
 API bool initLuaStateXCall(lua_State *state)
 {
 	GHashTable *functionRefs;
@@ -117,12 +105,6 @@ API bool initLuaStateXCall(lua_State *state)
 	return true;
 }
 
-/**
- * Unregisters the lua xcall C functions for an interpreter
- *
- * @param state		the lua interpreter state to register the xcall functions with
- * @result			true if successful
- */
 API bool freeLuaStateXCall(lua_State *state)
 {
 	GHashTable *functionRefs;

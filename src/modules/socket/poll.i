@@ -23,15 +23,72 @@
 
 #include "socket.h"
 
+
+/**
+ * Initializes socket polling via hooks
+ * @param interval		the polling interval to use
+ */
 API void initPoll(int interval);
+
+/**
+ * Frees socket polling via hooks
+ */
 API void freePoll();
 
+
+/**
+ * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
+ * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
+ * function returns!). If connecting fails due to errors or timeout, the "disconnect" event will be triggered and you can either recall this function
+ * or free the socket.
+ *
+ * @param s			the client socket to connect
+ * @param timeout	time in seconds after which the connection should timeout and the "timeout" event should be triggered
+ * @result			true if successful
+ */
 API bool connectClientSocketAsync(Socket *s, int timeout);
+
+/**
+ * Enables polling for a socket
+ *
+ * @param socket		the socket to enable the polling for
+ * @result				true if successful
+ */
 API bool enableSocketPolling(Socket *socket);
+
+/**
+ * Checks whether polling is enabled for a certain socket
+ *
+ * @param socket		the socket for which to check whether socket polling is enabled
+ * @result				true if socket polling is enabled for the socket
+ */
 API bool isSocketPollingEnabled(Socket *socket);
+
+/**
+ * Disables polling for a socket
+ * @param socket		the socket to disable the polling for
+ * @result				true if successful
+ */
 API bool disableSocketPolling(Socket *socket);
+
+/**
+ * Poll all sockets signed up for polling if not currently polling already
+ */
 API void pollSockets();
+
+/**
+ * Checks whether sockets are currently being polled
+ *
+ * @result		true if sockets are currently being polled
+ */
 API bool isSocketsPolling();
+
+/**
+ * Retrieves a socket for which polling is enabled by its file descriptor
+ *
+ * @param fd	the fd to lookup
+ * @result		the socket or NULL if no socket with this fd is being polled
+ */
 API Socket *getPolledSocketByFd(int fd);
 
 /**

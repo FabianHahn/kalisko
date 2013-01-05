@@ -58,14 +58,6 @@ MODULE_FINALIZE
 	unregisterOpenGLPrimitiveSceneParser("heightmap");
 }
 
-/**
- * Creates a new OpenGL heightmap primitive
- *
- * @param heights			the image from which the heightmap values will be read (the primitive takes control over this value, do not free it yourself) or NULL to create a heightmap that will be managed by e.g. another primitive
- * @param width				the width of the heightmap grid to create
- * @param height			the height of the heightmap grid to create
- * @result					the created OpenGL heightmap primitive object or NULL on failure
- */
 API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int width, unsigned int height)
 {
 	unsigned int halfWidth = width / 2;
@@ -110,12 +102,6 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int
 	return &heightmap->primitive;
 }
 
-/**
- * Initlaizes an OpenGL heightmap primitive
- *
- * @param primitive			the OpenGL heightmap primitive to initialize
- * @result					true if successful
- */
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
@@ -181,14 +167,6 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	return true;
 }
 
-/**
- * Sets up an OpenGL heightmap primitive for a model
- *
- * @param primitive			the OpenGL heightmap primitive to setup
- * @param model				the model to setup the heightmap primitive for
- * @param material			the material name to setup the heightmap primitive for
- * @result					true if successful
- */
 API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
@@ -235,12 +213,6 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
 	return true;
 }
 
-/**
- * Returns the associated OpenGLHeightmap object for an OpenGL heightmap primitive
- *
- * @param primitive			the OpenGL heightmap primitive for which the OpenGLHeightmap object should be retrieved
- * @result					the OpenGLHeightmap object or NULL if the primitive is not an OpenGL heightmap primitive
- */
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
@@ -251,12 +223,6 @@ API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 	return primitive->data;
 }
 
-/**
- * Synchronizes a heightmap primitive with its associated OpenGL buffer objects
- *
- * @param primitive			the heightmap primitive to be synchronized
- * @result					true if successful
- */
 API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
@@ -297,12 +263,6 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 	return true;
 }
 
-/**
- * Draws an OpenGL heightmap primitive
- *
- * @param primitive			the heightmap primitive to draw
- * @param options_p			a pointer to custom options to be considered for this draw call
- */
 API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
@@ -355,11 +315,6 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_
 	return true;
 }
 
-/**
- * Frees an OpenGL heightmap primitive
- *
- * @param primitive			the heightmap primitive to free
- */
 API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {

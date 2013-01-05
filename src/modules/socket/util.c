@@ -45,12 +45,6 @@
 #include "util.h"
 
 
-/**
- * Sets a socket to non-blocking I/O mode
- *
- * @param fd		the descriptor of the socket to set non-blocking
- * @result			true if successful
- */
 API bool setSocketNonBlocking(int fd)
 {
 #ifdef WIN32
@@ -75,12 +69,6 @@ API bool setSocketNonBlocking(int fd)
 	return true;
 }
 
-/**
- * Converts an unsigned IP address into its string representation
- *
- * @param ip		the ip to convert
- * @result			the string representation of the IP
- */
 API GString *ip2str(unsigned int ip)
 {
 	GString *ipstr = g_string_new("");
@@ -88,12 +76,6 @@ API GString *ip2str(unsigned int ip)
 	return ipstr;
 }
 
-/**
- * Closes a socket's file descriptors
- *
- * @param s		the socket for which to close the file descriptors
- * @result		true if successful
- */
 API bool closeSocket(Socket *s)
 {
 #ifdef WIN32

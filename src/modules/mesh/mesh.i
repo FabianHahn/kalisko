@@ -58,6 +58,12 @@ typedef struct {
 } Mesh;
 
 API Mesh *createMesh(int num_vertices, int num_triangles);
+
+/**
+ * Automatically generate normal vectors from triangles for a mesh
+ *
+ * @param mesh			the mesh to create normals for
+ */
 API void generateMeshNormals(Mesh *mesh);
 API void freeMesh(Mesh *mesh);
 

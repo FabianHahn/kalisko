@@ -64,18 +64,117 @@ typedef enum {
 	IMAGE_FLIP_XY = 3
 } ImageFlipMode;
 
+
+/**
+ * Creates a new byte image
+ *
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @result				the created image
+ */
 API Image *createImageByte(unsigned int width, unsigned int height, unsigned int channels);
+
+/**
+ * Creates a new float image
+ *
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @result				the created image
+ */
 API Image *createImageFloat(unsigned int width, unsigned int height, unsigned int channels);
+
+/**
+ * Creates a new image
+ *
+ * @param width			the width of the image to create
+ * @param height		the height of the image to create
+ * @param channels		the number of image channels to create
+ * @param type			the type of the image to create
+ * @result				the created image or NULL on failure
+ */
 API Image *createImage(unsigned int width, unsigned int height, unsigned int channels, ImageType type);
+
+/**
+ * Copies an image and possibly converts it to another type while doing so
+ *
+ * @param image			the image to copy
+ * @param targetType	the type of the target image into which the contents of source should be copied
+ */
 API Image *copyImage(Image *source, ImageType targetType);
+
+/**
+ * Clears an image by setting all its values to zero
+ *
+ * @param image			the image to clear
+ */
 API void clearImage(Image *image);
+
+/**
+ * Clears an image channel by setting its values to zero
+ *
+ * @param image			the image in which to clear a channel
+ * @param channel		the channel that should be cleared
+ */
 API void clearImageChannel(Image *image, unsigned int channel);
+
+/**
+ * Normalize an image channel by shifting it linearly to the [0,1] range. Note that this only affects float images
+ *
+ * @param image			the image to normalize
+ * @param channel		the image channel to normalize
+ */
 API void normalizeImageChannel(Image *image, unsigned int channel);
+
+/**
+ * Inverts an image channel
+ *
+ * @param image			the image to invert
+ * @param channel		the image channel to invert
+ */
 API void invertImageChannel(Image *image, unsigned int channel);
+
+/**
+ * Scales an image channel by multiplying it with a factor
+ *
+ * @param image			the image to scale
+ * @param channel		the channel of the image to scale
+ * @param factor		the factor to scale the image with
+ */
 API void scaleImageChannel(Image *image, unsigned int channel, float factor);
+
+/**
+ * Blends two images with a specified factor
+ *
+ * @param a			the first image to blend
+ * @param b			the second image to blend
+ * @param factor	the blending factor to use (i.e. the contribution of the first image)
+ * @result			a new blended image using a's image type
+ */
 API Image *blendImages(Image *a, Image *b, double factor);
+
+/**
+ * Flips an image
+ *
+ * @param image			the image to flip
+ * @param flipMode		a bitset of ImageFlipMode values specifying how to flip the image
+ * @result				the flipped image
+ */
 API Image *flipImage(Image *image, int flipModes);
+
+/**
+ * Saves an image in a quick-and-dirty way without having to specify any parameters, especially useful for debugging
+ *
+ * @param image			the image to debug
+ */
 API void debugImage(Image *image);
+
+/**
+ * Frees an image
+ *
+ * @param image			the image to free
+ */
 API void freeImage(Image *image);
 
 /**

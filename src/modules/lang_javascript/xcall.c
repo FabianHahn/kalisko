@@ -64,20 +64,11 @@ JSClass xcallClass = {
  */
 static GHashTable *functions;
 
-/**
- * Initialize needed variables, structures and so on.
- */
 API void jsXCallInit()
 {
 	functions = g_hash_table_new(&g_str_hash, &g_str_equal);
 }
 
-/**
- * Modifies given context and global object to be able to use XCall in JavaScript.
- *
- * @param context
- * @param globalObject
- */
 API void jsAddXCallFunctions(JSContext *context, JSObject *globalObject)
 {
 	JSObject *xcallObj = JS_DefineObject(context, globalObject, "xcall", &xcallClass, NULL, 0);

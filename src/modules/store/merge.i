@@ -24,6 +24,14 @@
 
 #include "store.h"
 
+
+/**
+ * Imports the content of the import store into the target store
+ *
+ * @param target	the store to merge to
+ * @param import	the store to import from
+ * @result			true if successful
+ */
 API bool mergeStore(Store *target, Store *import);
 
 #endif

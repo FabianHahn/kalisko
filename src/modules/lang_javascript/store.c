@@ -36,12 +36,6 @@
 
 static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, jsval *argv, jsval *rval);
 
-/**
- * Adds to the given global object functions to work with Store in the JavaScript world.
- *
- * @param context
- * @param globalObj
- */
 API void jsAddStoreFunctions(JSContext *context, JSObject *globalObj)
 {
 	JS_DefineFunction(context, globalObj, "parseStore", &js_parseStore, 1, 0);
@@ -92,15 +86,6 @@ static JSBool js_parseStore(JSContext *context, JSObject *object, uintN argc, js
 	return JS_TRUE;
 }
 
-/**
- * Parses a Store into a native JavaScript value.
- *
- * <b>Attention</b>: This function must be called surrounded by JS_EnterLocalRootScope() and JS_LeaveLocalRootScope().
- *
- * @param store		The Store to convert
- * @param context	The context in which the jsval should be
- * @return A jsval representing the Store
- */
 API jsval storeToJavaScriptValue(Store *store, JSContext *context)
 {
 	assert(store != NULL);

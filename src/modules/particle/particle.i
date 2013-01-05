@@ -93,13 +93,71 @@ typedef struct {
 	} properties;
 } OpenGLParticles;
 
+
+/**
+ * Creates a new OpenGL particle effect primitive
+ *
+ * @param num_particles		the number of particles used for the effect
+ * @result					the created OpenGL particle effect primitive object or NULL on failure
+ */
 API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles);
+
+/**
+ * Initlaizes an OpenGL particle effect primitive
+ *
+ * @param primitive			the OpenGL particle effect primitive to initialize
+ * @result					true if successful
+ */
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
+
+/**
+ * Sets up an OpenGL particle effect primitive for a model
+ *
+ * @param primitive			the particle effect primitive to setup
+ * @param model				the model to setup the particle effect primitive for
+ * @param material			the material name to setup the particle effect primitive for
+ * @result					true if successful
+ */
 API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material);
+
+/**
+ * Returns the associated OpenGLParticles object for an OpenGL particle effect primitive
+ *
+ * @param primitive			the OpenGL particle effect primitive for which the OpenGLParticles object should be retrieved
+ * @result					the OpenGLParticles object or NULL if the primitive is not an OpenGL particle effect primitive
+ */
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive);
+
+/**
+ * Updates an OpenGL particle effect primitive by moving forward a specified timestep
+ *
+ * @param primitive			the particle effect primitive to update
+ * @param dt				the timestep in seconds to move forward
+ * @result					true if successful
+ */
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt);
+
+/**
+ * Synchronizes a particle effect primitive with its associated OpenGL buffer objects
+ *
+ * @param primitive			the particle effect primitive to be synchronized
+ * @result					true if successful
+ */
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
+
+/**
+ * Draws an OpenGL particle effect primitive
+ *
+ * @param primitive			the particle effect primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
+ */
 API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_p);
+
+/**
+ * Frees an OpenGL particle effect primitive
+ *
+ * @param primitive			the particle effect primitive to free
+ */
 API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive);
 
 #endif

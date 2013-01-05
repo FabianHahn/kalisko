@@ -61,12 +61,6 @@ TIMER_CALLBACK(REQUEST_SELF)
 	}
 }
 
-/**
- * Safely revokes a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
- * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic revokeModule function to remove this module, but do it in a safe environment!
- *
- * @param name			the name of the module to revoke
- */
 API void safeRevokeModule(char *name)
 {
 	char *module = strdup(name);
@@ -86,12 +80,6 @@ TIMER_CALLBACK(SAFE_REMOVE_MODULE)
 	free(module);
 }
 
-/**
- * Safely force unloads a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
- * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic forceUnloadModule function to remove this module, but do it in a safe environment!
- *
- * @param name			the name of the module to revoke
- */
 API void safeForceUnloadModule(char *name)
 {
 	char *module = strdup(name);
@@ -111,12 +99,6 @@ TIMER_CALLBACK(SAFE_FORCE_UNLOAD_MODULE)
 	free(module);
 }
 
-/**
- * Safely force reloads a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
- * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic forceUnloadModule function to remove this module, but do it in a safe environment!
- *
- * @param name			the name of the module to reload
- */
 API void safeForceReloadModule(char *name)
 {
 	char *module = strdup(name);

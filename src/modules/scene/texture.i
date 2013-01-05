@@ -32,10 +32,43 @@
  */
 typedef OpenGLTexture *(OpenGLTextureSceneParser)(Scene *scene, const char *path_prefix, const char *name, Store *store);
 
+
+/**
+ * Initializes the OpenGLPrimitive texture parsers
+ */
 API void initOpenGLTextureSceneParsers();
+
+/**
+ * Registers an OpenGLTexture scene parser
+ *
+ * @param type		the type that the OpenGLTextureSceneParser is able to parse
+ * @param parser	the parser callback to be registered
+ * @result			true if successful
+ */
 API bool registerOpenGLTextureSceneParser(const char *type, OpenGLTextureSceneParser *parser);
+
+/**
+ * Unregisters an OpenGLTexture scene parser
+ *
+ * @param type		the type of the OpenGLSceneParser to be unregistered
+ * @result			true if successful
+ */
 API bool unregisterOpenGLTextureSceneParser(const char *type);
+
+/**
+ * Parses an OpenGL texture from a scene store by retrieving the correct registered parser for the type and executing it
+ *
+ * @param scene			the scene to parse the OpenGL texture for
+ * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
+ * @param name			the name of the primitive to parse
+ * @param store			the store representation of the OpenGLTexture to parse
+ * @result				the parsed OpenGLTexture or NULL on failure
+ */
 API OpenGLTexture *parseOpenGLSceneTexture(Scene *scene, const char *path_prefix, const char *name, Store *store);
+
+/**
+ * Frees the OpenGLTexture scene parsers
+ */
 API void freeOpenGLTextureSceneParsers();
 
 #endif

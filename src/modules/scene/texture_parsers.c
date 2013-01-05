@@ -33,15 +33,6 @@
 #include "texture.h"
 #include "texture_parsers.h"
 
-/**
- * OpenGLTextureScene parser for 2D textures read from files
- *
- * @param scene			the scene to parse the OpenGL texture for
- * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
- * @param name			the name of the primitive to parse
- * @param store			the store representation of the OpenGLTexture to parse
- * @result				the parsed OpenGLTexture or NULL on failure
- */
 API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
 	// Parse filename parameter
@@ -71,15 +62,6 @@ API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_pr
 	return texture;
 }
 
-/**
- * OpenGLTextureScene parser for texture arrays
- *
- * @param scene			the scene to parse the OpenGL texture for
- * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
- * @param name			the name of the primitive to parse
- * @param store			the store representation of the OpenGLTexture to parse
- * @result				the parsed OpenGLTexture or NULL on failure
- */
 API OpenGLTexture *parseOpenGLSceneTextureArray(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
 	// Parse textures parameter

@@ -26,13 +26,6 @@
 #include "shader.h"
 #include "uniform.h"
 
-/**
- * Creates an OpenGL shader from a string
- *
- * @param source	the source code of the shader
- * @param type		the type of the shader, usually either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
- * @result			the compiled shader identifier, or 0 on error
- */
 API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 {
 	GLuint shader = glCreateShader(type);
@@ -55,13 +48,6 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 	return shader;
 }
 
-/**
- * Creates an OpenGL shader from a file
- *
- * @param filename	the file name of the shader
- * @param type		the type of the shader, usually either GL_VERTEX_SHADER or GL_FRAGMENT_SHADER
- * @result			the compiled shader identifier, or 0 on error
- */
 API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type)
 {
 	char *shaderSource;
@@ -80,14 +66,6 @@ API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type)
 	return shader;
 }
 
-/**
- * Creates an OpenGL shader program from a compiled vertex shader and a compiled fragment shader
- *
- * @param vertexShader		the vertex shader to link into the program
- * @param fragmentShader	the fragment shader to link into the program
- * @param recycleShaders	should the shaders be marked for deletion after linking them into the program?
- * @result					the linked shader program, or 0 on error
- */
 API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader, bool recycleShaders)
 {
 	GLuint program = glCreateProgram();

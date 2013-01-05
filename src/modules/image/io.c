@@ -41,9 +41,6 @@ static GHashTable *readHandlers;
  */
 static GHashTable *writeHandlers;
 
-/**
- * Initializes the image IO system
- */
 API void initImageIO()
 {
 	readHandlers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
@@ -53,22 +50,12 @@ API void initImageIO()
 	addImageIOWriteHandler("store", &writeImageStore);
 }
 
-/**
- * Frees the image IO system
- */
 API void freeImageIO()
 {
 	g_hash_table_destroy(readHandlers);
 	g_hash_table_destroy(writeHandlers);
 }
 
-/**
- * Adds a image IO reading handler for a specific file extension
- *
- * @param extension			the file extension to which this handler should be registered
- * @param handler			the handler to register
- * @result					true if successful
- */
 API bool addImageIOReadHandler(const char *extension, ImageIOReadHandler *handler)
 {
 	if(g_hash_table_lookup(readHandlers, extension) != NULL) {
@@ -80,23 +67,11 @@ API bool addImageIOReadHandler(const char *extension, ImageIOReadHandler *handle
 	return true;
 }
 
-/**
- * Removes a image IO reading handler from a specific file extension
- *
- * @param extension			the file extension for which the handler should be unregistered
- * @result					true if successful
- */
 API bool deleteImageIOReadHandler(const char *extension)
 {
 	return g_hash_table_remove(readHandlers, extension);
 }
 
-/**
- * Reads a image from a file by using the appropriate handler
- *
- * @param filename			the image file that should be loaded
- * @result					the loaded image or NULL on error
- */
 API Image *readImageFromFile(const char *filename)
 {
 	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
@@ -124,13 +99,6 @@ API Image *readImageFromFile(const char *filename)
 }
 
 
-/**
- * Adds a image IO writing handler for a specific file extension
- *
- * @param extension			the file extension to which this handler should be registered
- * @param handler			the handler to register
- * @result					true if successful
- */
 API bool addImageIOWriteHandler(const char *extension, ImageIOWriteHandler *handler)
 {
 	if(g_hash_table_lookup(writeHandlers, extension) != NULL) {
@@ -142,24 +110,11 @@ API bool addImageIOWriteHandler(const char *extension, ImageIOWriteHandler *hand
 	return true;
 }
 
-/**
- * Removes a image IO writing handler from a specific file extension
- *
- * @param extension			the file extension for which the handler should be unregistered
- * @result					true if successful
- */
 API bool deleteImageIOWriteHandler(const char *extension)
 {
 	return g_hash_table_remove(writeHandlers, extension);
 }
 
-/**
- * Writes an OpenGL image to a file by using the appropriate handler
- *
- * @param image				the image to be written
- * @param filename			the file into which the image should be written
- * @result					true if successful
- */
 API bool writeImageToFile(Image *image, const char *filename)
 {
 	char *ext;

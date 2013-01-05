@@ -21,10 +21,51 @@
 #ifndef RANDOM_PERLIN_H
 #define RANDOM_PERLIN_H
 
+
+/**
+ * Initialized the perlin noise generator
+ */
 API void initPerlin();
+
+/**
+ * Frees the perlin noise generator
+ */
 API void freePerlin();
+
+/**
+ * Generates a random perlin noise value from 3D coordinates
+ * This follows the description in the paper "Improving Noise" (http://mrl.nyu.edu/~perlin/paper445.pdf) by Ken Perlin
+ *
+ * @param x		the x coordinate
+ * @param y		the y coordinate
+ * @param z		the z coordinate
+ * @return		returns a random perlin noise value within the bounds of [-sqrt(2), sqrt(2)]
+ */
 API float randomPerlin(double x, double y, double z);
+
+/**
+ * Generates fractional Brownian motion (fBm) noise
+ * Reference: http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
+ *
+ * @param x					the x coordinate
+ * @param y					the y coordinate
+ * @param z					the z coordinate
+ * @param persistence		the persistence of the franctional Brownian noise to generate, should lie in (0,1) and specifies how much further octave levels contribute to the noise value
+ * @param depth				the number of octaves to overlay for the fractional Brownian noise
+ * @return					a random fractional Brownian motion noise value
+ */
 API float noiseFBm(double x, double y, double z, double persistence, unsigned int depth);
+
+/**
+ * Generates turbulence noise
+ *
+ * @param x					the x coordinate
+ * @param y					the y coordinate
+ * @param z					the z coordinate
+ * @param persistence		the persistence of the turbulence noise to generate, should lie in (0,1) and specifies how much further octave levels contribute to the noise value
+ * @param depth				the number of octaves to overlay for the fractional Brownian noise
+ * @return					a random turbulence noise value
+ */
 API float noiseTurbulence(double x, double y, double z, double persistence, unsigned int depth);
 
 #endif

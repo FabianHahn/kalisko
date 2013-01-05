@@ -56,12 +56,6 @@ MODULE_FINALIZE
 
 static void initParticle(OpenGLParticles *particles, unsigned int i);
 
-/**
- * Creates a new OpenGL particle effect primitive
- *
- * @param num_particles		the number of particles used for the effect
- * @result					the created OpenGL particle effect primitive object or NULL on failure
- */
 API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 {
 	OpenGLParticles *particles = ALLOCATE_OBJECT(OpenGLParticles);
@@ -99,12 +93,6 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 	return &particles->primitive;
 }
 
-/**
- * Initlaizes an OpenGL particle effect primitive
- *
- * @param primitive			the OpenGL particle effect primitive to initialize
- * @result					true if successful
- */
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -132,14 +120,6 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	return true;
 }
 
-/**
- * Sets up an OpenGL particle effect primitive for a model
- *
- * @param primitive			the particle effect primitive to setup
- * @param model				the model to setup the particle effect primitive for
- * @param material			the material name to setup the particle effect primitive for
- * @result					true if successful
- */
 API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -173,12 +153,6 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *
 	return true;
 }
 
-/**
- * Returns the associated OpenGLParticles object for an OpenGL particle effect primitive
- *
- * @param primitive			the OpenGL particle effect primitive for which the OpenGLParticles object should be retrieved
- * @result					the OpenGLParticles object or NULL if the primitive is not an OpenGL particle effect primitive
- */
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -189,13 +163,6 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 	return primitive->data;
 }
 
-/**
- * Updates an OpenGL particle effect primitive by moving forward a specified timestep
- *
- * @param primitive			the particle effect primitive to update
- * @param dt				the timestep in seconds to move forward
- * @result					true if successful
- */
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -222,12 +189,6 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 	return true;
 }
 
-/**
- * Synchronizes a particle effect primitive with its associated OpenGL buffer objects
- *
- * @param primitive			the particle effect primitive to be synchronized
- * @result					true if successful
- */
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -249,12 +210,6 @@ API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 	return true;
 }
 
-/**
- * Draws an OpenGL particle effect primitive
- *
- * @param primitive			the particle effect primitive to draw
- * @param options_p			a pointer to custom options to be considered for this draw call
- */
 API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
@@ -291,11 +246,6 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_
 	return true;
 }
 
-/**
- * Frees an OpenGL particle effect primitive
- *
- * @param primitive			the particle effect primitive to free
- */
 API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {

@@ -27,10 +27,42 @@
 #include <lauxlib.h>
 #include "modules/store/store.h"
 
+
+/**
+ * Evaluates a lua command
+ *
+ * @param command		Lua code to evaluate
+ * @result				true if successful
+ */
 API bool evaluateLua(char *command);
+
+/**
+ * Evaluates a lua script
+ *
+ * @param filename		filename of the Lua script to evaluate
+ * @result				true if successful
+ */
 API bool evaluateLuaScript(char *filename);
+
+/**
+ * Pops the last returned string from Lua's stack
+ *
+ * @result		the last string on the stack, must be freed by the caller. returns NULL if top stack element is no string
+ */
 API char *popLuaString();
+
+/**
+ * Pops the last returned store from Lua's stack
+ *
+ * @result		the last store on the stack, must be freed by the caller, returns NULL if top stack element is no store
+ */
 API Store *popLuaStore();
+
+/**
+ * Returns the currently active global Lua state
+ *
+ * @result		the currently active global Lua state - changes will effect all scripts in this context immediately
+ */
 API lua_State *getGlobalLuaState();
 
 #endif

@@ -26,13 +26,66 @@
 typedef Mesh *(MeshIOReadHandler)(const char *filename);
 typedef bool (MeshIOWriteHandler)(const char *filename, Mesh *mesh);
 
+
+/**
+ * Initializes the mesh IO system
+ */
 API void initMeshIO();
+
+/**
+ * Frees the mesh IO system
+ */
 API void freeMeshIO();
+
+/**
+ * Adds a mesh IO reading handler for a specific file extension
+ *
+ * @param extension			the file extension to which this handler should be registered
+ * @param handler			the handler to register
+ * @result					true if successful
+ */
 API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler);
+
+/**
+ * Removes a mesh IO reading handler from a specific file extension
+ *
+ * @param extension			the file extension for which the handler should be unregistered
+ * @result					true if successful
+ */
 API bool deleteMeshIOReadHandler(const char *extension);
+
+/**
+ * Reads a mesh from a file by using the appropriate handler
+ *
+ * @param filename			the mesh file that should be loaded
+ * @result					the loaded mesh or NULL on error
+ */
 API Mesh *readMeshFromFile(const char *filename);
+
+/**
+ * Adds a mesh IO writing handler for a specific file extension
+ *
+ * @param extension			the file extension to which this handler should be registered
+ * @param handler			the handler to register
+ * @result					true if successful
+ */
 API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler);
+
+/**
+ * Removes a mesh IO writing handler from a specific file extension
+ *
+ * @param extension			the file extension for which the handler should be unregistered
+ * @result					true if successful
+ */
 API bool deleteMeshIOWriteHandler(const char *extension);
+
+/**
+ * Writes an OpenGL mesh to a file by using the appropriate handler
+ *
+ * @param filename			the file into which the mesh should be written
+ * @param mesh				the mesh to be written
+ * @result					true if successful
+ */
 API bool writeMeshToFile(const char *filename, Mesh *mesh);
 
 #endif

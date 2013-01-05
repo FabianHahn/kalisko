@@ -22,6 +22,13 @@
 #ifndef XCALL_STORE_VERSION2STORE_H
 #define XCALL_STORE_VERSION2STORE_H
 
+
+/**
+ * Serializes a versions struct into a store
+ *
+ * @param version		the version struct to convert into a store, must not be NULL
+ * @result				the serialized version in store format
+ */
 API Store *version2Store(Version *version);
 
 #endif

@@ -24,7 +24,21 @@
 #include "modules/store/store.h"
 #include "image.h"
 
+
+/**
+ * Creates a image from a store
+ *
+ * @param store			the store to parse
+ * @result				the parsed image of NULL on failure
+ */
 API Image *createImageFromStore(Store *store);
+
+/**
+ * Creates a store from a image
+ *
+ * @param image		the image to convert to a store
+ * @result			the converted store or NULL on failure
+ */
 API Store *convertImageToStore(Image *image);
 
 #endif

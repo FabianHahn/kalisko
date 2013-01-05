@@ -23,12 +23,6 @@
 #define API
 #include "builder.h"
 
-/**
- * Loads a GTK+ Builder GUI (usually created with Glade)
- *
- * @param filename		the filename of the GUI xml to load
- * @result				the created builder or NULL on failure, must be freed with g_object_unref
- */
 API GtkBuilder *loadGtkBuilderGui(const char *filename)
 {
     GtkBuilder *builder = gtk_builder_new();

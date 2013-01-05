@@ -59,11 +59,6 @@ MODULE_FINALIZE
 	freeOpenGLUniforms();
 }
 
-/**
- * Checks whether an OpenGL error has occurred
- *
- * @result		true if an error occurred
- */
 API bool checkOpenGLError()
 {
 	GLenum err = glGetError();
@@ -80,15 +75,6 @@ API bool checkOpenGLError()
 	return false;
 }
 
-/**
- * Returns a screenshot of the currently active OpenGL framebuffer
- *
- * @param x			the x corner coordinate of the screenshot to take
- * @param y			the y corner coordinate of the screenshot to take
- * @param width		the width of the screenshot to take
- * @param height	the height of the screenshot to take
- * @result			the screenshot as image
- */
 API Image *getOpenGLScreenshot(int x, int y, unsigned int width, unsigned int height)
 {
 	Image *image = $(Image *, image, createImageByte)(width, height, 3);

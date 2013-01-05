@@ -45,13 +45,6 @@ MODULE_FINALIZE
 {
 }
 
-/**
- * Creates a new quadtree
- *
- * @param load					the create function to use for the quadtree data
- * @param free					the free function to use for the quadtree data
- * @result						the created quadtree
- */
 API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFreeFunction *free)
 {
 	Quadtree *quadtree = ALLOCATE_OBJECT(Quadtree);
@@ -62,14 +55,6 @@ API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFre
 	return quadtree;
 }
 
-/**
- * Reshapes a quadtree completely to a new given size. All previous nodes are freed and the reshaped tree's nodes are uninitialized
- *
- * @param tree			the quadtree to reshape
- * @param rootX			the x coordinate of the new root
- * @param rootY			the y coordinate of the new root
- * @param rootLevel		the level of the new root
- */
 API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
 {
 	// free all the existing nodes first
@@ -94,13 +79,6 @@ API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
 	fillTreeNodes(tree, tree->root);
 }
 
-/**
- * Expands a quadtree to cover a specific point by adding new tree nodes
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param y				the y coordinate to lookup
- */
 API void expandQuadtree(Quadtree *tree, double x, double y)
 {
 	if(tree->root == NULL) {
@@ -166,15 +144,6 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	expandQuadtree(tree, x, y);
 }
 
-/**
- * Lookup a node in the quadtree
- *
- * @param tree			the quadtree to lookup
- * @param x				the x coordinate to lookup
- * @param y				the y coordinate to lookup
- * @param level			the depth level at which to lookup the node
- * @result				the looked up quadtree node
- */
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level)
 {
 	if(!quadtreeContainsPoint(tree, x, y)) {
@@ -184,12 +153,6 @@ API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigne
 	return lookupQuadtreeNodeRec(tree, tree->root, x, y, level);
 }
 
-/**
- * Dumps the contents of a quadtree into a string
- *
- * @param tree			the tree to dump
- * @result				the string representation of the quadtree, must be freed after use
- */
 API char *dumpQuadtree(Quadtree *tree)
 {
 	GString *string = g_string_new("");
@@ -205,11 +168,6 @@ API char *dumpQuadtree(Quadtree *tree)
 	return result;
 }
 
-/**
- * Frees a quadtree including all it's nodes and their loaded data
- *
- * @param tree			the quadtree to free
- */
 API void freeQuadtree(Quadtree *tree)
 {
 	// free all the nodes first

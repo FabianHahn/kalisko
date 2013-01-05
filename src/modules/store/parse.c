@@ -30,12 +30,6 @@
 
 int yyparse(StoreParser *parser); // this can't go into a header because it doesn't have an API export
 
-/**
- * Parses a store file
- *
- * @param filename		the file name of the store file to parse
- * @result				the parsed store
- */
 API Store *parseStoreFile(const char *filename)
 {
 	StoreParser parser;
@@ -60,12 +54,6 @@ API Store *parseStoreFile(const char *filename)
 	return parser.store;
 }
 
-/**
- * Parses a store string
- *
- * @param string		the store string to parse
- * @result				the parsed store
- */
 API Store *parseStoreString(const char *string)
 {
 	StoreParser parser;
@@ -82,12 +70,6 @@ API Store *parseStoreString(const char *string)
 	return parser.store;
 }
 
-/**
- * A StoreReader function for files
- *
- * @param parser_p		the parser to to read from
- * @result				the read character
- */
 API char storeFileRead(void *parser_p)
 {
 	StoreParser *parser = parser_p;
@@ -95,12 +77,6 @@ API char storeFileRead(void *parser_p)
 	return fgetc(parser->resource);
 }
 
-/**
- * A StoreUnreader function for files
- *
- * @param parser_p		the parser to to unread to
- * @param c				the character to unread
- */
 API void storeFileUnread(void *parser_p, char c)
 {
 	StoreParser *parser = parser_p;
@@ -108,12 +84,6 @@ API void storeFileUnread(void *parser_p, char c)
 	ungetc(c, parser->resource);
 }
 
-/**
- * A StoreReader function for strings
- *
- * @param parser_p		the parser to to read from
- * @result				the read character
- */
 API char storeStringRead(void *parser_p)
 {
 	StoreParser *parser = parser_p;
@@ -121,12 +91,6 @@ API char storeStringRead(void *parser_p)
 	return *((char *) parser->const_resource++);
 }
 
-/**
- * A StoreUnreader function for strings
- *
- * @param parser_p		the parser to to unread to
- * @param c				the character to unread
- */
 API void storeStringUnread(void *parser_p, char c)
 {
 	StoreParser *parser = parser_p;

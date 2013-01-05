@@ -41,12 +41,6 @@ typedef struct {
 static void freeOpenGLLodMapImportSource(OpenGLLodMapDataSource *source);
 static Image *queryOpenGLLodMapImportSource(OpenGLLodMapDataSource *dataSource, OpenGLLodMapImageType query, int qx, int qy, unsigned int level, float *minValue, float *maxValue);
 
-/**
- * Creates an import source for an OpenGL LOD map from a store configuration
- *
- * @param store			the store configuration from which to create the OpenGL LOD map import data source
- * @result				the created data source or NULL on failure
- */
 API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store)
 {
 	Store *pathParam = getStorePath(store, "lodmap/source/path");
@@ -113,12 +107,6 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store
 	return &source->source;
 }
 
-/**
- * Creates an import source for an OpenGL LOD map
- *
- * @param path			the path from which to configure the import data source
- * @result				the created LOD map data source or NULL on failure
- */
 API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
 {
 	GString *metaPath = g_string_new(path);

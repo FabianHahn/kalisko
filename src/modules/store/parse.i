@@ -74,11 +74,53 @@ typedef struct
  */
 #define STORE_MAX_STRING_LENGTH 1024
 
+
+/**
+ * Parses a store file
+ *
+ * @param filename		the file name of the store file to parse
+ * @result				the parsed store
+ */
 API Store *parseStoreFile(const char *filename);
+
+/**
+ * Parses a store string
+ *
+ * @param string		the store string to parse
+ * @result				the parsed store
+ */
 API Store *parseStoreString(const char *string);
+
+/**
+ * A StoreReader function for files
+ *
+ * @param parser_p		the parser to to read from
+ * @result				the read character
+ */
 API char storeFileRead(void *parser_p);
+
+/**
+ * A StoreUnreader function for files
+ *
+ * @param parser_p		the parser to to unread to
+ * @param c				the character to unread
+ */
 API void storeFileUnread(void *parser_p, char c);
+
+/**
+ * A StoreReader function for strings
+ *
+ * @param parser_p		the parser to to read from
+ * @result				the read character
+ */
 API char storeStringRead(void *parser_p);
+
+/**
+ * A StoreUnreader function for strings
+ *
+ * @param parser_p		the parser to to unread to
+ * @param c				the character to unread
+ */
 API void storeStringUnread(void *parser_p, char c);
 
 #endif

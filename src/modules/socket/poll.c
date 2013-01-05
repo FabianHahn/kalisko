@@ -77,10 +77,6 @@ static GQueue *connecting;
 
 TIMER_CALLBACK(poll);
 
-/**
- * Initializes socket polling via hooks
- * @param interval		the polling interval to use
- */
 API void initPoll(int interval)
 {
 	pollInterval = interval;
@@ -93,25 +89,12 @@ API void initPoll(int interval)
 	polling = false;
 }
 
-/**
- * Frees socket polling via hooks
- */
 API void freePoll()
 {
 	g_hash_table_destroy(poll_table);
 	g_queue_free(connecting);
 }
 
-/**
- * Asynchronously connects a client socket. Instead of waiting for the socket to be connected, this function does not block and returns immediately.
- * As soon as the socket is connected, it will trigger the "connected" event and will start polling automatically (this might even happen before this
- * function returns!). If connecting fails due to errors or timeout, the "disconnect" event will be triggered and you can either recall this function
- * or free the socket.
- *
- * @param s			the client socket to connect
- * @param timeout	time in seconds after which the connection should timeout and the "timeout" event should be triggered
- * @result			true if successful
- */
 API bool connectClientSocketAsync(Socket *s, int timeout)
 {
 	if(s->connected) {
@@ -189,12 +172,6 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 	return true;
 }
 
-/**
- * Enables polling for a socket
- *
- * @param socket		the socket to enable the polling for
- * @result				true if successful
- */
 API bool enableSocketPolling(Socket *socket)
 {
 	if(isSocketPollingEnabled(socket)) { // Socket with that fd is already polled
@@ -208,30 +185,16 @@ API bool enableSocketPolling(Socket *socket)
 	return true;
 }
 
-/**
- * Checks whether polling is enabled for a certain socket
- *
- * @param socket		the socket for which to check whether socket polling is enabled
- * @result				true if socket polling is enabled for the socket
- */
 API bool isSocketPollingEnabled(Socket *socket)
 {
 	return g_hash_table_lookup(poll_table, &socket->fd) != NULL;
 }
 
-/**
- * Disables polling for a socket
- * @param socket		the socket to disable the polling for
- * @result				true if successful
- */
 API bool disableSocketPolling(Socket *socket)
 {
 	return g_hash_table_remove(poll_table, &socket->fd) == true;
 }
 
-/**
- * Poll all sockets signed up for polling if not currently polling already
- */
 API void pollSockets()
 {
 	if(!polling) {
@@ -262,22 +225,11 @@ API void pollSockets()
 	}
 }
 
-/**
- * Checks whether sockets are currently being polled
- *
- * @result		true if sockets are currently being polled
- */
 API bool isSocketsPolling()
 {
 	return polling;
 }
 
-/**
- * Retrieves a socket for which polling is enabled by its file descriptor
- *
- * @param fd	the fd to lookup
- * @result		the socket or NULL if no socket with this fd is being polled
- */
 API Socket *getPolledSocketByFd(int fd)
 {
 	return g_hash_table_lookup(poll_table, &fd);

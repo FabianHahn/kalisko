@@ -24,7 +24,21 @@
 #include "modules/store/store.h"
 #include "source.h"
 
+
+/**
+ * Creates an import source for an OpenGL LOD map from a store configuration
+ *
+ * @param store			the store configuration from which to create the OpenGL LOD map import data source
+ * @result				the created data source or NULL on failure
+ */
 API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store);
+
+/**
+ * Creates an import source for an OpenGL LOD map
+ *
+ * @param path			the path from which to configure the import data source
+ * @result				the created LOD map data source or NULL on failure
+ */
 API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path);
 
 #endif

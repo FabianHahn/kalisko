@@ -27,13 +27,6 @@
 #include "opengl.h"
 #include "texture.h"
 
-/**
- * Creates an OpenGL 2D texture from an image
- *
- * @param image			the image from which to create the texture (note that the texture takes control over the image, i.e. you must not free it)
- * @param auto_init		if true, initializes the texture with default parameters and synchronizes it (i.e. you don't have to call initOpenGLTexture or synchronizeOpenGLTexture before using it)
- * @result				the created texture or NULL on failure
- */
 API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 {
 	if(image->type != IMAGE_TYPE_BYTE && image->type != IMAGE_TYPE_FLOAT) {
@@ -75,12 +68,6 @@ API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 	return texture;
 }
 
-/**
- * Creates an OpenGL 2D vertex texture from an image to be used in a vertex shader. The texture does not use mipmaps and is automatically initialized, i.e. you don't have to call initOpenGLTexture or synchronizeOpenGLTexture before using it
- *
- * @param image			the image from which to create the texture (note that the texture takes control over the image, i.e. you must not free it)
- * @result				the created texture or NULL on failure
- */
 API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
 {
 	OpenGLTexture *texture = createOpenGLTexture2D(image, false);
@@ -114,14 +101,6 @@ API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
 	return texture;
 }
 
-/**
- * Creates an OpenGL 2D texture array from an array of images
- *
- * @param images		an array of images from which to create the texture array (note that the texture does NOT take over control over this array or any of its elements, i.e. you must free it yourself after calling this function)
- * @param size			the size of the passed images array
- * @param auto_init		if true, initializes the texture array with default parameters and synchronizes it (i.e. you don't have to call initOpenGLTexture or synchronizeOpenGLTexture before using it)
- * @result				the created texture or NULL on failure
- */
 API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size, bool auto_init)
 {
 	if(size == 0) {
@@ -199,12 +178,6 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	return texture;
 }
 
-/**
- * Initializes an OpenGL texture
- *
- * @param texture			the OpenGL texture to initialize
- * @result					true if successful
- */
 API bool initOpenGLTexture(OpenGLTexture *texture)
 {
 	bindOpenGLTexture(texture);
@@ -294,12 +267,6 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 	return true;
 }
 
-/**
- * Updates an OpenGL texture by synchronizing it's CPU-side buffer with the OpenGL texture context
- *
- * @param texture		the texture to update
- * @result				true if successful
- */
 API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 {
 	bindOpenGLTexture(texture);
@@ -342,11 +309,6 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 	return true;
 }
 
-/**
- * Frees an existing OpenGL texture including the CPU-side buffer
- *
- * @param texture		the texture to free
- */
 API void freeOpenGLTexture(OpenGLTexture *texture)
 {
 	assert(texture != NULL);

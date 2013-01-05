@@ -32,13 +32,6 @@
 
 #define MAX_PATH_LEN 4096
 
-/**
- * Fetches a store value by its path
- *
- * @param parent		the store in which the lookup takes place
- * @param pathFormat	the printf style path to the value without a leading / to search, use integers from base 0 for list elements
- * @result				the store value, or NULL if not found
- */
 API Store *getStorePath(Store *parent, const char *pathFormat, ...)
 {
 	va_list va;
@@ -119,14 +112,6 @@ API Store *getStorePath(Store *parent, const char *pathFormat, ...)
 	}
 }
 
-/**
- * Sets a value in a store path
- *
- * @param store			the store to edit
- * @param pathFormat	the printf style path to set, will be overridden if already exists
- * @param value			the value to set
- * @result				true if successful
- */
 API bool setStorePath(Store *store, char *pathFormat, void *value, ...)
 {
 	va_list va;
@@ -179,13 +164,6 @@ API bool setStorePath(Store *store, char *pathFormat, void *value, ...)
 	return result;
 }
 
-/**
- * Deletes a value in a store path
- *
- * @param store	the store to edit
- * @param path		the path to delete
- * @result			true if successful
- */
 API bool deleteStorePath(Store *store, char *path)
 {
 	bool result = false;
@@ -235,12 +213,6 @@ API bool deleteStorePath(Store *store, char *path)
 	return result;
 }
 
-/**
- * Splits a store path by its unescaped delimiter '/'
- *
- * @param path		the path to escape
- * @result			an array of path elements, contents must be freed with free and the array itself with g_ptr_array_free
- */
 API GPtrArray *splitStorePath(char *path)
 {
 	GPtrArray *array = g_ptr_array_new();

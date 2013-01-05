@@ -36,9 +36,6 @@
  */
 static GHashTable *parsers = NULL;
 
-/**
- * Initializes the OpenGLPrimitive texture parsers
- */
 API void initOpenGLTextureSceneParsers()
 {
 	assert(parsers == NULL);
@@ -47,13 +44,6 @@ API void initOpenGLTextureSceneParsers()
 	registerOpenGLTextureSceneParser("array", &parseOpenGLSceneTextureArray);
 }
 
-/**
- * Registers an OpenGLTexture scene parser
- *
- * @param type		the type that the OpenGLTextureSceneParser is able to parse
- * @param parser	the parser callback to be registered
- * @result			true if successful
- */
 API bool registerOpenGLTextureSceneParser(const char *type, OpenGLTextureSceneParser *parser)
 {
 	if(g_hash_table_lookup(parsers, type) != NULL) {
@@ -68,26 +58,11 @@ API bool registerOpenGLTextureSceneParser(const char *type, OpenGLTextureScenePa
 	return true;
 }
 
-/**
- * Unregisters an OpenGLTexture scene parser
- *
- * @param type		the type of the OpenGLSceneParser to be unregistered
- * @result			true if successful
- */
 API bool unregisterOpenGLTextureSceneParser(const char *type)
 {
 	return g_hash_table_remove(parsers, type);
 }
 
-/**
- * Parses an OpenGL texture from a scene store by retrieving the correct registered parser for the type and executing it
- *
- * @param scene			the scene to parse the OpenGL texture for
- * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
- * @param name			the name of the primitive to parse
- * @param store			the store representation of the OpenGLTexture to parse
- * @result				the parsed OpenGLTexture or NULL on failure
- */
 API OpenGLTexture *parseOpenGLSceneTexture(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
 	assert(store->type == STORE_ARRAY);
@@ -110,9 +85,6 @@ API OpenGLTexture *parseOpenGLSceneTexture(Scene *scene, const char *path_prefix
 	return parser(scene, path_prefix, name, store);
 }
 
-/**
- * Frees the OpenGLTexture scene parsers
- */
 API void freeOpenGLTextureSceneParsers()
 {
 	assert(parsers != NULL);

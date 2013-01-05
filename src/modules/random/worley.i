@@ -37,10 +37,61 @@ typedef enum {
 struct RandomWorleyContextStruct;
 typedef struct RandomWorleyContextStruct RandomWorleyContext;
 
+
+/**
+ * Initializes a Worley noise context
+ *
+ * The caller has to free it with 'freeWorleyContext' after use.
+ *
+ * @see freeWorleyContext
+ * @param count				number of points in space
+ * @param dimensions		number of spacial dimensions
+ * @return 					a new worley context
+ */
 API RandomWorleyContext* createWorleyContext(unsigned int count, unsigned int dimensions);
+
+/**
+ * Frees a Worley noise context
+ *
+ * @param context			the Worley noise context to free
+ */
 API void freeWorleyContext(RandomWorleyContext *context);
+
+/**
+ * Computes a sample in a Worley / Voronoi noise pattern
+ *
+ * Returns the distance to the n'th closest neighbour.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param neighbour		n'th closest neighbour that has influence
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
 API float randomWorley(RandomWorleyContext *context, Vector *query, unsigned int neighbour, RandomWorleyDistance method);
+
+/**
+ * Computes the difference of F2 and F1 Worley / Voronoi noise
+ *
+ * This function creates crystal shaped areas.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
 API float randomWorleyDifference21(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method);
+
+/**
+ * Computes the difference of F3 and F2 Worley / Voronoi noise
+ *
+ * This function creates crystal shaped areas.
+ *
+ * @param context		a pointer to a Woley noise context
+ * @param query			the query point to lookup
+ * @param method		distance measurement method
+ * @return				Worley noise (> 0.0)
+ */
 API float randomWorleyDifference32(RandomWorleyContext *context, Vector *query, RandomWorleyDistance method);
 
 #endif

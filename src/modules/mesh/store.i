@@ -24,7 +24,21 @@
 #include "modules/store/store.h"
 #include "mesh.h"
 
+
+/**
+ * Creates a mesh from a store
+ *
+ * @param store			the store to parse
+ * @result				the parsed mesh of NULL on failure
+ */
 API Mesh *createMeshFromStore(Store *store);
+
+/**
+ * Creates a store from a mesh
+ *
+ * @param mesh		the mesh to convert to a store
+ * @result			the converted store or NULL on failure
+ */
 API Store *convertMeshToStore(Mesh *mesh);
 
 #endif

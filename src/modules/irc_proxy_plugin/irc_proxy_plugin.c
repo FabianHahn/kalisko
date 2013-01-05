@@ -62,12 +62,6 @@ MODULE_FINALIZE
 	g_hash_table_destroy(handlers);
 }
 
-/**
- * Adds an IRC proxy plugin to the plugins pool
- *
- * @param plugin		the plugin to add
- * @result				true if successful
- */
 API bool addIrcProxyPlugin(IrcProxyPlugin *plugin)
 {
 	if(g_hash_table_lookup(plugins, plugin->name) != NULL) {
@@ -80,11 +74,6 @@ API bool addIrcProxyPlugin(IrcProxyPlugin *plugin)
 	return true;
 }
 
-/**
- * Removes an IRC proxy plugin from the plugins pool
- *
- * @param plugin		the plugin to remove
- */
 API void delIrcProxyPlugin(IrcProxyPlugin *plugin)
 {
 	GQueue *list = g_queue_new();
@@ -109,12 +98,6 @@ API void delIrcProxyPlugin(IrcProxyPlugin *plugin)
 	g_hash_table_remove(plugins, plugin->name);
 }
 
-/**
- * Enables plugin support for an IRC proxy
- *
- * @param proxy			the IRC proxy to enable plugins for
- * @result				true if successful
- */
 API bool enableIrcProxyPlugins(IrcProxy *proxy)
 {
 	IrcProxyPluginHandler *handler;
@@ -133,11 +116,6 @@ API bool enableIrcProxyPlugins(IrcProxy *proxy)
 	return true;
 }
 
-/**
- * Disable plugin support for an IRC proxy
- *
- * @param proxy			the IRC proxy to disable plugins for
- */
 API void disableIrcProxyPlugins(IrcProxy *proxy)
 {
 	IrcProxyPluginHandler *handler;
@@ -153,13 +131,6 @@ API void disableIrcProxyPlugins(IrcProxy *proxy)
 	free(handler); // also free the plugins handler
 }
 
-/**
- * Enable an IRC proxy plugin for a specific proxy
- *
- * @param proxy			the proxy to enable the plugin for
- * @param name			the name of the plugin to enable
- * @result				true if successful
- */
 API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 {
 	IrcProxyPluginHandler *handler;
@@ -197,13 +168,6 @@ API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 	return true;
 }
 
-/**
- * Checks if an IRC proxy plugin is enabled for an IRC proxy
- *
- * @param proxy			the IRC proxy to check for the plugin
- * @param name			the IRC proxy plugin name to check
- * @result				true if the plugin with that name is loaded for proxy
- */
 API bool isIrcProxyPluginEnabled(IrcProxy *proxy, char *name)
 {
 	IrcProxyPluginHandler *handler;
@@ -217,13 +181,6 @@ API bool isIrcProxyPluginEnabled(IrcProxy *proxy, char *name)
 	return g_hash_table_lookup(handler->plugins, name) != NULL;
 }
 
-/**
- * Disables an IRC proxy plugin for a specific proxy
- *
- * @param proxy			the proxy to enable the plugin for
- * @param name			the name of the plugin to enable
- * @result				true if successful
- */
 API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
 {
 	IrcProxyPluginHandler *handler;
@@ -261,11 +218,6 @@ API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
 	return true;
 }
 
-/**
- * Returns a list of available IRC proxy plugins
- *
- * @result			a list of all available plugins as strings. Must not be modified but freed with g_list_free after use
- */
 API GList *getAvailableIrcProxyPlugins()
 {
 	return g_hash_table_get_keys(plugins);

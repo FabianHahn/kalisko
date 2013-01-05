@@ -45,7 +45,23 @@ struct PlaintextTableCellTag {
 	PlaintextTableAlignment alignment;
 };
 
+
+/**
+ * Creates a new Table which is prepared to create
+ * output for the CLI or a plaintext file.
+ *
+ * @return the specialised Table
+ */
 API Table *newPlaintextTable();
+
+/**
+ * Creates a new Table which is prepared to create
+ * output for the CLI or plaintext files.
+ *
+ * @see newTableFull
+ * @param preAllocRows		Amount of rows to allocate
+ * @param preAllocCols		Amount of columns to allocate
+ */
 API Table *newPlaintextTableFull(int preAllocRows, int preAllocCols);
 
 #endif

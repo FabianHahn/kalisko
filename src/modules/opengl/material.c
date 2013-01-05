@@ -48,28 +48,16 @@ static GHashTable *materials;
 
 static void freeOpenGLMaterial(void *material_p);
 
-/**
- * Initializes the OpenGL material store
- */
 API void initOpenGLMaterials()
 {
 	materials = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOpenGLMaterial);
 }
 
-/**
- * Frees the OpenGL material store
- */
 API void freeOpenGLMaterials()
 {
 	g_hash_table_destroy(materials);
 }
 
-/**
- * Creates a new OpenGL material
- *
- * @param name		the name of the OpenGL material to create
- * @result			true if successful
- */
 API bool createOpenGLMaterial(const char *name)
 {
 	if(g_hash_table_lookup(materials, name) != NULL) {
@@ -87,14 +75,6 @@ API bool createOpenGLMaterial(const char *name)
 	return true;
 }
 
-/**
- * Creates a new OpenGL material from two shader files
- *
- * @param name					the name of the OpenGL material to create
- * @param vertexShaderFile		the file name of the vertex shader to use for the OpenGL material
- * @param fragmentShaderFile	the file name of the fragment shader to use for the OpenGL material
- * @result						true if successful
- */
 API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShaderFile, const char *fragmentShaderFile)
 {
 	// create the material
@@ -142,24 +122,11 @@ API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShade
 	return true;
 }
 
-/**
- * Deletes an OpenGL material
- *
- * @param name		the name of the OpenGL material to delete
- * @result			true if successful
- */
 API bool deleteOpenGLMaterial(const char *name)
 {
 	return g_hash_table_remove(materials, name);
 }
 
-/**
- * Attaches a shader program to an OpenGL material
- *
- * @param name		the name of the OpenGL material to add the shader program to
- * @param program	the identifier of the OpenGL shader program that should be attached to the material
- * @result			true if successful
- */
 API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 {
 	OpenGLMaterial *material;
@@ -174,12 +141,6 @@ API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 	return true;
 }
 
-/**
- * Returns the OpenGL uniform attachment point for an OpenGL material
- *
- * @param name			the name of the OpenGL material to retrieve the OpenGL uniform attachment point for
- * @result				the OpenGL uniform attachment point for the specified material or NULL on failure
- */
 API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name)
 {
 	OpenGLMaterial *material;
@@ -191,15 +152,6 @@ API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name)
 	return material->uniforms;
 }
 
-/**
- * Uses an OpenGL material for rendering a model
- *
- * @param					the name of the material to use
- * @param modelUniforms		the OpenGL uniform attachment point for model specific uniforms
- * @param model				the model matrix to use for the material
- * @param modelNormal		the normal model matrix to use for the material
- * @result					true if successful
- */
 API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *modelUniforms, Matrix *model, Matrix *modelNormal)
 {
 	OpenGLMaterial *material;
@@ -240,12 +192,6 @@ API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *modelUnifo
 	return true;
 }
 
-/**
- * Check whether an OpenGL material already has a shader attached
- *
- * @param name			the name of the OpenGL material to check
- * @result				true if the material exists and has a shader attached
- */
 API bool checkOpenGLMaterialShader(const char *name)
 {
 	OpenGLMaterial *material;
@@ -258,11 +204,6 @@ API bool checkOpenGLMaterialShader(const char *name)
 	return material->program != 0;
 }
 
-/**
- * Retrieves a list of OpenGL material names
- *
- * @result		a list of OpenGL material names registered, must not be modified but be freed with g_list_free
- */
 API GList *getOpenGLMaterials()
 {
 	return g_hash_table_get_keys(materials);

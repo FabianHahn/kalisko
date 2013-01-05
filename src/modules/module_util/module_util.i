@@ -22,8 +22,29 @@
 #ifndef MODULE_UTIL_MODULE_UTIL_H
 #define MODULE_UTIL_MODULE_UTIL_H
 
+
+/**
+ * Safely revokes a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
+ * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic revokeModule function to remove this module, but do it in a safe environment!
+ *
+ * @param name			the name of the module to revoke
+ */
 API void safeRevokeModule(char *name);
+
+/**
+ * Safely force unloads a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
+ * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic forceUnloadModule function to remove this module, but do it in a safe environment!
+ *
+ * @param name			the name of the module to revoke
+ */
 API void safeForceUnloadModule(char *name);
+
+/**
+ * Safely force reloads a module inside a timer callback, so there's no risk of accidentally unloading the caller before the revoke call completes.
+ * Note that the only module this function isn't able to revoke is this module itself, module_util. Use the classic forceUnloadModule function to remove this module, but do it in a safe environment!
+ *
+ * @param name			the name of the module to reload
+ */
 API void safeForceReloadModule(char *name);
 
 #endif

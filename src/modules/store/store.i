@@ -76,15 +76,82 @@ typedef struct {
 	Store *value;
 } StoreNode;
 
+
+/**
+ * Creates an empty store
+ *
+ * @result			the created store
+ */
 API Store *createStore();
+
+/**
+ * A GDestroyNotify function to free a store node value
+ *
+ * @param store		the store node value to free
+ */
 API void freeStore(void *store);
+
+/**
+ * Returns a node value's actual content
+ *
+ * @param value		the store node value
+ * @result 			the node value's content
+ */
 API void *getStoreValueContent(Store *value);
+
+/**
+ * Escapes a store string for output in a dump
+ *
+ * @param string		the string to escape
+ * @result				the escaped string, must be freed with g_string_free
+ */
 API GString *escapeStoreString(char *string);
+
+/**
+ * Creates a string value to be used in a store
+ *
+ * @param string		the content string
+ * @result				the created node value, must be freed with freeStore or by the store system
+ */
 API Store *createStoreStringValue(const char *string);
+
+/**
+ * Creates an integer value to be used in a store
+ *
+ * @param integer		the content integer
+ * @result				the created node value, must be freed with freeStore or by the store system
+ */
 API Store *createStoreIntegerValue(int integer);
+
+/**
+ * Creates a float number value to be used in a store
+ *
+ * @param float_number	the content float number
+ * @result				the created node value, must be freed with freeStore or by the store system
+ */
 API Store *createStoreFloatNumberValue(double float_number);
+
+/**
+ * Creates a list value to be used in a store
+ *
+ * @param list			the content list or NULL for an empty list
+ * @result				the created node value, must be freed with freeStore or by the store system
+ */
 API Store *createStoreListValue(GQueue *list);
+
+/**
+ * Creates an array value to be used in a store
+ *
+ * @param array			the content array or NULL if an empty one should be created
+ * @result				the created node value, must be freed with freeStore or by the store system
+ */
 API Store *createStoreArrayValue(GHashTable *array);
+
+/**
+ * Creates an empty store nodes table to be used as a section or an array in a store
+ *
+ * @result			the created nodes table, must be freed with g_hash_table_destroy or the store system
+ */
 API GHashTable *createStoreNodes();
 
 #endif

@@ -55,14 +55,86 @@ typedef struct {
 #endif
 } Socket;
 
+
+/**
+ * Create a client socket
+ *
+ * @param host		the host to connect to
+ * @param port		the port to connect to
+ * @result			the created socket
+ */
 API Socket *createClientSocket(char *host, char *port);
+
+/**
+ * Create a server socket
+ *
+ * @param port		the port for server connections
+ * @result			the created socket
+ */
 API Socket *createServerSocket(char *port);
+
+/**
+ * Create a shell socket
+ *
+ * @param args			the shell command arguments, terminated by NULL
+ * @result				the created socket
+ */
 API Socket *createShellSocket(char **args);
+
+/**
+ * Connects a socket
+ *
+ * @param s			the socket to connect
+ * @result			true if successful, false on error
+ */
 API bool connectSocket(Socket *s);
+
+/**
+ * Disconnects a socket. Call this function to get rid of a socket inside a socket_read hook, then free it inside a socket_disconnect listener.
+ * See the documentation of freeSocket for further details on this issue.
+ * @see freeSocket
+ *
+ * @param s			the socket to disconnect
+ * @result			true if successful, false on error
+ */
 API bool disconnectSocket(Socket *s);
+
+/**
+ * Frees a socket. Note that this function MUST NOT be called from a (descendent of a) socket_read hook since further listeners expect the socket
+ * to still be existing. If you want to get rid of a socket after a read event, listen to the socket_disconnect hook and disconnect it with disconnectSocket().
+ * Then, free it inside the socket_disconnect hook using this function. If you don't want to adhere to this rule, you might as well shoot yourself in the foot.
+ * @see disconnectSocket
+ *
+ * @param s			the socket to free
+ */
 API void freeSocket(Socket *s);
+
+/**
+ * Writes directly into a socket
+ *
+ * @param s				the socket to write to
+ * @param buffer		the buffer to send
+ * @param size			the buffer's size
+ * @result				true if successful, false on error
+ */
 API bool socketWriteRaw(Socket *s, void *buffer, int size);
+
+/**
+ * Reads directly from a socket
+ *
+ * @param s				the socket to read from
+ * @param buffer		the buffer to read into
+ * @param size			the buffer's size
+ * @result				number of bytes read, -1 on error
+ */
 API int socketReadRaw(Socket *s, void *buffer, int size);
+
+/**
+ * Accepts a client socket from a listening server socket
+ *
+ * @param server		the server socket
+ * @return Socket		the accepted socket
+ */
 API Socket *socketAccept(Socket *server);
 
 #endif

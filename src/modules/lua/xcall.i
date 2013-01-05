@@ -28,10 +28,32 @@
 #include "types.h"
 #include "module_lua.h"
 
+
+/**
+ * Initializes the Lua XCall interface
+ */
 API void initLuaXCall();
+
+/**
+ * Frees the Lua XCall interface
+ */
 API void freeLuaXCall();
 
+
+/**
+ * Registers the lua xcall C functions for an interpreter
+ *
+ * @param state		the lua interpreter state to register the xcall functions with
+ * @result			true if successful
+ */
 API bool initLuaStateXCall(lua_State *state);
+
+/**
+ * Unregisters the lua xcall C functions for an interpreter
+ *
+ * @param state		the lua interpreter state to register the xcall functions with
+ * @result			true if successful
+ */
 API bool freeLuaStateXCall(lua_State *state);
 
 #endif

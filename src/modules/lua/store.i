@@ -27,9 +27,35 @@
 #include <lauxlib.h>
 #include "modules/store/store.h"
 
+
+/**
+ * Registers the lua store C functions for an interpreter
+ *
+ * @param state		the lua interpreter state to register the store functions with
+ */
 API void initLuaStateStore(lua_State *state);
+
+/**
+ * Frees the lua store C functions for an interpreter
+ *
+ * @param state		the lua interpreter state to free the store functions for
+ */
 API void freeLuaStateStore(lua_State *state);
+
+/**
+ * Parses a store into a Lua table
+ *
+ * @param state		the state in which the store should be parsed into a table
+ * @param store		the store to parse
+ */
 API void parseStoreToLua(lua_State *state, Store *store);
+
+/**
+ * Parses a Lua table on top of the Lua stack into a store
+ *
+ * @param state		the state in which the Lua table should be parsed into a store
+ * @result			the parsed store which is either a list or an array, or NULL on failure
+ */
 API Store *parseLuaToStore(lua_State *state);
 
 #endif

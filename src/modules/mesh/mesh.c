@@ -66,11 +66,6 @@ Mesh *createMesh(int num_vertices, int num_triangles)
 	return mesh;
 }
 
-/**
- * Automatically generate normal vectors from triangles for a mesh
- *
- * @param mesh			the mesh to create normals for
- */
 API void generateMeshNormals(Mesh *mesh)
 {
 	// Normalize normals

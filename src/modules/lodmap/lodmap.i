@@ -103,11 +103,54 @@ typedef struct {
 	GThreadPool *loadingPool;
 } OpenGLLodMap;
 
+
+/**
+ * Creates an OpenGL LOD map from a store representation
+ *
+ * @param store			the store config from which to create the LOD map
+ * @result				the created LOD map or NULL on failure
+ */
 API OpenGLLodMap *createOpenGLLodMapFromStore(Store *store);
+
+/**
+ * Creates an OpenGL LOD map
+ *
+ * @param source				the data source used for the LOD map (note that the LOD map takes over control over this data source, i.e. you must not free it once this function succeeded)
+ * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
+ * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
+ * @result						the created OpenGL LOD map
+ */
 API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance);
+
+/**
+ * Updates an OpenGL LOD map
+ *
+ * @param lodmap		the LOD map to update
+ * @param position		the viewer position for which the LOD map should be updated
+ * @param autoExpand	specifies whether the quadtree should be automatically expanded to ranged not covered yet
+ */
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand);
+
+/**
+ * Draws an OpenGL LOD map
+ *
+ * @param lodmap		the LOD map to draw
+ */
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap);
+
+/**
+ * Loads an LOD map tile.
+ *
+ * @param node_p		a pointer to the quadtree node for which to load the tile
+ * @param lodmap_p		a pointer to the LOD map for which to load the tile*
+ */
 API void loadLodMapTile(void *node_p, void *lodmap_p);
+
+/**
+ * Frees an OpenGL LOD map
+ *
+ * @param lodmap				the OpenGL LOD map to free
+ */
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap);
 
 /**

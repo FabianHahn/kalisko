@@ -22,7 +22,24 @@
 #ifndef LANG_JAVASCRIPT_STORE_H
 #define LANG_JAVASCRIPT_STORE_H
 
+
+/**
+ * Adds to the given global object functions to work with Store in the JavaScript world.
+ *
+ * @param context
+ * @param globalObj
+ */
 API void jsAddStoreFunctions(JSContext *context, JSObject *globalObj);
+
+/**
+ * Parses a Store into a native JavaScript value.
+ *
+ * <b>Attention</b>: This function must be called surrounded by JS_EnterLocalRootScope() and JS_LeaveLocalRootScope().
+ *
+ * @param store		The Store to convert
+ * @param context	The context in which the jsval should be
+ * @return A jsval representing the Store
+ */
 API jsval storeToJavaScriptValue(Store *store, JSContext *context);
 API Store *javaScriptValueToStore(jsval value, JSContext *context);
 

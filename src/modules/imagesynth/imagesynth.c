@@ -51,13 +51,6 @@ MODULE_FINALIZE
 	g_hash_table_destroy(synthesizers);
 }
 
-/**
- * Registers an image synthesizer
- *
- * @param name				the name of the image synthesizer to register
- * @param synthesizer		the synthesizer that should be registered
- * @result					true if successful
- */
 API bool registerImageSynthesizer(const char *name, ImageSynthesizer *synthesizer)
 {
 	if(g_hash_table_lookup(synthesizers, name) != NULL) {
@@ -69,27 +62,11 @@ API bool registerImageSynthesizer(const char *name, ImageSynthesizer *synthesize
 	return true;
 }
 
-/**
- * Unregisters an image synthesizer
- *
- * @param name				the name of the image synthesizer to unregister
- * @result					true if successful
- */
 API bool unregisterImageSynthesizer(const char *name)
 {
 	return g_hash_table_remove(synthesizers, name);
 }
 
-/**
- * Synthesizes an image
- *
- * @param name			the name of the synthesizer to use to produce the image
- * @param width			the width of the image to synthesize
- * @param height		the height of the image to synthesize
- * @param channels		the number of channels for the image to synthesize
- * @param parameters	store representation of custom parameters to be passed to the synthesizer
- * @result				the synthesized image or NULL on failure
- */
 API Image *synthesizeImage(const char *name, unsigned int width, unsigned int height, unsigned int channels, Store *parameters)
 {
 	ImageSynthesizer *synthesizer;

@@ -24,9 +24,38 @@
 
 typedef bool GlfwHandle;
 
+
+/**
+ * Opens a glfw window
+ *
+ * @param title			the title to use for the window
+ * @param width			the desired screen width
+ * @param height		the desired screen height
+ * @param fullscreen	whether to go to fullscreen mode
+ * @param vsynch		whether to use vertical sync mode
+ * @result				true if successful
+ */
 API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen, bool vsync);
+
+/**
+ * Closes the glfw window if one was open
+ *
+ * @result				true if successful
+ */
 API bool closeGlfwWindow();
+
+/**
+ * Returns the current frame rate achieved by the glfw main loop
+ *
+ * @result			the frame rate in frames per second
+ */
 API double getGlfwFps();
+
+/**
+ * Returns the glfw handle to which event listeners can be attached
+ *
+ * @result				a pointer to the glfw handle
+ */
 API GlfwHandle *getGlfwHandle();
 
 #endif

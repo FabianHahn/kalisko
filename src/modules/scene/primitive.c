@@ -35,22 +35,12 @@
  */
 static GHashTable *parsers = NULL;
 
-/**
- * Initializes the OpenGLPrimitive scene parsers
- */
 API void initOpenGLPrimitiveSceneParsers()
 {
 	assert(parsers == NULL);
 	parsers = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, NULL);
 }
 
-/**
- * Registers an OpenGLPrimitive scene parser
- *
- * @param type		the type that the OpenGLSceneParser is able to parse
- * @param parser	the parser callback to be registered
- * @result			true if successful
- */
 API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSceneParser *parser)
 {
 	if(g_hash_table_lookup(parsers, type) != NULL) {
@@ -65,26 +55,11 @@ API bool registerOpenGLPrimitiveSceneParser(const char *type, OpenGLPrimitiveSce
 	return true;
 }
 
-/**
- * Unregisters an OpenGLPrimitive scene parser
- *
- * @param type		the type of the OpenGLSceneParser to be unregistered
- * @result			true if successful
- */
 API bool unregisterOpenGLPrimitiveSceneParser(const char *type)
 {
 	return g_hash_table_remove(parsers, type);
 }
 
-/**
- * Parses an OpenGL primitive from a scene store by retrieving the correct registered parser for the type and executing it
- *
- * @param scene			the scene to parse the OpenGL primitive for
- * @param path_prefix	the path prefix that should be prepended to any file loaded while parsing
- * @param name			the name of the primitive to parse
- * @param store			the store representation of the OpenGLPrimitive to parse
- * @result				the parsed OpenGLPrimitive or NULL on failure
- */
 API OpenGLPrimitive *parseOpenGLScenePrimitive(Scene *scene, const char *path_prefix, const char *name, Store *store)
 {
 	assert(store->type == STORE_ARRAY);
@@ -107,9 +82,6 @@ API OpenGLPrimitive *parseOpenGLScenePrimitive(Scene *scene, const char *path_pr
 	return parser(scene, path_prefix, name, store);
 }
 
-/**
- * Frees the OpenGLPrimitive scene parsers
- */
 API void freeOpenGLPrimitiveSceneParsers()
 {
 	assert(parsers != NULL);

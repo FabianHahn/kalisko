@@ -77,11 +77,59 @@ typedef struct {
 	int maxY;
 } QuadtreeAABB;
 
+
+/**
+ * Creates a new quadtree
+ *
+ * @param load					the create function to use for the quadtree data
+ * @param free					the free function to use for the quadtree data
+ * @result						the created quadtree
+ */
 API Quadtree *createQuadtree(QuadtreeDataCreateFunction *create, QuadtreeDataFreeFunction *free);
+
+/**
+ * Reshapes a quadtree completely to a new given size. All previous nodes are freed and the reshaped tree's nodes are uninitialized
+ *
+ * @param tree			the quadtree to reshape
+ * @param rootX			the x coordinate of the new root
+ * @param rootY			the y coordinate of the new root
+ * @param rootLevel		the level of the new root
+ */
 API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel);
+
+/**
+ * Expands a quadtree to cover a specific point by adding new tree nodes
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ */
 API void expandQuadtree(Quadtree *tree, double x, double y);
+
+/**
+ * Lookup a node in the quadtree
+ *
+ * @param tree			the quadtree to lookup
+ * @param x				the x coordinate to lookup
+ * @param y				the y coordinate to lookup
+ * @param level			the depth level at which to lookup the node
+ * @result				the looked up quadtree node
+ */
 API QuadtreeNode *lookupQuadtreeNode(Quadtree *tree, double x, double y, unsigned int level);
+
+/**
+ * Dumps the contents of a quadtree into a string
+ *
+ * @param tree			the tree to dump
+ * @result				the string representation of the quadtree, must be freed after use
+ */
 API char *dumpQuadtree(Quadtree *tree);
+
+/**
+ * Frees a quadtree including all it's nodes and their loaded data
+ *
+ * @param tree			the quadtree to free
+ */
 API void freeQuadtree(Quadtree *tree);
 
 /**

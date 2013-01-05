@@ -66,16 +66,6 @@ MODULE_FINALIZE
 	g_list_free(enabledSignals);
 }
 
-/**
- * Tells the module to handle the given signal.
- *
- * The given signal will from that point trigger the event "posixSignal".
- *
- * The event provides the listener with three arguments:
- * 	1.) int: The signal number
- * 	2.) siginfo_t (see sigaction manpage)
- *  3.) void *: an (ucontext_t *) casted to (void *) (see sigaction manpage)
- */
 API void handlePosixSignal(int signal)
 {
 	if(g_list_find(enabledSignals, GINT_TO_POINTER(signal)) == NULL) {

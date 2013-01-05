@@ -30,9 +30,37 @@ typedef struct {
 	JSObject *globalObject;
 } JSEnvInfo;
 
+
+/**
+ * Runs the given JavaScript script.
+ *
+ * @param script	The JavaScript script.
+ */
 API bool evaluateJavaScript(char *script);
+
+/**
+ * Runs the given JavaScript script file.
+ *
+ * @param filename	file path to a JavaScript file.
+ */
 API bool evaluateJavaScriptFile(char *filename);
+
+/**
+ * Return the last result returned by JS_ExecuteScript.
+ *
+ * Can be used to get the result after calling evaluateJavaScript or evaluateJavaScriptFile.
+ *
+ * @return The last result returned by JS_ExecuteScript.
+ */
 API jsval getJavaScriptLastResult();
+
+/**
+ * Returns the globally used JavaScript environment (Runtime, Context, Global Object).
+ *
+ * This can be used to interact directly with the JavaScript environment.
+ *
+ * @return The JavaScript environment.
+ */
 API JSEnvInfo getJavaScriptEnvInfo();
 
 #endif

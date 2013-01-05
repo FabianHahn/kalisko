@@ -21,7 +21,22 @@
 #ifndef STORE_WRITE_H
 #define STORE_WRITE_H
 
+
+/**
+ * Writes a store from memory to a file
+ *
+ * @param filename		the filename to write to
+ * @param store			the store to write
+ * @result				true if successful
+ */
 API bool writeStoreFile(const char *filename, Store *store);
+
+/**
+ * Writes a store from memory to a GString
+ *
+ * @param store		the store to write
+ * @result			the written store string, must be freed with g_string_free
+ */
 API GString *writeStoreGString(Store *store) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

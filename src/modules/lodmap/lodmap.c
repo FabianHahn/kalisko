@@ -75,12 +75,6 @@ MODULE_FINALIZE
 	freeOpenGLLodMapDataSourceFactories();
 }
 
-/**
- * Creates an OpenGL LOD map from a store representation
- *
- * @param store			the store config from which to create the LOD map
- * @result				the created LOD map or NULL on failure
- */
 API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 {
 	Store *store = cloneStore(storeConfig);
@@ -152,14 +146,6 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 	return lodmap;
 }
 
-/**
- * Creates an OpenGL LOD map
- *
- * @param source				the data source used for the LOD map (note that the LOD map takes over control over this data source, i.e. you must not free it once this function succeeded)
- * @param baseRange				the base viewing range in world coordinates covered by the lowest LOD level in the LOD map
- * @param viewingDistance		the maximum viewing distance in LDO levels to be handled by this LOD map
- * @result						the created OpenGL LOD map
- */
 API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double baseRange, unsigned int viewingDistance)
 {
 	unsigned int tileSize = getLodMapImageSize(source, OPENGL_LODMAP_IMAGE_HEIGHT);
@@ -208,13 +194,6 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	return lodmap;
 }
 
-/**
- * Updates an OpenGL LOD map
- *
- * @param lodmap		the LOD map to update
- * @param position		the viewer position for which the LOD map should be updated
- * @param autoExpand	specifies whether the quadtree should be automatically expanded to ranged not covered yet
- */
 API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExpand)
 {
 	// update the viewer position
@@ -263,11 +242,6 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 }
 
 
-/**
- * Draws an OpenGL LOD map
- *
- * @param lodmap		the LOD map to draw
- */
 API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	for(GList *iter = lodmap->selection; iter != NULL; iter = iter->next) {
@@ -277,12 +251,6 @@ API void drawOpenGLLodMap(OpenGLLodMap *lodmap)
 	}
 }
 
-/**
- * Loads an LOD map tile.
- *
- * @param node_p		a pointer to the quadtree node for which to load the tile
- * @param lodmap_p		a pointer to the LOD map for which to load the tile*
- */
 API void loadLodMapTile(void *node_p, void *lodmap_p)
 {
 	QuadtreeNode *node = node_p;
@@ -307,11 +275,6 @@ API void loadLodMapTile(void *node_p, void *lodmap_p)
 	g_mutex_unlock(tile->mutex);
 }
 
-/**
- * Frees an OpenGL LOD map
- *
- * @param lodmap				the OpenGL LOD map to free
- */
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
 {
 	g_hash_table_remove(maps, lodmap->quadtree);

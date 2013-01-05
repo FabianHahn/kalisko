@@ -25,9 +25,37 @@
 #include "modules/mesh/mesh.h"
 #include "modules/opengl/primitive.h"
 
+
+/**
+ * Creates a new OpenGL primitive from a mesh
+ *
+ * @param mesh			the actual mesh geometry to use
+ * @param usage			specifies the usage pattern of the mesh, see the OpenGL documentation on glBufferData() for details (if you don't know what this means, you can probably set it to GL_STATIC_DRAW)
+ * @result				the created OpenGL mesh primitive object or NULL on failure
+ */
 API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage);
+
+/**
+ * Synchronizing a primitive mesh with its associated OpenGL buffer objects
+ *
+ * @param primitive			the mesh primitive to be synchronized
+ * @result					true if successful
+ */
 API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
+
+/**
+ * Draws an OpenGL mesh primitive
+ *
+ * @param primitive			the mesh primitive to draw
+ * @param options_p			a pointer to custom options to be considered for this draw call
+ */
 API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p);
+
+/**
+ * Frees an OpenGL mesh primitive
+ *
+ * @param primitive			the mesh primitive to free
+ */
 API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive);
 
 #endif

@@ -68,13 +68,6 @@ MODULE_FINALIZE
 	freeOpenGLTextureSceneParsers();
 }
 
-/**
- * Creates a scene from a file
- *
- * @param filename		the file name of the store to read the scene description from
- * @param path_prefix	a prefix to prepend to all file paths in scene
- * @result				the created scene or NULL on failure
- */
 API Scene *createScene(char *filename, char *path_prefix)
 {
 	Store *store;
@@ -90,13 +83,6 @@ API Scene *createScene(char *filename, char *path_prefix)
 	return scene;
 }
 
-/**
- * Creates a scene from a store represenation
- *
- * @param store			the store to read the scene description from
- * @param path_prefix	a prefix to prepend to all file paths in scene
- * @result				the created scene
- */
 API Scene *createSceneByStore(Store *store, char *path_prefix)
 {
 	Scene *scene = ALLOCATE_OBJECT(Scene);
@@ -222,11 +208,6 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 	return scene;
 }
 
-/**
- * Frees a scene
- *
- * @param scene			the scene to be freed
- */
 API void freeScene(Scene *scene)
 {
 	// free materials
@@ -249,14 +230,6 @@ API void freeScene(Scene *scene)
 	free(scene);
 }
 
-/**
- * Adds an OpenGL primitive to a scene
- *
- * @param scene			the scene to add the primitive to
- * @param key			the name of the primitive to add
- * @param primitive		the primitive to add to the scene (note that the scene takes over control of the primitive)
- * @result				true if successful
- */
 API bool addScenePrimitive(Scene *scene, const char *key, OpenGLPrimitive *primitive)
 {
 	if(g_hash_table_lookup(scene->primitives, key) != NULL) {
@@ -268,14 +241,6 @@ API bool addScenePrimitive(Scene *scene, const char *key, OpenGLPrimitive *primi
 	return true;
 }
 
-/**
- * Adds an OpenGL texture to a scene
- *
- * @param scene			the scene to add the texture to
- * @param key			the name of the texture to add
- * @param primitive		the texture to add to the scene (note that the scene takes over control of the texture)
- * @result				true if successful
- */
 API bool addSceneTexture(Scene *scene, const char *key, OpenGLTexture *texture)
 {
 	SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
@@ -290,14 +255,6 @@ API bool addSceneTexture(Scene *scene, const char *key, OpenGLTexture *texture)
 	return true;
 }
 
-/**
- * Adds an OpenGL texture loaded from a file to a scene
- *
- * @param scene			the scene to add the texture to
- * @param key			the name of the texture to add
- * @param filename		the file name from which the texture should be loaded and added to the scene
- * @result				true if successful
- */
 API bool addSceneTexture2DFromFile(Scene *scene, const char *key, const char *filename)
 {
 	Image *image;
@@ -321,15 +278,6 @@ API bool addSceneTexture2DFromFile(Scene *scene, const char *key, const char *fi
 	return true;
 }
 
-/**
- * Adds an OpenGL 2D texture array loaded from a set of files to a scene
- *
- * @param scene			the scene to add the texture to
- * @param key			the name of the texture to add
- * @param filenames		an array of file names from which the texture array should be loaded and added to the scene
- * @param size			the number of elements in the filenames array
- * @result				true if successful
- */
 API bool addSceneTexture2DArrayFromFiles(Scene *scene, const char *key, char **filenames, unsigned int size)
 {
 	// read images
@@ -365,14 +313,6 @@ API bool addSceneTexture2DArrayFromFiles(Scene *scene, const char *key, char **f
 	return true;
 }
 
-/**
- * Adds a scene parameter from a store parameter representation to a scene
- *
- * @param scene			the scene to add the parameter to
- * @param key			the name of the parameter to add
- * @param value			the store representation of the parameter to parse
- * @result				true if successful
- */
 API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *value)
 {
 	SceneParameter *parameter = ALLOCATE_OBJECT(SceneParameter);
@@ -419,14 +359,6 @@ API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *value)
 	return true;
 }
 
-/**
- * Adds a scene parameter to a scene
- *
- * @param scene			the scene to add the parameter to
- * @param key			the name of the parameter to add
- * @param parameter		the parameter to add the the scene (note that the scene takes over control of the parameter)
- * @result				true if successful
- */
 API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parameter)
 {
 	if(g_hash_table_lookup(scene->parameters, key) != NULL) {
@@ -438,15 +370,6 @@ API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parame
 	return true;
 }
 
-/**
- * Adds a parameter uniform to a scene material
- *
- * @param scene			the scene to add a parameter uniform to one of its materials
- * @param material		the material to which the parameter uniform should be added
- * @param key			the name of the parameter to add as uniform
- * @param name			the name of the uniform to be added to the material
- * @result				true if successful
- */
 API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, const char *key, const char *name)
 {
 	SceneParameter *parameter;
@@ -470,15 +393,6 @@ API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, co
 	return true;
 }
 
-/**
- * Adds a material created from a store configuration to a scene
- *
- * @param scene					the scene to which the created material should be added
- * @param material				the name of the material to be created
- * @param path_prefix			the path prefix to be prepended to all loaded files
- * @param store					the store configuration of the material to create
- * @result						true if successful
- */
 API bool addSceneMaterialFromStore(Scene *scene, const char *material, const char *path_prefix, Store *store)
 {
 	// vertex shader path
@@ -532,15 +446,6 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
 	return ret;
 }
 
-/**
- * Adds a material created from shader files to a scene
- *
- * @param scene					the scene to which the created material should be added
- * @param material				the name of the material to be created
- * @param vertexShaderFile		the file name of the vertex shader to load for the material
- * @param fragmentShaderFile	the file name of the fragment shader to load for the material
- * @result						true if successful
- */
 API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const char *vertexShaderFile, const char *fragmentShaderFile)
 {
 	if(!$(bool, opengl, createOpenGLMaterialFromFiles)(material, vertexShaderFile, fragmentShaderFile)) {
@@ -557,13 +462,6 @@ API bool addSceneMaterialFromFiles(Scene *scene, const char *material, const cha
 	return true;
 }
 
-/**
- * Adds a material to a scene
- *
- * @param scene			the scene to add the material to
- * @param material		the material to add to the scene
- * @result				true if successful
- */
 API bool addSceneMaterial(Scene *scene, const char *material)
 {
 	for(GList *iter = scene->materials->head; iter != NULL; iter = iter->next) {
@@ -577,14 +475,6 @@ API bool addSceneMaterial(Scene *scene, const char *material)
 	return true;
 }
 
-/**
- * Adds a model to a scene created from a store configuration
- *
- * @param scene			the scene to add the model to
- * @param name			the name of the model to create and add to the scene
- * @param key			the name of the primitive to be used for the created model
- * @result				true if successful
- */
 API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 {
 	// set primitive
@@ -736,14 +626,6 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 	return true;
 }
 
-/**
- * Adds a model to a scene created from a primitive in the scene
- *
- * @param scene			the scene to add the model to
- * @param name			the name of the model to create and add to the scene
- * @param key			the name of the primitive to be used for the created model
- * @result				the created OpenGL model or NULL on failure
- */
 API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, const char *key)
 {
 	OpenGLPrimitive *primitive;
@@ -765,13 +647,6 @@ API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, cons
 	return model;
 }
 
-/**
- * Adds a model to a scene
- *
- * @param scene			the scene to add the model to
- * @param model			the model to add to the scene
- * @result				true if successful
- */
 API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model)
 {
 	if(g_hash_table_lookup(scene->models, name) != NULL) {
@@ -785,12 +660,6 @@ API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model)
 	return true;
 }
 
-/**
- * Updates a scene by updating all its OpenGL models
- *
- * @param scene			the scene to update
- * @param dt			the time in seconds that passed since the last update
- */
 API void updateScene(Scene *scene, double dt)
 {
 	GHashTableIter iter;
@@ -804,11 +673,6 @@ API void updateScene(Scene *scene, double dt)
 	}
 }
 
-/**
- * Draws a scene by drawing all its OpenGL models
- *
- * @param scene			the scene to draw
- */
 API void drawScene(Scene *scene)
 {
 	GHashTableIter iter;

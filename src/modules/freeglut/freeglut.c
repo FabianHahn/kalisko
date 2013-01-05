@@ -112,12 +112,6 @@ TIMER_CALLBACK(FREEGLUT_MAIN_LOOP)
 	TIMER_ADD_TIMEOUT(FREEGLUT_MAIN_TIMEOUT, FREEGLUT_MAIN_LOOP);
 }
 
-/**
- * Creates a new freeglut window
- *
- * @param name			the name of the window to create
- * @result				the created window
- */
 API FreeglutWindow *createFreeglutWindow(char *name)
 {
 	FreeglutWindow *window = ALLOCATE_OBJECT(FreeglutWindow);
@@ -154,21 +148,11 @@ API FreeglutWindow *createFreeglutWindow(char *name)
 	return window;
 }
 
-/**
- * Frees an freeglut window
- *
- * @param window		the window to free
- */
 API void freeFreeglutWindow(FreeglutWindow *window)
 {
 	g_hash_table_remove(windows, &window->id);
 }
 
-/**
- * Returns the currently active freeglut window
- *
- * @result		the freeglut window that is currently active
- */
 API FreeglutWindow *getCurrentFreeglutWindow()
 {
 	int id = glutGetWindow();

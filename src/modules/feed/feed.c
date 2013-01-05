@@ -134,13 +134,6 @@ TIMER_CALLBACK(feed_update)
 	TIMER_ADD_TIMEOUT(60 * G_USEC_PER_SEC, feed_update);
 }
 
-/**
- * Creates a feed
- *
- * @param name			the name of the feed
- * @param url			the URL of the feed
- * @result				true if successful
- */
 API bool createFeed(const char *name, const char *url)
 {
 	if(g_hash_table_lookup(feeds, name) != NULL) {
@@ -165,14 +158,6 @@ API bool createFeed(const char *name, const char *url)
 	return true;
 }
 
-/**
- * Adds a field to a feed
- *
- * @param name			the name of the feed to add the field to
- * @param fieldName		the name of the field to add to the feed
- * @param expression	the expression for the field that should be added
- * @result				true if successful
- */
 API bool addFeedField(const char *name, const char *fieldName, const char *expression)
 {
 	Feed *feed;
@@ -203,13 +188,6 @@ API bool addFeedField(const char *name, const char *fieldName, const char *expre
 	return true;
 }
 
-/**
- * Deletes a field from a feed
- *
- * @param name			the name of the feed to delete the field from
- * @param fieldName		the name of the field to delete
- * @result				true if successful
- */
 API bool deleteFeedField(const char *name, const char *fieldName)
 {
 	Feed *feed;
@@ -239,12 +217,6 @@ API bool deleteFeedField(const char *name, const char *fieldName)
 	return false;
 }
 
-/**
- * Enables a feed
- *
- * @param feed			the name of the feed to enable
- * @result				true if successful
- */
 API bool enableFeed(const char *name)
 {
 	Feed *feed;
@@ -262,12 +234,6 @@ API bool enableFeed(const char *name)
 	return true;
 }
 
-/**
- * Returns the feed objects for a feed
- *
- * @param name			the name of the feed to retrieve
- * @result				the resulting feed of NULL on failure
- */
 API Feed *getFeed(const char *name)
 {
 	Feed *feed;
@@ -279,12 +245,6 @@ API Feed *getFeed(const char *name)
 	return feed;
 }
 
-/**
- * Deletes a feed
- *
- * @param name			the name of the feed that should be deleted
- * @result				true if successful
- */
 API bool deleteFeed(const char *name)
 {
 	return g_hash_table_remove(feeds, name);

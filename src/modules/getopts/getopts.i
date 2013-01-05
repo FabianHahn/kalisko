@@ -21,9 +21,39 @@
 #ifndef GETOPTS_GETOPTS_H
 #define GETOPTS_GETOPTS_H
 
+
+/**
+ * Looks up an option and returns its supplied value if any was given or an empty string if the option was supplied without value.
+ * Returns NULL if the option was not supplied at all.
+ *
+ * @param opt	The option to look up
+ * @return		The value for the given option or an empty string or NULL
+ */
 API char *getOpt(char *opt);
+
+/**
+ * Looks up a list of options to check if they exist with a value. The first match of an option
+ * is used to return the corresponding value. All other options are ignored.
+ *
+ * @param opt	A list of options to look up.
+ * @return		The value for the first matched option or NULL
+ */
 API char *getOptValue(char *opt, ...) G_GNUC_NULL_TERMINATED;
+
+/**
+ * Dumps a string representations of all Opts and returns this string.
+ *
+ * Attention: Use this only for debugging.
+ *
+ * @return A string representing the parsed Opts. This string must be freed.
+ */
 API char *dumpOpts();
+
+/**
+ * Sets the internal "parsed" variable to the given value.
+ *
+ * Attention: Use this only for debugging / testing.
+ */
 API void setOptsParsed(bool v);
 
 /**

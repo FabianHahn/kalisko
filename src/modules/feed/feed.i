@@ -41,11 +41,57 @@ typedef struct {
 	bool enabled;
 } Feed;
 
+
+/**
+ * Creates a feed
+ *
+ * @param name			the name of the feed
+ * @param url			the URL of the feed
+ * @result				true if successful
+ */
 API bool createFeed(const char *name, const char *url);
+
+/**
+ * Adds a field to a feed
+ *
+ * @param name			the name of the feed to add the field to
+ * @param fieldName		the name of the field to add to the feed
+ * @param expression	the expression for the field that should be added
+ * @result				true if successful
+ */
 API bool addFeedField(const char *name, const char *fieldName, const char *expression);
+
+/**
+ * Deletes a field from a feed
+ *
+ * @param name			the name of the feed to delete the field from
+ * @param fieldName		the name of the field to delete
+ * @result				true if successful
+ */
 API bool deleteFeedField(const char *name, const char *fieldName);
+
+/**
+ * Enables a feed
+ *
+ * @param feed			the name of the feed to enable
+ * @result				true if successful
+ */
 API bool enableFeed(const char *name);
+
+/**
+ * Returns the feed objects for a feed
+ *
+ * @param name			the name of the feed to retrieve
+ * @result				the resulting feed of NULL on failure
+ */
 API Feed *getFeed(const char *name);
+
+/**
+ * Deletes a feed
+ *
+ * @param name			the name of the feed that should be deleted
+ * @result				true if successful
+ */
 API bool deleteFeed(const char *name);
 
 #endif

@@ -30,8 +30,27 @@ typedef struct {
 	bool active;
 } FreeglutWindow;
 
+
+/**
+ * Creates a new freeglut window
+ *
+ * @param name			the name of the window to create
+ * @result				the created window
+ */
 API FreeglutWindow *createFreeglutWindow(char *name);
+
+/**
+ * Returns the currently active freeglut window
+ *
+ * @result		the freeglut window that is currently active
+ */
 API FreeglutWindow *getCurrentFreeglutWindow();
+
+/**
+ * Frees an freeglut window
+ *
+ * @param window		the window to free
+ */
 API void freeFreeglutWindow(FreeglutWindow *window);
 
 #endif

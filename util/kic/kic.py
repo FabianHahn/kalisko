@@ -33,20 +33,20 @@ def buildInterfaces(kic_binary_path, interfaces_root_path):
 
 	os.chdir(interfaces_root_path)
 	interfaces = glob.glob('*.i') + glob.glob('modules/*/*.i')
-	
+
 	for interface in interfaces:
 		header = interface[:-1] + 'h'
 		imtime = os.stat(interface).st_mtime
-		
+
 		if os.path.exists(header):
 			hmtime = os.stat(header).st_mtime
 		else:
 			hmtime = 0
-	
+
 		if imtime > hmtime:
 			if subprocess.call([os.path.join(kic_binary_path, 'kic'), interface]) == 0:
 				print 'Compiled ' + interface
 			else:
 				break
-	
+
 	os.chdir('..')

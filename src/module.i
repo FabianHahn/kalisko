@@ -53,26 +53,163 @@ typedef Version *(ModuleVersioner)();
 typedef ModuleDependency *(ModuleDepender)();
 typedef char *(ModuleDescriptor)();
 
+
+/**
+ * Initializes the modules data structures
+ */
 API void initModules();
+
+/**
+ * Frees the modules data structures
+ */
 API void freeModules();
+
+/**
+ * Returns the current module search path
+ *
+ * @result			the current module search path, must not be changed
+ */
 API char *getModuleSearchPath();
+
+/**
+ * Sets the module search path to a different directory
+ *
+ * @param path		the new module search path to use or NULL to disable the search path
+ */
 API void setModuleSearchPath(char *path);
+
+/**
+ * Resets the module search path to its default value
+ */
 API void resetModuleSearchPath();
+
+/**
+ * Returns the module author of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module author or NULL if the module isn't at least loading
+ */
 API char *getModuleAuthor(const char *name);
+
+/**
+ * Returns the module description of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module description or NULL if the module isn't at least loading
+ */
 API char *getModuleDescription(const char *name);
+
+/**
+ * Returns the module version of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module version or NULL if the module isn't at least loading
+ */
 API Version *getModuleVersion(const char *name);
+
+/**
+ * Returns the module backwards compatible version of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module backwards compatible version or NULL if the module isn't at least loading
+ */
 API Version *getModuleBcVersion(const char *name);
+
+/**
+ * Returns the internal handle of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the handle of the module's shared libarary
+ */
 API void *getModuleHandle(const char *name);
+
+/**
+ * Returns the module reference count of a loaded module. A module is automatically unloaded once its reference count reaches zero
+ *
+ * @param name		the name of the module to check
+ * @result			the module reference count or -1 if the module isn't at least loading
+ */
 API int getModuleReferenceCount(const char *name);
+
+/**
+ * Returns the module dependencies of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
+ */
 API GList *getModuleDependencies(const char *name);
+
+/**
+ * Returns the module reverse dependencies of a loaded module
+ *
+ * @param name		the name of the module to check
+ * @result			the module reverse dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
+ */
 API GList *getModuleReverseDependencies(const char *name);
+
+/**
+ * Returns a list of active modules. A module is considered active if it's either already loaded or currently loading
+ *
+ * @result			a list of active modules, must not be modified but freed with g_list_free after use
+ */
 API GList *getActiveModules();
+
+/**
+ * Checks whether a module with a given name is loaded. Note that modules currently loading are reported as not being loaded yet.
+ *
+ * @param name		the name of the module to check
+ * @result			true if the module is loaded
+ */
 API bool isModuleLoaded(const char *name);
+
+/**
+ * Checks whether a module with a given name is requested. Note that modules currently loading are reported as not being requested yet.
+ *
+ * @param name		the name of the module to check
+ * @result			true if the module is requested
+ */
 API bool isModuleRequested(const char *name);
+
+/**
+ * Requests a module
+ *
+ * @param name		the module's name
+ * @result			true if successful, false on error
+ */
 API bool requestModule(char *name);
+
+/**
+ * Revokes a module
+ *
+ * @param name		the module to revoke
+ * @result			true if successful, false on error
+ */
 API bool revokeModule(char *name);
+
+/**
+ * Unloads a module by force, i.e. first unloads its reverse dependencies recursively and then the module itself
+ *
+ * @param name		the module to force unload
+ * @result			true if successful, false on error
+ */
 API bool forceUnloadModule(char *name);
+
+/**
+ * Adds a runtime dependency from one module to another. It isn't possible to add circular dependencies, and once a runtime dependency is set, it cannot be removed manually and remains effective until the source module is revoked
+ *
+ * @param source		the name of the module to add the runtime dependency to
+ * @param target		the name of the target dependency module
+ * @result				true if successful
+ */
 API bool addModuleRuntimeDependency(char *source, char *target);
+
+/**
+ * Checks if a module depends on another module
+ *
+ * @param source		the source module to check for a dependency
+ * @param target		the target module to check for a dependency
+ * @result				true if source depends on target (directly or indirectly)
+ */
 API bool checkModuleDependency(char *source, char *target);
 
 #define MODULE_NAME_FUNC "module_name"

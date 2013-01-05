@@ -40,51 +40,26 @@
 static char **argv;
 static int argc;
 
-/**
- * Returns the argv from main().
- *
- * @return The argv from main().
- */
 API char **getArgv()
 {
 	return argv;
 }
 
-/**
- * Sets the argv.
- *
- * @param args		The argv from main().
- */
 API void setArgv(char **args)
 {
 	argv = args;
 }
 
-/**
- * Returns the argc from main().
- *
- * @return The argc from main().
- */
 API int getArgc()
 {
 	return argc;
 }
 
-/**
- * Sets the argc.
- *
- * @param count	The argc from main().
- */
 API void setArgc(int count)
 {
 	argc = count;
 }
 
-/**
- * Returns the path to the core executable
- *
- * @result		the executable's path
- */
 API char *getExecutablePath()
 {
 	int length;
@@ -108,12 +83,6 @@ API char *getExecutablePath()
 	return getDirectoryPath(execpath);
 }
 
-/**
- * Returns the path for the parents directory of a file path (removes the file from the path).
- *
- * @param filePath	The path to a file
- * @return The path to the parents directory. Must be freed
- */
 API char *getDirectoryPath(char *filePath)
 {
 	int i;
@@ -135,14 +104,6 @@ API char *getDirectoryPath(char *filePath)
 	return path;
 }
 
-/**
- * A GCompareDataFunc for integers
- *
- * @param a		the first number to compare
- * @param b		the second number to compare
- * @param data	unused
- * @result		negative if a < b, zero if a = b, positive if a > b
- */
 API int compareIntegers(const void *a, const void *b, void *data)
 {
 	int va = *((int *) a);
@@ -150,14 +111,6 @@ API int compareIntegers(const void *a, const void *b, void *data)
 	return va - vb;
 }
 
-/**
- * A GCompareDataFunc for GTimeVals
- *
- * @param a		the first time to compare
- * @param b		the second time to compare
- * @param data	unused
- * @result		negative if a < b, zero if a = b, positive if a > b
- */
 API int compareTimes(const void *a, const void *b, void *data)
 {
 	GTimeVal *timea = (GTimeVal *) a;
@@ -179,21 +132,12 @@ API int compareTimes(const void *a, const void *b, void *data)
 	}
 }
 
-/**
- * Utility function to set breakpoints if the debugger doesn't support setting module breakpoints from the beginning of execution
- * Usage: Just call this function whereever you'd like to set a breakpoint inside a module but set the breakpoint in your debugger HERE
- */
 API void breakpoint()
 {
 	int i = 0;
 	i++;
 }
 
-/**
- * Returns the current time in seconds with microsecond precision
- *
- * @result		the current time in seconds with microsecond precision
- */
 API double getMicroTime()
 {
 	GTimeVal time;
@@ -202,11 +146,6 @@ API double getMicroTime()
 	return time.tv_sec + (double) time.tv_usec / G_USEC_PER_SEC;
 }
 
-/**
- * Returns the current time in seconds
- *
- * @result		the current time in seconds
- */
 API int getTime()
 {
 	GTimeVal time;
@@ -214,11 +153,6 @@ API int getTime()
 	return time.tv_sec;
 }
 
-/**
- * Returns the executable name.
- *
- * @result		the name of the executable. Must be freed after use.
- */
 API char *getExecutableName()
 {
 	char *name = g_get_prgname();

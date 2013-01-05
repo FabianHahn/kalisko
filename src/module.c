@@ -60,9 +60,6 @@ static void *getLibraryFunction(Module *mod, char *funcname);
 static bool loadDynamicLibrary(Module *mod, bool lazy);
 static void unloadDynamicLibrary(Module *mod);
 
-/**
- * Initializes the modules data structures
- */
 API void initModules()
 {
 	modules = g_hash_table_new(&g_str_hash, &g_str_equal);
@@ -83,9 +80,6 @@ API void initModules()
 	core->loaded = true;
 }
 
-/**
- * Frees the modules data structures
- */
 API void freeModules()
 {
 	logMessage("core", LOG_TYPE_INFO, "Revoking all modules...");
@@ -107,21 +101,11 @@ API void freeModules()
 	free(core);
 }
 
-/**
- * Returns the current module search path
- *
- * @result			the current module search path, must not be changed
- */
 API char *getModuleSearchPath()
 {
 	return modpath;
 }
 
-/**
- * Sets the module search path to a different directory
- *
- * @param path		the new module search path to use or NULL to disable the search path
- */
 API void setModuleSearchPath(char *path)
 {
 	if(modpath != NULL) {
@@ -141,9 +125,6 @@ API void setModuleSearchPath(char *path)
 #endif
 }
 
-/**
- * Resets the module search path to its default value
- */
 API void resetModuleSearchPath()
 {
 	char *execpath = getExecutablePath();
@@ -157,12 +138,6 @@ API void resetModuleSearchPath()
 	free(execpath);
 }
 
-/**
- * Returns the module author of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module author or NULL if the module isn't at least loading
- */
 API char *getModuleAuthor(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -178,12 +153,6 @@ API char *getModuleAuthor(const char *name)
 	return mod->author;
 }
 
-/**
- * Returns the module description of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module description or NULL if the module isn't at least loading
- */
 API char *getModuleDescription(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -199,12 +168,6 @@ API char *getModuleDescription(const char *name)
 	return mod->description;
 }
 
-/**
- * Returns the module version of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module version or NULL if the module isn't at least loading
- */
 API Version *getModuleVersion(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -220,12 +183,6 @@ API Version *getModuleVersion(const char *name)
 	return mod->version;
 }
 
-/**
- * Returns the module backwards compatible version of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module backwards compatible version or NULL if the module isn't at least loading
- */
 API Version *getModuleBcVersion(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -241,12 +198,6 @@ API Version *getModuleBcVersion(const char *name)
 	return mod->bcversion;
 }
 
-/**
- * Returns the internal handle of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the handle of the module's shared libarary
- */
 API void *getModuleHandle(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -258,12 +209,6 @@ API void *getModuleHandle(const char *name)
 	return NULL;
 }
 
-/**
- * Returns the module reference count of a loaded module. A module is automatically unloaded once its reference count reaches zero
- *
- * @param name		the name of the module to check
- * @result			the module reference count or -1 if the module isn't at least loading
- */
 API int getModuleReferenceCount(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -279,12 +224,6 @@ API int getModuleReferenceCount(const char *name)
 	return mod->rc;
 }
 
-/**
- * Returns the module dependencies of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
- */
 API GList *getModuleDependencies(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -300,12 +239,6 @@ API GList *getModuleDependencies(const char *name)
 	return g_hash_table_get_keys(mod->dependencies);
 }
 
-/**
- * Returns the module reverse dependencies of a loaded module
- *
- * @param name		the name of the module to check
- * @result			the module reverse dependencies or NULL if the module isn't at least loading, must not be modified but freed with g_list_free after use
- */
 API GList *getModuleReverseDependencies(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -321,22 +254,11 @@ API GList *getModuleReverseDependencies(const char *name)
 	return g_hash_table_get_keys(mod->rdeps);
 }
 
-/**
- * Returns a list of active modules. A module is considered active if it's either already loaded or currently loading
- *
- * @result			a list of active modules, must not be modified but freed with g_list_free after use
- */
 API GList *getActiveModules()
 {
 	return g_hash_table_get_keys(modules);
 }
 
-/**
- * Checks whether a module with a given name is loaded. Note that modules currently loading are reported as not being loaded yet.
- *
- * @param name		the name of the module to check
- * @result			true if the module is loaded
- */
 API bool isModuleLoaded(const char *name)
 {
 	Module *mod = g_hash_table_lookup(modules, name);
@@ -348,23 +270,11 @@ API bool isModuleLoaded(const char *name)
 	return mod->loaded;
 }
 
-/**
- * Checks whether a module with a given name is requested. Note that modules currently loading are reported as not being requested yet.
- *
- * @param name		the name of the module to check
- * @result			true if the module is requested
- */
 API bool isModuleRequested(const char *name)
 {
 	return g_hash_table_lookup(core->dependencies, name) != NULL;
 }
 
-/**
- * Requests a module
- *
- * @param name		the module's name
- * @result			true if successful, false on error
- */
 API bool requestModule(char *name)
 {
 	if(g_strcmp0(name, "core") == 0) {
@@ -382,12 +292,6 @@ API bool requestModule(char *name)
 	return needModule(name, NULL, core);
 }
 
-/**
- * Revokes a module
- *
- * @param name		the module to revoke
- * @result			true if successful, false on error
- */
 API bool revokeModule(char *name)
 {
 	if(g_strcmp0(name, "core") == 0) {
@@ -416,12 +320,6 @@ API bool revokeModule(char *name)
 	return true;
 }
 
-/**
- * Unloads a module by force, i.e. first unloads its reverse dependencies recursively and then the module itself
- *
- * @param name		the module to force unload
- * @result			true if successful, false on error
- */
 API bool forceUnloadModule(char *name)
 {
 	if(g_strcmp0(name, "core") == 0) {
@@ -460,13 +358,6 @@ API bool forceUnloadModule(char *name)
 	}
 }
 
-/**
- * Adds a runtime dependency from one module to another. It isn't possible to add circular dependencies, and once a runtime dependency is set, it cannot be removed manually and remains effective until the source module is revoked
- *
- * @param source		the name of the module to add the runtime dependency to
- * @param target		the name of the target dependency module
- * @result				true if successful
- */
 API bool addModuleRuntimeDependency(char *source, char *target)
 {
 	Module *srcmod = g_hash_table_lookup(modules, source);
@@ -502,13 +393,6 @@ API bool addModuleRuntimeDependency(char *source, char *target)
 	return true;
 }
 
-/**
- * Checks if a module depends on another module
- *
- * @param source		the source module to check for a dependency
- * @param target		the target module to check for a dependency
- * @result				true if source depends on target (directly or indirectly)
- */
 API bool checkModuleDependency(char *source, char *target)
 {
 	Module *srcmod = g_hash_table_lookup(modules, source);

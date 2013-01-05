@@ -24,9 +24,6 @@
 #include "log.h"
 #include "memory_alloc.h"
 
-/**
- * Initializes the memory allocator
- */
 API void initMemory()
 {
 	GMemVTable *table = allocateMemory(sizeof(GMemVTable));
@@ -43,12 +40,6 @@ API void initMemory()
 	free(table);
 }
 
-/**
- * Allocate a block of memory on the heap
- *
- * @param size		the amount of memory to allocate
- * @result			a pointer to the heap block allocated
- */
 API void *allocateMemory(int size)
 {
 	void *mem = malloc(size);
@@ -61,12 +52,6 @@ API void *allocateMemory(int size)
 	return mem;
 }
 
-/**
- * Reallocate a block of memory on the heap
- *
- * @param mem		A pointer to a previously allocated memory block to be reallocated
- * @result			a pointer to the reallocated
- */
 API void *reallocateMemory(void *ptr, int size)
 {
 	void *mem = realloc(ptr, size);

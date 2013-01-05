@@ -37,19 +37,11 @@ static void defaultLogHandler(const char *name, LogType type, const char *messag
 
 static LogHandler *logHandler = &defaultLogHandler;
 
-/**
- * Inits logging
- */
 API void initLog()
 {
 	g_log_set_default_handler(handleGlibLogMessage, NULL);
 }
 
-/**
- * Sets or resets the log handler
- *
- * @param handler		the new log handler to use or NULL if the default handler should be restored
- */
 API void setLogHandler(LogHandler *handler)
 {
 	if(handler == NULL) {
@@ -59,13 +51,6 @@ API void setLogHandler(LogHandler *handler)
 	}
 }
 
-/**
- * Creates a new log message and distribute it over the hook "log".
- *
- * @param module	the module in which the log message occurs
- * @param type		the type of the log message
- * @param message	printf-like message to log
- */
 API void logMessage(const char *module, LogType type, const char *message, ...)
 {
 	va_list va;

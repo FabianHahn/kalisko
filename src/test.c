@@ -95,30 +95,16 @@ int main(int argc, char **argv)
 	return EXIT_SUCCESS;
 }
 
-/**
- * Increment the test count
- */
 API void incTestCount()
 {
 	test++;
 }
 
-/**
- * Resets the test count
- */
 API void resetTestCount()
 {
 	test = 0;
 }
 
-/**
- * Reports a test result of a test case
- *
- * @param testsuite		the name of the test suite
- * @param testcase		the name of the test case
- * @param pass			did the test pass?
- * @param error			if it didn't pass, printf-like error message
- */
 API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...)
 {
 	if(pass) {

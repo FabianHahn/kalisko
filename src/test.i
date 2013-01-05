@@ -24,8 +24,25 @@
 #include "module.h"
 #include "types.h"
 
+
+/**
+ * Increment the test count
+ */
 API void incTestCount();
+
+/**
+ * Resets the test count
+ */
 API void resetTestCount();
+
+/**
+ * Reports a test result of a test case
+ *
+ * @param testsuite		the name of the test suite
+ * @param testcase		the name of the test case
+ * @param pass			did the test pass?
+ * @param error			if it didn't pass, printf-like error message
+ */
 API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...);
 
 /**

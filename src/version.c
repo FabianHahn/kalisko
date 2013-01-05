@@ -24,15 +24,6 @@
 #include "version.h"
 #include "memory_alloc.h"
 
-/**
- * Creates a version
- *
- * @param major		the version's major number
- * @param minor		the version's minor number
- * @param patch		the version's patch number
- * @param revision	the version's revision number
- * @result			the created version
- */
 API Version *createVersion(int major, int minor, int patch, int revision)
 {
 	Version *ver = allocateMemory(sizeof(Version));
@@ -44,35 +35,17 @@ API Version *createVersion(int major, int minor, int patch, int revision)
 	return ver;
 }
 
-/**
- * Creates a copy of a version
- *
- * @param from		the version to create a copy from
- * @result			the created copy version
- */
 API Version *copyVersion(Version *from)
 {
 	Version *version = allocateMemory(sizeof(Version));
 	return memcpy(version, from, sizeof(Version));
 }
 
-/**
- * Frees a version
- *
- * @param ver		the version to free
- */
 API void freeVersion(Version *ver)
 {
 	free(ver);
 }
 
-/**
- * Compares two versions
- *
- * @param a			the first version to compare
- * @param b			the second version to compare
- * @result			positive if a > b, zero if a == b, negative if a < b
- */
 API int compareVersions(Version *a, Version *b)
 {
 	if(a->major == b->major) {
@@ -94,12 +67,6 @@ API int compareVersions(Version *a, Version *b)
 	}
 }
 
-/**
- * Returns the string representation of a version
- *
- * @param version	the version to dump
- * @result			the string representation of the version
- */
 API GString *dumpVersion(Version *version)
 {
 	GString *string = g_string_new("");

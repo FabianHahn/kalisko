@@ -28,8 +28,26 @@
 #define ALLOCATE_OBJECTS(TYPE, COUNT) (TYPE*)$$(void *, allocateMemory)(sizeof(TYPE) * (COUNT))
 #define REALLOCATE_OBJECT(TYPE, PTR, SIZE) (TYPE*)$$(void *, reallocateMemory)(PTR, SIZE)
 
+
+/**
+ * Initializes the memory allocator
+ */
 API void initMemory();
+
+/**
+ * Allocate a block of memory on the heap
+ *
+ * @param size		the amount of memory to allocate
+ * @result			a pointer to the heap block allocated
+ */
 API void *allocateMemory(int size);
+
+/**
+ * Reallocate a block of memory on the heap
+ *
+ * @param mem		A pointer to a previously allocated memory block to be reallocated
+ * @result			a pointer to the reallocated
+ */
 API void *reallocateMemory(void *ptr, int size);
 
 #endif

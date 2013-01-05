@@ -114,9 +114,32 @@ API bool startHttpServer(HttpServer *server)
 
 API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
 {
-	LOG_DEBUG("Mapping HTTP request handler for URIs matching %s", hierarchical_regexp);
+	LOG_DEBUG("Registering HTTP request handler for URIs matching %s", hierarchical_regexp);
 	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler, userdata);
 	g_array_append_val(server->handler_mappings, mapping);
+}
+
+API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
+{
+	LOG_DEBUG("Unregistering HTTP request handler for URIs matching %s", hierarchical_regexp);
+	GArray *mappings = server->handler_mappings;
+
+	int match_index = -1;
+	for(int i = 0; i < mappings->len; ++i) {
+		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+		if(!strcmp(mapping->regexp, hierarchical_regexp) && mapping->handler == handler && mapping->userdata == userdata) {
+			if(match_index != -1) {
+				LOG_DEBUG("Unregistering found multiple matches, using last one");
+			}
+			match_index = i;
+		}
+	}
+
+	if(match_index != -1) {
+		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, match_index);
+		freeRequestHandlerMappingContent(mapping);
+		g_array_remove_index(mappings, match_index); // Frees the mapping struct itself
+	}
 }
 
 API bool checkHttpRequestParameter(HttpRequest *request, char *key)

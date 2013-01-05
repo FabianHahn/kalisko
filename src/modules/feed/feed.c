@@ -35,6 +35,7 @@ MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
 #define FEED_LIMIT 200
+#define GENERIC_FEED_URI "^/feeds/%s.*$"
 
 TIMER_CALLBACK(feed_update);
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata_p);
@@ -151,7 +152,7 @@ API bool createFeed(const char *name, const char *url)
 	g_hash_table_insert(feeds, strdup(name), feed);
 
 	GString *regex = g_string_new("");
-	g_string_append_printf(regex, "^/feeds/%s.*$", name);
+	g_string_append_printf(regex, GENERIC_FEED_URI, name);
 	registerHttpServerRequestHandler(http, regex->str, &feedHandler, feed);
 	g_string_free(regex, true);
 
@@ -321,9 +322,13 @@ static bool compareFeedContentEntries(GHashTable *first, GHashTable *second)
 
 static void freeFeed(void *feed_p)
 {
-	// TODO: unregister HTTP handler once http_server supports it
-
 	Feed *feed = feed_p;
+
+	GString *regex = g_string_new("");
+	g_string_append_printf(regex, GENERIC_FEED_URI, feed->name);
+	unregisterHttpServerRequestHandler(http, regex->str, &feedHandler, feed);
+	g_string_free(regex, true);
+
 	free(feed->name);
 	free(feed->url);
 

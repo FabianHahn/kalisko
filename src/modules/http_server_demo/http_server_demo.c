@@ -63,6 +63,7 @@ MODULE_INIT
 	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &indexHandler, NULL);
 	if(!startHttpServer(server)) {
 		LOG_ERROR("Failed to start HTTP server");
+		destroyHttpServer(server);
 		return false;
 	}
 	return true;

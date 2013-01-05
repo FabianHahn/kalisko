@@ -117,7 +117,7 @@ API HttpServer *createHttpServer(char *port);
 
 /**
  * Stops and tears down the HTTP server. Waits for accepted connections to disconnect (if any)
- * and frees all memory associated with the server.
+ * and frees all memory associated with the server (including registered request handlers).
  */
 API void destroyHttpServer(HttpServer *server);
 
@@ -129,14 +129,26 @@ API bool startHttpServer(HttpServer *server);
 /**
  * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in.
  * In order to determine the matching precedence, matches are tested in the order in which they were
- * registered. Note that the caller retains ownership of all passed parameters (uri_regexp is copied).
+ * registered. Note that the caller retains ownership of all passed parameters (the regexp is copied).
+ * It is *NOT* necessary to unregister every handler before decommissioning a server, all remaining
+ * handlers are removed automatically.
  *
- * @param server			the server in question
- * @param uri_regexp		the regular expression used to determine whether the request matches
- * @param handler			a handler function to be called for matching requests
- * @param userdata			custom userdata
+ * @param server				the server in question
+ * @param hierarchical_regexp	the regular expression used to determine whether the request matches
+ * @param handler				a handler function to be called for matching requests
+ * @param userdata				custom userdata passed to the handler
  */
 API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata);
+
+/**
+ * Removes a registered request handler. Does nothing if the parameters do not match any handler.
+ *
+ * @param server				the server in question
+ * @param hierarchical_regexp	the regular expression passed to register the handler
+ * @param handler				the handler function passed at registration time
+ * @param userdata				the userdata passed at registration time
+ */
+API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata);
 
 /* Accessor methods for HttpRequest. Note that these are all read-only */
 

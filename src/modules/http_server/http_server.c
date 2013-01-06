@@ -52,8 +52,12 @@ typedef struct
 static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata);
 static void freeRequestHandlerMappingContent(void *mapping);
 static void tryFreeServer(HttpServer *server);
+
 static HttpRequest *createHttpRequest(HttpServer *server);
 static void destroyHttpRequest(HttpRequest *request);
+static HttpResponse *createHttpResponse(const char *status, const char *content);
+static void destroyHttpResponse(HttpResponse *response);
+
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
 static void processAvailableLines(HttpRequest *request);
 static bool sendResponse(Socket *client, HttpResponse *response);
@@ -157,15 +161,6 @@ API char *getHttpRequestParameter(HttpRequest *request, char *key)
 	}
 }
 
-API HttpResponse *createHttpResponse(const char *status, const char *content)
-{
-	HttpResponse *response = ALLOCATE_OBJECT(HttpResponse);
-	response->status = strdup(status);
-	response->content = g_string_new(content);
-
-	return response;
-}
-
 API void appendHttpResponseContent(HttpResponse *response, char *content, ...)
 {
 	va_list va;
@@ -179,7 +174,16 @@ API void clearHttpResponseContent(HttpResponse *response)
 	g_string_assign(response->content, "");
 }
 
-API void freeHttpResponse(HttpResponse *response)
+static HttpResponse *createHttpResponse(const char *status, const char *content)
+{
+	HttpResponse *response = ALLOCATE_OBJECT(HttpResponse);
+	response->status = strdup(status);
+	response->content = g_string_new(content);
+
+	return response;
+}
+
+static void destroyHttpResponse(HttpResponse *response)
 {
 	free(response->status);
 	g_string_free(response->content, true);
@@ -317,7 +321,7 @@ static bool sendStatusResponse(Socket *client, const char *status)
 {
 	HttpResponse *response = createHttpResponse(status, status);
 	bool result = sendResponse(client, response);
-	freeHttpResponse(response);
+	destroyHttpResponse(response);
 
 	return result;
 }
@@ -346,7 +350,7 @@ static void handleRequest(Socket *client, HttpRequest *request)
 				sendResponse(client, response);
 				handled = true;
 			}
-			freeHttpResponse(response);
+			destroyHttpResponse(response);
 		}
 	}
 

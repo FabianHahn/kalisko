@@ -174,16 +174,7 @@ API char *getHttpRequestParameter(HttpRequest *request, char *key);
 /* Mutator methods for HttpResponse */
 
 /**
- * Create a HTTP response object
- *
- * @param status			the status string to initialize the HTTP response with
- * @param content			the content string to initialize the HTTP response with
- * @result					the created HTTP response object
- */
-API HttpResponse *createHttpResponse(const char *status, const char *content);
-
-/**
- * Adds content to a HTTP response object
+ * Adds content to an HTTP response object
  *
  * @param response			the HTTP response to add the content to
  * @param content			the printf-style content to append to the response
@@ -196,12 +187,5 @@ API void appendHttpResponseContent(HttpResponse *response, char *content, ...);
  * @param response			the HTTP response to clear
  */
 API void clearHttpResponseContent(HttpResponse *response);
-
-/**
- * Frees a HTTP response object
- *
- * @param response			the HTTP response to free
- */
-API void freeHttpResponse(HttpResponse *response);
 
 #endif

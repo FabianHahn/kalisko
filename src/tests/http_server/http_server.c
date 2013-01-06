@@ -39,9 +39,11 @@ static bool incrementCounter()
 }
 
 TEST_CASE(lifecycle);
+TEST_CASE(handlers);
 
 TEST_SUITE_BEGIN(http_server)
 	TEST_CASE_ADD(lifecycle);
+	TEST_CASE_ADD(handlers);
 TEST_SUITE_END
 
 TEST_CASE(lifecycle)
@@ -50,6 +52,37 @@ TEST_CASE(lifecycle)
 	startHttpServer(server);
 	registerHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
 	unregisterHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
+	destroyHttpServer(server);
+	TEST_PASS;
+}
+
+TEST_CASE(handlers)
+{
+	HttpServer *server = createHttpServer("12345");
+	startHttpServer(server);
+	registerHttpServerRequestHandler(server, "/some/hierarchical/part*", &incrementCounter, NULL);
+
+	HttpRequest *request;
+	HttpResponse *response;
+
+	request = createHttpRequest();
+	request->method = HTTP_REQUEST_METHOD_GET;
+	request->hierarchical = strdup("/some/hierarchical/part");
+	counter = 0;
+	response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 1);
+	destroyHttpResponse(response);
+	destroyHttpRequest(request);
+
+	request = createHttpRequest();
+	request->method = HTTP_REQUEST_METHOD_GET;
+	request->hierarchical = strdup("/some/other/hierarchical/part");
+	counter = 0;
+	response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	destroyHttpResponse(response);
+	destroyHttpRequest(request);
+
 	destroyHttpServer(server);
 	TEST_PASS;
 }

@@ -48,21 +48,23 @@ typedef struct
 	void *userdata;
 } RequestHandlerMapping;
 
+/** Struct used to map requests to the server on which they came in */
+typedef struct
+{
+	HttpServer *server;
+	HttpRequest *request;
+} ServerRequestMapping;
 
 static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata);
 static void freeRequestHandlerMappingContent(void *mapping);
+static ServerRequestMapping *createServerRequestMapping(HttpServer *server, HttpRequest *request);
+static void freeServerRequestMapping(ServerRequestMapping *mapping);
+
 static void tryFreeServer(HttpServer *server);
-
-static HttpRequest *createHttpRequest(HttpServer *server);
-static void destroyHttpRequest(HttpRequest *request);
-static HttpResponse *createHttpResponse(const char *status, const char *content);
-static void destroyHttpResponse(HttpResponse *response);
-
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
 static void processAvailableLines(HttpRequest *request);
 static bool sendResponse(Socket *client, HttpResponse *response);
-static bool sendStatusResponse(Socket *client, const char *status);
-static void handleRequest(Socket *client, HttpRequest *request);
+static void handleAndRespond(Socket *client, HttpServer *server, HttpRequest *request);
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args);
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args);
 
@@ -146,6 +148,28 @@ API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchic
 	}
 }
 
+API HttpRequest *createHttpRequest()
+{
+	HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
+	request->method = HTTP_REQUEST_METHOD_UNKNOWN;
+	request->uri = NULL;
+	request->hierarchical = NULL;
+	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);
+	request->line_buffer = g_string_new("");
+	request->content_length = -1;
+	request->got_empty_line = false;
+	return request;
+}
+
+API void destroyHttpRequest(HttpRequest *request)
+{
+	free(request->uri);
+	free(request->hierarchical);
+	g_hash_table_destroy(request->parameters); // Frees all the key and value strings
+	g_string_free(request->line_buffer, true);
+	free(request);
+}
+
 API bool checkHttpRequestParameter(HttpRequest *request, char *key)
 {
 	return g_hash_table_contains(request->parameters, key);
@@ -174,20 +198,44 @@ API void clearHttpResponseContent(HttpResponse *response)
 	g_string_assign(response->content, "");
 }
 
-static HttpResponse *createHttpResponse(const char *status, const char *content)
+API HttpResponse *createHttpResponse(const char *status, const char *content)
 {
 	HttpResponse *response = ALLOCATE_OBJECT(HttpResponse);
 	response->status = strdup(status);
 	response->content = g_string_new(content);
-
 	return response;
 }
 
-static void destroyHttpResponse(HttpResponse *response)
+API void destroyHttpResponse(HttpResponse *response)
 {
 	free(response->status);
 	g_string_free(response->content, true);
 	free(response);
+}
+
+API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
+{
+	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
+		LOG_DEBUG("Could not parse request, returning bad request");
+		return createHttpResponse(BAD_REQUEST_STATUS_STRING, BAD_REQUEST_STATUS_STRING);
+	}
+
+	// Go through all handlers and execute the first one which matches the requested URI
+	GArray *mappings = server->handler_mappings;
+	for(int i = 0; i < mappings->len; ++i) {
+		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
+		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
+			LOG_DEBUG("%s matches %s", mapping->regexp, request->hierarchical);
+			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
+			if(mapping->handler(request, response, mapping->userdata)) {
+				return response;
+			}
+			destroyHttpResponse(response);
+		}
+	}
+
+	LOG_DEBUG("No handler for hierarchical part %s, returning file not found", request->hierarchical);
+	return createHttpResponse(FILE_NOT_FOUND_STATUS_STRING, FILE_NOT_FOUND_STATUS_STRING);
 }
 
 static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata)
@@ -208,6 +256,19 @@ static void freeRequestHandlerMappingContent(void *mapping)
 	free(rhm->regexp);
 }
 
+static ServerRequestMapping *createServerRequestMapping(HttpServer *server, HttpRequest *request)
+{
+	ServerRequestMapping *mapping = ALLOCATE_OBJECT(ServerRequestMapping);
+	mapping->server = server;
+	mapping->request = request;
+	return mapping;
+}
+
+static void freeServerRequestMapping(ServerRequestMapping *mapping)
+{
+	free(mapping);
+}
+
 static void tryFreeServer(HttpServer *server)
 {
 	if(server->state == SERVER_STATE_FREEING && server->open_connections == 0) {
@@ -216,38 +277,16 @@ static void tryFreeServer(HttpServer *server)
 	}
 }
 
-static HttpRequest *createHttpRequest(HttpServer *server)
-{
-	HttpRequest *request = ALLOCATE_OBJECT(HttpRequest);
-	request->server = server;
-	request->method = HTTP_REQUEST_METHOD_UNKNOWN;
-	request->uri = NULL;
-	request->hierarchical = NULL;
-	request->parameters = g_hash_table_new_full(g_str_hash, g_str_equal, &free, &free);
-	request->line_buffer = g_string_new("");
-	request->content_length = -1;
-	request->got_empty_line = false;
-	return request;
-}
-
-static void destroyHttpRequest(HttpRequest *request)
-{
-	free(request->uri);
-	free(request->hierarchical);
-	g_hash_table_destroy(request->parameters); // Frees all the key and value strings
-	g_string_free(request->line_buffer, true);
-	free(request);
-}
-
 static void clientAccepted(void *subject, const char *event, void *data, va_list args)
 {
 	HttpServer *server = data;
+	HttpRequest *request = createHttpRequest();
+	ServerRequestMapping *mapping = createServerRequestMapping(server, request);
 	server->open_connections++;
-	HttpRequest *request = createHttpRequest(server);
 
 	Socket *s = va_arg(args, Socket *);
-	attachEventListener(s, "read", request, &clientSocketRead);
-	attachEventListener(s, "disconnect", request, &clientSocketDisconnected);
+	attachEventListener(s, "read", mapping, &clientSocketRead);
+	attachEventListener(s, "disconnect", mapping, &clientSocketDisconnected);
 	enableSocketPolling(s);
 }
 
@@ -310,75 +349,36 @@ static bool sendResponse(Socket *client, HttpResponse *response)
 	return result;
 }
 
-/**
- * Sends to the client a response which consists of the status string in the header and in the body
- *
- * @param client			the client socket to send the status response to
- * @param status			the status string to send
- * @result					true if successful
- */
-static bool sendStatusResponse(Socket *client, const char *status)
-{
-	HttpResponse *response = createHttpResponse(status, status);
-	bool result = sendResponse(client, response);
-	destroyHttpResponse(response);
-
-	return result;
-}
-
-/**
- * Reads the data in request and sends an appropriate response to the client (only if the request is well-formed)
- */
-static void handleRequest(Socket *client, HttpRequest *request)
-{
-	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
-		LOG_DEBUG("Could not parse request, responding with bad request");
-		sendStatusResponse(client, BAD_REQUEST_STATUS_STRING);
-		return;
-	}
-
-	// Go through all handlers and execute the first one which matches the requested URI
-	HttpServer *server = request->server;
-	GArray *mappings = server->handler_mappings;
-	bool handled = false;
-	for(int i = 0; !handled && i < mappings->len; ++i) {
-		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
-		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
-			LOG_DEBUG("%s matches %s", mapping->regexp, request->hierarchical);
-			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
-			if(mapping->handler(request, response, mapping->userdata)) {
-				sendResponse(client, response);
-				handled = true;
-			}
-			destroyHttpResponse(response);
-		}
-	}
-
-	if(!handled) {
-		LOG_DEBUG("No handler for hierarchical part %s, responding with file not found", request->hierarchical);
-		sendStatusResponse(client, FILE_NOT_FOUND_STATUS_STRING);
-	}
-}
-
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)
 {
 	Socket *client_socket = subject;
-	HttpRequest *request = data;
-	HttpServer *server = request->server;
+	ServerRequestMapping *mapping = data;
+	HttpRequest *request = mapping->request;
+	HttpServer *server = mapping->server;
 
-	detachEventListener(client_socket, "read", request, &clientSocketRead);
-	detachEventListener(client_socket, "disconnect", request, &clientSocketDisconnected);
+	detachEventListener(client_socket, "read", mapping, &clientSocketRead);
+	detachEventListener(client_socket, "disconnect", mapping, &clientSocketDisconnected);
 	freeSocket(client_socket);
 	destroyHttpRequest(request);
+	freeServerRequestMapping(mapping);
 
 	server->open_connections--;
 	tryFreeServer(server); // This might have been the last request, attempt to free the server
 }
 
+static void handleAndRespond(Socket *client, HttpServer *server, HttpRequest *request)
+{
+	HttpResponse *response = handleHttpRequest(server, request);
+	sendResponse(client, response);
+	destroyHttpResponse(response);
+}
+
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args)
 {
 	char *message = va_arg(args, char *);
-	HttpRequest *request = data;
+	ServerRequestMapping *mapping = data;
+	HttpRequest *request = mapping->request;
+	HttpServer *server = mapping->server;
 
 	g_string_append(request->line_buffer, message);
 	processAvailableLines(request);
@@ -390,13 +390,13 @@ static void clientSocketRead(void *subject, const char *event, void *data, va_li
 
 	if(request->method == HTTP_REQUEST_METHOD_GET) {
 		// Empty line in GET request indicates the end of the request.
-		handleRequest(subject, request);
+		handleAndRespond(subject, server, request);
 		return;
 	}
 
 	if(request->method == HTTP_REQUEST_METHOD_POST && request->line_buffer->len >= request->content_length) {
 		parseHttpRequestBody(request, request->line_buffer->str);
-		handleRequest(subject, request);
+		handleAndRespond(subject, server, request);
 		return;
 	}
 }

@@ -26,9 +26,6 @@
 #include <stdarg.h>
 #include "modules/socket/socket.h"
 
-/* Forward declaration to allow HttpRequest to reference a server */
-struct HttpServerStruct;
-
 /**
  * Enum to represent the types of http request which can come in
  */
@@ -44,8 +41,6 @@ typedef enum
  */
 typedef struct
 {
-	/** The server which accepted the client with this request */
-	struct HttpServerStruct *server;
 	/** Represents the method of this request */
 	HttpRequestMethod method;
 	/** Store the entire URI of the request in its raw form (without unescaping), e.g. /the/hierarchical/part?key=value&foo=bar */
@@ -63,6 +58,16 @@ typedef struct
 } HttpRequest;
 
 /**
+ * Creates a new HttpRequest struct with default values
+ */
+API HttpRequest *createHttpRequest();
+
+/**
+ * Frees all memory associated with the request and then frees the response itself
+ */
+API void destroyHttpRequest(HttpRequest *request);
+
+/**
  * Struct to represent an HTTP response
  */
 typedef struct
@@ -72,6 +77,16 @@ typedef struct
 	/** Contains the string sent to the client as response body */
 	GString *content;
 } HttpResponse;
+
+/**
+ * Creates a new HttpResponse struct
+ */
+API HttpResponse *createHttpResponse(const char *status, const char *content);
+
+/**
+ * Frees all memory associated with the response and then frees the response itself
+ */
+API void destroyHttpResponse(HttpResponse *response);
 
 /** 
  * A type of function which can respond to Http requests by populating a response struct
@@ -91,7 +106,7 @@ typedef enum
 /**
  * Struct to represent an HTTP server
  */
-typedef struct HttpServerStruct
+typedef struct
 {
 	/** Represents the current state of the server */
 	HttpServerState state;
@@ -102,6 +117,7 @@ typedef struct HttpServerStruct
 	/** Stores pairs of regular expressions and request handlers */
 	GArray *handler_mappings;
 } HttpServer;
+
 
 /* Methods used for configuring and running servers */
 
@@ -127,6 +143,17 @@ API void destroyHttpServer(HttpServer *server);
 API bool startHttpServer(HttpServer *server);
 
 /**
+ * Causes the server to process the request and return a response object. The caller takes
+ * ownership of the returned response object and is responsible for eventually calling
+ * destroyHttpResponse() on it.
+ *
+ * @param server		the server in question
+ * @param request		the request to handle
+ * @result				a new HttpResponse object
+ */
+API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request);
+
+/**
  * Causes the passed request handler to be called when an HttpRequest with a matching URI comes in.
  * In order to determine the matching precedence, matches are tested in the order in which they were
  * registered. Note that the caller retains ownership of all passed parameters (the regexp is copied).
@@ -150,6 +177,7 @@ API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical
  */
 API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata);
 
+
 /* Accessor methods for HttpRequest. Note that these are all read-only */
 
 /**
@@ -170,6 +198,7 @@ API bool checkHttpRequestParameter(HttpRequest *request, char *key);
  * @result					the returned parameter of NULL on failure
  */
 API char *getHttpRequestParameter(HttpRequest *request, char *key);
+
 
 /* Mutator methods for HttpResponse */
 

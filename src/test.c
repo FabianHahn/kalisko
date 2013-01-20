@@ -37,7 +37,11 @@
 
 #define TERMINAL_WIDTH 80
 
-// TODO: Use the logging facilities instead of printf for these
+// TODO: Use the logging facilities instead of printf for these. Note that
+// logging is disabled for tests (in SConstruct), so implementing selective
+// logging is required for this. prtinf will do for now.
+// The desired behavior would be to log everything form the modules of level
+// warning or above and everything (unconditionally) from this file.
 #define TEST_OUTPUT_INFO(...) printf(__VA_ARGS__); printf("\n");
 #define TEST_OUTPUT_ERROR(...) fprintf(stderr, __VA_ARGS__); printf("\n");
 
@@ -54,6 +58,9 @@ static bool testCaseFailed(TestCase *test_case);
 int main(int argc, char **argv)
 {
 	g_thread_init(NULL);
+
+	setArgc(argc);
+	setArgv(argv);
 
 	initMemory();
 	initTimers();

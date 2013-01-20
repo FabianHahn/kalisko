@@ -164,7 +164,7 @@ API void runTestSuite(TestSuite *test_suite)
 
 		if(testCaseFailed(test_case)) {
 			appendRight(message, "FAIL");
-			g_string_append_printf(message, "\n  Error: %s", test_case->error);
+			g_string_append_printf(message, "\n   %s", test_case->error);
 		} else {
 			tests_passed++;
 			appendRight(message, "PASS");
@@ -181,6 +181,7 @@ API void failTest(TestCase *test_case, char* error, ...)
 {
 	free(test_case->error);
 	va_list va;	
+	va_start(va, error);
 	test_case->error = g_strdup_vprintf(error, va);
 }
 

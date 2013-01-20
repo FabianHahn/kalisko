@@ -188,7 +188,7 @@ API void failTest(TestCase *test_case, char *error, ...);
  *
  * @param EXPR		an expression to check
  */
-#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("Line %d: Assertion failed: " #EXPR, __LINE__); }
+#define TEST_ASSERT(EXPR) if(!(EXPR)) { TEST_FAIL("%s:%d: Assertion failed: " #EXPR, __FILE__, __LINE__); }
 
 /**
  * Fails a test case with an error message

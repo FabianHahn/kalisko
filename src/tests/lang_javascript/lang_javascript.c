@@ -63,19 +63,19 @@ static char *removeHelloJSScript = "xcall.delFunction(\"jsHello\")";
 
 static void tearUp();
 
-TEST_CASE(callJSFunction);
-TEST_CASE(jsCallsXCall);
-TEST_CASE(delXCall);
-TEST_CASE(logWrappedXCall);
-TEST_CASE(callJSFunctionWithObj);
+TEST(callJSFunction);
+TEST(jsCallsXCall);
+TEST(delXCall);
+TEST(logWrappedXCall);
+TEST(callJSFunctionWithObj);
 
 TEST_SUITE_BEGIN(lang_javascript)
 	tearUp();
-	TEST_CASE_ADD(callJSFunction);
-	TEST_CASE_ADD(jsCallsXCall);
-	TEST_CASE_ADD(callJSFunctionWithObj);
-	TEST_CASE_ADD(delXCall);
-	TEST_CASE_ADD(logWrappedXCall);
+	ADD_SIMPLE_TEST(callJSFunction);
+	ADD_SIMPLE_TEST(jsCallsXCall);
+	ADD_SIMPLE_TEST(callJSFunctionWithObj);
+	ADD_SIMPLE_TEST(delXCall);
+	ADD_SIMPLE_TEST(logWrappedXCall);
 TEST_SUITE_END
 
 static void tearUp()
@@ -83,7 +83,7 @@ static void tearUp()
 	$(bool, lang_javascript, evaluateJavaScript)(testJSScript);
 }
 
-TEST_CASE(callJSFunction)
+TEST(callJSFunction)
 {
 	char *call = "xcall = { function = jsHello }";
 
@@ -94,7 +94,7 @@ TEST_CASE(callJSFunction)
 	$(void, store, freeStore)(ret);
 }
 
-TEST_CASE(jsCallsXCall)
+TEST(jsCallsXCall)
 {
 	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
@@ -108,7 +108,7 @@ TEST_CASE(jsCallsXCall)
 	$(void, store, freeStore)(retStore);
 }
 
-TEST_CASE(delXCall)
+TEST(delXCall)
 {
 	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;
@@ -123,7 +123,7 @@ TEST_CASE(delXCall)
 	$(void, store, freeStore)(retStore);
 }
 
-TEST_CASE(logWrappedXCall)
+TEST(logWrappedXCall)
 {
 	$(bool, lang_javascript, evaluateJavaScript)("kalisko.logWarning(\"Hallo Welt\");");
 
@@ -133,7 +133,7 @@ TEST_CASE(logWrappedXCall)
 	TEST_ASSERT(JSVAL_TO_BOOLEAN(ret));
 }
 
-TEST_CASE(callJSFunctionWithObj)
+TEST(callJSFunctionWithObj)
 {
 	JSEnvInfo envInfo = $(JSEnvInfo, lang_javascript, getJavaScriptEnvInfo)();
 	jsval ret;

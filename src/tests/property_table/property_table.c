@@ -27,9 +27,9 @@
 
 #define API
 
-TEST_CASE(null_subject);
-TEST_CASE(multiple_subjects);
-TEST_CASE(free_not_existing);
+TEST(null_subject);
+TEST(multiple_subjects);
+TEST(free_not_existing);
 
 MODULE_NAME("test_property_table");
 MODULE_AUTHOR("The Kalisko team");
@@ -39,12 +39,12 @@ MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("property_table", 0, 0, 1));
 
 TEST_SUITE_BEGIN(property_table)
-	TEST_CASE_ADD(null_subject);
-	TEST_CASE_ADD(multiple_subjects);
-	TEST_CASE_ADD(free_not_existing);
+	ADD_SIMPLE_TEST(null_subject);
+	ADD_SIMPLE_TEST(multiple_subjects);
+	ADD_SIMPLE_TEST(free_not_existing);
 TEST_SUITE_END
 
-TEST_CASE(null_subject)
+TEST(null_subject)
 {
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(NULL, "test") == NULL);
 
@@ -55,7 +55,7 @@ TEST_CASE(null_subject)
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(NULL, "test") == NULL);
 }
 
-TEST_CASE(multiple_subjects)
+TEST(multiple_subjects)
 {
 	typedef struct {
 		int nothing;
@@ -84,7 +84,7 @@ TEST_CASE(multiple_subjects)
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(b, "test") == NULL);
 }
 
-TEST_CASE(free_not_existing)
+TEST(free_not_existing)
 {
 	// just free tables that do not exists
 	$(void, property_table, freePropertyTable)(NULL);

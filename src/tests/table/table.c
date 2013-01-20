@@ -39,20 +39,20 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("table", 0, 1, 5));
 
 static char *generatorFunc(Table *table);
 
-TEST_CASE(basic_table_functions);
-TEST_CASE(cell_template);
-TEST_CASE(replace_table_cell);
-TEST_CASE(generator);
-TEST_CASE(pre_alloc);
-TEST_CASE(no_pre_alloc);
+TEST(basic_table_functions);
+TEST(cell_template);
+TEST(replace_table_cell);
+TEST(generator);
+TEST(pre_alloc);
+TEST(no_pre_alloc);
 
 TEST_SUITE_BEGIN(table)
-	TEST_CASE_ADD(basic_table_functions);
-	TEST_CASE_ADD(cell_template);
-	TEST_CASE_ADD(replace_table_cell);
-	TEST_CASE_ADD(generator);
-	TEST_CASE_ADD(pre_alloc);
-	TEST_CASE_ADD(no_pre_alloc);
+	ADD_SIMPLE_TEST(basic_table_functions);
+	ADD_SIMPLE_TEST(cell_template);
+	ADD_SIMPLE_TEST(replace_table_cell);
+	ADD_SIMPLE_TEST(generator);
+	ADD_SIMPLE_TEST(pre_alloc);
+	ADD_SIMPLE_TEST(no_pre_alloc);
 TEST_SUITE_END
 
 /**
@@ -76,7 +76,7 @@ static char *generatorFunc(Table *table)
 	return out;
 }
 
-TEST_CASE(basic_table_functions)
+TEST(basic_table_functions)
 {
 	Table *table = $(Table *, table, newTable)();
 	TEST_ASSERT(table != NULL);
@@ -96,7 +96,7 @@ TEST_CASE(basic_table_functions)
 	$(void, table, freeTable)(table);
 }
 
-TEST_CASE(cell_template)
+TEST(cell_template)
 {
 	// create table
 	Table *table = $(Table *, table, newTable)();
@@ -124,7 +124,7 @@ TEST_CASE(cell_template)
 	$(void, table, freeTable)(table);
 }
 
-TEST_CASE(replace_table_cell)
+TEST(replace_table_cell)
 {
 	// create table
 	Table *table = $(Table *, table, newTable)();
@@ -158,7 +158,7 @@ TEST_CASE(replace_table_cell)
 	$(void, table, freeTable)(table);
 }
 
-TEST_CASE(generator)
+TEST(generator)
 {
 	// create table
 	Table *table = $(Table *, table, newTable)();
@@ -189,7 +189,7 @@ TEST_CASE(generator)
 	$(void, table, freeTable)(table);
 }
 
-TEST_CASE(pre_alloc)
+TEST(pre_alloc)
 {
 	Table *table = $(Table *, table, newTable)();
 	TEST_ASSERT(table != NULL);
@@ -210,7 +210,7 @@ TEST_CASE(pre_alloc)
 	$(void, table, freeTable)(table);
 }
 
-TEST_CASE(no_pre_alloc)
+TEST(no_pre_alloc)
 {
 	Table *table = $(Table *, table, newTableFull)(0, 0);
 	TEST_ASSERT(table != NULL);

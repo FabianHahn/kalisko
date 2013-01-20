@@ -36,12 +36,12 @@ MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall_core", 0, 4, 0), MODULE_DEPENDENCY("store", 0, 6, 0));
 
-TEST_CASE(log_hook);
+TEST(log_hook);
 
 static bool logSuccess;
 
 TEST_SUITE_BEGIN(xcall_core)
-	TEST_CASE_ADD(log_hook);
+	ADD_SIMPLE_TEST(log_hook);
 TEST_SUITE_END
 
 static Store *testXCallFunction(Store *xcall)
@@ -59,7 +59,7 @@ static Store *testXCallFunction(Store *xcall)
 	return $(Store *, store, createStore)();
 }
 
-TEST_CASE(log_hook)
+TEST(log_hook)
 {
 	logSuccess = true;
 

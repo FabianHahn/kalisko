@@ -37,27 +37,27 @@ MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 4, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 6, 3));
 
-TEST_CASE(lua2store);
-TEST_CASE(store2lua);
-TEST_CASE(store2lua_rootlist);
-TEST_CASE(store2lua_fail);
-TEST_CASE(xcall_invoke);
-TEST_CASE(xcall_define);
-TEST_CASE(xcall_define_error);
-TEST_CASE(xcall_direct_call);
+TEST(lua2store);
+TEST(store2lua);
+TEST(store2lua_rootlist);
+TEST(store2lua_fail);
+TEST(xcall_invoke);
+TEST(xcall_define);
+TEST(xcall_define_error);
+TEST(xcall_direct_call);
 
 TEST_SUITE_BEGIN(lua)
-	TEST_CASE_ADD(lua2store);
-	TEST_CASE_ADD(store2lua);
-	TEST_CASE_ADD(store2lua_rootlist);
-	TEST_CASE_ADD(store2lua_fail);
-	TEST_CASE_ADD(xcall_invoke);
-	TEST_CASE_ADD(xcall_define);
-	TEST_CASE_ADD(xcall_define_error);
-	TEST_CASE_ADD(xcall_direct_call);
+	ADD_SIMPLE_TEST(lua2store);
+	ADD_SIMPLE_TEST(store2lua);
+	ADD_SIMPLE_TEST(store2lua_rootlist);
+	ADD_SIMPLE_TEST(store2lua_fail);
+	ADD_SIMPLE_TEST(xcall_invoke);
+	ADD_SIMPLE_TEST(xcall_define);
+	ADD_SIMPLE_TEST(xcall_define_error);
+	ADD_SIMPLE_TEST(xcall_direct_call);
 TEST_SUITE_END
 
-TEST_CASE(lua2store)
+TEST(lua2store)
 {
 	char *check;
 	TEST_ASSERT($(bool, lua, evaluateLua)("store = parseStore('bird = word; array = { key = value; list = (1 1 2 3 5 7 13 21) }')"));
@@ -88,7 +88,7 @@ TEST_CASE(lua2store)
 	free(check);
 }
 
-TEST_CASE(store2lua)
+TEST(store2lua)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("return {int = 17, float = 3.14, string = 'hello world', array = {foo = 'bar'}, list = {1, 1, 2, 3, 5, 8}, nolist = {4, 2, answer = 42}}"));
 
@@ -127,7 +127,7 @@ TEST_CASE(store2lua)
 	$(void, store, freeStore)(parsed);
 }
 
-TEST_CASE(store2lua_rootlist)
+TEST(store2lua_rootlist)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("return {{}}"));
 
@@ -144,7 +144,7 @@ TEST_CASE(store2lua_rootlist)
 	$(void, store, freeStore)(parsed);
 }
 
-TEST_CASE(store2lua_fail)
+TEST(store2lua_fail)
 {
 	// Test non-string values and error cascading
 	TEST_ASSERT($(bool, lua, evaluateLua)("function foo() return 42; end; return {{foo}}"));
@@ -155,7 +155,7 @@ TEST_CASE(store2lua_fail)
 	TEST_ASSERT($(Store *, lua, popLuaStore)() == NULL);
 }
 
-TEST_CASE(xcall_invoke)
+TEST(xcall_invoke)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("return invokeXCall('xcall = { function = some_non_existing_function }');"));
 
@@ -171,7 +171,7 @@ TEST_CASE(xcall_invoke)
 	free(ret);
 }
 
-TEST_CASE(xcall_define)
+TEST(xcall_define)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("function f(x) return 'bird = word' end"));
 	TEST_ASSERT($(bool, lua, evaluateLua)("addXCallFunction('luatest', f)"));
@@ -188,7 +188,7 @@ TEST_CASE(xcall_define)
 	TEST_ASSERT($(bool, lua, evaluateLua)("delXCallFunction('luatest')"));
 }
 
-TEST_CASE(xcall_define_error)
+TEST(xcall_define_error)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("function g() return 42 end"));
 	TEST_ASSERT($(bool, lua, evaluateLua)("function f(x) return g end"));
@@ -205,7 +205,7 @@ TEST_CASE(xcall_define_error)
 	TEST_ASSERT($(bool, lua, evaluateLua)("delXCallFunction('luatest')"));
 }
 
-TEST_CASE(xcall_direct_call)
+TEST(xcall_direct_call)
 {
 	TEST_ASSERT($(bool, lua, evaluateLua)("function f() return 'ret=42' end"));
 	TEST_ASSERT($(bool, lua, evaluateLua)("addXCallFunction('luatest', f)"));

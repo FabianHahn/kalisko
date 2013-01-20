@@ -139,11 +139,10 @@ API void failTest(TestCase *test_case, char *error, ...);
 
 /**
  * Defines a new test case
- * TODO: Rename to TEST (current name for migration purposes)
  *
  * @param CASE			the test case's name
  */
-#define TEST_CASE(TEST_NAME) static void TEST_NAME(TestCase *test_case)
+#define TEST(TEST_NAME) static void TEST_NAME(TestCase *test_case)
 
 /**
  * Adds a new fixture to the current test module
@@ -156,11 +155,10 @@ API void failTest(TestCase *test_case, char *error, ...);
 
 /**
  * Adds a test case without fixture to the current test suite
- * TODO: rename to ADD_SIMPLE_TEST (current name for migration purposes)
  *
  * @param TEST_NAME		the name of the test to add
  */
-#define TEST_CASE_ADD(TEST_NAME) addTest(test_suite, #TEST_NAME, TEST_NAME, NULL);
+#define ADD_SIMPLE_TEST(TEST_NAME) addTest(test_suite, #TEST_NAME, TEST_NAME, NULL);
 
 /**
  * Adds a test case with a fixture to the current test suite.

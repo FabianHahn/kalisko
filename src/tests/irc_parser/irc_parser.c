@@ -34,27 +34,27 @@ MODULE_VERSION(0, 1, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_parser", 0, 1, 0));
 
-TEST_CASE(utf8Trailing);
-TEST_CASE(whitespaces);
-TEST_CASE(userMask);
-TEST_CASE(ping);
-TEST_CASE(noticeAuth);
-TEST_CASE(serverNotice);
-TEST_CASE(onlyCommand);
-TEST_CASE(passDelimiter);
+TEST(utf8Trailing);
+TEST(whitespaces);
+TEST(userMask);
+TEST(ping);
+TEST(noticeAuth);
+TEST(serverNotice);
+TEST(onlyCommand);
+TEST(passDelimiter);
 
 TEST_SUITE_BEGIN(irc_parser)
-	TEST_CASE_ADD(utf8Trailing);
-	TEST_CASE_ADD(whitespaces);
-	TEST_CASE_ADD(userMask);
-	TEST_CASE_ADD(ping);
-	TEST_CASE_ADD(noticeAuth);
-	TEST_CASE_ADD(serverNotice);
-	TEST_CASE_ADD(onlyCommand);
-	TEST_CASE_ADD(passDelimiter);
+	ADD_SIMPLE_TEST(utf8Trailing);
+	ADD_SIMPLE_TEST(whitespaces);
+	ADD_SIMPLE_TEST(userMask);
+	ADD_SIMPLE_TEST(ping);
+	ADD_SIMPLE_TEST(noticeAuth);
+	ADD_SIMPLE_TEST(serverNotice);
+	ADD_SIMPLE_TEST(onlyCommand);
+	ADD_SIMPLE_TEST(passDelimiter);
 TEST_SUITE_END
 
-TEST_CASE(utf8Trailing)
+TEST(utf8Trailing)
 {
 	char *message = "Someone :Зарегистрируйтесь Unicode แผ่นดินฮั่นเสื่อมโทรมแสนสังเวช 1234567890 ╔══╦══╗  ┌──┬──┐  ╭──┬──╮  ╭──┬──╮\r\n";
 
@@ -72,7 +72,7 @@ TEST_CASE(utf8Trailing)
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 }
 
-TEST_CASE(whitespaces)
+TEST(whitespaces)
 {
 	char *message = ":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n";
 
@@ -94,7 +94,7 @@ TEST_CASE(whitespaces)
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 }
 
-TEST_CASE(userMask)
+TEST(userMask)
 {
 	char *message = ":Gregor!kalisko@kalisko.org KICK #php.de Someone :blub";
 
@@ -112,7 +112,7 @@ TEST_CASE(userMask)
 	$(void, irc_parser, freeIrcUserMask)(userMask);
 }
 
-TEST_CASE(ping)
+TEST(ping)
 {
 	char *message = "PING :irc.gamesurge.net";
 
@@ -127,7 +127,7 @@ TEST_CASE(ping)
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 }
 
-TEST_CASE(noticeAuth)
+TEST(noticeAuth)
 {
 	char *message = "NOTICE AUTH :*** Looking up your hostname";
 
@@ -144,7 +144,7 @@ TEST_CASE(noticeAuth)
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 }
 
-TEST_CASE(serverNotice)
+TEST(serverNotice)
 {
 	char *message = ":Staff.CA.US.GameSurge.net NOTICE * :*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)";
 
@@ -166,7 +166,7 @@ TEST_CASE(serverNotice)
  * The irc_parser module currently fails to parse messages that have nothing but a command statement in them.
  * Practical examples include the commands "AWAY" and "QUIT" which may be sent without trailing content by clients.
  */
-TEST_CASE(onlyCommand)
+TEST(onlyCommand)
 {
 	char *message = "AWAY";
 
@@ -185,7 +185,7 @@ TEST_CASE(onlyCommand)
 /**
  * Test case for bug ticket #1416: Parser doesn't handle colons in params correctly
  */
-TEST_CASE(passDelimiter)
+TEST(passDelimiter)
 {
 	IrcMessage *parsedMessage = $(IrcMessage *, irc_parser, parseIrcMessage)("PASS user:password");
 	TEST_ASSERT(parsedMessage != NULL);

@@ -28,9 +28,9 @@
 #include "modules/linalg/Matrix.h"
 #define API
 
-TEST_CASE(matrix_matrix_multiplication);
-TEST_CASE(matrix_vector_multiplication);
-TEST_CASE(vector_vector_multiplication);
+TEST(matrix_matrix_multiplication);
+TEST(matrix_vector_multiplication);
+TEST(vector_vector_multiplication);
 
 MODULE_NAME("test_linalg");
 MODULE_AUTHOR("The Kalisko team");
@@ -40,14 +40,14 @@ MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("linalg", 0, 2, 6));
 
 TEST_SUITE_BEGIN(linalg)
-	TEST_CASE_ADD(matrix_matrix_multiplication);
-	TEST_CASE_ADD(matrix_vector_multiplication);
-	TEST_CASE_ADD(vector_vector_multiplication);
+	ADD_SIMPLE_TEST(matrix_matrix_multiplication);
+	ADD_SIMPLE_TEST(matrix_vector_multiplication);
+	ADD_SIMPLE_TEST(vector_vector_multiplication);
 TEST_SUITE_END
 
 static Matrix *getTestMatrix();
 
-TEST_CASE(matrix_matrix_multiplication)
+TEST(matrix_matrix_multiplication)
 {
 	Matrix *identity = $(Matrix *, linalg, createMatrix)(3, 3);
 	$(void, linalg, eyeMatrix)(identity);
@@ -75,7 +75,7 @@ TEST_CASE(matrix_matrix_multiplication)
 	$(void, linalg, freeMatrix)(testMatrix);
 }
 
-TEST_CASE(matrix_vector_multiplication)
+TEST(matrix_vector_multiplication)
 {
 	Matrix *testMatrix = getTestMatrix();
 	Vector *testVector = $(Vector *, linalg, createVector)(3);
@@ -96,7 +96,7 @@ TEST_CASE(matrix_vector_multiplication)
 	$(void, linalg, freeVector)(solution);
 }
 
-TEST_CASE(vector_vector_multiplication)
+TEST(vector_vector_multiplication)
 {
 	Vector *testVector1 = $(Vector *, linalg, createVector)(3);
 	$(void, linalg, setVector)(testVector1, 0, -1);

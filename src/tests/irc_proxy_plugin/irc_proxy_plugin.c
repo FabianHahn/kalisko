@@ -35,10 +35,10 @@ MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 7);
 MODULE_DEPENDS(MODULE_DEPENDENCY("irc_proxy_plugin", 0, 2, 0), MODULE_DEPENDENCY("irc_proxy", 0, 3, 3));
 
-TEST_CASE(plugin_add);
-TEST_CASE(plugin_use);
-TEST_CASE(plugin_del);
-TEST_CASE(plugin_reuse);
+TEST(plugin_add);
+TEST(plugin_use);
+TEST(plugin_del);
+TEST(plugin_reuse);
 
 static IrcProxyPlugin plugin;
 static int initState = 0;
@@ -49,13 +49,13 @@ static bool initPlugin(IrcProxy *proxy, char *name);
 static void finiPlugin(IrcProxy *proxy, char *name);
 
 TEST_SUITE_BEGIN(irc_proxy_plugin)
-	TEST_CASE_ADD(plugin_add);
-	TEST_CASE_ADD(plugin_use);
-	TEST_CASE_ADD(plugin_del);
-	TEST_CASE_ADD(plugin_reuse);
+	ADD_SIMPLE_TEST(plugin_add);
+	ADD_SIMPLE_TEST(plugin_use);
+	ADD_SIMPLE_TEST(plugin_del);
+	ADD_SIMPLE_TEST(plugin_reuse);
 TEST_SUITE_END
 
-TEST_CASE(plugin_add)
+TEST(plugin_add)
 {
 	plugin.handlers = g_queue_new();
 	plugin.name = "testplugin";
@@ -65,7 +65,7 @@ TEST_CASE(plugin_add)
 	TEST_ASSERT($(bool, irc_proxy_plugin, addIrcProxyPlugin)(&plugin));
 }
 
-TEST_CASE(plugin_use)
+TEST(plugin_use)
 {
 	IrcProxy *proxy = createProxyStub();
 
@@ -100,7 +100,7 @@ TEST_CASE(plugin_use)
 	freeProxyStub(proxy);
 }
 
-TEST_CASE(plugin_del)
+TEST(plugin_del)
 {
 	$(void, irc_proxy_plugin, delIrcProxyPlugin)(&plugin);
 	TEST_ASSERT(g_queue_get_length(plugin.handlers) == 0);
@@ -108,7 +108,7 @@ TEST_CASE(plugin_del)
 	g_queue_free(plugin.handlers);
 }
 
-TEST_CASE(plugin_reuse)
+TEST(plugin_reuse)
 {
 	IrcProxy *proxy = createProxyStub();
 

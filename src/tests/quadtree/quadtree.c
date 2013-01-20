@@ -33,15 +33,15 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("quadtree", 0, 12, 2));
 static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node);
 static void testDataFreeFunction(Quadtree *tree, void *data);
 
-TEST_CASE(expand);
-TEST_CASE(data);
+TEST(expand);
+TEST(data);
 
 TEST_SUITE_BEGIN(quadtree)
-	TEST_CASE_ADD(expand);
-	TEST_CASE_ADD(data);
+	ADD_SIMPLE_TEST(expand);
+	ADD_SIMPLE_TEST(data);
 TEST_SUITE_END
 
-TEST_CASE(expand)
+TEST(expand)
 {
 	Quadtree *tree = createQuadtree(&testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);
@@ -94,7 +94,7 @@ TEST_CASE(expand)
 	freeQuadtree(tree);
 }
 
-TEST_CASE(data)
+TEST(data)
 {
 	Quadtree *tree = createQuadtree(&testDataLoadFunction, &testDataFreeFunction);
 	TEST_ASSERT(tree != NULL);

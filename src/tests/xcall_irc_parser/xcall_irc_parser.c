@@ -37,21 +37,21 @@ MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 4);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 2, 0));
 
-TEST_CASE(xcall_irc_parse);
-TEST_CASE(xcall_irc_parse_user_mask);
-TEST_CASE(xcall_irc_parse_error);
-TEST_CASE(xcall_irc_parse_no_message);
-TEST_CASE(xcall_irc_parse_user_mask_no_prefix);
+TEST(xcall_irc_parse);
+TEST(xcall_irc_parse_user_mask);
+TEST(xcall_irc_parse_error);
+TEST(xcall_irc_parse_no_message);
+TEST(xcall_irc_parse_user_mask_no_prefix);
 
 TEST_SUITE_BEGIN(xcall_irc_parser)
-	TEST_CASE_ADD(xcall_irc_parse);
-	TEST_CASE_ADD(xcall_irc_parse_user_mask);
-	TEST_CASE_ADD(xcall_irc_parse_error);
-	TEST_CASE_ADD(xcall_irc_parse_no_message);
-	TEST_CASE_ADD(xcall_irc_parse_user_mask_no_prefix);
+	ADD_SIMPLE_TEST(xcall_irc_parse);
+	ADD_SIMPLE_TEST(xcall_irc_parse_user_mask);
+	ADD_SIMPLE_TEST(xcall_irc_parse_error);
+	ADD_SIMPLE_TEST(xcall_irc_parse_no_message);
+	ADD_SIMPLE_TEST(xcall_irc_parse_user_mask_no_prefix);
 TEST_SUITE_END
 
-TEST_CASE(xcall_irc_parse)
+TEST(xcall_irc_parse)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n\"; xcall = { function = \"parseIrcMessage\" }");
 
@@ -64,7 +64,7 @@ TEST_CASE(xcall_irc_parse)
 	$(void, store, freeStore)(retStore);
 }
 
-TEST_CASE(xcall_irc_parse_user_mask)
+TEST(xcall_irc_parse_user_mask)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("prefix = \"Gregor!kalisko@kalisko.org\"; xcall = { function = \"parseIrcUserMask\" }");
 
@@ -76,7 +76,7 @@ TEST_CASE(xcall_irc_parse_user_mask)
 }
 
 
-TEST_CASE(xcall_irc_parse_error)
+TEST(xcall_irc_parse_error)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":nothing\"; xcall = { function = \"parseIrcMessage\" }");
 
@@ -86,7 +86,7 @@ TEST_CASE(xcall_irc_parse_error)
 	$(void, store, freeStore)(retStore);
 }
 
-TEST_CASE(xcall_irc_parse_no_message)
+TEST(xcall_irc_parse_no_message)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcMessage\" }");
 
@@ -95,7 +95,7 @@ TEST_CASE(xcall_irc_parse_no_message)
 	$(void, store, freeStore)(retStore);
 }
 
-TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
+TEST(xcall_irc_parse_user_mask_no_prefix)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcUserMask\" }");
 

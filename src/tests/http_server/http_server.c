@@ -59,13 +59,13 @@ static void teardown()
 	destroyHttpRequest(request);
 }
 
-TEST_CASE(lifecycle)
+TEST(lifecycle)
 {
 	registerHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
 	unregisterHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
 }
 
-TEST_CASE(handler)
+TEST(handler)
 {
 	request->hierarchical = strdup("/some/hierarchical/part");
 	TEST_ASSERT(counter == 0);
@@ -74,7 +74,7 @@ TEST_CASE(handler)
 	destroyHttpResponse(response);
 }
 
-TEST_CASE(no_handler)
+TEST(no_handler)
 {
 	request->hierarchical = strdup("/some/other/hierarchical/part");
 	TEST_ASSERT(counter == 0);

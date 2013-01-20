@@ -27,8 +27,8 @@
 
 #define API
 
-TEST_CASE(version_compare);
-TEST_CASE(module_failure);
+TEST(version_compare);
+TEST(module_failure);
 
 MODULE_NAME("test_core");
 MODULE_AUTHOR("The Kalisko team");
@@ -38,11 +38,11 @@ MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
 TEST_SUITE_BEGIN(core)
-	TEST_CASE_ADD(version_compare);
-	TEST_CASE_ADD(module_failure);
+	ADD_SIMPLE_TEST(version_compare);
+	ADD_SIMPLE_TEST(module_failure);
 TEST_SUITE_END
 
-TEST_CASE(version_compare)
+TEST(version_compare)
 {
 	Version *a = $$(Version *, createVersion)(1, 2, 3, 4);
 
@@ -60,7 +60,7 @@ TEST_CASE(version_compare)
 	$$(void, freeVersion)(b);
 }
 
-TEST_CASE(module_failure)
+TEST(module_failure)
 {
 	// Request and revoke non existent module
 	TEST_ASSERT(!$$(bool, requestModule)("_doesnotexist_"));

@@ -34,13 +34,13 @@
 #include "modules/store/merge.h"
 #define API
 
-TEST_CASE(lexer);
-TEST_CASE(parser_clone_dump);
-TEST_CASE(path_modify);
-TEST_CASE(path_create);
-TEST_CASE(path_split);
-TEST_CASE(merge);
-TEST_CASE(parse_path);
+TEST(lexer);
+TEST(parser_clone_dump);
+TEST(path_modify);
+TEST(path_create);
+TEST(path_split);
+TEST(merge);
+TEST(parse_path);
 
 static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = -42\nfloat  = -3.14159265";
 static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -64,16 +64,16 @@ MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
 
 TEST_SUITE_BEGIN(store)
-	TEST_CASE_ADD(lexer);
-	TEST_CASE_ADD(parser_clone_dump);
-	TEST_CASE_ADD(path_modify);
-	TEST_CASE_ADD(path_create);
-	TEST_CASE_ADD(path_split);
-	TEST_CASE_ADD(merge);
-	TEST_CASE_ADD(parse_path);
+	ADD_SIMPLE_TEST(lexer);
+	ADD_SIMPLE_TEST(parser_clone_dump);
+	ADD_SIMPLE_TEST(path_modify);
+	ADD_SIMPLE_TEST(path_create);
+	ADD_SIMPLE_TEST(path_split);
+	ADD_SIMPLE_TEST(merge);
+	ADD_SIMPLE_TEST(parse_path);
 TEST_SUITE_END
 
-TEST_CASE(lexer)
+TEST(lexer)
 {
 	int *solution_tokens;
 	YYSTYPE *solution_values;
@@ -112,7 +112,7 @@ TEST_CASE(lexer)
 	}
 }
 
-TEST_CASE(parser_clone_dump)
+TEST(parser_clone_dump)
 {
 	Store *store;
 	GString *storeDump;
@@ -131,7 +131,7 @@ TEST_CASE(parser_clone_dump)
 	g_string_free(cloneDump, true);
 }
 
-TEST_CASE(path_modify)
+TEST(path_modify)
 {
 	Store *value;
 	Store *store = $(Store *, store, parseStoreString)(path_test_input);
@@ -173,7 +173,7 @@ TEST_CASE(path_modify)
 	$(void, store, freeStore)(store);
 }
 
-TEST_CASE(path_create)
+TEST(path_create)
 {
 	Store *store = $(Store *, store, createStore)();
 
@@ -188,7 +188,7 @@ TEST_CASE(path_create)
 	$(void, store, freeStore)(store);
 }
 
-TEST_CASE(path_split)
+TEST(path_split)
 {
 	GPtrArray *array = $(GPtrArray *, store, splitStorePath)(path_split_input);
 
@@ -200,7 +200,7 @@ TEST_CASE(path_split)
 	g_ptr_array_free(array, TRUE);
 }
 
-TEST_CASE(merge)
+TEST(merge)
 {
 	Store *store = $(Store *, store, parseStoreString)("replaced = 13; listmerged = (1 2); recursive = { first = beginning }");
 	Store *import = $(Store *, store, parseStoreString)("replaced = 3.14159; listmerged = (3); recursive = { last = end }");
@@ -223,7 +223,7 @@ TEST_CASE(merge)
 /**
  * Test case for ticket #1418: Store ignores trailing slashes in implicit string values
  */
-TEST_CASE(parse_path)
+TEST(parse_path)
 {
 	Store *s;
 	TEST_ASSERT((s = $(Store *, store, parseStoreString)("path = /home/user/file.cfg")) != NULL);

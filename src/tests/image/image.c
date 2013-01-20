@@ -34,8 +34,8 @@
 #define TMPFILE "/tmp/kalisko_test_image.store"
 #endif
 
-TEST_CASE(io);
-TEST_CASE(convert);
+TEST(io);
+TEST(convert);
 static Image *createTestImage();
 
 MODULE_NAME("test_image");
@@ -46,11 +46,11 @@ MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("image", 0, 5, 16));
 
 TEST_SUITE_BEGIN(image)
-	TEST_CASE_ADD(io);
-	TEST_CASE_ADD(convert);
+	ADD_SIMPLE_TEST(io);
+	ADD_SIMPLE_TEST(convert);
 TEST_SUITE_END
 
-TEST_CASE(io)
+TEST(io)
 {
 	Image *image = createTestImage();
 	TEST_ASSERT(image != NULL);
@@ -73,7 +73,7 @@ TEST_CASE(io)
 	g_unlink(TMPFILE);
 }
 
-TEST_CASE(convert)
+TEST(convert)
 {
 	Image *image = createTestImage();
 	TEST_ASSERT(image != NULL);

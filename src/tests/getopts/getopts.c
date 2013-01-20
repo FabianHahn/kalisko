@@ -35,13 +35,13 @@ MODULE_VERSION(0, 1, 3);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("getopts", 0, 1, 1));
 
-TEST_CASE(getopts);
+TEST(getopts);
 
 TEST_SUITE_BEGIN(getopts)
-	TEST_CASE_ADD(getopts);
+	ADD_SIMPLE_TEST(getopts);
 TEST_SUITE_END
 
-TEST_CASE(getopts)
+TEST(getopts)
 {
 	char *argv[] = {
 		"-a",           // Short option without argument

@@ -38,15 +38,15 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3));
 
-TEST_CASE(simple_readonly);
-TEST_CASE(writable_change_save);
+TEST(simple_readonly);
+TEST(writable_change_save);
 
 TEST_SUITE_BEGIN(config)
-	TEST_CASE_ADD(simple_readonly);
-	TEST_CASE_ADD(writable_change_save);
+	ADD_SIMPLE_TEST(simple_readonly);
+	ADD_SIMPLE_TEST(writable_change_save);
 TEST_SUITE_END
 
-TEST_CASE(simple_readonly)
+TEST(simple_readonly)
 {
 	Store *testConfig = $(Store *, store, parseStoreString)(
 		"profileA = {"
@@ -72,7 +72,7 @@ TEST_CASE(simple_readonly)
 
 }
 
-TEST_CASE(writable_change_save)
+TEST(writable_change_save)
 {
 	Store *changedWritableConfig = $(Store *, store, parseStoreString)(
 		"profileA = {"

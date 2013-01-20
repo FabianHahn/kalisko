@@ -34,13 +34,13 @@ MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_util", 0, 1, 0));
 
-TEST_CASE(stripspaces);
+TEST(stripspaces);
 
 TEST_SUITE_BEGIN(string_util)
-	TEST_CASE_ADD(stripspaces);
+	ADD_SIMPLE_TEST(stripspaces);
 TEST_SUITE_END
 
-TEST_CASE(stripspaces)
+TEST(stripspaces)
 {
 	char *message = g_strdup("      a\r \n       \t \fb\r       \v           ");
 

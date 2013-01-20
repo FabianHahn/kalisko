@@ -36,12 +36,12 @@ MODULE_VERSION(0, 1, 7);
 MODULE_BCVERSION(0, 1, 7);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 0), MODULE_DEPENDENCY("store", 0, 5, 3));
 
-TEST_CASE(xcall);
-TEST_CASE(xcall_error);
+TEST(xcall);
+TEST(xcall_error);
 
 TEST_SUITE_BEGIN(xcall)
-	TEST_CASE_ADD(xcall);
-	TEST_CASE_ADD(xcall_error);
+	ADD_SIMPLE_TEST(xcall);
+	ADD_SIMPLE_TEST(xcall_error);
 TEST_SUITE_END
 
 static Store *testXCallFunction(Store *xcall)
@@ -67,7 +67,7 @@ static Store *testXCallFunction(Store *xcall)
 	return ret;
 }
 
-TEST_CASE(xcall)
+TEST(xcall)
 {
 	TEST_ASSERT($(bool, xcall, addXCallFunction)("test", &testXCallFunction));
 	Store *rets = $(Store *, xcall, invokeXCallByString)("param = 42; xcall = { function = test }");
@@ -93,7 +93,7 @@ TEST_CASE(xcall)
 	$(void, xcall, delXCallFunction)("test");
 }
 
-TEST_CASE(xcall_error)
+TEST(xcall_error)
 {
 	Store *rets;
 	Store *function;

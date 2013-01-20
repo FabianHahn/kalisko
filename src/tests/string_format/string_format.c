@@ -34,32 +34,32 @@ MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("string_format", 0, 0, 2));
 
-TEST_CASE(empty);
-TEST_CASE(no_replacements);
-TEST_CASE(formatting);
+TEST(empty);
+TEST(no_replacements);
+TEST(formatting);
 
 TEST_SUITE_BEGIN(string_format)
-	TEST_CASE_ADD(empty);
-	TEST_CASE_ADD(no_replacements);
-	TEST_CASE_ADD(formatting);
+	ADD_SIMPLE_TEST(empty);
+	ADD_SIMPLE_TEST(no_replacements);
+	ADD_SIMPLE_TEST(formatting);
 TEST_SUITE_END
 
 #define string_format $(char*, string_format, formatString)
 
-TEST_CASE(empty)
+TEST(empty)
 {
 	char *formatted = string_format("", NULL);
 	TEST_ASSERT(*formatted == 0);
 }
 
-TEST_CASE(no_replacements)
+TEST(no_replacements)
 {
 	char *str = "The quick brown fox jumps over the lazy dog.";
 	char *formatted = string_format(str, NULL);
 	TEST_ASSERT(strcmp(str, formatted) == 0);
 }
 
-TEST_CASE(formatting)
+TEST(formatting)
 {
 	char *str = "before {eins} {zwei} between {with space} {eins} {drei} end";
 	char *formatted = string_format(str, "eins", "zwei", "zwei", "drei", NULL);

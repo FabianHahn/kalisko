@@ -71,8 +71,6 @@ TEST_CASE(io)
 	$(void, image, freeImage)(image);
 	$(void, image, freeImage)(read);
 	g_unlink(TMPFILE);
-
-	TEST_PASS;
 }
 
 TEST_CASE(convert)
@@ -108,8 +106,6 @@ TEST_CASE(convert)
 	$(void, image, freeImage)(image);
 	$(void, image, freeImage)(copy);
 	$(void, image, freeImage)(copy2);
-
-	TEST_PASS;
 }
 
 static Image *createTestImage()

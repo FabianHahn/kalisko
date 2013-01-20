@@ -53,7 +53,6 @@ TEST_CASE(lifecycle)
 	registerHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
 	unregisterHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
 	destroyHttpServer(server);
-	TEST_PASS;
 }
 
 TEST_CASE(handlers)
@@ -84,5 +83,4 @@ TEST_CASE(handlers)
 	destroyHttpRequest(request);
 
 	destroyHttpServer(server);
-	TEST_PASS;
 }

@@ -92,8 +92,6 @@ TEST_CASE(callJSFunction)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(ret, "hello")->content.string, "world") == 0);
 
 	$(void, store, freeStore)(ret);
-
-	TEST_PASS;
 }
 
 TEST_CASE(jsCallsXCall)
@@ -108,8 +106,6 @@ TEST_CASE(jsCallsXCall)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "hello")->content.string, "world") == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 TEST_CASE(delXCall)
@@ -125,8 +121,6 @@ TEST_CASE(delXCall)
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "xcall/error")->content.string);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 TEST_CASE(logWrappedXCall)
@@ -137,8 +131,6 @@ TEST_CASE(logWrappedXCall)
 
 	TEST_ASSERT(JSVAL_IS_BOOLEAN(ret));
 	TEST_ASSERT(JSVAL_TO_BOOLEAN(ret));
-
-	TEST_PASS;
 }
 
 TEST_CASE(callJSFunctionWithObj)
@@ -153,6 +145,4 @@ TEST_CASE(callJSFunctionWithObj)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "hello")->content.string, "world") == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }

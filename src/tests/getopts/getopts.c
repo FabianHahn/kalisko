@@ -106,7 +106,5 @@ TEST_CASE(getopts)
 
 	$$(void, setArgv)(oldArgv);
 	$$(void, setArgc)(oldArgc);
-
-	TEST_PASS;
 }
 

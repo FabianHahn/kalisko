@@ -92,8 +92,6 @@ TEST_CASE(expand)
 
 	// cleanup
 	freeQuadtree(tree);
-
-	TEST_PASS;
 }
 
 TEST_CASE(data)
@@ -115,8 +113,6 @@ TEST_CASE(data)
 
 	// cleanup
 	freeQuadtree(tree);
-
-	TEST_PASS;
 }
 
 static void testDataLoadFunction(Quadtree *tree, QuadtreeNode *node)

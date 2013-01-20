@@ -48,6 +48,5 @@ TEST_CASE(stripspaces)
 	TEST_ASSERT(strlen(message) == 5);
 
 	free(message);
-	TEST_PASS;
 }
 

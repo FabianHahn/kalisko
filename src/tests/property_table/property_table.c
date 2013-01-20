@@ -53,8 +53,6 @@ TEST_CASE(null_subject)
 
 	$(void, property_table, freePropertyTable)(NULL);
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(NULL, "test") == NULL);
-
-	TEST_PASS;
 }
 
 TEST_CASE(multiple_subjects)
@@ -84,8 +82,6 @@ TEST_CASE(multiple_subjects)
 	$(void, property_table, freePropertyTable)(b);
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(a, "test") == NULL);
 	TEST_ASSERT($(void *, property_table, getPropertyTableValue)(b, "test") == NULL);
-
-	TEST_PASS;
 }
 
 TEST_CASE(free_not_existing)
@@ -93,6 +89,4 @@ TEST_CASE(free_not_existing)
 	// just free tables that do not exists
 	$(void, property_table, freePropertyTable)(NULL);
 	$(void, property_table, freePropertyTable)(&"something");
-
-	TEST_PASS;
 }

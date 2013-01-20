@@ -91,8 +91,6 @@ TEST_CASE(xcall)
 
 	$(void, store, freeStore)(rets);
 	$(void, xcall, delXCallFunction)("test");
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_error)
@@ -125,6 +123,4 @@ TEST_CASE(xcall_error)
 	TEST_ASSERT(error->type == STORE_STRING);
 
 	$(void, store, freeStore)(rets);
-
-	TEST_PASS;
 }

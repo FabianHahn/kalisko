@@ -50,7 +50,6 @@ TEST_CASE(empty)
 {
 	char *formatted = string_format("", NULL);
 	TEST_ASSERT(*formatted == 0);
-	TEST_PASS;
 }
 
 TEST_CASE(no_replacements)
@@ -58,7 +57,6 @@ TEST_CASE(no_replacements)
 	char *str = "The quick brown fox jumps over the lazy dog.";
 	char *formatted = string_format(str, NULL);
 	TEST_ASSERT(strcmp(str, formatted) == 0);
-	TEST_PASS;
 }
 
 TEST_CASE(formatting)
@@ -67,7 +65,5 @@ TEST_CASE(formatting)
 	char *formatted = string_format(str, "eins", "zwei", "zwei", "drei", NULL);
 	TEST_ASSERT(strcasecmp(formatted, "before zwei drei between  zwei  end") == 0);
 	free(formatted);
-
-	TEST_PASS;
 }
 

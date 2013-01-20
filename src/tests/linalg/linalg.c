@@ -73,9 +73,6 @@ TEST_CASE(matrix_matrix_multiplication)
 	// Clean up
 	$(void, linalg, freeMatrix)(identity);
 	$(void, linalg, freeMatrix)(testMatrix);
-
-
-	TEST_PASS;
 }
 
 TEST_CASE(matrix_vector_multiplication)
@@ -97,8 +94,6 @@ TEST_CASE(matrix_vector_multiplication)
 	$(void, linalg, freeVector)(testVector);
 	$(void, linalg, freeVector)(result);
 	$(void, linalg, freeVector)(solution);
-
-	TEST_PASS;
 }
 
 TEST_CASE(vector_vector_multiplication)
@@ -127,8 +122,6 @@ TEST_CASE(vector_vector_multiplication)
 	$(void, linalg, freeVector)(testVector2);
 	$(void, linalg, freeVector)(crossVector);
 	$(void, linalg, freeVector)(crossVectorSolution);
-
-	TEST_PASS;
 }
 
 static Matrix *getTestMatrix()

@@ -110,8 +110,6 @@ TEST_CASE(lexer)
 		memset(&val, 0, sizeof(YYSTYPE));
 		solution_values++;
 	}
-
-	TEST_PASS;
 }
 
 TEST_CASE(parser_clone_dump)
@@ -131,8 +129,6 @@ TEST_CASE(parser_clone_dump)
 	TEST_ASSERT(g_strcmp0(storeDump->str, cloneDump->str) == 0);
 	g_string_free(storeDump, true);
 	g_string_free(cloneDump, true);
-
-	TEST_PASS;
 }
 
 TEST_CASE(path_modify)
@@ -175,8 +171,6 @@ TEST_CASE(path_modify)
 	TEST_ASSERT($(Store *, store, getStorePath)(store, "somekey/1337") == NULL);
 
 	$(void, store, freeStore)(store);
-
-	TEST_PASS;
 }
 
 TEST_CASE(path_create)
@@ -192,8 +186,6 @@ TEST_CASE(path_create)
 	TEST_ASSERT($(bool, store, setStorePath)(store, "array/some\\/sub\\\\array", $(Store *, store, createStoreArrayValue)(NULL)));
 
 	$(void, store, freeStore)(store);
-
-	TEST_PASS;
 }
 
 TEST_CASE(path_split)
@@ -206,8 +198,6 @@ TEST_CASE(path_split)
 	}
 
 	g_ptr_array_free(array, TRUE);
-
-	TEST_PASS;
 }
 
 TEST_CASE(merge)
@@ -228,8 +218,6 @@ TEST_CASE(merge)
 	g_string_free(solutionstr, true);
 	$(void, store, freeStore)(store);
 	$(void, store, freeStore)(solution);
-
-	TEST_PASS;
 }
 
 /**
@@ -245,8 +233,6 @@ TEST_CASE(parse_path)
 	TEST_ASSERT(g_strcmp0(path->content.string, "/home/user/file.cfg") == 0);
 
 	$(void, store, freeStore)(s);
-
-	TEST_PASS;
 }
 
 /**

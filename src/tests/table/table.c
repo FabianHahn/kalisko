@@ -94,8 +94,6 @@ TEST_CASE(basic_table_functions)
 	TEST_ASSERT(currentCell != NULL);
 
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }
 
 TEST_CASE(cell_template)
@@ -124,8 +122,6 @@ TEST_CASE(cell_template)
 
 	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }
 
 TEST_CASE(replace_table_cell)
@@ -160,8 +156,6 @@ TEST_CASE(replace_table_cell)
 
 	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }
 
 TEST_CASE(generator)
@@ -193,8 +187,6 @@ TEST_CASE(generator)
 	free(str);
 	$(void, table, freeCell)(tpl);
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }
 
 TEST_CASE(pre_alloc)
@@ -216,8 +208,6 @@ TEST_CASE(pre_alloc)
 	TEST_ASSERT(table->cols == 2);
 
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }
 
 TEST_CASE(no_pre_alloc)
@@ -234,6 +224,4 @@ TEST_CASE(no_pre_alloc)
 	TEST_ASSERT($(int, table, appendTableRow)(table, 5, NULL) == 1);
 
 	$(void, table, freeTable)(table);
-
-	TEST_PASS;
 }

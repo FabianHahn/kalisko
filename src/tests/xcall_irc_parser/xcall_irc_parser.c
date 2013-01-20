@@ -62,8 +62,6 @@ TEST_CASE(xcall_irc_parse)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/params/0")->content.string, "Gregor") == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_user_mask)
@@ -75,8 +73,6 @@ TEST_CASE(xcall_irc_parse_user_mask)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/host")->content.string, "kalisko.org") == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 
@@ -88,8 +84,6 @@ TEST_CASE(xcall_irc_parse_error)
 	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_no_message)
@@ -99,8 +93,6 @@ TEST_CASE(xcall_irc_parse_no_message)
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
@@ -110,6 +102,4 @@ TEST_CASE(xcall_irc_parse_user_mask_no_prefix)
 	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
-
-	TEST_PASS;
 }

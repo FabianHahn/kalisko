@@ -70,8 +70,6 @@ TEST_CASE(utf8Trailing)
 	TEST_ASSERT(parsedMessage->prefix == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 TEST_CASE(whitespaces)
@@ -94,8 +92,6 @@ TEST_CASE(whitespaces)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "    Do         something!") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 TEST_CASE(userMask)
@@ -114,8 +110,6 @@ TEST_CASE(userMask)
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
 	$(void, irc_parser, freeIrcUserMask)(userMask);
-
-	TEST_PASS;
 }
 
 TEST_CASE(ping)
@@ -131,8 +125,6 @@ TEST_CASE(ping)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "irc.gamesurge.net") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 TEST_CASE(noticeAuth)
@@ -150,8 +142,6 @@ TEST_CASE(noticeAuth)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Looking up your hostname") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 TEST_CASE(serverNotice)
@@ -169,8 +159,6 @@ TEST_CASE(serverNotice)
 	TEST_ASSERT(strcmp(parsedMessage->trailing, "*** Notice -- Received KILL message for grog. From Someone Path: Someone.operator.support!Someone (.)") == 0);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 /**
@@ -192,8 +180,6 @@ TEST_CASE(onlyCommand)
 	TEST_ASSERT(parsedMessage->trailing == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }
 
 /**
@@ -211,6 +197,4 @@ TEST_CASE(passDelimiter)
 	TEST_ASSERT(parsedMessage->trailing == NULL);
 
 	$(void, irc_parser, freeIrcMessage)(parsedMessage);
-
-	TEST_PASS;
 }

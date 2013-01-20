@@ -89,6 +89,4 @@ TEST_CASE(log_hook)
 	$(void, store, freeStore)(rets);
 
 	TEST_ASSERT($(bool, xcall, delXCallFunction)("test"));
-
-	TEST_PASS;
 }

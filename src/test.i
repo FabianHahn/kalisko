@@ -199,8 +199,4 @@ API void failTest(TestCase *test_case, char *error, ...);
  */
 #define TEST_FAIL(ERROR, ...) failTest(test_case, ERROR, ##__VA_ARGS__); return;
 
-// This has no effect. Passing a test is implicit. Define preserved for legacy code
-// TODO: Migrate all code using this and remove it
-#define TEST_PASS ;
-
 #endif

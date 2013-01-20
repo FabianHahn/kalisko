@@ -70,7 +70,6 @@ TEST_CASE(simple_readonly)
 
 	$(void, store, freeStore)(testConfig);
 
-	TEST_PASS;
 }
 
 TEST_CASE(writable_change_save)
@@ -107,5 +106,4 @@ TEST_CASE(writable_change_save)
 	TEST_ASSERT($(Store *, config, getConfigPath)("profileA/keyA1") == NULL);
 	TEST_ASSERT($(Store *, config, getConfigPath)("profileA/keyA2") == NULL);
 
-	TEST_PASS;
 }

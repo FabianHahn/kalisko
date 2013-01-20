@@ -63,8 +63,6 @@ TEST_CASE(plugin_add)
 	plugin.finalize = &finiPlugin;
 
 	TEST_ASSERT($(bool, irc_proxy_plugin, addIrcProxyPlugin)(&plugin));
-
-	TEST_PASS;
 }
 
 TEST_CASE(plugin_use)
@@ -100,8 +98,6 @@ TEST_CASE(plugin_use)
 	TEST_ASSERT(!$(bool, irc_proxy_plugin, disableIrcProxyPlugin)(proxy, "testplugin"));
 
 	freeProxyStub(proxy);
-
-	TEST_PASS;
 }
 
 TEST_CASE(plugin_del)
@@ -110,8 +106,6 @@ TEST_CASE(plugin_del)
 	TEST_ASSERT(g_queue_get_length(plugin.handlers) == 0);
 
 	g_queue_free(plugin.handlers);
-
-	TEST_PASS;
 }
 
 TEST_CASE(plugin_reuse)
@@ -127,8 +121,6 @@ TEST_CASE(plugin_reuse)
 	$(void, irc_proxy_plugin, disableIrcProxyPlugins)(proxy);
 
 	freeProxyStub(proxy);
-
-	TEST_PASS;
 }
 
 static IrcProxy *createProxyStub()

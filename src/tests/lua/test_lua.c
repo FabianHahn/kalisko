@@ -86,8 +86,6 @@ TEST_CASE(lua2store)
 	check = $(char *, lua, popLuaString)();
 	TEST_ASSERT(g_strcmp0(check, "13") == 0);
 	free(check);
-
-	TEST_PASS;
 }
 
 TEST_CASE(store2lua)
@@ -127,8 +125,6 @@ TEST_CASE(store2lua)
 	TEST_ASSERT(ret->content.integer == 42);
 
 	$(void, store, freeStore)(parsed);
-
-	TEST_PASS;
 }
 
 TEST_CASE(store2lua_rootlist)
@@ -146,8 +142,6 @@ TEST_CASE(store2lua_rootlist)
 	TEST_ASSERT(g_queue_get_length(ret->content.list) == 0);
 
 	$(void, store, freeStore)(parsed);
-
-	TEST_PASS;
 }
 
 TEST_CASE(store2lua_fail)
@@ -159,8 +153,6 @@ TEST_CASE(store2lua_fail)
 	// Test non-table argument
 	TEST_ASSERT($(bool, lua, evaluateLua)("return 42"));
 	TEST_ASSERT($(Store *, lua, popLuaStore)() == NULL);
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_invoke)
@@ -177,8 +169,6 @@ TEST_CASE(xcall_invoke)
 
 	$(void, store, freeStore)(retstore);
 	free(ret);
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_define)
@@ -196,8 +186,6 @@ TEST_CASE(xcall_define)
 	$(void, store, freeStore)(retstore);
 
 	TEST_ASSERT($(bool, lua, evaluateLua)("delXCallFunction('luatest')"));
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_define_error)
@@ -215,8 +203,6 @@ TEST_CASE(xcall_define_error)
 	$(void, store, freeStore)(retstore);
 
 	TEST_ASSERT($(bool, lua, evaluateLua)("delXCallFunction('luatest')"));
-
-	TEST_PASS;
 }
 
 TEST_CASE(xcall_direct_call)
@@ -231,6 +217,4 @@ TEST_CASE(xcall_direct_call)
 	free(ret);
 
 	TEST_ASSERT($(bool, lua, evaluateLua)("delXCallFunction('luatest')"));
-
-	TEST_PASS;
 }

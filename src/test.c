@@ -18,23 +18,37 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "test.h"
+
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define API
+#include <string.h> // strdup
+
+#include "dll.h"
 #include "log.h"
-#include "module.h"
-#include "types.h"
-#include "timer.h"
-#include "util.h"
-#include "test.h"
 #include "memory_alloc.h"
+#include "module.h"
+#include "timer.h"
+#include "types.h"
+#include "util.h"
+#define API
 
-static int test = 0;
-static int passed = 0;
-static int count = 0;
+#define TERMINAL_WIDTH 80
 
-#define BUF 4096
+// TODO: Use the logging facilities instead of printf for these
+#define TEST_OUTPUT_INFO(...) printf(__VA_ARGS__); printf("\n");
+#define TEST_OUTPUT_ERROR(...) fprintf(stderr, __VA_ARGS__); printf("\n");
+
+static unsigned int tests_passed = 0;
+static unsigned int tests_ran = 0;
+
+static void appendRight(GString *message, char *suffix);
+static TestFixture *createTestFixture(char *name, SetupFunction *setup, TeardownFunction *teardown);
+static void destroyTestFixture(TestFixture *fixture);
+static TestCase *createTestCase(char *name, TestFunction *function, TestFixture *fixture);
+static void destroyTestCase(TestCase *test_case);
+static bool testCaseFailed(TestCase *test_case);
 
 int main(int argc, char **argv)
 {
@@ -45,7 +59,7 @@ int main(int argc, char **argv)
 	initLog();
 	initModules();
 
-	printf("Running test cases...\n");
+	TEST_OUTPUT_INFO("Running test cases...\n");
 
 	char *execpath = getExecutablePath();
 	char *testdir = g_build_path("/", execpath, "tests", NULL);
@@ -54,7 +68,7 @@ int main(int argc, char **argv)
 	GDir *tests = g_dir_open(testdir, 0, &error);
 
 	if(tests == NULL) {
-		fprintf(stderr, "Error: Could not open tests dir: %s\n", error != NULL ? error->message : "no error message");
+		TEST_OUTPUT_ERROR("Error: Could not open tests dir: %s\n", error != NULL ? error->message : "no error message");
 		g_error_free(error);
 		return EXIT_FAILURE;
 	}
@@ -66,10 +80,8 @@ int main(int argc, char **argv)
 
 		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
-
 			if(!requestModule(modname)) {
-				test = 0;
-				reportTestResult(modname, "load", false, "Failed to load module");
+				TEST_OUTPUT_ERROR("Error: Failed to load test module: %s", modname);
 			} else {
 				revokeModule(modname);
 			}
@@ -87,40 +99,146 @@ int main(int argc, char **argv)
 
 	freeModules();
 
-	if(count) {
-		double perc = 100.0 * passed / count;
-		printf("\n%d of %d test cases passed (%.2f%%)\n", passed, count, perc);
+	if(tests_ran > 0) {
+		double perc = 100.0 * tests_passed / tests_ran;
+		TEST_OUTPUT_INFO("\n%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
 	}
 
 	return EXIT_SUCCESS;
 }
 
-API void incTestCount()
+API TestSuite *createTestSuite(char *name)
 {
-	test++;
+	TestSuite *result = ALLOCATE_OBJECT(TestSuite);
+	result->name = strdup(name);
+	result->test_cases = g_ptr_array_new_with_free_func((GDestroyNotify) &destroyTestCase);
+	result->test_fixtures = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyTestFixture);
+	return result;
 }
 
-API void resetTestCount()
+API void destroyTestSuite(TestSuite *test_suite)
 {
-	test = 0;
+	free(test_suite->name);
+	g_ptr_array_free(test_suite->test_cases, true);   // Frees(destroys) the contained structs
+	g_hash_table_destroy(test_suite->test_fixtures);  // Frees(destroys) the contained structs
+	free(test_suite);
 }
 
-API void reportTestResult(char *testsuite, char *testcase, bool pass, char *error, ...)
+API void addTestFixture(TestSuite *test_suite, char *name, SetupFunction *setup, TeardownFunction *teardown)
 {
-	if(pass) {
-		passed++;
-		printf("[%s] %s: Passed\n", testsuite, testcase);
-	} else {
-		va_list va;
-		char buffer[BUF];
+	assert(test_suite->test_fixtures != NULL);
+	TestFixture *test_fixture = createTestFixture(name, setup, teardown);
+	g_hash_table_replace(test_suite->test_fixtures, strdup(name), test_fixture);
+}
 
-		va_start(va, error);
-		vsnprintf(buffer, BUF, error, va);
-
-		printf("[%s] %s: Failed test #%d (%s)\n", testsuite, testcase, test, buffer);
+API void addTest(TestSuite *test_suite, char *name, TestFunction *test_function, char *fixture_name)
+{
+	assert(test_suite->test_fixtures != NULL);
+	assert(test_suite->test_cases != NULL);
+	TestFixture *test_fixture = NULL;
+	if(fixture_name != NULL) {
+		test_fixture = g_hash_table_lookup(test_suite->test_fixtures, fixture_name);
 	}
+	TestCase *test_case = createTestCase(name, test_function, test_fixture);
+	g_ptr_array_add(test_suite->test_cases, test_case);
+}
 
-	fflush(stdout);
+API void runTestSuite(TestSuite *test_suite)
+{
+	GPtrArray *cases = test_suite->test_cases;
+	for(int i = 0; i < cases->len; ++i) {
+		TestCase *test_case = g_ptr_array_index(cases, i);
 
-	count++;
+		GString *message = g_string_new("");
+		g_string_append_printf(message, "Test case [%s] %s:", test_suite->name, test_case->name);
+
+		TestFixture *fixture = test_case->test_fixture;
+		if(fixture != NULL && fixture->setup_function != NULL) {
+			fixture->setup_function();
+		}
+		test_case->test_function(test_case);
+		if(fixture != NULL && fixture->teardown_function !=NULL) {
+			fixture->teardown_function();
+		}
+
+		if(testCaseFailed(test_case)) {
+			appendRight(message, "FAIL");
+			g_string_append_printf(message, "\n  Error: %s", test_case->error);
+		} else {
+			tests_passed++;
+			appendRight(message, "PASS");
+		}
+
+		tests_ran++;
+
+		TEST_OUTPUT_INFO("%s", message->str);
+		g_string_free(message, true);
+	}
+}
+
+API void failTest(TestCase *test_case, char* error, ...)
+{
+	free(test_case->error);
+	va_list va;	
+	test_case->error = g_strdup_vprintf(error, va);
+}
+
+/**
+ * Appends spaces and the provided suffix to message such that the suffix is
+ * right-aligned in terminal output. If impossible, this just appends the suffix
+ */
+static void appendRight(GString *message, char *suffix)
+{
+	int free_space = TERMINAL_WIDTH - (strlen(suffix) + message->len);
+	if (free_space < 0) {
+		// No room on this line, just append (and it won't look pretty)
+		g_string_append(message, suffix);
+		return;
+	}
+	char *whitespace = g_strnfill(free_space, ' ');
+	g_string_append_printf(message, "%s%s", whitespace, suffix);
+	free(whitespace);
+}
+
+static TestFixture *createTestFixture(char *name, SetupFunction *setup, TeardownFunction *teardown)
+{
+	TestFixture *result = ALLOCATE_OBJECT(TestFixture);
+	result->name = strdup(name);
+	result->setup_function = setup;
+	result->teardown_function = teardown;
+	return result;
+}
+
+static void destroyTestFixture(TestFixture *test_fixture)
+{
+	if(test_fixture == NULL) {
+		return;
+	}
+	free(test_fixture->name);
+	free(test_fixture);
+}
+
+static TestCase *createTestCase(char *name, TestFunction *function, TestFixture *fixture)
+{
+	TestCase *result = ALLOCATE_OBJECT(TestCase);
+	result->name = strdup(name);
+	result->test_function = function;
+	result->test_fixture = fixture;
+	result->error = NULL;
+	return result;
+}
+
+static void destroyTestCase(TestCase *test_case)
+{
+	if(test_case == NULL) {
+		return;
+	}
+	free(test_case->name);
+	free(test_case->error);
+	free(test_case);
+}
+
+static bool testCaseFailed(TestCase *test_case)
+{
+	return test_case->error != NULL;
 }

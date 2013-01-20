@@ -31,56 +31,61 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 3));
 
+static HttpServer *server;
+static HttpRequest *request;
 static int counter;
+
 static bool incrementCounter()
 {
 	++counter;
 	return true;
 }
 
-TEST_CASE(lifecycle);
-TEST_CASE(handlers);
-
-TEST_SUITE_BEGIN(http_server)
-	TEST_CASE_ADD(lifecycle);
-	TEST_CASE_ADD(handlers);
-TEST_SUITE_END
-
-TEST_CASE(lifecycle)
+static void setup()
 {
-	HttpServer *server = createHttpServer("12345");
-	startHttpServer(server);
-	registerHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
-	unregisterHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
-	destroyHttpServer(server);
-}
-
-TEST_CASE(handlers)
-{
-	HttpServer *server = createHttpServer("12345");
+	server = createHttpServer("12345");
 	startHttpServer(server);
 	registerHttpServerRequestHandler(server, "/some/hierarchical/part*", &incrementCounter, NULL);
 
-	HttpRequest *request;
-	HttpResponse *response;
+	counter = 0;
 
 	request = createHttpRequest();
 	request->method = HTTP_REQUEST_METHOD_GET;
+}
+
+static void teardown()
+{
+	destroyHttpServer(server);
+	destroyHttpRequest(request);
+}
+
+TEST_CASE(lifecycle)
+{
+	registerHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
+	unregisterHttpServerRequestHandler(server, "/.*", &incrementCounter, NULL);
+}
+
+TEST_CASE(handler)
+{
 	request->hierarchical = strdup("/some/hierarchical/part");
-	counter = 0;
-	response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
 	TEST_ASSERT(counter == 1);
 	destroyHttpResponse(response);
-	destroyHttpRequest(request);
+}
 
-	request = createHttpRequest();
-	request->method = HTTP_REQUEST_METHOD_GET;
+TEST_CASE(no_handler)
+{
 	request->hierarchical = strdup("/some/other/hierarchical/part");
-	counter = 0;
-	response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
 	TEST_ASSERT(counter == 0);
 	destroyHttpResponse(response);
-	destroyHttpRequest(request);
-
-	destroyHttpServer(server);
 }
+
+TEST_SUITE_BEGIN(http_server)
+	ADD_TEST_FIXTURE(HttpServerTest, &setup, &teardown);
+	ADD_FIXTURED_TEST(lifecycle, HttpServerTest);
+	ADD_FIXTURED_TEST(handler, HttpServerTest);
+	ADD_FIXTURED_TEST(no_handler, HttpServerTest);
+TEST_SUITE_END

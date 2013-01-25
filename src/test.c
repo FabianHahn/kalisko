@@ -45,9 +45,20 @@
 #define TEST_OUTPUT_INFO(...) printf(__VA_ARGS__); printf("\n");
 #define TEST_OUTPUT_ERROR(...) fprintf(stderr, __VA_ARGS__); printf("\n");
 
+/** Stores the number tests which passed */
 static unsigned int tests_passed = 0;
+
+/** Stores the number of tests which have been run so far */
 static unsigned int tests_ran = 0;
 
+/**
+ * Stores a whitelist of regular expressions used to determine whether to
+ * execute a test suite
+ */
+static GPtrArray *test_suite_whitelist = NULL;
+
+static void populateWhitelist();
+static bool isWhitelisted(char *suite_name);
 static void appendRight(GString *message, char *suffix);
 static TestFixture *createTestFixture(char *name, SetupFunction *setup, TeardownFunction *teardown);
 static void destroyTestFixture(TestFixture *fixture);
@@ -66,6 +77,9 @@ int main(int argc, char **argv)
 	initTimers();
 	initLog();
 	initModules();
+
+	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);
+	populateWhitelist();
 
 	TEST_OUTPUT_INFO("Running test cases...\n");
 
@@ -112,6 +126,8 @@ int main(int argc, char **argv)
 		TEST_OUTPUT_INFO("\n%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
 	}
 
+	g_ptr_array_free(test_suite_whitelist, true);
+
 	return EXIT_SUCCESS;
 }
 
@@ -153,6 +169,10 @@ API void addTest(TestSuite *test_suite, char *name, TestFunction *test_function,
 
 API void runTestSuite(TestSuite *test_suite)
 {
+	if(test_suite_whitelist->len != 0 && !isWhitelisted(test_suite->name)) {
+		return;
+	}
+
 	GPtrArray *cases = test_suite->test_cases;
 	for(int i = 0; i < cases->len; ++i) {
 		TestCase *test_case = g_ptr_array_index(cases, i);
@@ -190,6 +210,39 @@ API void failTest(TestCase *test_case, char* error, ...)
 	va_list va;	
 	va_start(va, error);
 	test_case->error = g_strdup_vprintf(error, va);
+}
+
+static void populateWhitelist()
+{
+	typedef char* (*GetOptValueType)(char *opt, ...);
+	requestModule("getopts");
+	void *getopts_handle = getModuleHandle("getopts");
+	GetOptValueType getOptValue = (GetOptValueType) dlsym(getopts_handle, "getOptValue");
+
+	typedef size_t (*ParseCommaSeparatedType)(char *str, GPtrArray *out);
+	requestModule("string_util");
+	void *string_util_handle = getModuleHandle("string_util");
+	ParseCommaSeparatedType parseCommaSeparated = (ParseCommaSeparatedType) dlsym(string_util_handle, "parseCommaSeparated");
+
+	char *module_list = getOptValue("test-modules", "t", NULL);  // Not owned.
+	if(module_list != NULL) {
+		size_t whitelisted = parseCommaSeparated(module_list, test_suite_whitelist);
+		TEST_OUTPUT_INFO("Whitelisted %lu test suite names", whitelisted);
+	}
+
+	revokeModule("string_util");
+	revokeModule("getopts");
+}
+
+static bool isWhitelisted(char *suite_name)
+{
+	for(int i = 0; i < test_suite_whitelist->len; ++i) {
+		char *list_entry = g_ptr_array_index(test_suite_whitelist, i);
+		if(strcmp(list_entry, suite_name) == 0) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**

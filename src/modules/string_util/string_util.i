@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,7 +28,6 @@
  */
 const char WHITESPACE_CHARS[] = "\r\t\n\v\f ";
 
-
 /**
  * Replaces all multiple spaces by a single one within the given string.
  *
@@ -43,11 +43,27 @@ API void stripDuplicateWhitespace(char *str);
 API void stripDuplicateNewlines(char *str);
 
 /**
- * Converts a string into a valid filename by replacing all non-alphanumeric non-# characters by underscores
+ * Converts a string into a valid filename by replacing all non-alphanumeric non-# characters by underscores.
  *
- * @param str		the string to convert to a filename
+ * @param str	The string to convert to a filename.
  */
 API void convertToFilename(char *str);
-API char *convertToUtf8(const char *string);
+
+/**
+ * Converts a NUL terminated string to UTF-8 if needed, which can be useful for displaying it in GUI widgets and the like that require UTF-8.
+ *
+ * @param str   The string to convert to UTF-8.
+ * @result      The converted string or NULL on failure.
+ */
+API char *convertToUtf8(const char *str);
+
+/**
+ * Attempts to parse a string as a set of comma-separated values and adds them to an array.
+ *
+ * @param str   The str to parse
+ * @param out   An array of pointers to add the new strings to. Note that the new strins must be freed.
+ * @result      The number of strings added to out.
+ */
+API size_t parseCommaSeparated(char *str, GPtrArray *out);
 
 #endif

@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,8 +19,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
 #include <ctype.h>
+#include <glib.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "dll.h"
@@ -31,7 +33,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 5);
+MODULE_VERSION(0, 1, 6);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -114,13 +116,7 @@ API void convertToFilename(char *str)
 	}
 }
 
-/**
- * Converts a NUL terminated string to UTF-8 if needed, which can be useful for displaying it in GUI widgets and the like that require UTF-8
- *
- * @param string			the string to convert to UTF-8
- * @result					the converted string or NULL on failure
- */
-char *convertToUtf8(const char *string)
+API char *convertToUtf8(const char *string)
 {
 	if(g_utf8_validate(string, -1, NULL)) { // already correct UTF-8
 		return strdup(string);
@@ -135,4 +131,20 @@ char *convertToUtf8(const char *string)
 	}
 
 	return NULL; // failure
+}
+
+API size_t parseCommaSeparated(char *str, GPtrArray *out)
+{
+	size_t added = 0;
+	if (str == NULL || out == NULL) {
+		return added;
+	}
+
+	char **parts = g_strsplit(str, ",", /* max elements */ -1);
+	for(int i = 0; parts[i] != NULL; ++i) {
+		g_ptr_array_add(out, strdup(parts[i]));
+		++added;
+	}
+	g_strfreev(parts);
+	return added;
 }

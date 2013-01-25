@@ -214,6 +214,10 @@ API void failTest(TestCase *test_case, char* error, ...)
 
 static void populateWhitelist()
 {
+	// TODO: Make this work on windows (right now, dlsym is hard coded).
+	// Actually, add functionality to retrieve functions from modules to the
+	// module API.
+
 	typedef char* (*GetOptValueType)(char *opt, ...);
 	requestModule("getopts");
 	void *getopts_handle = getModuleHandle("getopts");

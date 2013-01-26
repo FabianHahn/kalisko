@@ -127,7 +127,6 @@ if env['debug']:
 
 for prefix, env in targets:
 	# Build modules
-	print env['modules']
 	for moddir in modules:
 		if os.path.isdir(os.path.join('src/modules', moddir)) and moddir in env['modules'] and not moddir in env['exclude']:
 			if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):

@@ -17,6 +17,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('core')
 Import('corefiles')
+Import('binary_name')
 import sys
 
 # core configure checks
@@ -31,4 +32,4 @@ if not core.GetOption('clean'):
 	core = conf.Finish()
 
 # Build core
-prog = core.Program('kalisko', corefiles)
+prog = core.Program(binary_name, corefiles)

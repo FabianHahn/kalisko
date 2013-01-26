@@ -19,16 +19,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
 import re
-
 from util.kic import kic
 
 ABSOLUTE_PATH = os.getcwd()
-KIC_BINARY_PATH = os.path.join(ABSOLUTE_PATH, 'util', 'kic')
-INTERFACES_ROOT_PATH = os.path.join(ABSOLUTE_PATH, 'src')
 
-kic.buildInterfaces(KIC_BINARY_PATH, INTERFACES_ROOT_PATH)
-
-modules = os.listdir('src/modules')
+kic.buildInterfaces(os.path.join(ABSOLUTE_PATH, 'util', 'kic'), os.path.join(ABSOLUTE_PATH, 'src'))
+modules = os.listdir(os.path.join(ABSOLUTE_PATH, 'src', 'modules'))
+test_modules = os.listdir(os.path.join(ABSOLUTE_PATH, 'src', 'tests'))
 
 def CheckPKGConfig(context, name):
      context.Message( 'Checking pkg-config for %s... ' % name )
@@ -42,10 +39,12 @@ vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
 vars.Add(BoolVariable('release', 'Set to build release target', 1))
 vars.Add(BoolVariable('debug', 'Set to build debug target', 0))
-vars.Add(BoolVariable('test', 'Set to build test target', 0))
+vars.Add(BoolVariable('test', 'Set to build test binary instead of the regular binary', 0))
 vars.Add(BoolVariable('force_zero_revision', 'Force Mercurial revision to zero to prevent rebuilds after committing when developing', 0))
 vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], modules))
+vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], test_modules))
 vars.Add(ListVariable('exclude', 'Prevents the selected modules from being built', [], modules))
+vars.Add(ListVariable('test_exclude', 'Prevents the selected unit test modules from being built', [], test_modules))
 vars.Add('define', 'Custom defines to be passed to the compiler as DEFINE1[:VALUE1],DEFINE2[:VALUE2],...', '')
 vars.Add('cflags_release', 'Flags to be passed to the compiler when compiling the release target', '-pipe -Os')
 vars.Add('cflags_debug', 'Flags to be passed to the compiler when compiling the debug target', '-pipe -g')
@@ -65,9 +64,9 @@ if testenv['PLATFORM'] != 'win32':
 
 	if not conf.CheckLibWithHeader('dl', 'dlfcn.h', 'C'):
 		print('Error: Could not find libdl and/or the corresponding dlfcn.h header file!')
-		Exit(1)	
-		
-	env = conf.Finish()	
+		Exit(1)
+
+	env = conf.Finish()
 
 if env['force_zero_revision']:
 	srcversion = '0'
@@ -77,7 +76,7 @@ else:
 	srcversion = cmd.read()
 	matches = re.search('^.*: (\d+):', srcversion)
 	srcversion = matches.group(1)
-	
+
 env.Append(CPPDEFINES = [('SRC_REVISION', srcversion)])
 
 cppdefines = []
@@ -88,7 +87,7 @@ for value in defines:
 		cppdefines = cppdefines + [(keyvalue[0], keyvalue[1])]
 	elif len(keyvalue) == 1:
 		cppdefines = cppdefines + [keyvalue[0]]
-		
+
 env.Append(CPPDEFINES = cppdefines)
 
 if not env['verbose']:
@@ -117,24 +116,18 @@ if env['release']:
 	tenv.MergeFlags(env['cflags_release'])
 	tdir = 'bin/release'
 	tenv.VariantDir(tdir, 'src', 0)
-	targets = targets + [(tdir, tenv, False)]
+	targets.append((tdir, tenv))
 
 if env['debug']:
 	tenv = env.Clone()
 	tenv.MergeFlags(env['cflags_debug'])
 	tdir = 'bin/debug'
 	tenv.VariantDir(tdir, 'src', 0)
-	targets = targets + [(tdir, tenv, False)]
-	
-if env['test']:
-	tenv = env.Clone()
-	tenv.MergeFlags(env['cflags_test'])
-	tdir = 'bin/test'
-	tenv.VariantDir(tdir, 'src', 0)
-	targets = targets + [(tdir, tenv, True)]
-	
-for prefix, env, buildtests in targets:
+	targets.append((tdir, tenv))
+
+for prefix, env in targets:
 	# Build modules
+	print env['modules']
 	for moddir in modules:
 		if os.path.isdir(os.path.join('src/modules', moddir)) and moddir in env['modules'] and not moddir in env['exclude']:
 			if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
@@ -142,28 +135,24 @@ for prefix, env, buildtests in targets:
 				module = env.Clone()
 				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
 				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests'])
-	
-	# Build tests
-	if buildtests:
-		# Build tester core
+
+	# Build test modules
+	for testdir in test_modules:
+		if os.path.isdir(os.path.join('src', 'tests', testdir)) and testdir in env['test_modules'] and not testdir in env['test_exclude']:
+			if os.path.isfile(os.path.join('src', 'tests', testdir, 'SConscript')):
+				# Build test module
+				test = env.Clone()
+				SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), ['test', 'custom_tests'])
+
+	# Build executable
+	if env['test']:
 		core = env.Clone()
 		core.Append(CPPDEFINES = ['DISABLE_LOG_DEFAULT'])
-		corefiles = [x for x in core.Glob('bin/test/*.c') if not x.name == 'kalisko.c']
-		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
-	
-		# Build test suites
-		tests = os.listdir('src/tests')
-		
-		for testdir in tests:
-			if os.path.isdir(os.path.join('src/tests', testdir)) and moddir in env['modules'] and not testdir in env['exclude']:
-				if os.path.isfile(os.path.join('src/tests', testdir, 'SConscript')):
-					# Build test
-					test = env.Clone()		
-					SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), ['test', 'custom_tests'])
-					
+		corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'kalisko.c']
+		binary_name = 'kalisko_test'
+		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles', 'binary_name'])
 	else:
-		# Build core
 		core = env.Clone()
 		corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'test.c']
-		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles'])
-					
+		binary_name = 'kalisko'
+		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles', 'binary_name'])

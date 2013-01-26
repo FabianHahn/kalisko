@@ -214,19 +214,22 @@ API void failTest(TestCase *test_case, char* error, ...)
 
 static void populateWhitelist()
 {
-	// TODO: Make this work on windows (right now, dlsym is hard coded).
-	// Actually, add functionality to retrieve functions from modules to the
-	// module API.
+	requestModule("getopts");
+	requestModule("string_util");
 
 	typedef char* (*GetOptValueType)(char *opt, ...);
-	requestModule("getopts");
-	void *getopts_handle = getModuleHandle("getopts");
-	GetOptValueType getOptValue = (GetOptValueType) dlsym(getopts_handle, "getOptValue");
+	GetOptValueType getOptValue = (GetOptValueType) getLibraryFunctionByName("getopts", "getOptValue");
+	if(getOptValue == NULL) {
+		TEST_OUTPUT_ERROR("Could not resolve function getOptValue, could not populate whitelist");
+		return;
+	}
 
 	typedef size_t (*ParseCommaSeparatedType)(char *str, GPtrArray *out);
-	requestModule("string_util");
-	void *string_util_handle = getModuleHandle("string_util");
-	ParseCommaSeparatedType parseCommaSeparated = (ParseCommaSeparatedType) dlsym(string_util_handle, "parseCommaSeparated");
+	ParseCommaSeparatedType parseCommaSeparated = (ParseCommaSeparatedType) getLibraryFunctionByName("string_util", "parseCommaSeparated");
+	if(parseCommaSeparated == NULL) {
+		TEST_OUTPUT_ERROR("Could not resolve parseCommaSeparated, could not populate whitelist");
+		return;
+	}
 
 	char *module_list = getOptValue("test-modules", "t", NULL);  // Not owned.
 	if(module_list != NULL) {

@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -408,6 +409,16 @@ API bool checkModuleDependency(char *source, char *target)
 	}
 
 	return checkModuleDependencyByModule(srcmod, destmod);
+}
+
+API void *getLibraryFunctionByName(char *module_name, char *function_name)
+{
+	Module *mod = g_hash_table_lookup(modules, module_name);
+	if(mod == NULL) {
+		logMessage("core", LOG_TYPE_ERROR, "Failed to fetch function '%s' of module '%s': No such module loaded", function_name, module_name);
+		return NULL;
+	}
+	return getLibraryFunction(mod, function_name);
 }
 
 /**

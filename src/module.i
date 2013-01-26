@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -211,6 +212,15 @@ API bool addModuleRuntimeDependency(char *source, char *target);
  * @result				true if source depends on target (directly or indirectly)
  */
 API bool checkModuleDependency(char *source, char *target);
+
+/**
+ * Attempts to fetch a function from a module by name.
+ *
+ * @param module_name           the name of the module to search in
+ * @param function_name         the name of the function to search for
+ * @result                      a pointer to the function if found, NULL otherwise
+ */
+API void *getLibraryFunctionByName(char *module_name, char *function_name);
 
 #define MODULE_NAME_FUNC "module_name"
 #define MODULE_AUTHOR_FUNC "module_author"

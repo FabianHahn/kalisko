@@ -50,6 +50,23 @@ For a complete list of build options run:
 
 $ scons -h
 
+------------
+ Unit Tests
+------------
+
+Compile Kalisko's modules, unit test modules and unit test binary:
+
+$ scons modules=all test_modules=all test=1
+
+The directory src/tests contains all available unit test modules. To run all
+built tests:
+
+$ ./kalisko_test
+
+To select names of test suites to run, pass '-t <test_suite_name>'
+
+$ ./kalisko_test -t http_server
+
 ---------
  Usage
 ---------

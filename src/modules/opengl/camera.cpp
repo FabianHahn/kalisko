@@ -81,7 +81,7 @@ API void moveOpenGLCamera(OpenGLCamera *camera, OpenGLCameraMove move, double am
 			step = -amount * *camera->up;
 		break;
 		default:
-			LOG_ERROR("Trying to move OpenGL camera into unspecified direction %d", move);
+			logError("Trying to move OpenGL camera into unspecified direction %d", move);
 		break;
 	}
 
@@ -114,7 +114,7 @@ API void tiltOpenGLCamera(OpenGLCamera *camera, OpenGLCameraTilt tilt, double an
 			axis = -*camera->up;
 		break;
 		default:
-			LOG_ERROR("Trying to tilt OpenGL camera into unspecified direction %d", tilt);
+			logError("Trying to tilt OpenGL camera into unspecified direction %d", tilt);
 		break;
 	}
 

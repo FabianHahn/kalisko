@@ -28,7 +28,7 @@ API GtkBuilder *loadGtkBuilderGui(const char *filename)
     GtkBuilder *builder = gtk_builder_new();
     GError *err = NULL;
     if(gtk_builder_add_from_file(builder, filename, &err) == 0) {
-    	LOG_ERROR("Failed to load GTK+ Builder GUI from '%s': %s", filename, err->message);
+    	logError("Failed to load GTK+ Builder GUI from '%s': %s", filename, err->message);
     	g_error_free(err);
     	return NULL;
     }

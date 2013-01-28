@@ -54,6 +54,6 @@ MODULE_FINALIZE
 
 static void handleSigint(void *subject, const char *event, void *custom_data, va_list args)
 {
-	LOG_DEBUG("Got SIGINT. Starts exiting gracefully.");
+	logInfo("Got SIGINT. Starts exiting gracefully.");
 	$$(void, exitGracefully)();
 }

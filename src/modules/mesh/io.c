@@ -59,7 +59,7 @@ API void freeMeshIO()
 API bool addMeshIOReadHandler(const char *extension, MeshIOReadHandler *handler)
 {
 	if(g_hash_table_lookup(readHandlers, extension) != NULL) {
-		LOG_ERROR("Trying to add mesh IO reading handler for already handled extension '%s'", extension);
+		logError("Trying to add mesh IO reading handler for already handled extension '%s'", extension);
 		return false;
 	}
 
@@ -75,14 +75,14 @@ API bool deleteMeshIOReadHandler(const char *extension)
 API Mesh *readMeshFromFile(const char *filename)
 {
 	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
-		LOG_ERROR("Trying to read mesh from non existing file '%s'", filename);
+		logError("Trying to read mesh from non existing file '%s'", filename);
 		return NULL;
 	}
 
 	char *ext;
 
 	if((ext = g_strrstr(filename, ".")) == NULL) {
-		LOG_ERROR("Trying to read mesh from extensionless file '%s'", filename);
+		logError("Trying to read mesh from extensionless file '%s'", filename);
 		return NULL;
 	}
 
@@ -90,7 +90,7 @@ API Mesh *readMeshFromFile(const char *filename)
 
 	MeshIOReadHandler *handler;
 	if((handler = g_hash_table_lookup(readHandlers, ext)) == NULL) {
-		LOG_ERROR("Tried to read mesh file '%s', but no handler was found for the extension '%s'", filename, ext);
+		logError("Tried to read mesh file '%s', but no handler was found for the extension '%s'", filename, ext);
 		return NULL;
 	}
 
@@ -102,7 +102,7 @@ API Mesh *readMeshFromFile(const char *filename)
 API bool addMeshIOWriteHandler(const char *extension, MeshIOWriteHandler *handler)
 {
 	if(g_hash_table_lookup(writeHandlers, extension) != NULL) {
-		LOG_ERROR("Trying to add mesh IO writing handler for already handled extension '%s'", extension);
+		logError("Trying to add mesh IO writing handler for already handled extension '%s'", extension);
 		return false;
 	}
 
@@ -120,7 +120,7 @@ API bool writeMeshToFile(const char *filename, Mesh *mesh)
 	char *ext;
 
 	if((ext = g_strrstr(filename, ".")) == NULL) {
-		LOG_ERROR("Trying to write mesh to extensionless file '%s'", filename);
+		logError("Trying to write mesh to extensionless file '%s'", filename);
 		return false;
 	}
 
@@ -128,7 +128,7 @@ API bool writeMeshToFile(const char *filename, Mesh *mesh)
 
 	MeshIOWriteHandler *handler;
 	if((handler = g_hash_table_lookup(writeHandlers, ext)) == NULL) {
-		LOG_ERROR("Tried to write mesh to file '%s', but no handler was found for the extension '%s'", filename, ext);
+		logError("Tried to write mesh to file '%s', but no handler was found for the extension '%s'", filename, ext);
 		return false;
 	}
 
@@ -147,7 +147,7 @@ static Mesh *readMeshStore(const char *filename)
 {
 	Store *store;
 	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
-		LOG_ERROR("Failed to parse mesh store file '%s'", filename);
+		logError("Failed to parse mesh store file '%s'", filename);
 		return NULL;
 	}
 

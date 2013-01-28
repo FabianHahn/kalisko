@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,7 +18,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h> // vsnprintf
 #include <stdarg.h> // va_list, va_start
@@ -28,17 +28,15 @@
 #define API
 #include "log.h"
 
-#ifndef LOG_DEFAULT_LEVEL
-#define LOG_DEFAULT_LEVEL LOG_TYPE_DEBUG
-#endif
-
 static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, const char *message, void *userData);
-static void defaultLogHandler(const char *name, LogType type, const char *message);
+static void defaultLogHandler(const char *name, LogLevel level, const char *message);
 
+static LogLevel defaultLevel;
 static LogHandler *logHandler = &defaultLogHandler;
 
-API void initLog()
+API void initLog(LogLevel level)
 {
+	defaultLevel = level;
 	g_log_set_default_handler(handleGlibLogMessage, NULL);
 }
 
@@ -51,7 +49,7 @@ API void setLogHandler(LogHandler *handler)
 	}
 }
 
-API void logMessage(const char *module, LogType type, const char *message, ...)
+API void logMessage(const char *module, LogLevel level, const char *message, ...)
 {
 	va_list va;
 	char buffer[LOG_MSG_MAXLEN];
@@ -59,7 +57,26 @@ API void logMessage(const char *module, LogType type, const char *message, ...)
 	va_start(va, message);
 	vsnprintf(buffer, LOG_MSG_MAXLEN, message, va);
 
-	logHandler(module, type, buffer);
+	logHandler(module, level, buffer);
+}
+
+API const char *getStaticLogLevelName(LogLevel level)
+{
+	const char *name = "unknown";
+
+	if(level & LOG_LEVEL_TRACE) {
+		name = "trace";
+	} else if(level & LOG_LEVEL_INFO) {
+		name = "info";
+	} else if(level & LOG_LEVEL_NOTICE) {
+		name = "notice";
+	} else if(level & LOG_LEVEL_WARNING) {
+		name = "warning";
+	} else if(level & LOG_LEVEL_ERROR) {
+		name = "error";
+	}
+
+	return name;
 }
 
 /**
@@ -76,55 +93,38 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 
 	switch(logLevel) {
 		case G_LOG_LEVEL_CRITICAL:
-			logMessage("glib", LOG_TYPE_ERROR, "%s: CRITICAL: %s", fixedDomain, message);
-			break;
+			logMessage("glib", LOG_LEVEL_ERROR, "%s: CRITICAL: %s", fixedDomain, message);
+		break;
 		case G_LOG_LEVEL_ERROR:
-			logMessage("glib", LOG_TYPE_ERROR, "%s: %s", fixedDomain, message);
-			break;
+			logMessage("glib", LOG_LEVEL_ERROR, "%s: %s", fixedDomain, message);
+		break;
 		case G_LOG_LEVEL_WARNING:
-			logMessage("glib", LOG_TYPE_WARNING, "%s: %s", fixedDomain, message);
-			break;
-		case G_LOG_LEVEL_INFO:
-			logMessage("glib", LOG_TYPE_INFO, "%s: %s", fixedDomain, message);
-			break;
+			logMessage("glib", LOG_LEVEL_WARNING, "%s: %s", fixedDomain, message);
+		break;
 		case G_LOG_LEVEL_MESSAGE:
-			logMessage("glib", LOG_TYPE_ERROR, "%s: MESSAGE: %s", fixedDomain, message);
-			break;
+			logMessage("glib", LOG_LEVEL_NOTICE, "%s: %s", fixedDomain, message);
+		break;
+		case G_LOG_LEVEL_INFO:
+			logMessage("glib", LOG_LEVEL_INFO, "%s: %s", fixedDomain, message);
+		break;
 		case G_LOG_LEVEL_DEBUG:
-			logMessage("glib", LOG_TYPE_DEBUG, "%s: %s", fixedDomain, message);
-			break;
+			logMessage("glib", LOG_LEVEL_TRACE, "%s: %s", fixedDomain, message);
+		break;
 		default:
-			logMessage("glib", LOG_TYPE_WARNING, "Unknown '%s' log type: %d, message: '%s'", fixedDomain, logLevel, message);
+			logMessage("glib", LOG_LEVEL_WARNING, "Unknown '%s' log type: %d, message: '%s'", fixedDomain, logLevel, message);
+		break;
 	}
 }
 
-static void defaultLogHandler(const char *name, LogType type, const char *message)
+static void defaultLogHandler(const char *name, LogLevel level, const char *message)
 {
-#ifndef DISABLE_LOG_DEFAULT
 	GDateTime *now = g_date_time_new_now_local();
 
-	char *typestr = NULL;
-	switch(LOG_DEFAULT_LEVEL) {
-		case LOG_TYPE_DEBUG:
-			if(type == LOG_TYPE_DEBUG)
-				typestr = "debug";
-		case LOG_TYPE_INFO:
-			if(type == LOG_TYPE_INFO)
-				typestr = "info";
-		case LOG_TYPE_WARNING:
-			if(type == LOG_TYPE_WARNING)
-				typestr = "warning";
-		case LOG_TYPE_ERROR:
-			if(type == LOG_TYPE_ERROR)
-				typestr = "error";
-	}
-
-	if(typestr != NULL) {
-		fprintf(stderr, "[%02d:%02d:%02d] [%s:%s] %s\n", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), name, typestr, message);
+	if(defaultLevel & level) {
+		fprintf(stderr, "[%02d:%02d:%02d] [%s:%s] %s\n", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), name, getStaticLogLevelName(level), message);
 	}
 
 	g_date_time_unref(now);
 	fflush(stderr);
-#endif
 }
 

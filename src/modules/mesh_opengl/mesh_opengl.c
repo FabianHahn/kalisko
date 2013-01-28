@@ -91,7 +91,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveMesh(Mesh *mesh, GLenum usage)
 API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
-		LOG_ERROR("Failed to synchronize OpenGL primitive mesh: Primitive is not a mesh");
+		logError("Failed to synchronize OpenGL primitive mesh: Primitive is not a mesh");
 		return false;
 	}
 
@@ -112,7 +112,7 @@ API bool synchronizeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
-		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		logError("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
 		return false;
 	}
 
@@ -145,7 +145,7 @@ API bool drawOpenGLPrimitiveMesh(OpenGLPrimitive *primitive, void *options_p)
 API void freeOpenGLPrimitiveMesh(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "mesh") != 0) {
-		LOG_ERROR("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
+		logError("Failed to update OpenGL primitive mesh: Primitive is not a mesh");
 		return;
 	}
 

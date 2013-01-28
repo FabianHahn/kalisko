@@ -75,7 +75,7 @@ API void reshapeQuadtree(Quadtree *tree, int rootX, int rootY, int rootLevel)
 	tree->create(tree, newRoot);
 
 	QuadtreeAABB box = quadtreeNodeAABB(tree->root);
-	LOG_DEBUG("Reshaping quadtree to range [%d,%d]x[%d,%d]", box.minX, box.maxX, box.minY, box.maxY);
+	logInfo("Reshaping quadtree to range [%d,%d]x[%d,%d]", box.minX, box.maxX, box.minY, box.maxY);
 	fillTreeNodes(tree, tree->root);
 }
 
@@ -103,7 +103,7 @@ API void expandQuadtree(Quadtree *tree, double x, double y)
 	bool isLowerX = x < box.minX;
 	bool isLowerY = y < box.minY;
 
-	LOG_DEBUG("Expanding quadtree from range [%d,%d]x[%d,%d] to cover point (%f,%f)", box.minX, box.maxX, box.minY, box.maxY, x, y);
+	logInfo("Expanding quadtree from range [%d,%d]x[%d,%d] to cover point (%f,%f)", box.minX, box.maxX, box.minY, box.maxY, x, y);
 
 	QuadtreeNode *newRoot = ALLOCATE_OBJECT(QuadtreeNode);
 	newRoot->level = tree->root->level + 1;

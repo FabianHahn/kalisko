@@ -82,7 +82,7 @@ API bool initLuaStateXCall(lua_State *state)
 	GHashTable *functionRefs;
 
 	if(g_hash_table_lookup(stateFunctions, state) != NULL) {
-		LOG_ERROR("Cannot init Lua XCall interface: State %p already has an XCall functionRefs entry", state);
+		logError("Cannot init Lua XCall interface: State %p already has an XCall functionRefs entry", state);
 		return false;
 	}
 
@@ -109,7 +109,7 @@ API bool freeLuaStateXCall(lua_State *state)
 {
 	GHashTable *functionRefs;
 	if((functionRefs = g_hash_table_lookup(stateFunctions, state)) == NULL) {
-		LOG_ERROR("Cannot free Lua XCall interface: State %p doesn't have an XCall functionRefs entry", state);
+		logError("Cannot free Lua XCall interface: State %p doesn't have an XCall functionRefs entry", state);
 		return false;
 	}
 
@@ -223,13 +223,13 @@ static int lua_addXCallFunction(lua_State *state)
 
 	GHashTable *functionRefs;
 	if((functionRefs = g_hash_table_lookup(stateFunctions, state)) == NULL) {
-		LOG_ERROR("lua_addXCallFunction: Cannot find functionRefs for state %p", state);
+		logError("lua_addXCallFunction: Cannot find functionRefs for state %p", state);
 		lua_pushboolean(state, false);
 		return 1;
 	}
 
 	if(!$(bool, xcall, addXCallFunction)(name, &xcall_luaXCallFunction)) { // Failed to add XCall
-		LOG_ERROR("lua_addXCallFunction: Failed to add XCall function '%s'", name);
+		logError("lua_addXCallFunction: Failed to add XCall function '%s'", name);
 		lua_pushboolean(state, false);
 		return 1;
 	}
@@ -241,7 +241,7 @@ static int lua_addXCallFunction(lua_State *state)
 	g_hash_table_insert(functionRefs, dupname, ref_container);
 	g_hash_table_insert(functionState, dupname, state);
 
-	LOG_INFO("Added Lua XCall function '%s'", name);
+	logNotice("Added Lua XCall function '%s'", name);
 
 	lua_pushboolean(state, true);
 	return 1;
@@ -260,7 +260,7 @@ static int lua_delXCallFunction(lua_State *state)
 	lua_State *fstate = g_hash_table_lookup(functionState, name);
 
 	if(fstate == NULL) {
-		LOG_ERROR("lua_delXCallFunction: Cannot find Lua state for Lua XCall function name '%s'", name);
+		logError("lua_delXCallFunction: Cannot find Lua state for Lua XCall function name '%s'", name);
 		lua_pushboolean(state, false);
 		return 1;
 	}
@@ -268,7 +268,7 @@ static int lua_delXCallFunction(lua_State *state)
 	GHashTable *functionRefs = g_hash_table_lookup(stateFunctions, fstate);
 
 	if(functionRefs == NULL) {
-		LOG_ERROR("lua_delXCallFunction: Cannot find functionRefs table for Lua XCall function name '%s' in state %p", name, fstate);
+		logError("lua_delXCallFunction: Cannot find functionRefs table for Lua XCall function name '%s' in state %p", name, fstate);
 		lua_pushboolean(state, false);
 		return 1;
 	}
@@ -276,7 +276,7 @@ static int lua_delXCallFunction(lua_State *state)
 	int *refp = g_hash_table_lookup(functionRefs, name);
 
 	if(refp == NULL) {
-		LOG_ERROR("lua_delXCallFunction: Cannot find Lua XCall function reference for Lua XCall function name '%s' in state %p", name, fstate);
+		logError("lua_delXCallFunction: Cannot find Lua XCall function reference for Lua XCall function name '%s' in state %p", name, fstate);
 		lua_pushboolean(state, false);
 		return 1;
 	}
@@ -284,7 +284,7 @@ static int lua_delXCallFunction(lua_State *state)
 	unregisterLuaXCallFunction((char *) name, refp, fstate); // nothing will happen to the name pointer, I promise :)
 	g_hash_table_remove(functionRefs, name);
 
-	LOG_INFO("Removed Lua XCall function '%s'", name);
+	logNotice("Removed Lua XCall function '%s'", name);
 
 	lua_pushboolean(state, true);
 	return 1;
@@ -303,7 +303,7 @@ static int lua___index(lua_State *state)
 	if($(bool, xcall, existsXCallFunction)(name)) {
 		lua_pushvalue(state, 2); // push xcall name
 		lua_pushcclosure(state, &lua_callXCallFunction, 1); // create closure
-		LOG_DEBUG("Dispatching undeclared Lua variable access to XCall function %s", name);
+		logInfo("Dispatching undeclared Lua variable access to XCall function %s", name);
 	} else {
 		lua_pushnil(state);
 	}
@@ -387,7 +387,7 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 		retstore = $(Store *, store, createStore)();
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': %s", funcname, lua_tostring(state, -1));
-		LOG_ERROR("%s", err->str);
+		logError("%s", err->str);
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, stote, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);
@@ -406,7 +406,7 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 			retstore = $(Store *, store, createStore)();
 			GString *err = g_string_new("");
 			g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is a table that could not be parsed into a store", funcname);
-			LOG_ERROR("%s", err->str);
+			logError("%s", err->str);
 			$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 			$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 			g_string_free(err, true);
@@ -415,7 +415,7 @@ static Store *xcall_luaXCallFunction(Store *xcall)
 		retstore = $(Store *, store, createStore)();
 		GString *err = g_string_new("");
 		g_string_append_printf(err, "Error running Lua XCall function '%s': Returned value is no valid store", funcname);
-		LOG_ERROR("%s", err->str);
+		logError("%s", err->str);
 		$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));
 		g_string_free(err, true);

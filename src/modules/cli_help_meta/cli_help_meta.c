@@ -68,17 +68,17 @@ API bool loadCliHelpMetaFile(char *filePath)
 {
 	Store *store = $(Store *, store, parseStoreFile)(filePath);
 	if(store == NULL) {
-		LOG_INFO("Given store to parse for CLI Help cannot be loaded: %s", filePath);
+		logNotice("Given store to parse for CLI Help cannot be loaded: %s", filePath);
 		return false;
 	}
 
 	// first we load the CLI parameter help information
 	Store *optHelp = $(Store *, store, getStorePath)(store, "cliHelp/options");
 	if(optHelp == NULL) {
-		LOG_DEBUG("Given store has no CLI options help settings: %s", filePath);
+		logInfo("Given store has no CLI options help settings: %s", filePath);
 	} else {
 		if(optHelp->type != STORE_LIST) {
-			LOG_INFO("Given store has CLI options help but it is not a list. Ignoring.");
+			logNotice("Given store has CLI options help but it is not a list. Ignoring.");
 		} else {
 			for(GList *current = optHelp->content.list->head; current != NULL; current = current->next) {
 				// Load all possible values
@@ -90,27 +90,27 @@ API bool loadCliHelpMetaFile(char *filePath)
 
 				// check that we can actually work with the values
 				if(valueModule == NULL || valueHelp == NULL || (valueShort == NULL && valueLong == NULL)) {
-					LOG_INFO("CLI options help must include the module name, the help itself and the long or short parameter");
+					logNotice("CLI options help must include the module name, the help itself and the long or short parameter");
 					continue;
 				}
 
 				if(valueModule->type != STORE_STRING) {
-					LOG_INFO("CLI options help provides the module name but it is not a string. Ignoring.");
+					logNotice("CLI options help provides the module name but it is not a string. Ignoring.");
 					continue;
 				}
 
 				if(valueShort != NULL && valueShort->type != STORE_STRING) {
-					LOG_INFO("CLI options help provides the short parameter but it is not a string. Ignoring.");
+					logNotice("CLI options help provides the short parameter but it is not a string. Ignoring.");
 					continue;
 				}
 
 				if(valueLong != NULL && valueLong->type != STORE_STRING) {
-					LOG_INFO("CLI options help provides the long paramter but it is not a string. Ignoring.");
+					logNotice("CLI options help provides the long paramter but it is not a string. Ignoring.");
 					continue;
 				}
 
 				if(valueHelp->type != STORE_STRING) {
-					LOG_INFO("CLI options help provides a help but it is not a string. Ignoring.");
+					logNotice("CLI options help provides a help but it is not a string. Ignoring.");
 					continue;
 				}
 
@@ -126,10 +126,10 @@ API bool loadCliHelpMetaFile(char *filePath)
 	// now we load the CLI arguments help information
 	Store *argHelp = $(Store *, store, getStorePath)(store, "cliHelp/arguments");
 	if(argHelp == NULL) {
-		LOG_DEBUG("Given store has no CLI arguments help settings: %s", filePath);
+		logInfo("Given store has no CLI arguments help settings: %s", filePath);
 	} else {
 		if(argHelp->type != STORE_LIST) {
-			LOG_INFO("Given store has CLI arguments help but it is not a list. Ignoring.");
+			logNotice("Given store has CLI arguments help but it is not a list. Ignoring.");
 		} else {
 			for(GList *current = argHelp->content.list->head; current != NULL; current = current->next) {
 				// Load all possible values
@@ -140,21 +140,21 @@ API bool loadCliHelpMetaFile(char *filePath)
 
 				// check that we can actually work with the values
 				if(valueModule == NULL || valueHelp == NULL || valueName == NULL) {
-					LOG_INFO("CLI argument help must contain a module, name and help key. Ignoring.");
+					logNotice("CLI argument help must contain a module, name and help key. Ignoring.");
 					continue;
 				}
 
 				if(valueModule->type != STORE_STRING) {
-					LOG_INFO("CLI argument help provides the module name but it is not a string. Ignoring.");
+					logNotice("CLI argument help provides the module name but it is not a string. Ignoring.");
 					continue;
 				}
 
 				if(valueName->type != STORE_STRING) {
-					LOG_INFO("CLI argument help provides the name of the argument but it is not a string. Ignoring.");
+					logNotice("CLI argument help provides the name of the argument but it is not a string. Ignoring.");
 				}
 
 				if(valueHelp->type != STORE_STRING) {
-					LOG_INFO("CLI argument help provides a help but it is not a string. Ignoring.");
+					logNotice("CLI argument help provides a help but it is not a string. Ignoring.");
 					continue;
 				}
 

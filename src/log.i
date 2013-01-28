@@ -1,7 +1,7 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Kalisko Project Leaders
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,7 +18,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #ifndef LOG_H
 #define LOG_H
 
@@ -29,30 +28,49 @@
 #include "types.h"
 
 /**
- * Enumeration of the four standard log levels.
+ * The maximal length for a log message.
+ */
+#define LOG_MSG_MAXLEN 4096
+
+/**
+ * Log level enum describing possible logging modes
  */
 typedef enum
 {
-	/** Information needed for debugging function. */
-	LOG_TYPE_DEBUG,
-	/** Verbose information what a function do. */
-	LOG_TYPE_INFO,
-	/** The function has an unexpected state but can go on with the work. */
-	LOG_TYPE_WARNING,
-	/** The function has an unexpected state and can not end the work. */
-	LOG_TYPE_ERROR
-} LogType;
+	/** Debugging information that may be extremely verbose. Not for general use! */
+	LOG_LEVEL_TRACE = 1,
+	/** Unimportant verbose information */
+	LOG_LEVEL_INFO = 2,
+	/** Informational messages that describe the runtime state */
+	LOG_LEVEL_NOTICE = 4,
+	/** The function has an unexpected state but can go on with the work */
+	LOG_LEVEL_WARNING = 8,
+	/** The function has an unexpected state and can not end the work */
+	LOG_LEVEL_ERROR = 16,
+	/** No logging */
+	LOG_LEVEL_NONE = 0,
+	/** Log warnings and up */
+	LOG_LEVEL_WARNING_UP = 24,
+	/** Log infos and up */
+	LOG_LEVEL_NOTICE_UP = 28,
+	/** Log notices and up */
+	LOG_LEVEL_INFO_UP = 30,
+	/** Log everything! The sky is the limit! */
+	LOG_LEVEL_ALL = 31,
+} LogLevel;
 
 /**
  * Log handler function pointer type
  */
-typedef void (LogHandler)(const char *module, LogType type, const char *message);
+typedef void (LogHandler)(const char *module, LogLevel level, const char *message);
 
 
 /**
  * Inits logging
+ *
+ * @param level		the log level to use for the default log handler
  */
-API void initLog();
+API void initLog(LogLevel level);
 
 /**
  * Sets or resets the log handler
@@ -65,26 +83,46 @@ API void setLogHandler(LogHandler *handler);
  * Creates a new log message and distribute it over the hook "log".
  *
  * @param module	the module in which the log message occurs
- * @param type		the type of the log message
+ * @param level		the level of the log message
  * @param message	printf-like message to log
  */
-API void logMessage(const char *module, LogType type, const char *message, ...) G_GNUC_PRINTF(3, 4);
+API void logMessage(const char *module, LogLevel level, const char *message, ...) G_GNUC_PRINTF(3, 4);
 
 /**
- * Logs a system error (strerror).
+ * Returns a static string with the name of a given log level
  *
- * @see logMessage
- * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
+ * @param level		the log level for which to retrieve the name
+ * @result			the name of the log level
  */
-#define LOG_SYSTEM_ERROR(MESSAGE, ...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
+API const char *getStaticLogLevelName(LogLevel level);
 
 /**
- * Logs a message as an error.
+ * Logs a message as trace debug information
  *
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_ERROR(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_ERROR, __VA_ARGS__);
+#ifdef TRACE
+#define logTrace(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_TRACE, __VA_ARGS__)
+#else
+#define logTrace(...) ((void) 0)
+#endif
+
+/**
+ * Logs a message as an info
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logNotice(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_INFO, __VA_ARGS__)
+
+/**
+ * Logs a message as a notice
+ *
+ * @see logMessage
+ * @param ...	printf-like message to log
+ */
+#define logInfo(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_NOTICE, __VA_ARGS__)
 
 /**
  * Logs a message as a warning.
@@ -92,28 +130,22 @@ API void logMessage(const char *module, LogType type, const char *message, ...) 
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_WARNING(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_WARNING, __VA_ARGS__);
+#define logWarning(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_WARNING, __VA_ARGS__)
 
 /**
- * Logs a message as an info.
+ * Logs a message as an error.
  *
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define LOG_INFO(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_INFO, __VA_ARGS__);
+#define logError(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_ERROR, __VA_ARGS__)
 
 /**
- * Logs a message as a debug information
+ * Logs a system error (strerror).
  *
  * @see logMessage
- * @param ...	printf-like message to log
+ * @param MESSAGE	printf-like message to log, the strerror result will be added automatically
  */
-#define LOG_DEBUG(...) $$(void, logMessage)(STR(KALISKO_MODULE), LOG_TYPE_DEBUG, __VA_ARGS__);
+#define logSystemError(MESSAGE, ...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_ERROR, MESSAGE ": %s" , ##__VA_ARGS__, strerror(errno))
 
 #endif
-
-/**
- * The maximal length for a log message.
- */
-#define LOG_MSG_MAXLEN 4096
-

@@ -60,8 +60,8 @@ static Store *xcall_forceUnloadModule(Store *xcall);
 static Store *xcall_forceReloadModule(Store *xcall);
 static Store *xcall_logError(Store *xcall);
 static Store *xcall_logWarning(Store *xcall);
+static Store *xcall_logNotice(Store *xcall);
 static Store *xcall_logInfo(Store *xcall);
-static Store *xcall_logDebug(Store *xcall);
 static bool attachLogListener(char *listener);
 static bool detachLogListener(char *listener);
 static void freeLogListenerEntry(void *listener_p);
@@ -94,8 +94,8 @@ MODULE_INIT
 	$(bool, xcall, addXCallFunction)("forceReloadModule", &xcall_forceReloadModule);
 	$(bool, xcall, addXCallFunction)("logError", &xcall_logError);
 	$(bool, xcall, addXCallFunction)("logWarning", &xcall_logWarning);
+	$(bool, xcall, addXCallFunction)("logNotice", &xcall_logNotice);
 	$(bool, xcall, addXCallFunction)("logInfo", &xcall_logInfo);
-	$(bool, xcall, addXCallFunction)("logDebug", &xcall_logDebug);
 
 	return true;
 }
@@ -120,8 +120,8 @@ MODULE_FINALIZE
 	$(bool, xcall, delXCallFunction)("forceReloadModule");
 	$(bool, xcall, delXCallFunction)("logError");
 	$(bool, xcall, delXCallFunction)("logWarning");
+	$(bool, xcall, delXCallFunction)("logNotice");
 	$(bool, xcall, delXCallFunction)("logInfo");
-	$(bool, xcall, delXCallFunction)("logDebug");
 
 	g_hash_table_destroy(logListeners);
 }
@@ -164,7 +164,7 @@ static Store *xcall_attachLog(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
 
 		if(attached) {
-			LOG_INFO("Attached XCall function '%s' to log hook", function);
+			logNotice("Attached XCall function '%s' to log hook", function);
 		}
 	}
 
@@ -197,7 +197,7 @@ static Store *xcall_detachLog(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(attached));
 
 		if(attached) {
-			LOG_INFO("Detached XCall function '%s' from log hook", function);
+			logNotice("Detached XCall function '%s' from log hook", function);
 		}
 	}
 
@@ -213,7 +213,7 @@ static void listener_xcallLog(void *subject, const char *event, void *data, va_l
 	logExecuting = true;
 
 	char *module = va_arg(args, char *);
-	LogType type = va_arg(args, LogType);
+	LogLevel level = va_arg(args, LogLevel);
 	char *message = va_arg(args, char *);
 	char *listener = data;
 
@@ -221,18 +221,20 @@ static void listener_xcallLog(void *subject, const char *event, void *data, va_l
 	$(bool, store, setStorePath)(xcall, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
 	$(bool, store, setStorePath)(xcall, "xcall/function", $(Store *, store, createStoreStringValue)(listener));
 
-	switch(type) {
-		case LOG_TYPE_DEBUG:
-			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("debug"));
+	switch(level) {
+		case LOG_LEVEL_INFO:
+			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("notice"));
 		break;
-		case LOG_TYPE_INFO:
+		case LOG_LEVEL_NOTICE:
 			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("info"));
 		break;
-		case LOG_TYPE_WARNING:
+		case LOG_LEVEL_WARNING:
 			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("warning"));
 		break;
-		case LOG_TYPE_ERROR:
+		case LOG_LEVEL_ERROR:
 			$(bool, store, setStorePath)(xcall, "log_type", $(Store *, store, createStoreStringValue)("error"));
+		break;
+		default:
 		break;
 	}
 
@@ -245,7 +247,7 @@ static void listener_xcallLog(void *subject, const char *event, void *data, va_l
 	Store *error = $(Store *, store, getStorePath)(ret, "xcall/error");
 
 	if(error != NULL && error->type == STORE_STRING) { // XCall error
-		LOG_ERROR("Attached log XCall function '%s' failed: %s", listener, error->content.string);
+		logError("Attached log XCall function '%s' failed: %s", listener, error->content.string);
 		detachLogListener(listener); // detach the listener
 	}
 
@@ -747,7 +749,7 @@ static Store *xcall_logError(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_ERROR("%s", message->content.string);
+		logError("%s", message->content.string);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
@@ -775,7 +777,7 @@ static Store *xcall_logWarning(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_WARNING("%s", message->content.string);
+		logWarning("%s", message->content.string);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 
@@ -784,6 +786,34 @@ static Store *xcall_logWarning(Store *xcall)
 
 /**
  * XCallFunction to log an info message
+ * XCall parameters:
+ *  * string message		the message to log
+ * XCall result:
+ * 	* int success		nonzero if successful
+ *
+ * @param xcall		the xcall as store
+ * @result			a return value as store
+ */
+static Store *xcall_logNotice(Store *xcall)
+{
+	Store *retstore = $(Store *, store, createStore)();
+	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
+
+	Store *message = $(Store *, store, getStorePath)(xcall, "message");
+
+	if(message == NULL || message->type != STORE_STRING) {
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
+		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
+	} else {
+		logNotice("%s", message->content.string);
+		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
+	}
+
+	return retstore;
+}
+
+/**
+ * XCallFunction to log a debug message
  * XCall parameters:
  *  * string message		the message to log
  * XCall result:
@@ -803,35 +833,7 @@ static Store *xcall_logInfo(Store *xcall)
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
 		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
 	} else {
-		LOG_INFO("%s", message->content.string);
-		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
-	}
-
-	return retstore;
-}
-
-/**
- * XCallFunction to log a debug message
- * XCall parameters:
- *  * string message		the message to log
- * XCall result:
- * 	* int success		nonzero if successful
- *
- * @param xcall		the xcall as store
- * @result			a return value as store
- */
-static Store *xcall_logDebug(Store *xcall)
-{
-	Store *retstore = $(Store *, store, createStore)();
-	$(bool, store, setStorePath)(retstore, "xcall", $(Store *, store, createStoreArrayValue)(NULL));
-
-	Store *message = $(Store *, store, getStorePath)(xcall, "message");
-
-	if(message == NULL || message->type != STORE_STRING) {
-		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(0));
-		$(bool, store, setStorePath)(retstore, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read mandatory string parameter 'message'"));
-	} else {
-		LOG_DEBUG(message->content.string, NULL);
+		logInfo(message->content.string, NULL);
 		$(bool, store, setStorePath)(retstore, "success", $(Store *, store, createStoreIntegerValue)(1));
 	}
 

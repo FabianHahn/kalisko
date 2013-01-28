@@ -50,7 +50,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
 	// Read store parameters
 	Store *configLodMapHeights = getStorePath(store, "lodmap/source/heights");
 	if(configLodMapHeights == NULL || configLodMapHeights->type != STORE_STRING) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Config string parameter 'lodmap/source/heights' not found!");
+		logError("Failed to create OpenGL LOD map image source: Config string parameter 'lodmap/source/heights' not found!");
 		return NULL;
 	}
 
@@ -70,7 +70,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
 
 	Store *configLodMapBaseLevel = getStorePath(store, "lodmap/source/baseLevel");
 	if(configLodMapBaseLevel == NULL || configLodMapBaseLevel->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Config integer parameter 'lodmap/source/baseLevel' not found!");
+		logError("Failed to create OpenGL LOD map image source: Config integer parameter 'lodmap/source/baseLevel' not found!");
 		return NULL;
 	}
 
@@ -78,7 +78,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
 
 	Store *configLodMapHeightRatio = getStorePath(store, "lodmap/source/heightRatio");
 	if(configLodMapHeightRatio == NULL || !(configLodMapHeightRatio->type == STORE_FLOAT_NUMBER || configLodMapHeightRatio->type == STORE_INTEGER)) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Config float parameter 'lodmap/source/heightRatio' not found!");
+		logError("Failed to create OpenGL LOD map image source: Config float parameter 'lodmap/source/heightRatio' not found!");
 		return NULL;
 	}
 
@@ -87,20 +87,20 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSourceFromStore(Store *store)
 	// Load images from provided files
 	Image *heights = readImageFromFile(heightsFile);
 	if(heights == NULL) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified heights image from '%s'!", heightsFile);
+		logError("Failed to create OpenGL LOD map image source: Failed to load specified heights image from '%s'!", heightsFile);
 		return NULL;
 	}
 
 	Image *normals = NULL;
 	if(normalsFile != NULL && (normals = readImageFromFile(normalsFile)) == NULL) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified normals image from '%s'!", normalsFile);
+		logError("Failed to create OpenGL LOD map image source: Failed to load specified normals image from '%s'!", normalsFile);
 		freeImage(heights);
 		return NULL;
 	}
 
 	Image *texture = NULL;
 	if(textureFile != NULL && (texture = readImageFromFile(textureFile)) == NULL) {
-		LOG_ERROR("Failed to create OpenGL LOD map image source: Failed to load specified texture image from '%s'!", textureFile);
+		logError("Failed to create OpenGL LOD map image source: Failed to load specified texture image from '%s'!", textureFile);
 		freeImage(heights);
 		if(normals != NULL) {
 			freeImage(normals);
@@ -138,7 +138,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 		double heightRatio = (double) normals->height / heights->height;
 
 		if(widthRatio != heightRatio || widthRatio < 1.0) {
-			LOG_ERROR("Failed to create LOD map image source: Normals image must have the same aspect ratio as heights image and be at least as large");
+			logError("Failed to create LOD map image source: Normals image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
 
@@ -152,7 +152,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 		unsigned int scaleFactor = 1 << normalDetailLevel;
 
 		if((scaleFactor * heights->width != normals->width) || (scaleFactor * heights->height != normals->height)) {
-			LOG_ERROR("Failed to create LOD map image source: Normal detail image must be exactly 2 to the power of X times larger than heights image");
+			logError("Failed to create LOD map image source: Normal detail image must be exactly 2 to the power of X times larger than heights image");
 			return NULL;
 		}
 	}
@@ -162,7 +162,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 		double heightRatio = (double) texture->height / heights->height;
 
 		if(widthRatio != heightRatio || widthRatio < 1.0) {
-			LOG_ERROR("Failed to create LOD map image source: Texture image must have the same aspect ratio as heights image and be at least as large");
+			logError("Failed to create LOD map image source: Texture image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
 
@@ -176,7 +176,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 		unsigned int scaleFactor = 1 << textureDetailLevel;
 
 		if((scaleFactor * heights->width != texture->width) || (scaleFactor * heights->height != texture->height)) {
-			LOG_ERROR("Failed to create LOD map image source: Texture detail image must be exactly 2 to the power of X times larger than heights image");
+			logError("Failed to create LOD map image source: Texture detail image must be exactly 2 to the power of X times larger than heights image");
 			return NULL;
 		}
 	}

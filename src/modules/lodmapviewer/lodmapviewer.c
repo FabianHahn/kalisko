@@ -188,17 +188,17 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		case 'p':
 			if(lodmap->polygonMode == GL_FILL) {
 				lodmap->polygonMode = GL_LINE;
-				LOG_INFO("Set polygon rendering mode to 'GL_LINE'");
+				logNotice("Set polygon rendering mode to 'GL_LINE'");
 			} else {
 				lodmap->polygonMode = GL_FILL;
-				LOG_INFO("Set polygon rendering mode to 'GL_FILL'");
+				logNotice("Set polygon rendering mode to 'GL_FILL'");
 			}
 
 			updateOpenGLLodMap(lodmap, camera->position, autoExpand);
 		break;
 		case 'u':
 			autoUpdate = !autoUpdate;
-			LOG_INFO("%s automatic LOD map updates", autoUpdate ? "Enabled" : "Disabled");
+			logNotice("%s automatic LOD map updates", autoUpdate ? "Enabled" : "Disabled");
 
 			if(autoUpdate) {
 				updateOpenGLLodMap(lodmap, camera->position, autoExpand);
@@ -206,7 +206,7 @@ static void listener_keyDown(void *subject, const char *event, void *data, va_li
 		break;
 		case 'x':
 			autoExpand = !autoExpand;
-			LOG_INFO("%s automatic LOD map expansion", autoExpand ? "Enabled" : "Disabled");
+			logNotice("%s automatic LOD map expansion", autoExpand ? "Enabled" : "Disabled");
 		break;
 		case 't':
 			{

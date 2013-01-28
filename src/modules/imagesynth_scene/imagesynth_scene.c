@@ -52,44 +52,44 @@ API OpenGLTexture *parseOpenGLSceneTextureImagesynth(Scene *scene, const char *p
 {
 	Store *synthesizerParam;
 	if((synthesizerParam = $(Store *, store, getStorePath)(store, "synthesizer")) == NULL || synthesizerParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' from imagesynth source - string parameter 'synthesizer' not found", name);
+		logError("Failed to parse OpenGL scene texture '%s' from imagesynth source - string parameter 'synthesizer' not found", name);
 		return NULL;
 	}
 
 	Store *widthParam;
 	if((widthParam = $(Store *, store, getStorePath)(store, "width")) == NULL || widthParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'width' not found", name);
+		logError("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'width' not found", name);
 		return NULL;
 	}
 
 	Store *heightParam;
 	if((heightParam = $(Store *, store, getStorePath)(store, "height")) == NULL || heightParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'height' not found", name);
+		logError("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'height' not found", name);
 		return NULL;
 	}
 
 	Store *channelsParam;
 	if((channelsParam = $(Store *, store, getStorePath)(store, "channels")) == NULL || channelsParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'channels' not found", name);
+		logError("Failed to parse OpenGL scene texture '%s' from imagesynth source - integer parameter 'channels' not found", name);
 		return NULL;
 	}
 
 	Store *parametersParam;
 	if((parametersParam = $(Store *, store, getStorePath)(store, "parameters")) == NULL || parametersParam->type != STORE_ARRAY) {
-		LOG_ERROR("Failed to parse OpenGL scene texture '%s' from imagesynth source - array parameter 'parameters' not found", name);
+		logError("Failed to parse OpenGL scene texture '%s' from imagesynth source - array parameter 'parameters' not found", name);
 		return NULL;
 	}
 
 	Image *image = $(Image *, imagesynth, synthesizeImage)(synthesizerParam->content.string, widthParam->content.integer, heightParam->content.integer, channelsParam->content.integer, parametersParam);
 
 	if(image == NULL) {
-		LOG_ERROR("Failed to generate image file from imagesynth source for texture '%s'", name);
+		logError("Failed to generate image file from imagesynth source for texture '%s'", name);
 		return NULL;
 	}
 
 	OpenGLTexture *texture;
 	if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(image, true)) == NULL) {
-		LOG_ERROR("Failed to create OpenGL texture '%s' for scene", name);
+		logError("Failed to create OpenGL texture '%s' for scene", name);
 		$(void, image, freeImage)(image);
 		return NULL;
 	}

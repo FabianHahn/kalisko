@@ -30,31 +30,31 @@ API Image *createImageFromStore(Store *store)
 {
 	Store *width;
 	if((width = $(Store *, store, getStorePath)(store, "image/width")) == NULL || width->type != STORE_INTEGER || width->content.integer <= 0) {
-		LOG_ERROR("Failed to parse image store: Could not find store integer path 'image/width'");
+		logError("Failed to parse image store: Could not find store integer path 'image/width'");
 		return NULL;
 	}
 
 	Store *height;
 	if((height = $(Store *, store, getStorePath)(store, "image/height")) == NULL || height->type != STORE_INTEGER || height->content.integer <= 0) {
-		LOG_ERROR("Failed to parse image store: Could not find store integer path 'image/height'");
+		logError("Failed to parse image store: Could not find store integer path 'image/height'");
 		return NULL;
 	}
 
 	Store *type;
 	if((type = $(Store *, store, getStorePath)(store, "image/type")) == NULL || type->type != STORE_STRING || (g_strcmp0(type->content.string, "byte") != 0 && g_strcmp0(type->content.string, "float") != 0)) {
-		LOG_ERROR("Failed to parse image store: Store path 'image/type' must be either 'byte' or 'float'");
+		logError("Failed to parse image store: Store path 'image/type' must be either 'byte' or 'float'");
 		return NULL;
 	}
 
 	Store *channels;
 	if((channels = $(Store *, store, getStorePath)(store, "image/channels")) == NULL || channels->type != STORE_INTEGER || channels->content.integer <= 0) {
-		LOG_ERROR("Failed to parse image store: Could not find store integer path 'image/channels'");
+		logError("Failed to parse image store: Could not find store integer path 'image/channels'");
 		return NULL;
 	}
 
 	Store *pixels;
 	if((pixels = $(Store *, store, getStorePath)(store, "image/pixels")) == NULL || pixels->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse image store: Could not find store list path 'image/pixels'");
+		logError("Failed to parse image store: Could not find store list path 'image/pixels'");
 		return NULL;
 	}
 
@@ -83,14 +83,14 @@ API Image *createImageFromStore(Store *store)
 					setImage(image, x, y, c, pixel->content.float_number);
 				}
 			} else {
-				LOG_WARNING("Invalid pixel %d/%d in image store, setting to zero", x, y);
+				logWarning("Invalid pixel %d/%d in image store, setting to zero", x, y);
 				for(unsigned int c = 0; c < image->channels; c++) {
 					setImage(image, x, y, c, 0);
 				}
 			}
 		} else {
 			if(g_queue_get_length(pixel->content.list) != image->channels) {
-				LOG_WARNING("Pixel %d/%d in image store has invalid number of %u channels, setting to zero", x, y, g_queue_get_length(pixel->content.list));
+				logWarning("Pixel %d/%d in image store has invalid number of %u channels, setting to zero", x, y, g_queue_get_length(pixel->content.list));
 				for(unsigned int c = 0; c < image->channels; c++) {
 					setImage(image, x, y, c, 0);
 				}
@@ -105,7 +105,7 @@ API Image *createImageFromStore(Store *store)
 				} else if(pval->type == STORE_FLOAT_NUMBER) {
 					setImage(image, x, y, c, pval->content.float_number);
 				} else {
-					LOG_WARNING("Invalid value in channel %d of pixel %d/%d in image store, replacing by 0", c, x, y);
+					logWarning("Invalid value in channel %d of pixel %d/%d in image store, replacing by 0", c, x, y);
 					setImage(image, x, y, c, 0);
 				}
 			}

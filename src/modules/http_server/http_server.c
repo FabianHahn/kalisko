@@ -80,7 +80,7 @@ MODULE_FINALIZE
 
 API HttpServer *createHttpServer(char* port)
 {
-	LOG_DEBUG("Creating HttpServer on port %s", port);
+	logInfo("Creating HttpServer on port %s", port);
 
 	HttpServer *server = ALLOCATE_OBJECT(HttpServer);
 	server->state = SERVER_STATE_CREATED;
@@ -96,7 +96,7 @@ API HttpServer *createHttpServer(char* port)
 
 API void destroyHttpServer(HttpServer *server)
 {
-	LOG_DEBUG("Freeing HttpServer on port %s", server->server_socket->port);
+	logInfo("Freeing HttpServer on port %s", server->server_socket->port);
 
 	// Clean up the server socket
 	disableSocketPolling(server->server_socket);
@@ -110,24 +110,24 @@ API void destroyHttpServer(HttpServer *server)
 API bool startHttpServer(HttpServer *server)
 {
 	if(!connectSocket(server->server_socket)) {
-		LOG_DEBUG("Unable to connect server socket on port %s", server->server_socket->port);
+		logInfo("Unable to connect server socket on port %s", server->server_socket->port);
 		return false;
 	}
-	LOG_DEBUG("Starting HttpServer on port %s", server->server_socket->port);
+	logInfo("Starting HttpServer on port %s", server->server_socket->port);
 	server->state = SERVER_STATE_RUNNING;
 	return true;
 }
 
 API void registerHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
 {
-	LOG_DEBUG("Registering HTTP request handler for URIs matching %s", hierarchical_regexp);
+	logInfo("Registering HTTP request handler for URIs matching %s", hierarchical_regexp);
 	RequestHandlerMapping *mapping = createRequestHandlerMapping(hierarchical_regexp, handler, userdata);
 	g_array_append_val(server->handler_mappings, mapping);
 }
 
 API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchical_regexp, HttpRequestHandler *handler, void *userdata)
 {
-	LOG_DEBUG("Unregistering HTTP request handler for URIs matching %s", hierarchical_regexp);
+	logInfo("Unregistering HTTP request handler for URIs matching %s", hierarchical_regexp);
 	GArray *mappings = server->handler_mappings;
 
 	int match_index = -1;
@@ -135,7 +135,7 @@ API void unregisterHttpServerRequestHandler(HttpServer *server, char *hierarchic
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(!strcmp(mapping->regexp, hierarchical_regexp) && mapping->handler == handler && mapping->userdata == userdata) {
 			if(match_index != -1) {
-				LOG_DEBUG("Unregistering found multiple matches, using last one");
+				logInfo("Unregistering found multiple matches, using last one");
 			}
 			match_index = i;
 		}
@@ -216,7 +216,7 @@ API void destroyHttpResponse(HttpResponse *response)
 API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 {
 	if(request->method == HTTP_REQUEST_METHOD_UNKNOWN || request->hierarchical == NULL) {
-		LOG_DEBUG("Could not parse request, returning bad request");
+		logInfo("Could not parse request, returning bad request");
 		return createHttpResponse(BAD_REQUEST_STATUS_STRING, BAD_REQUEST_STATUS_STRING);
 	}
 
@@ -225,7 +225,7 @@ API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 	for(int i = 0; i < mappings->len; ++i) {
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
-			LOG_DEBUG("%s matches %s", mapping->regexp, request->hierarchical);
+			logInfo("%s matches %s", mapping->regexp, request->hierarchical);
 			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
 			if(mapping->handler(request, response, mapping->userdata)) {
 				return response;
@@ -234,7 +234,7 @@ API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 		}
 	}
 
-	LOG_DEBUG("No handler for hierarchical part %s, returning file not found", request->hierarchical);
+	logInfo("No handler for hierarchical part %s, returning file not found", request->hierarchical);
 	return createHttpResponse(FILE_NOT_FOUND_STATUS_STRING, FILE_NOT_FOUND_STATUS_STRING);
 }
 

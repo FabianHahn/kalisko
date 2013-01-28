@@ -35,7 +35,7 @@ typedef struct {
 	/**
 	 * The lowest log level to log into the log file.
 	 */
-	LogType logType;
+	LogLevel level;
 
 	/**
 	 * FILE descriptor to append new lines.
@@ -55,11 +55,10 @@ typedef struct {
  * additional log files.
  *
  * @param filePath	The path to the log file (directory path + file name)
- * @param logType	The LogType to use for the log file. This means that all messages of this type or a higher one are written into
- * 					the file
- * @return The created LogFileConfig or NULL on error
+ * @param level		The log level to use for the log file.
+ * @return 			The created LogFileConfig or NULL on error
  */
-API LogFileConfig *addLogFile(char *filePath, LogType logType);
+API LogFileConfig *addLogFile(char *filePath, LogLevel level);
 
 /**
  * Removes the given LogFileConfig from the list of log files and free it.

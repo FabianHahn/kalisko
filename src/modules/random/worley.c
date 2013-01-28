@@ -118,7 +118,7 @@ static float randomWorleyArray(RandomWorleyContext *context, Vector *query, int*
 				distances[i] = $(float, linalg, getVectorLength2)(diff);
 			break;
 			default:
-				LOG_ERROR("Tried to compute Worley noise with invalid distance method '%d', aborting", method);
+				logError("Tried to compute Worley noise with invalid distance method '%d', aborting", method);
 				return 0.0f;
 			break;
 		}

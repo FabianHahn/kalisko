@@ -47,7 +47,7 @@ API Mesh *readMeshFileObj(const char *filename)
 	std::ifstream file(filename);
 
 	if(!file) {
-		LOG_ERROR("Failed to open mesh obj file '%s'", filename);
+		logError("Failed to open mesh obj file '%s'", filename);
 		return NULL;
 	}
 
@@ -80,7 +80,7 @@ API Mesh *readMeshFileObj(const char *filename)
 				int index = atoi(parts[0]) - 1;
 
 				if(index < 0 || index >= (int) vertices.size()) {
-					LOG_WARNING("Trying to assign invalid vertex index %d to triangle (mesh has %d vertices), replacing by 0", index, (int) vertices.size());
+					logWarning("Trying to assign invalid vertex index %d to triangle (mesh has %d vertices), replacing by 0", index, (int) vertices.size());
 					index = 0;
 				}
 
@@ -91,7 +91,7 @@ API Mesh *readMeshFileObj(const char *filename)
 					uvindex = atoi(parts[1]) - 1;
 
 					if(index < 0 || index >= (int) vertices.size()) {
-						LOG_WARNING("Trying to assign invalid UV index %d to triangle (mesh has %d UV coordinates), replacing by 0", uvindex, (int) uvs.size());
+						logWarning("Trying to assign invalid UV index %d to triangle (mesh has %d UV coordinates), replacing by 0", uvindex, (int) uvs.size());
 						uvindex = 0;
 					}
 				}

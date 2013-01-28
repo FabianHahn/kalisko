@@ -91,7 +91,7 @@ MODULE_INIT
 
 	char *cliOptProfilePath = $(char *, getopts, getOptValue)("profile", "p", NULL);
 	if(cliOptProfilePath) {
-		LOG_DEBUG("Got following profile: %s", cliOptProfilePath);
+		logInfo("Got following profile: %s", cliOptProfilePath);
 		profilePath = cliOptProfilePath;
 	}
 
@@ -133,7 +133,7 @@ API void saveWritableConfig()
 		// save to disk
 		$(void, store, writeStoreFile)(writableConfigFilePath, writableConfig);
 	} else {
-		LOG_ERROR("Writable configuration file cannot be saved. Look for previous error messages");
+		logError("Writable configuration file cannot be saved. Look for previous error messages");
 	}
 
 	// update config
@@ -141,7 +141,7 @@ API void saveWritableConfig()
 
 	config = $(Store *, store, cloneStore)(readOnlyConfig);
 	if(!$(Store *, store, mergeStore)(config, writableConfig)) {
-		LOG_ERROR("Could not merge read-only and writable config Stores, using old config.");
+		logError("Could not merge read-only and writable config Stores, using old config.");
 		$(void, store, freeStore)(config);
 		config = oldConfig;
 
@@ -171,7 +171,7 @@ API Store* injectReadOnlyConfig(Store* new)
 	config = $(Store *, store, cloneStore)(readOnlyConfig);
 
 	if(!$(Store *, store, mergeStore)(config, writableConfig)) {
-		LOG_ERROR("inject: Could not merge read-only and writable config Stores.");
+		logError("inject: Could not merge read-only and writable config Stores.");
 		$(void, store, freeStore)(config);
 		config = oldConfig;
 		readOnlyConfig = old;
@@ -194,7 +194,7 @@ API Store* injectWritableConfig(Store* new, bool updateConfig)
 		config = $(Store *, store, cloneStore)(readOnlyConfig);
 
 		if(!$(Store *, store, mergeStore)(config, writableConfig)) {
-			LOG_ERROR("inject: Could not merge read-only and writable config Stores.");
+			logError("inject: Could not merge read-only and writable config Stores.");
 			$(void, store, freeStore)(config);
 			config = oldConfig;
 			writableConfig = old;
@@ -258,7 +258,7 @@ static bool internalReloadConfig(bool doTriggerEvent)
 	config = $(Store *, store, cloneStore)(readOnlyConfig);
 
 	if(!$(Store *, store, mergeStore)(config, writableConfig)) {
-		LOG_ERROR("Could not merge read-only and writable config Stores.");
+		logError("Could not merge read-only and writable config Stores.");
 
 		return false;
 	}
@@ -288,7 +288,7 @@ static Store *loadReadOnlyConfigs()
 		Store *cmdConfig = $(Store *, store, parseStoreFile)(cliConfigFilePath);
 
 		if(cmdConfig == NULL) {
-			LOG_ERROR("Given file path could not be read and used as configuration file: %s", cliConfigFilePath);
+			logError("Given file path could not be read and used as configuration file: %s", cliConfigFilePath);
 			return NULL;
 		}
 
@@ -298,7 +298,7 @@ static Store *loadReadOnlyConfigs()
 			Store *cmdConfigWithProfile = getStorePath(cmdConfig, "%s", profilePath);
 
 			if(cmdConfigWithProfile == NULL) {
-				LOG_ERROR("Given CLI configuration file has not the given profile path in it: %s", cliConfigFilePath);
+				logError("Given CLI configuration file has not the given profile path in it: %s", cliConfigFilePath);
 				$(void, store, freeStore)(cmdConfig);
 
 				return NULL;
@@ -316,14 +316,14 @@ static Store *loadReadOnlyConfigs()
 		char *profilesConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), PROFILES_CONFIG_FILE_NAME, NULL);
 		char *globalConfigFilePath = g_build_path ("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
 
-		LOG_DEBUG("Expecting user config at: %s", userConfigFilePath);
-		LOG_DEBUG("Expecting profiles config at: %s", profilesConfigFilePath);
-		LOG_DEBUG("Expecting global config at: %s", globalConfigFilePath);
+		logInfo("Expecting user config at: %s", userConfigFilePath);
+		logInfo("Expecting profiles config at: %s", profilesConfigFilePath);
+		logInfo("Expecting global config at: %s", globalConfigFilePath);
 
 		// load files and merge them
 		if(g_file_test(profilesConfigFilePath, G_FILE_TEST_EXISTS)) {
 			retReadOnlyConfig = $(Store *, store, parseStoreFile)(profilesConfigFilePath);
-			LOG_DEBUG("Loaded profiles config");
+			logInfo("Loaded profiles config");
 		}
 
 		if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
@@ -331,12 +331,12 @@ static Store *loadReadOnlyConfigs()
 
 			if(retReadOnlyConfig == NULL) {
 				retReadOnlyConfig = userConfig;
-				LOG_DEBUG("Loaded user config");
+				logInfo("Loaded user config");
 			} else {
 				if(!$(bool, store, mergeStore)(retReadOnlyConfig, userConfig)) {
-					LOG_WARNING("Could not merge user config with profiles config");
+					logWarning("Could not merge user config with profiles config");
 				} else {
-					LOG_DEBUG("Loaded user config and merged it into the profiles config");
+					logInfo("Loaded user config and merged it into the profiles config");
 				}
 
 				$(void, store, freeStore)(userConfig);
@@ -351,7 +351,7 @@ static Store *loadReadOnlyConfigs()
 		// Check if we found any config. If not we just create an empty one
 		if(retReadOnlyConfig == NULL) {
 			retReadOnlyConfig = $(Store *, store, createStore)();
-			LOG_INFO("No configuration files found. Using an empty one");
+			logNotice("No configuration files found. Using an empty one");
 		}
 
 		checkFilesMerge(retReadOnlyConfig); // check once without the profile
@@ -361,7 +361,7 @@ static Store *loadReadOnlyConfigs()
 			Store *profileConfig  = getStorePath(retReadOnlyConfig, "%s", profilePath);
 
 			if(profileConfig ==  NULL) {
-				LOG_ERROR("Given profile path does not exists: %s. Using empty read-only config", profilePath);
+				logError("Given profile path does not exists: %s. Using empty read-only config", profilePath);
 				$(void, store, freeStore)(retReadOnlyConfig);
 
 				retReadOnlyConfig = $(Store *, store, createStore)();
@@ -384,7 +384,7 @@ static Store *loadReadOnlyConfigs()
 			Store *globalConfig = $(Store *, store, parseStoreFile)(globalConfigFilePath);
 
 			if(!$(bool, store, mergeStore)(globalConfig, retReadOnlyConfig)) {
-				LOG_WARNING("Could not merge global config Store into the read-only config");
+				logWarning("Could not merge global config Store into the read-only config");
 			}
 
 			$(void, store, freeStore)(retReadOnlyConfig);
@@ -403,7 +403,7 @@ static Store *loadWritableConfig()
 	Store *retWritableConfig = NULL;
 
 	writableConfigFilePath = g_build_path("/", getUserKaliskoConfigPath(), USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
-	LOG_DEBUG("Expecting writable config at: %s", writableConfigFilePath);
+	logInfo("Expecting writable config at: %s", writableConfigFilePath);
 
 	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {
 		retWritableConfig = $(Store *, store, parseStoreFile)(writableConfigFilePath);
@@ -413,9 +413,9 @@ static Store *loadWritableConfig()
 		char *writableConfigDir = g_path_get_dirname(writableConfigFilePath);
 		if(g_mkdir_with_parents(writableConfigDir, USER_CONFIG_DIR_PERMISSION) == -1) {
 			writableConfigPathExists = false;
-			LOG_DEBUG("The directory for the writable configuration file cannot be created. Saving will not work.");
+			logInfo("The directory for the writable configuration file cannot be created. Saving will not work.");
 		} else {
-			LOG_INFO("Created directory for user specific configuration files at: %s", writableConfigDir);
+			logNotice("Created directory for user specific configuration files at: %s", writableConfigDir);
 			writableConfigPathExists = true;
 		}
 		free(writableConfigDir);
@@ -445,7 +445,7 @@ static void checkFilesMerge(Store *store)
 					if(storeToMergeProfiled != NULL) {
 						storeToMerge = storeToMergeProfiled;
 					} else {
-						LOG_INFO("Configuration to merge at '%s' has not the given profile. Ignoring", mergeDataStore->content.string);
+						logNotice("Configuration to merge at '%s' has not the given profile. Ignoring", mergeDataStore->content.string);
 						$(void, store, freeStore)(storeToMerge);
 					}
 
@@ -453,12 +453,12 @@ static void checkFilesMerge(Store *store)
 				}
 
 				if(!$(bool, store, mergeStore)(store, storeToMerge)) {
-					LOG_WARNING("Could not merge Store into the config: %s", mergeDataStore->content.string);
+					logWarning("Could not merge Store into the config: %s", mergeDataStore->content.string);
 				}
 
 				$(void, store, freeStore)(storeToMerge);
 			} else {
-				LOG_WARNING("Could not parse store file '%s' for configuration", mergeDataStore->content.string);
+				logWarning("Could not parse store file '%s' for configuration", mergeDataStore->content.string);
 			}
 		} else if(mergeDataStore->type == STORE_LIST) {
 			GQueue *list = mergeDataStore->content.list;
@@ -470,7 +470,7 @@ static void checkFilesMerge(Store *store)
 					Store *storeToMerge = $(Store *, store, parseStoreFile)(filePath->content.string);
 
 					if(storeToMerge == NULL) {
-						LOG_WARNING("Could not parse store file '%s' for configuration", filePath->content.string);
+						logWarning("Could not parse store file '%s' for configuration", filePath->content.string);
 						continue;
 					}
 
@@ -482,7 +482,7 @@ static void checkFilesMerge(Store *store)
 						if(storeToMergeProfiled != NULL) {
 							storeToMerge = storeToMergeProfiled;
 						} else {
-							LOG_INFO("Configuration to merge at '%s' has not the given profile. Ignoring", mergeDataStore->content.string);
+							logNotice("Configuration to merge at '%s' has not the given profile. Ignoring", mergeDataStore->content.string);
 							$(void, store, freeStore)(storeToMerge);
 							continue;
 						}
@@ -491,16 +491,16 @@ static void checkFilesMerge(Store *store)
 					}
 
 					if(!$(bool, store, mergeStore)(store, storeToMerge)) {
-						LOG_WARNING("Could not merge Store into the config: %s", mergeDataStore->content.string);
+						logWarning("Could not merge Store into the config: %s", mergeDataStore->content.string);
 					}
 
 					$(void, store, freeStore)(storeToMerge);
 				} else {
-					LOG_WARNING("Store merge list values must be strings representing file paths.");
+					logWarning("Store merge list values must be strings representing file paths.");
 				}
 			}
 		} else {
-			LOG_WARNING("\"merge\" must be a string or a list of strings representing file path(s)");
+			logWarning("\"merge\" must be a string or a list of strings representing file path(s)");
 		}
 	}
 }

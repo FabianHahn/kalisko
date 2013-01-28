@@ -71,13 +71,13 @@ API void handlePosixSignal(int signal)
 	if(g_list_find(enabledSignals, GINT_TO_POINTER(signal)) == NULL) {
 		sigaction(signal, &action, NULL);
 		enabledSignals = g_list_prepend(enabledSignals, GINT_TO_POINTER(signal));
-		LOG_DEBUG("Added POSIX signal to handle: %s", strsignal(signal));
+		logInfo("Added POSIX signal to handle: %s", strsignal(signal));
 	}
 }
 
 static void handleSignal(int sig, siginfo_t *info, void *context)
 {
-	LOG_DEBUG("Caught signal: %s", strsignal(sig));
+	logInfo("Caught signal: %s", strsignal(sig));
 
 	$(void, event, triggerEvent)(NULL, "posixSignal", sig, info, context);
 }

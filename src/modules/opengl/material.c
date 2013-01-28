@@ -61,7 +61,7 @@ API void freeOpenGLMaterials()
 API bool createOpenGLMaterial(const char *name)
 {
 	if(g_hash_table_lookup(materials, name) != NULL) {
-		LOG_ERROR("Failed to create material '%s', a material with that name already exists!", name);
+		logError("Failed to create material '%s', a material with that name already exists!", name);
 		return false;
 	}
 
@@ -87,7 +87,7 @@ API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShade
 	// load vertex shader
 	GLuint vertexShader;
 	if((vertexShader = createOpenGLShaderFromFile(vertexShaderFile, GL_VERTEX_SHADER)) == 0) {
-		LOG_ERROR("Failed to read vertex shader from '%s' for material '%s'", vertexShaderFile, material);
+		logError("Failed to read vertex shader from '%s' for material '%s'", vertexShaderFile, material);
 		$(bool, opengl, deleteOpenGLMaterial)(material);
 		return false;
 	}
@@ -95,7 +95,7 @@ API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShade
 	// load fragment shader
 	GLuint fragmentShader;
 	if((fragmentShader = createOpenGLShaderFromFile(fragmentShaderFile, GL_FRAGMENT_SHADER)) == 0) {
-		LOG_ERROR("Failed to read fragment shader from '%s' for material '%s'", fragmentShaderFile, material);
+		logError("Failed to read fragment shader from '%s' for material '%s'", fragmentShaderFile, material);
 		glDeleteShader(vertexShader);
 		$(bool, opengl, deleteOpenGLMaterial)(material);
 		return false;
@@ -104,7 +104,7 @@ API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShade
 	// link them to a shader program
 	GLuint program;
 	if((program = createOpenGLShaderProgram(vertexShader, fragmentShader, false)) == 0) {
-		LOG_ERROR("Failed to create OpenGL shader program for material '%s'", material);
+		logError("Failed to create OpenGL shader program for material '%s'", material);
 		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 		$(bool, opengl, deleteOpenGLMaterial)(material);
@@ -113,7 +113,7 @@ API bool createOpenGLMaterialFromFiles(const char *name, const char *vertexShade
 
 	// attach shader program to material
 	if(!attachOpenGLMaterialShaderProgram(material, program)) {
-		LOG_ERROR("Failed to attach shader program to material '%s'", material);
+		logError("Failed to attach shader program to material '%s'", material);
 		glDeleteProgram(program);
 		$(bool, opengl, deleteOpenGLMaterial)(material);
 		return false;
@@ -132,7 +132,7 @@ API bool attachOpenGLMaterialShaderProgram(const char *name, GLuint program)
 	OpenGLMaterial *material;
 
 	if((material = g_hash_table_lookup(materials, name)) == NULL) {
-		LOG_ERROR("Failed to attach a shader to non existing material '%s'", name);
+		logError("Failed to attach a shader to non existing material '%s'", name);
 		return false;
 	}
 
@@ -145,7 +145,7 @@ API OpenGLUniformAttachment *getOpenGLMaterialUniforms(const char *name)
 {
 	OpenGLMaterial *material;
 	if((material = g_hash_table_lookup(materials, name)) == NULL) {
-		LOG_ERROR("Failed to retrieve OpenGL uniform attachment point for existing material '%s'", name);
+		logError("Failed to retrieve OpenGL uniform attachment point for existing material '%s'", name);
 		return NULL;
 	}
 
@@ -157,12 +157,12 @@ API bool useOpenGLMaterial(const char *name, OpenGLUniformAttachment *modelUnifo
 	OpenGLMaterial *material;
 
 	if((material = g_hash_table_lookup(materials, name)) == NULL) {
-		LOG_ERROR("Failed to use non existing material '%s'", name);
+		logError("Failed to use non existing material '%s'", name);
 		return false;
 	}
 
 	if(material->program == 0) {
-		LOG_ERROR("Material '%s' doesn't have shader associated yet, aborting use", material->name);
+		logError("Material '%s' doesn't have shader associated yet, aborting use", material->name);
 		return false;
 	}
 
@@ -197,7 +197,7 @@ API bool checkOpenGLMaterialShader(const char *name)
 	OpenGLMaterial *material;
 
 	if((material = g_hash_table_lookup(materials, name)) == NULL) {
-		LOG_ERROR("Failed to check non existing material '%s'", name);
+		logError("Failed to check non existing material '%s'", name);
 		return false;
 	}
 

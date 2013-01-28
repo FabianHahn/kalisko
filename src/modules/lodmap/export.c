@@ -43,7 +43,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 bool exportOpenGLLodMap(OpenGLLodMap *lodmap, const char *path)
 {
 	if(g_mkdir_with_parents(path, 0755) < 0) {
-		LOG_SYSTEM_ERROR("Failed to create LOD map export folder at '%s':", path);
+		logSystemError("Failed to create LOD map export folder at '%s':", path);
 		return false;
 	}
 
@@ -121,7 +121,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_append_printf(heightsName, "/lodmap_heights_%u.%d.%d.png", node->level, node->x, node->y);
 
 	if(!writeImageToFile(tile->heights, heightsName->str)) {
-		LOG_ERROR("Failed to export LOD map heights image to '%s'", heightsName->str);
+		logError("Failed to export LOD map heights image to '%s'", heightsName->str);
 	}
 
 	g_string_free(heightsName, true);
@@ -131,7 +131,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_append_printf(normalsName, "/lodmap_normals_%u.%d.%d.png", node->level, node->x, node->y);
 
 	if(!writeImageToFile(tile->normals, normalsName->str)) {
-		LOG_ERROR("Failed to export LOD map normals image to '%s'", normalsName->str);
+		logError("Failed to export LOD map normals image to '%s'", normalsName->str);
 	}
 
 	g_string_free(normalsName, true);
@@ -141,7 +141,7 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 	g_string_append_printf(textureName, "/lodmap_texture_%u.%d.%d.png", node->level, node->x, node->y);
 
 	if(!writeImageToFile(tile->texture, textureName->str)) {
-		LOG_ERROR("Failed to export LOD map texture image to '%s'", textureName->str);
+		logError("Failed to export LOD map texture image to '%s'", textureName->str);
 	}
 
 	g_string_free(textureName, true);
@@ -155,5 +155,5 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 		}
 	}
 
-	LOG_INFO("Exported LOD map quadtree node (%d,%d) at level %u", node->x, node->y, node->level);
+	logNotice("Exported LOD map quadtree node (%d,%d) at level %u", node->x, node->y, node->level);
 }

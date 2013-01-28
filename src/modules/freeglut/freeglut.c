@@ -134,16 +134,16 @@ API FreeglutWindow *createFreeglutWindow(char *name)
 
 	g_hash_table_insert(windows, &window->id, window);
 
-	LOG_INFO("Created new Freeglut window %d with name '%s', OpenGL vendor: %s %s", window->id, name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+	logNotice("Created new Freeglut window %d with name '%s', OpenGL vendor: %s %s", window->id, name, glGetString(GL_VENDOR), glGetString(GL_VERSION));
 
 	// Initialize GLEW as well
 	GLenum err;
 	if((err = glewInit()) != GLEW_OK) {
-		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
+		logError("GLEW error #%d: %s", err, glewGetErrorString(err));
 		return NULL;
 	}
 
-	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
+	logNotice("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
 
 	return window;
 }
@@ -304,7 +304,7 @@ static void freeglut_close()
 	if(window != NULL && window->active) {
 		$(int, event, triggerEvent)(window, "close");
 		window->active = false;
-		LOG_INFO("freeglut window %d closed", window->id);
+		logNotice("freeglut window %d closed", window->id);
 	}
 }
 
@@ -333,7 +333,7 @@ static void freeFreeglutWindowEntry(void *window_p)
 
 	if(window->active) {
 		window->active = false;
-		LOG_INFO("Freeglut window %d closed", window->id);
+		logNotice("Freeglut window %d closed", window->id);
 	}
 
 	free(window);

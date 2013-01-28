@@ -91,7 +91,7 @@ API Image *createImage(unsigned int width, unsigned int height, unsigned int cha
 			result = createImageFloat(width, height, channels);
 		break;
 		default:
-			LOG_ERROR("Failed to create image: unsupported image type '%d'", type);
+			logError("Failed to create image: unsupported image type '%d'", type);
 		break;
 	}
 
@@ -167,7 +167,7 @@ API void normalizeImageChannel(Image *image, unsigned int channel)
 		}
 	}
 
-	LOG_DEBUG("Shifting image from [%f,%f] to [0,1]", minValue, maxValue);
+	logInfo("Shifting image from [%f,%f] to [0,1]", minValue, maxValue);
 
 	float factor = 1.0f / (maxValue - minValue);
 
@@ -210,7 +210,7 @@ API void scaleImageChannel(Image *image, unsigned int channel, float factor)
 API Image *blendImages(Image *a, Image *b, double factor)
 {
 	if(a->channels != b->channels || a->width != b->width || a->height != b->height) {
-		LOG_ERROR("Failed to blend images: Dimensions and channel counts must agree");
+		logError("Failed to blend images: Dimensions and channel counts must agree");
 		return NULL;
 	}
 
@@ -250,7 +250,7 @@ API void debugImage(Image *image)
 {
 	if(!$$(bool, isModuleLoaded)("image_pnm")) {
 		if(!$$(bool, requestModule)("image_pnm")) {
-			LOG_DEBUG("Failed to save debug image: Failed to load module 'image_pnm'");
+			logInfo("Failed to save debug image: Failed to load module 'image_pnm'");
 			return;
 		}
 	}
@@ -274,7 +274,7 @@ API void debugImage(Image *image)
 		break;
 	}
 
-	LOG_DEBUG("Storing %u-channel debug image to '%s'", image->channels, filename->str);
+	logInfo("Storing %u-channel debug image to '%s'", image->channels, filename->str);
 	writeImageToFile(image, filename->str);
 }
 

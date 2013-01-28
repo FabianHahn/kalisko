@@ -68,12 +68,12 @@ static Image *readImageFilePng(const char *filename)
 	FILE *file;
 
 	if((file = fopen(filename, "rb")) == NULL) {
-		LOG_SYSTEM_ERROR("Could not open image file %s", filename);
+		logSystemError("Could not open image file %s", filename);
 		return NULL;
 	}
 
 	if(fread(header, 1, 8, file) <= 0 || png_sig_cmp(header, 0, 8)) {
-		LOG_ERROR("Failed to read PNG image '%s': libpng header signature mismatch", filename);
+		logError("Failed to read PNG image '%s': libpng header signature mismatch", filename);
 		fclose(file);
 		return NULL;
 	}
@@ -86,7 +86,7 @@ static Image *readImageFilePng(const char *filename)
 	png_bytep *row_pointers = NULL;
 
 	if(setjmp(png_jmpbuf(png_ptr))) {
-		LOG_ERROR("Failed to read PNG image '%s': libpng called longjmp", filename);
+		logError("Failed to read PNG image '%s': libpng called longjmp", filename);
 		png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 		fclose(file);
 
@@ -135,7 +135,7 @@ static Image *readImageFilePng(const char *filename)
 			channels = 4;
 		break;
 		default:
-			LOG_ERROR("Read PNG image '%s' has unsupported color type", filename);
+			logError("Read PNG image '%s' has unsupported color type", filename);
 			png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 			fclose(file);
 			return NULL;
@@ -153,7 +153,7 @@ static Image *readImageFilePng(const char *filename)
 
 	fclose(file);
 
-	LOG_DEBUG("Read PNG image '%s' has dimension %ux%u, bit depth %d and %u channels", filename, width, height, bit_depth, channels);
+	logInfo("Read PNG image '%s' has dimension %ux%u, bit depth %d and %u channels", filename, width, height, bit_depth, channels);
 
 	Image *image = NULL;
 	if(bit_depth == 16) { // 16-bit images need special handling
@@ -201,28 +201,28 @@ static Image *readImageFilePng(const char *filename)
 static bool writeImageFilePng(const char *filename, Image *image)
 {
 	if(image->channels > 4) {
-		LOG_ERROR("Cannot save images with more than 4 channels as PNG");
+		logError("Cannot save images with more than 4 channels as PNG");
 		return false;
 	}
 
 	FILE *file;
 
 	if((file = fopen(filename, "wb")) == NULL) {
-		LOG_SYSTEM_ERROR("Could not open image file %s", filename);
+		logSystemError("Could not open image file %s", filename);
 		return false;
 	}
 
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
 	if(png_ptr == NULL) {
-		LOG_ERROR("Failed to create libpng write struct");
+		logError("Failed to create libpng write struct");
 		fclose(file);
 		return false;
 	}
 
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	if(info_ptr == NULL) {
-		LOG_ERROR("Failed to create libpng info struct");
+		logError("Failed to create libpng info struct");
 		fclose(file);
 		png_destroy_write_struct(&png_ptr, NULL);
 		return false;
@@ -257,7 +257,7 @@ static bool writeImageFilePng(const char *filename, Image *image)
 	}
 
 	if(setjmp(png_jmpbuf(png_ptr))) {
-		LOG_ERROR("Failed to write PNG image '%s': libpng called longjmp", filename);
+		logError("Failed to write PNG image '%s': libpng called longjmp", filename);
 		fclose(file);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 

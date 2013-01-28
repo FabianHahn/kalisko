@@ -72,9 +72,9 @@ TIMER_CALLBACK(SAFE_REMOVE_MODULE)
 	char *module = (char *) custom_data;
 
 	if(g_strcmp0(module, "module_util") != 0 && $$(bool, revokeModule)(module)) {
-		LOG_INFO("Safely revoked module %s", module);
+		logNotice("Safely revoked module %s", module);
 	} else {
-		LOG_WARNING("Safe revoking of module %s failed", module);
+		logWarning("Safe revoking of module %s failed", module);
 	}
 
 	free(module);
@@ -91,9 +91,9 @@ TIMER_CALLBACK(SAFE_FORCE_UNLOAD_MODULE)
 	char *module = (char *) custom_data;
 
 	if(g_strcmp0(module, "module_util") != 0 && $$(bool, forceUnloadModule)(module)) {
-		LOG_INFO("Safely force unloaded module %s", module);
+		logNotice("Safely force unloaded module %s", module);
 	} else {
-		LOG_WARNING("Safe force unloading of module %s failed", module);
+		logWarning("Safe force unloading of module %s failed", module);
 	}
 
 	free(module);
@@ -111,12 +111,12 @@ TIMER_CALLBACK(SAFE_FORCE_RELOAD_MODULE)
 
 	if(g_strcmp0(module, "module_util") != 0 && $$(bool, forceUnloadModule)(module)) {
 		if($$(bool, requestModule)(module)) {
-			LOG_INFO("Safely force reloaded module %s", module);
+			logNotice("Safely force reloaded module %s", module);
 		} else {
-			LOG_WARNING("Safe force reloading of module %s failed", module);
+			logWarning("Safe force reloading of module %s failed", module);
 		}
 	} else {
-		LOG_WARNING("Safe force unloading of module %s failed", module);
+		logWarning("Safe force unloading of module %s failed", module);
 	}
 
 	free(module);

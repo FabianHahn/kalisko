@@ -37,7 +37,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *widthParam;
 
 	if((widthParam = getStorePath(store, "width")) == NULL || widthParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'width' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'width' not found", name);
 		return NULL;
 	}
 
@@ -47,7 +47,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *heightParam;
 
 	if((heightParam = getStorePath(store, "height")) == NULL || heightParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'height' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'height' not found", name);
 		return NULL;
 	}
 
@@ -57,7 +57,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *worleyPointsParam;
 
 	if((worleyPointsParam = getStorePath(store, "worleyPoints")) == NULL || worleyPointsParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'worleyPoints' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'worleyPoints' not found", name);
 		return NULL;
 	}
 
@@ -67,7 +67,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *fbmFrequencyParam;
 
 	if((fbmFrequencyParam = getStorePath(store, "fbmFrequency")) == NULL || !(fbmFrequencyParam->type == STORE_FLOAT_NUMBER || fbmFrequencyParam->type == STORE_INTEGER)) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmFrequency' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmFrequency' not found", name);
 		return NULL;
 	}
 
@@ -77,7 +77,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *fbmPersistanceParam;
 
 	if((fbmPersistanceParam = getStorePath(store, "fbmPersistance")) == NULL || !(fbmPersistanceParam->type == STORE_FLOAT_NUMBER || fbmPersistanceParam->type == STORE_INTEGER)) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmPersistance' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'fbmPersistance' not found", name);
 		return NULL;
 	}
 
@@ -87,7 +87,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *fbmDepthParam;
 
 	if((fbmDepthParam = getStorePath(store, "fbmDepth")) == NULL || fbmDepthParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'fbmDepth' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'fbmDepth' not found", name);
 		return NULL;
 	}
 
@@ -97,7 +97,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *erosionThermalIterationsParam;
 
 	if((erosionThermalIterationsParam = getStorePath(store, "erosionThermalIterations")) == NULL || erosionThermalIterationsParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionThermalIterations' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionThermalIterations' not found", name);
 		return NULL;
 	}
 
@@ -107,7 +107,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *erosionThermalTalusAngleParam;
 
 	if((erosionThermalTalusAngleParam = getStorePath(store, "erosionThermalTalusAngle")) == NULL || !(erosionThermalTalusAngleParam->type == STORE_FLOAT_NUMBER || erosionThermalTalusAngleParam->type == STORE_INTEGER)) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'erosionThermalTalusAngle' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Float parameter 'erosionThermalTalusAngle' not found", name);
 		return NULL;
 	}
 
@@ -117,7 +117,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	Store *erosionHydraulicIterationsParam;
 
 	if((erosionHydraulicIterationsParam = getStorePath(store, "erosionHydraulicIterations")) == NULL || erosionHydraulicIterationsParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionHydraulicIterations' not found", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Integer parameter 'erosionHydraulicIterations' not found", name);
 		return NULL;
 	}
 
@@ -130,7 +130,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveLandscape(Scene *scene, const char
 	OpenGLPrimitive *primitive;
 
 	if((primitive = createOpenGLPrimitiveHeightmap(image, image->width, image->height)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive landscape '%s': Failed to create heightmap primitive from landscape heightmap image", name);
+		logError("Failed to parse OpenGL scene primitive landscape '%s': Failed to create heightmap primitive from landscape heightmap image", name);
 		freeImage(image);
 		return NULL;
 	}

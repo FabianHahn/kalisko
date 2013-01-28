@@ -86,7 +86,7 @@ MODULE_INIT
 	if((config = getConfigPath("irc/proxy/port")) != NULL && config->type == STORE_STRING) {
 		port = config->content.string;
 	} else {
-		LOG_INFO("Could not determine config value irc/proxy/port, using default of '%s'", port);
+		logNotice("Could not determine config value irc/proxy/port, using default of '%s'", port);
 	}
 
 	// Create and connect our listening server socket
@@ -95,12 +95,12 @@ MODULE_INIT
 	attachEventListener(server, "accept", NULL, &listener_clientAccept);
 
 	if(!connectSocket(server)) {
-		LOG_ERROR("Failed to connect IRC proxy server socket on port %s, aborting", port);
+		logError("Failed to connect IRC proxy server socket on port %s, aborting", port);
 		return false;
 	}
 
 	if(!enableSocketPolling(server)) {
-		LOG_ERROR("Failed to enable polling for IRC proxy server socket on port %s, aborting", port);
+		logError("Failed to enable polling for IRC proxy server socket on port %s, aborting", port);
 		return false;
 	}
 
@@ -150,7 +150,7 @@ static void listener_clientAccept(void *subject, const char *event, void *data, 
 	if(listener == server) { // new IRC proxy client
 		enableSocketPolling(client); // also poll the new socket
 
-		LOG_INFO("New relay client %d on IRC proxy server", client->fd);
+		logNotice("New relay client %d on IRC proxy server", client->fd);
 
 		IrcProxyClient *pc = ALLOCATE_OBJECT(IrcProxyClient);
 		pc->proxy = NULL;
@@ -186,7 +186,7 @@ static void listener_clientDisconnect(void *subject, const char *event, void *da
 
 	IrcProxyClient *client;
 	if((client = g_hash_table_lookup(clients, socket)) != NULL) { // one of our proxy clients disconnected
-		LOG_INFO("IRC proxy client %d disconnected", client->socket->fd);
+		logNotice("IRC proxy client %d disconnected", client->socket->fd);
 
 		if(client->proxy != NULL) { // check if the client is already associated to a proxy
 			g_queue_remove(client->proxy->clients, client); // remove the client from its irc proxy
@@ -224,7 +224,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 
 					if((proxy = g_hash_table_lookup(proxies, name)) != NULL) { // it's a valid ID
 						if(g_strcmp0(proxy->password, parts[1]) == 0) { // the password also matches
-							LOG_INFO("IRC proxy client %d authenticated successfully to IRC proxy '%s'", client->socket->fd, name);
+							logNotice("IRC proxy client %d authenticated successfully to IRC proxy '%s'", client->socket->fd, name);
 							client->authenticated = true;
 
 							// associate client and proxy
@@ -252,7 +252,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 	} else if(g_strcmp0(message->command, "USER") == 0) { // prevent user command from being passed through
 		return;
 	} else if(g_strcmp0(message->command, "QUIT") == 0) { // client disconnects
-		LOG_DEBUG("IRC proxy client %d sent QUIT message, disconnecting...", client->socket->fd);
+		logInfo("IRC proxy client %d sent QUIT message, disconnecting...", client->socket->fd);
 		disconnectSocket(client->socket);
 	} else {
 		if((g_strcmp0(message->command, "PRIVMSG") == 0 || g_strcmp0(message->command, "NOTICE") == 0) && message->params_count > 0) { // potential filtered command
@@ -271,12 +271,12 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 API IrcProxy *createIrcProxy(char *name, IrcConnection *irc, char *password)
 {
 	if(g_hash_table_lookup(proxies, name) != NULL) { // IRC proxy with that ID already exists
-		LOG_ERROR("Trying to create IRC proxy with already taken name '%s', aborting", name);
+		logError("Trying to create IRC proxy with already taken name '%s', aborting", name);
 		return NULL;
 	}
 
 	if(g_hash_table_lookup(proxyConnections, irc) != NULL) { // there is already a proxy for this connection
-		LOG_ERROR("Trying to create IRC proxy for already proxied IRC connection with socket %d, aborting", irc->socket->fd);
+		logError("Trying to create IRC proxy for already proxied IRC connection with socket %d, aborting", irc->socket->fd);
 		return NULL;
 	}
 
@@ -375,7 +375,7 @@ API bool proxyClientIrcSend(IrcProxyClient *client, char *message, ...)
 	vsnprintf(buffer, IRC_SEND_MAXLEN, message, va);
 
 	if(!client->socket->connected) {
-		LOG_ERROR("Trying to send to disconnected IRC proxy client, aborting: %s", buffer);
+		logError("Trying to send to disconnected IRC proxy client, aborting: %s", buffer);
 		return false;
 	}
 

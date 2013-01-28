@@ -43,7 +43,7 @@ static void tryParseContentLength(HttpRequest *request, char *line);
 
 API void parseHttpRequestLine(HttpRequest *request, char *line)
 {
-	// LOG_DEBUG("Parsing HTTP line: %s", line);
+	// logInfo("Parsing HTTP line: %s", line);
 	tryParseMethodLine(request, line);
 	tryParseContentLength(request, line);
 
@@ -118,13 +118,13 @@ static void parseParameter(HttpRequest *request, char *keyvalue)
 	GHashTable *params = request->parameters;
 	char **parts = g_strsplit(keyvalue, "=", 0);
 	if(countParts(parts) != 2) {
-		LOG_DEBUG("Not exactly one = in %s, skipping", keyvalue);
+		logInfo("Not exactly one = in %s, skipping", keyvalue);
 	} else {
 		char *unescaped_key = g_uri_unescape_string(parts[0], NULL);
 		char *unescaped_value = g_uri_unescape_string(parts[1], NULL);
 
 		if(unescaped_key == NULL || unescaped_value == NULL) {
-			LOG_DEBUG("Failed to unescape %s skipping", keyvalue);
+			logInfo("Failed to unescape %s skipping", keyvalue);
 			free(unescaped_key);
 			free(unescaped_value);
 		} else {
@@ -158,14 +158,14 @@ static void replaceString(char **old, char *new)
 
 static void parseUri(HttpRequest *request, char *uri)
 {
-	LOG_DEBUG("Request URI is %s", uri);
+	logInfo("Request URI is %s", uri);
 	replaceString(&request->uri, g_strdup(uri));
 
 	if(strstr(uri, "?") == NULL) {
 		// Copy the entire uri as hierarchical part
 		replaceString(&request->hierarchical, g_uri_unescape_string(uri, NULL));
 		if(request->hierarchical == NULL) {
-			LOG_DEBUG("Failed to unescape hierarchical part %s", uri);
+			logInfo("Failed to unescape hierarchical part %s", uri);
 		}
 	} else {
 		// Extract parameters
@@ -175,7 +175,7 @@ static void parseUri(HttpRequest *request, char *uri)
 			// TODO: possibly disallow special characters not allowed as file names (replace second param)
 			replaceString(&request->hierarchical, g_uri_unescape_string(parts[0], NULL));
 			if(request->hierarchical == NULL) {
-				LOG_DEBUG("Failed to unescape hierarchical part %s", parts[0]);
+				logInfo("Failed to unescape hierarchical part %s", parts[0]);
 			}
 
 			// Parse the parameter part
@@ -191,11 +191,11 @@ static void parseMethod(HttpRequest *request, char *method)
 {
 	if(strcmp(HTTP_GET, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_GET;
-		LOG_DEBUG("Request method is %s", HTTP_GET);
+		logInfo("Request method is %s", HTTP_GET);
 	} else if(strcmp(HTTP_POST, method) == 0) {
 		request->method = HTTP_REQUEST_METHOD_POST;
-		LOG_DEBUG("Request method is %s", HTTP_POST);
+		logInfo("Request method is %s", HTTP_POST);
 	} else {
-		LOG_WARNING("Unrecognized request method %s", method);
+		logWarning("Unrecognized request method %s", method);
 	}
 }

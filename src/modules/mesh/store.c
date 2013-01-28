@@ -30,20 +30,20 @@ API Mesh *createMeshFromStore(Store *store)
 {
 	Store *positions;
 	if((positions = $(Store *, store, getStorePath)(store, "mesh/vertices/positions")) == NULL || positions->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/vertices/positions'");
+		logError("Failed to parse mesh store: Could not find store list path 'mesh/vertices/positions'");
 		return NULL;
 	}
 
 	Store *triangles;
 	if((triangles = $(Store *, store, getStorePath)(store, "mesh/triangles")) == NULL || triangles->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse mesh store: Could not find store list path 'mesh/triangles'");
+		logError("Failed to parse mesh store: Could not find store list path 'mesh/triangles'");
 		return NULL;
 	}
 
 	Store *colors;
 	GQueue *cList = NULL;
 	if((colors = $(Store *, store, getStorePath)(store, "mesh/vertices/colors")) == NULL || colors->type != STORE_LIST) {
-		LOG_WARNING("Parsed mesh store doesn't seem to have color values stored in 'mesh/vertices/colors', skipping");
+		logWarning("Parsed mesh store doesn't seem to have color values stored in 'mesh/vertices/colors', skipping");
 	} else {
 		 cList = colors->content.list;
 	}
@@ -51,7 +51,7 @@ API Mesh *createMeshFromStore(Store *store)
 	Store *uvs;
 	GQueue *uvList = NULL;
 	if((uvs = $(Store *, store, getStorePath)(store, "mesh/vertices/uvs")) == NULL || colors->type != STORE_LIST) {
-		LOG_WARNING("Parsed mesh store doesn't seem to have UV coordinate values stored in 'mesh/vertices/uvs', skipping");
+		logWarning("Parsed mesh store doesn't seem to have UV coordinate values stored in 'mesh/vertices/uvs', skipping");
 	} else {
 		uvList = uvs->content.list;
 	}
@@ -67,7 +67,7 @@ API Mesh *createMeshFromStore(Store *store)
 		Store *position = iter->data;
 
 		if(position->type != STORE_LIST || g_queue_get_length(position->content.list) != 3) {
-			LOG_WARNING("Invalid vertex position for vertex %d in mesh store, replacing by 0/0/0", i);
+			logWarning("Invalid vertex position for vertex %d in mesh store, replacing by 0/0/0", i);
 			mesh->vertices[i].position[0] = 0.0f;
 			mesh->vertices[i].position[1] = 0.0f;
 			mesh->vertices[i].position[2] = 0.0f;
@@ -84,7 +84,7 @@ API Mesh *createMeshFromStore(Store *store)
 						mesh->vertices[i].position[j] = pval->content.integer;
 					break;
 					default:
-						LOG_WARNING("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+						logWarning("Invalid vertex position value in component %d of vertex %d in mesh store, replacing by 0", j, i);
 						mesh->vertices[i].position[j] = 0;
 					break;
 				}
@@ -98,7 +98,7 @@ API Mesh *createMeshFromStore(Store *store)
 		for(GList *iter = cList->head; iter != NULL; iter = iter->next, i++) {
 			Store *color = iter->data;
 			if(color->type != STORE_LIST || g_queue_get_length(color->content.list) != 4) {
-				LOG_WARNING("Invalid vertex color for vertex %d in mesh store, replacing by 0/0/0/0", i);
+				logWarning("Invalid vertex color for vertex %d in mesh store, replacing by 0/0/0/0", i);
 				mesh->vertices[i].color[0] = 0.0f;
 				mesh->vertices[i].color[1] = 0.0f;
 				mesh->vertices[i].color[2] = 0.0f;
@@ -116,7 +116,7 @@ API Mesh *createMeshFromStore(Store *store)
 							mesh->vertices[i].color[j] = cval->content.integer;
 						break;
 						default:
-							LOG_WARNING("Invalid vertex color value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+							logWarning("Invalid vertex color value in component %d of vertex %d in mesh store, replacing by 0", j, i);
 							mesh->vertices[i].color[j] = 0;
 						break;
 					}
@@ -131,7 +131,7 @@ API Mesh *createMeshFromStore(Store *store)
 		for(GList *iter = uvList->head; iter != NULL; iter = iter->next, i++) {
 			Store *uv = iter->data;
 			if(uv->type != STORE_LIST || g_queue_get_length(uv->content.list) != 2) {
-				LOG_WARNING("Invalid UV coordinates for vertex %d in mesh store, replacing by 0/0", i);
+				logWarning("Invalid UV coordinates for vertex %d in mesh store, replacing by 0/0", i);
 				mesh->vertices[i].uv[0] = 0.0f;
 				mesh->vertices[i].uv[1] = 0.0f;
 			} else {
@@ -147,7 +147,7 @@ API Mesh *createMeshFromStore(Store *store)
 							mesh->vertices[i].uv[j] = uvval->content.integer;
 						break;
 						default:
-							LOG_WARNING("Invalid vertex UV coordinate value in component %d of vertex %d in mesh store, replacing by 0", j, i);
+							logWarning("Invalid vertex UV coordinate value in component %d of vertex %d in mesh store, replacing by 0", j, i);
 							mesh->vertices[i].uv[j] = 0;
 						break;
 					}
@@ -162,7 +162,7 @@ API Mesh *createMeshFromStore(Store *store)
 		Store *triangle = iter->data;
 
 		if(triangle->type != STORE_LIST) {
-			LOG_WARNING("Invalid triangle %d in mesh store, replacing by 0/0/0", i);
+			logWarning("Invalid triangle %d in mesh store, replacing by 0/0/0", i);
 			mesh->triangles[i].indices[0] = 0;
 			mesh->triangles[i].indices[1] = 0;
 			mesh->triangles[i].indices[2] = 0;
@@ -172,7 +172,7 @@ API Mesh *createMeshFromStore(Store *store)
 				Store *ival = iiter->data;
 
 				if(ival->type != STORE_INTEGER || ival->content.integer < 0 || ival->content.integer >= mesh->num_vertices) {
-					LOG_WARNING("Invalid index value in component %d of triangle %d in mesh store, replacing by 0", j, i);
+					logWarning("Invalid index value in component %d of triangle %d in mesh store, replacing by 0", j, i);
 					mesh->triangles[i].indices[j] = 0;
 				} else {
 					mesh->triangles[i].indices[j] = ival->content.integer;

@@ -98,12 +98,12 @@ API void freePoll()
 API bool connectClientSocketAsync(Socket *s, int timeout)
 {
 	if(s->connected) {
-		LOG_ERROR("Cannot connect already connected socket %d", s->fd);
+		logError("Cannot connect already connected socket %d", s->fd);
 		return false;
 	}
 
 	if(s->type != SOCKET_CLIENT) {
-		LOG_ERROR("Cannot asynchronously connect non-client socket");
+		logError("Cannot asynchronously connect non-client socket");
 		return false;
 	}
 
@@ -116,22 +116,22 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 	hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
 
 	if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
-		LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
+		logError("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
 		return false;
 	}
 
 	if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-		LOG_SYSTEM_ERROR("Failed to create socket");
+		logSystemError("Failed to create socket");
 		return false;
 	}
 
 	if(!setSocketNonBlocking(s->fd)) {
-		LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+		logSystemError("Failed to set socket non-blocking");
 		closeSocket(s);
 		return false;
 	}
 
-	LOG_INFO("Asynchronously connecting client socket %d to %s:%s...", s->fd, s->host, s->port);
+	logNotice("Asynchronously connecting client socket %d to %s:%s...", s->fd, s->host, s->port);
 
 	if(connect(s->fd, server->ai_addr, server->ai_addrlen) < 0) { // try to connect socket
 #ifdef WIN32
@@ -148,21 +148,21 @@ API bool connectClientSocketAsync(Socket *s, int timeout)
 			s->custom = timer;
 
 			g_queue_push_tail(connecting, s); // add to connecting list
-			LOG_DEBUG("Socket %d delayed connection, queueing...", s->fd);
+			logInfo("Socket %d delayed connection, queueing...", s->fd);
 		} else {
 #ifdef WIN32
 			char *error = g_win32_error_message(WSAGetLastError());
-			LOG_ERROR("Connection for socket %d failed: %s", s->fd, error);
+			logError("Connection for socket %d failed: %s", s->fd, error);
 			free(error);
 #else
-			LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+			logSystemError("Connection for socket %d failed", s->fd);
 #endif
 			closeSocket(s);
 			freeaddrinfo(server);
 			return false;
 		}
 	} else {
-		LOG_INFO("Direct response for asynchronous connection on socket %d", s->fd);
+		logNotice("Direct response for asynchronous connection on socket %d", s->fd);
 		s->connected = true;
 		triggerEvent(s, "connected");
 		enableSocketPolling(s);
@@ -261,7 +261,7 @@ static bool pollConnectingSocket(Socket *socket)
 	AsyncConnectionTimer *timer = socket->custom;
 
 	if(getMicroTime() - timer->creationTime > timer->timeout) { // connection timed out
-		LOG_WARNING("Asynchronous connection on socket %d timed out", socket->fd);
+		logWarning("Asynchronous connection on socket %d timed out", socket->fd);
 		closeSocket(socket);
 		triggerEvent(socket, "disconnect");
 		return true;
@@ -281,11 +281,11 @@ static bool pollConnectingSocket(Socket *socket)
 #ifdef WIN32
 		if(WSAGetLastError() != WSAEINTR) {
 			char *error = g_win32_error_message(WSAGetLastError());
-			LOG_ERROR("Error selecting socket %d for write flag (connected) while polling: %s", socket->fd, error);
+			logError("Error selecting socket %d for write flag (connected) while polling: %s", socket->fd, error);
 			free(error);
 #else
 		if(errno != EINTR) {
-			LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected) while polling", socket->fd);
+			logSystemError("Error selecting socket %d for write flag (connected) while polling", socket->fd);
 #endif
 			closeSocket(socket);
 			triggerEvent(socket, "disconnect");
@@ -299,18 +299,18 @@ static bool pollConnectingSocket(Socket *socket)
 		int valopt;
 		socklen_t lon = sizeof(int);
 		if(getsockopt(socket->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
-			LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", socket->fd);
+			logSystemError("getsockopt() failed on socket %d", socket->fd);
 			closeSocket(socket);
 			triggerEvent(socket, "disconnect");
 			return true;
 		} else if(valopt != 0) { // There was a connection error
-			LOG_SYSTEM_ERROR("Asynchronous connection on socket %d failed", socket->fd);
+			logSystemError("Asynchronous connection on socket %d failed", socket->fd);
 			closeSocket(socket);
 			triggerEvent(socket, "disconnect");
 			return true;
 		}
 
-		LOG_INFO("Asynchronously connected socket %d", socket->fd);
+		logNotice("Asynchronously connected socket %d", socket->fd);
 		socket->connected = true;
 		triggerEvent(socket, "connected");
 		enableSocketPolling(socket);

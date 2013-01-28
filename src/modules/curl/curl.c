@@ -58,10 +58,10 @@ API GString *curlRequestUrl(const char *url)
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, result);
 	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error);
 
-	LOG_DEBUG("Requesting URL '%s'...", url);
+	logInfo("Requesting URL '%s'...", url);
 
 	if(curl_easy_perform(curl) != 0) {
-		LOG_ERROR("Failed to read URL '%s': %s", url, error);
+		logError("Failed to read URL '%s': %s", url, error);
 		g_string_free(result, true);
 		return NULL;
 	}

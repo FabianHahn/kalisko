@@ -54,7 +54,7 @@ MODULE_FINALIZE
 API bool registerImageSynthesizer(const char *name, ImageSynthesizer *synthesizer)
 {
 	if(g_hash_table_lookup(synthesizers, name) != NULL) {
-		LOG_ERROR("Failed to register image synthesizer: A synthesizer with that name is already registered");
+		logError("Failed to register image synthesizer: A synthesizer with that name is already registered");
 		return false;
 	}
 
@@ -71,7 +71,7 @@ API Image *synthesizeImage(const char *name, unsigned int width, unsigned int he
 {
 	ImageSynthesizer *synthesizer;
 	if((synthesizer = g_hash_table_lookup(synthesizers, name)) == NULL) {
-		LOG_ERROR("Failed to synthesize image: No such synthesizer with name '%s' found", name);
+		logError("Failed to synthesize image: No such synthesizer with name '%s' found", name);
 		return NULL;
 	}
 

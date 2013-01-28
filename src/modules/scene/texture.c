@@ -47,13 +47,13 @@ API void initOpenGLTextureSceneParsers()
 API bool registerOpenGLTextureSceneParser(const char *type, OpenGLTextureSceneParser *parser)
 {
 	if(g_hash_table_lookup(parsers, type) != NULL) {
-		LOG_ERROR("Tried to register OpenGLTextureSceneParser for already registered type '%s'", type);
+		logError("Tried to register OpenGLTextureSceneParser for already registered type '%s'", type);
 		return false;
 	}
 
 	g_hash_table_insert(parsers, strdup(type), parser);
 
-	LOG_INFO("Registered parser for OpenGL scene texture type '%s'", type);
+	logNotice("Registered parser for OpenGL scene texture type '%s'", type);
 
 	return true;
 }
@@ -70,14 +70,14 @@ API OpenGLTexture *parseOpenGLSceneTexture(Scene *scene, const char *path_prefix
 	Store *type;
 
 	if((type = $(Store *, store, getStorePath)(store, "type")) == NULL || type->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL texture '%s' from scene - type parameter is not a string", name);
+		logError("Failed to parse OpenGL texture '%s' from scene - type parameter is not a string", name);
 		return NULL;
 	}
 
 	OpenGLTextureSceneParser *parser;
 
 	if((parser = g_hash_table_lookup(parsers, type->content.string)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGL texture '%s' from scene with type '%s' - no parser for that texture type registered", name, type->content.string);
+		logError("Failed to parse OpenGL texture '%s' from scene with type '%s' - no parser for that texture type registered", name, type->content.string);
 		return NULL;
 	}
 

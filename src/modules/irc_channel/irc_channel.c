@@ -88,7 +88,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				channel->tracker = tracker;
 				g_hash_table_insert(tracker->channels, channel->name, channel); // add it to channels table
 
-				LOG_DEBUG("Joined channel %s on IRC connection %d", channel->name, irc->socket->fd);
+				logInfo("Joined channel %s on IRC connection %d", channel->name, irc->socket->fd);
 
 				triggerEvent(irc, "channel_join", channel);
 			} else {
@@ -112,7 +112,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 				if((channel = g_hash_table_lookup(tracker->channels, cname)) != NULL) {
 					g_hash_table_remove(tracker->channels, cname);
-					LOG_DEBUG("Left channel %s on IRC connection %d", cname, irc->socket->fd);
+					logInfo("Left channel %s on IRC connection %d", cname, irc->socket->fd);
 					triggerEvent(irc, "channel_part", cname);
 				}
 			} else {
@@ -140,7 +140,7 @@ API bool enableChannelTracking(IrcConnection *irc)
 	IrcChannelTracker *tracker;
 
 	if((tracker = g_hash_table_lookup(tracked, irc)) != NULL) {
-		LOG_WARNING("Trying to enable channel tracking for already tracked IRC connection %d, aborting", irc->socket->fd);
+		logWarning("Trying to enable channel tracking for already tracked IRC connection %d, aborting", irc->socket->fd);
 		return false;
 	}
 
@@ -161,7 +161,7 @@ API void disableChannelTracking(IrcConnection *irc)
 	IrcChannelTracker *tracker;
 
 	if((tracker = g_hash_table_lookup(tracked, irc)) == NULL) {
-		LOG_WARNING("Trying to disable channel tracking for untracked IRC connection %d, aborting", irc->socket->fd);
+		logWarning("Trying to disable channel tracking for untracked IRC connection %d, aborting", irc->socket->fd);
 		return;
 	}
 
@@ -179,7 +179,7 @@ API IrcChannel *getTrackedChannel(IrcConnection *irc, char *name)
 	IrcChannelTracker *tracker;
 
 	if((tracker = g_hash_table_lookup(tracked, irc)) == NULL) {
-		LOG_WARNING("Trying to retrieve channel %s for untracked IRC connection %d, aborting", name, irc->socket->fd);
+		logWarning("Trying to retrieve channel %s for untracked IRC connection %d, aborting", name, irc->socket->fd);
 		return NULL;
 	}
 
@@ -191,7 +191,7 @@ API GList *getTrackedChannels(IrcConnection *irc)
 	IrcChannelTracker *tracker;
 
 	if((tracker = g_hash_table_lookup(tracked, irc)) == NULL) {
-		LOG_WARNING("Trying to retrieve tracked channels for untracked IRC connection %d, aborting", irc->socket->fd);
+		logWarning("Trying to retrieve tracked channels for untracked IRC connection %d, aborting", irc->socket->fd);
 		return NULL; // NULL is the empty list, that's fine!
 	}
 

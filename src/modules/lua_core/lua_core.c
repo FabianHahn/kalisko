@@ -43,7 +43,7 @@ MODULE_INIT
 
 	if(!$(bool, lua, evaluateLuaScript)(path->str)) {
 		char *error = $(char *, lua, popLuaString)();
-		LOG_ERROR("Failed to run KaliskoModule.lua script: %s", error);
+		logError("Failed to run KaliskoModule.lua script: %s", error);
 		free(error);
 		g_string_free(path, true);
 		return false;
@@ -56,7 +56,7 @@ MODULE_INIT
 
 	if(!$(bool, lua, evaluateLuaScript)(path->str)) {
 		char *error = $(char *, lua, popLuaString)();
-		LOG_ERROR("Failed to run KaliskoLog.lua script: %s", error);
+		logError("Failed to run KaliskoLog.lua script: %s", error);
 		free(error);
 		g_string_free(path, true);
 		return false;

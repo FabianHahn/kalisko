@@ -40,7 +40,7 @@ MODULE_INIT
 	g_string_append(path, "/modules/javascript_core/Kalisko.js");
 
 	if(!$(bool, lang_javascript, evaluateJavaScriptFile)(path->str)) {
-		LOG_ERROR("Failed to run Kalisko.js script");
+		logError("Failed to run Kalisko.js script");
 		g_string_free(path, true);
 
 		return false;

@@ -80,7 +80,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 
 			if(!g_file_test(path->str, G_FILE_TEST_IS_DIR)) {
 				if(g_mkdir_with_parents(path->str, 0750) == -1) {
-					LOG_SYSTEM_ERROR("Failed to create IRC proxy message log folder %s", path->str);
+					logSystemError("Failed to create IRC proxy message log folder %s", path->str);
 					g_string_free(path, true);
 					return;
 				}
@@ -94,7 +94,7 @@ static void listener_clientLine(void *subject, const char *event, void *data, va
 			FILE *file;
 
 			if((file = fopen(path->str, "a")) == NULL) {
-				LOG_SYSTEM_ERROR("Failed to open IRC proxy message log file %s", path->str);
+				logSystemError("Failed to open IRC proxy message log file %s", path->str);
 				g_string_free(path, true);
 				return;
 			}
@@ -130,7 +130,7 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 
 				if(!g_file_test(path->str, G_FILE_TEST_IS_DIR)) {
 					if(g_mkdir_with_parents(path->str, 0750) == -1) {
-						LOG_SYSTEM_ERROR("Failed to create IRC proxy message log folder %s", path->str);
+						logSystemError("Failed to create IRC proxy message log folder %s", path->str);
 						g_string_free(path, true);
 						return;
 					}
@@ -157,7 +157,7 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 				FILE *file;
 
 				if((file = fopen(path->str, "a")) == NULL) {
-					LOG_SYSTEM_ERROR("Failed to open IRC proxy message log file %s", path->str);
+					logSystemError("Failed to open IRC proxy message log file %s", path->str);
 					g_string_free(path, true);
 					$(void, irc_parser, freeIrcUserMask)(mask);
 					return;

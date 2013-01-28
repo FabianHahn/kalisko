@@ -57,11 +57,11 @@ MODULE_INIT
 
 	if(php_embed_init(1, argvp PTSRMLS_CC) == FAILURE)
 	{
-		LOG_ERROR("Failed to initialize the PHP embed SAPI!");
+		logError("Failed to initialize the PHP embed SAPI!");
 	}
 	else
 	{
-		LOG_INFO("Successfully initialized the PHP embed SAPI");
+		logNotice("Successfully initialized the PHP embed SAPI");
 	}
 
 	// Load surgebot php extension
@@ -77,7 +77,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-	LOG_INFO("Shutting down the PHP SAPI");
+	logNotice("Shutting down the PHP SAPI");
 	php_embed_shutdown(TSRMLS_C);
 }
 
@@ -93,12 +93,12 @@ static int ub_write(const char *str, unsigned int str_length TSRMLS_DC)
 static void log_message(char *message)
 {
 	$(int, event, triggerEvent)(NULL, "php_log", message);
-	LOG_WARNING("%s", message);
+	logWarning("%s", message);
 }
 
 static void sapi_error(int type, const char *fmt, ...)
 {
-	LOG_ERROR("PHP SAPI error!");
+	logError("PHP SAPI error!");
 }
 
 API PhpEvalRet evaluatePhp(char *eval)

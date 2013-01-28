@@ -80,7 +80,7 @@ API OpenGLModel *createOpenGLModel(OpenGLPrimitive *primitive)
 API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name)
 {
 	if(!checkOpenGLMaterialShader(name)) {
-		LOG_ERROR("Failed to attach material '%s' without a shader to OpenGL model", name);
+		logError("Failed to attach material '%s' without a shader to OpenGL model", name);
 		return false;
 	}
 
@@ -99,7 +99,7 @@ API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name)
 	attachOpenGLUniform(model->uniforms, "modelNormal", modelNormalTransformUniform);
 
 	if(!setupOpenGLPrimitive(model->primitive, model, name)) {
-		LOG_ERROR("Setup for OpenGL model with material '%s' failed", name);
+		logError("Setup for OpenGL model with material '%s' failed", name);
 		return false;
 	}
 
@@ -116,12 +116,12 @@ API bool attachOpenGLModelMaterial(OpenGLModel *model, const char *name)
 API bool updateOpenGLModel(OpenGLModel *model, double dt)
 {
 	if(model->primitive == NULL) {
-		LOG_ERROR("Failed to update OpenGL model without a primitive attached");
+		logError("Failed to update OpenGL model without a primitive attached");
 		return false;
 	}
 
 	if(!updateOpenGLPrimitive(model->primitive, dt)) {
-		LOG_ERROR("Failed to update primitive for OpenGL model");
+		logError("Failed to update primitive for OpenGL model");
 		return false;
 	}
 
@@ -142,17 +142,17 @@ API bool drawOpenGLModel(OpenGLModel *model, void *options_p)
 	}
 
 	if(model->primitive == NULL) {
-		LOG_ERROR("Failed to draw visible OpenGL model without a primitive attached");
+		logError("Failed to draw visible OpenGL model without a primitive attached");
 		return false;
 	}
 
 	if(model->material == NULL) {
-		LOG_ERROR("Failed to draw visible OpenGL model without a material attached");
+		logError("Failed to draw visible OpenGL model without a material attached");
 		return false;
 	}
 
 	if(!useOpenGLMaterial(model->material, model->uniforms, model->transform, model->normal_transform)) {
-		LOG_ERROR("Failed to use material for OpenGL model");
+		logError("Failed to use material for OpenGL model");
 		return false;
 	}
 
@@ -161,7 +161,7 @@ API bool drawOpenGLModel(OpenGLModel *model, void *options_p)
 	}
 
 	if(!drawOpenGLPrimitive(model->primitive, options_p)) {
-		LOG_ERROR("Failed to draw primitive for OpenGL model");
+		logError("Failed to draw primitive for OpenGL model");
 		return false;
 	}
 

@@ -60,7 +60,7 @@ API IrcMessage *parseIrcMessage(char *message)
 		// message has a prefix
 		prefixEnd = strchr(message, ' ');
 		if(prefixEnd == NULL) {
-			LOG_ERROR("Malformed IRC message: '%s'", message);
+			logError("Malformed IRC message: '%s'", message);
 			freeIrcMessage(ircMessage);
 			return NULL;
 		}

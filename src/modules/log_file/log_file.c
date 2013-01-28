@@ -62,7 +62,7 @@ MODULE_INIT
 	Store *configFiles = $(Store *, config, getConfigPath)(LOG_FILES_CONFIG_PATH);
 	if(configFiles != NULL) {
 		if(configFiles->type != STORE_LIST) {
-			LOG_WARNING("Found log files configuration but it is not a list and can not be processed");
+			logWarning("Found log files configuration but it is not a list and can not be processed");
 			return false;
 		}
 		for(int i = 0; i < configFiles->content.list->length; i++) {
@@ -73,39 +73,39 @@ MODULE_INIT
 				Store *logType = g_hash_table_lookup(settings, LOG_FILES_CONFIG_LOGTYPE_KEY);
 
 				if(filePath == NULL) {
-					LOG_WARNING("The filepath is not set in the configuration. Ignoring log file");
+					logWarning("The filepath is not set in the configuration. Ignoring log file");
 					continue;
 				} else if(logType == NULL) {
-					LOG_WARNING("The logtype is not set in the configuration. Ignoring log file");
+					logWarning("The logtype is not set in the configuration. Ignoring log file");
 					continue;
 				}
 
 				if(filePath->type != STORE_STRING) {
-					LOG_WARNING("The filepath is not a string. Ignoring log file");
+					logWarning("The filepath is not a string. Ignoring log file");
 					continue;
 				} else if(logType->type != STORE_STRING) {
-					LOG_WARNING("The logtype is not a string. Ignoring log file");
+					logWarning("The logtype is not a string. Ignoring log file");
 					continue;
 				}
 
 				// parse the string value to the needed type
-				LogType parsedLogtype;
+				LogLevel level = LOG_LEVEL_INFO;
 				if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_DEBUG) == 0) {
-					parsedLogtype = LOG_TYPE_DEBUG;
+					level = LOG_LEVEL_INFO;
 				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_INFO) == 0) {
-					parsedLogtype = LOG_TYPE_INFO;
+					level = LOG_LEVEL_NOTICE;
 				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_WARNING) == 0) {
-					parsedLogtype = LOG_TYPE_WARNING;
+					level = LOG_LEVEL_WARNING;
 				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_ERROR) == 0) {
-					parsedLogtype = LOG_TYPE_ERROR;
+					level = LOG_LEVEL_ERROR;
 				} else {
-					LOG_WARNING("Could not interpret logtype value: %s",logType->content.string);
+					logWarning("Could not interpret logtype value: %s",logType->content.string);
 					continue;
 				}
 
-				addLogFile(filePath->content.string, parsedLogtype);
+				addLogFile(filePath->content.string, level);
 			} else {
-				LOG_WARNING("Found list of log file configurations but one of the elements is not an array");
+				logWarning("Found list of log file configurations but one of the elements is not an array");
 			}
 		}
 	}
@@ -120,18 +120,18 @@ MODULE_FINALIZE
 	finalize();
 }
 
-API LogFileConfig *addLogFile(char *filePath, LogType logType)
+API LogFileConfig *addLogFile(char *filePath, LogLevel level)
 {
 	LogFileConfig *logFile = ALLOCATE_OBJECT(LogFileConfig);
 	logFile->filePath = strdup(filePath);
-	logFile->logType = logType;
+	logFile->level = level;
 	logFile->ignoreNextLog = false;
 	logFile->fileAppend = NULL;
 
 	// checking the directory exists and if not try to create it
 	char *dirPath = $$(char *, getDirectoryPath)(logFile->filePath);
 	if(!g_file_test(dirPath, G_FILE_TEST_IS_DIR | G_FILE_TEST_EXISTS) && !g_mkdir_with_parents(dirPath, LOGFILE_DIR_PERMISSION)) {
-		LOG_ERROR("Could not create parent directory for the log file '%s'.", logFile->filePath);
+		logError("Could not create parent directory for the log file '%s'.", logFile->filePath);
 		removeLogFile(logFile);
 
 		return NULL;
@@ -158,7 +158,7 @@ API void removeLogFile(LogFileConfig *logFile)
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
 	const char *module = va_arg(args, const char *);
-	LogType type = va_arg(args, LogType);
+	LogLevel level = va_arg(args, LogLevel);
 	char *message = va_arg(args, char *);
 
 	GDateTime *now = g_date_time_new_now_local();
@@ -181,25 +181,27 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     	if(logFile->fileAppend == NULL) {
     		if((logFile->fileAppend = fopen(logFile->filePath, "a")) == NULL) {
     			logFile->ignoreNextLog = true;
-    			LOG_WARNING("Could not open logfile: %s", logFile->filePath);
+    			logWarning("Could not open logfile: %s", logFile->filePath);
 
     			continue;
     		}
     	}
 
-    	switch(logFile->logType) {
-			case LOG_TYPE_DEBUG:
-				if(type == LOG_TYPE_DEBUG)
-					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] DEBUG: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_TYPE_INFO:
-				if(type == LOG_TYPE_INFO)
+    	switch(logFile->level) {
+			case LOG_LEVEL_INFO:
+				if(level == LOG_LEVEL_INFO)
+					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] NOTICE: %s\n", day, month, year, hour, minute, second, module, message);
+			case LOG_LEVEL_NOTICE:
+				if(level == LOG_LEVEL_NOTICE)
 					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] INFO: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_TYPE_WARNING:
-				if(type == LOG_TYPE_WARNING)
+			case LOG_LEVEL_WARNING:
+				if(level == LOG_LEVEL_WARNING)
 					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] WARNING: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_TYPE_ERROR:
-				if(type == LOG_TYPE_ERROR)
+			case LOG_LEVEL_ERROR:
+				if(level == LOG_LEVEL_ERROR)
 					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] ERROR: %s\n", day, month, year, hour, minute, second, module, message);
+			default:
+			break;
     	}
 
     	fflush(logFile->fileAppend);

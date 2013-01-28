@@ -81,14 +81,14 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 
 	OpenGLLodMapDataSource *source = createOpenGLLodMapDataSourceFromStore(store);
 	if(source == NULL) {
-		LOG_ERROR("Failed to create LOD map from store: Failed to create LOD map data source!");
+		logError("Failed to create LOD map from store: Failed to create LOD map data source!");
 		freeStore(store);
 		return NULL;
 	}
 
 	Store *paramBaseRange = getStorePath(store, "lodmap/baseRange");
 	if(paramBaseRange == NULL || !(paramBaseRange->type == STORE_INTEGER || paramBaseRange->type == STORE_FLOAT_NUMBER)) {
-		LOG_ERROR("Failed to create LOD map from store: Required config float value 'lodmap/baseRange' not found!");
+		logError("Failed to create LOD map from store: Required config float value 'lodmap/baseRange' not found!");
 		freeStore(store);
 		return NULL;
 	}
@@ -97,7 +97,7 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 
 	Store *paramViewingDistance = getStorePath(store, "lodmap/viewingDistance");
 	if(paramViewingDistance == NULL || paramViewingDistance->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map from store: Required config integer value 'lodmap/viewingDistance' not found!");
+		logError("Failed to create LOD map from store: Required config integer value 'lodmap/viewingDistance' not found!");
 		freeStore(store);
 		return NULL;
 	}
@@ -115,7 +115,7 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 		Store *paramRootX;
 		int rootX;
 		if((paramRootX = getStorePath(store, "lodmap/quadtree/rootX")) == NULL || paramRootX->type != STORE_INTEGER) {
-			LOG_WARNING("LOD map config integer value 'lodmap/quadtree/rootX' not found, using default value of '0'");
+			logWarning("LOD map config integer value 'lodmap/quadtree/rootX' not found, using default value of '0'");
 			rootX = 0;
 		} else {
 			rootX = paramRootX->content.integer;
@@ -124,7 +124,7 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 		Store *paramRootY;
 		int rootY;
 		if((paramRootY = getStorePath(store, "lodmap/quadtree/rootY")) == NULL || paramRootY->type != STORE_INTEGER) {
-			LOG_WARNING("LOD map config integer value 'lodmap/quadtree/rootY' not found, using default value of '0'");
+			logWarning("LOD map config integer value 'lodmap/quadtree/rootY' not found, using default value of '0'");
 			rootY = 0;
 		} else {
 			rootY = paramRootY->content.integer;
@@ -133,7 +133,7 @@ API OpenGLLodMap *createOpenGLLodMapFromStore(Store *storeConfig)
 		Store *paramRootLevel;
 		int rootLevel;
 		if((paramRootLevel = getStorePath(store, "lodmap/quadtree/rootLevel")) == NULL || paramRootLevel->type != STORE_INTEGER) {
-			LOG_WARNING("LOD map config integer value 'lodmap/quadtree/rootLevel' not found, using default value of '0'");
+			logWarning("LOD map config integer value 'lodmap/quadtree/rootLevel' not found, using default value of '0'");
 			rootLevel = 0;
 		} else {
 			rootLevel = paramRootLevel->content.integer;
@@ -179,7 +179,7 @@ API OpenGLLodMap *createOpenGLLodMap(OpenGLLodMapDataSource *source, double base
 	if(!result) {
 		freeOpenGLPrimitiveHeightmap(lodmap->heightmap);
 		freeQuadtree(lodmap->quadtree);
-		LOG_ERROR("Failed to create OpenGL LOD map material");
+		logError("Failed to create OpenGL LOD map material");
 		return NULL;
 	}
 
@@ -237,7 +237,7 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 		}
 
 		QuadtreeAABB box = quadtreeNodeAABB(lodmap->quadtree->root);
-		LOG_DEBUG("Updated LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels: %d nodes selected", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level, g_list_length(lodmap->selection));
+		logInfo("Updated LOD map for quadtree covering range [%d,%d]x[%d,%d] on %u levels: %d nodes selected", box.minX, box.maxX, box.minY, box.maxY, lodmap->quadtree->root->level, g_list_length(lodmap->selection));
 	}
 }
 
@@ -371,7 +371,7 @@ static void preloadLodMapNode(OpenGLLodMap *lodmap, QuadtreeNode *node)
 		break;
 		case OPENGL_LODMAP_TILE_INACTIVE:
 		case OPENGL_LODMAP_TILE_META:
-			LOG_DEBUG("Preloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d) - %d threads active", box.minX, box.maxX, box.minY, box.maxY, node->level, g_thread_pool_get_num_threads(lodmap->loadingPool));
+			logInfo("Preloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d) - %d threads active", box.minX, box.maxX, box.minY, box.maxY, node->level, g_thread_pool_get_num_threads(lodmap->loadingPool));
 			tile->status = OPENGL_LODMAP_TILE_LOADING;
 			g_thread_pool_push(lodmap->loadingPool, node, NULL);
 		break;
@@ -388,12 +388,12 @@ static void preloadLodMapNode(OpenGLLodMap *lodmap, QuadtreeNode *node)
 
 			switch(childTile->status) {
 				case OPENGL_LODMAP_TILE_ACTIVE:
-					LOG_DEBUG("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
+					logInfo("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
 					deactivateLodMapTile(childTile);
 					unloadLodMapTile(childTile);
 				break;
 				case OPENGL_LODMAP_TILE_READY:
-					LOG_DEBUG("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
+					logInfo("Unloading LOD node covering [%d,%d]x[%d,%d] (LOD level %d)", childBox.minX, childBox.maxX, childBox.minY, childBox.maxY, child->level);
 					unloadLodMapTile(childTile);
 				break;
 				default:

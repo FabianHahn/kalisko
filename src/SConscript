@@ -16,9 +16,9 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Import('core')
-Import('corefiles')
-Import('binary_name')
+Import('prefix')
 import sys
+import os
 
 # core configure checks
 if not core.GetOption('clean'):
@@ -32,4 +32,5 @@ if not core.GetOption('clean'):
 	core = conf.Finish()
 
 # Build core
-prog = core.Program(binary_name, corefiles)
+exe = core.Program('kalisko', [x for x in core.Glob('*.c') if not x.name == 'test.c'])
+test_exe = core.Program('kalisko_test', [x for x in core.Glob('*.c') if not x.name == 'kalisko.c'])

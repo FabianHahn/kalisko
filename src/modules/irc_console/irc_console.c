@@ -161,7 +161,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 				} else if(message->trailing != NULL) { // some other servers though, like znc, send it as trailing parameter...
 					createTab(message->trailing);
 				} else { // anything else can't possibly happen
-					LOG_ERROR("No channel given in JOIN command");
+					logError("No channel given in JOIN command");
 				}
 			}
 
@@ -183,7 +183,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 static void createTab(char *name)
 {
-	LOG_DEBUG("Creating IRC console tab '%s'", name);
+	logInfo("Creating IRC console tab '%s'", name);
 
 	char *dupname = strdup(name);
 
@@ -239,7 +239,7 @@ static void appendMessage(char *tabname, char *message, IrcConsoleMessageType ty
 	IrcConsoleTab *tab = g_hash_table_lookup(tabs, tabname);
 
 	if(tab == NULL) {
-		LOG_ERROR("Requested unknown tab '%s'", tabname);
+		logError("Requested unknown tab '%s'", tabname);
 		return;
 	}
 

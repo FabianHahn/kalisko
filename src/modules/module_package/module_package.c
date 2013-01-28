@@ -51,7 +51,7 @@ MODULE_INIT
 	char *usePackage = $(char *, getopts, getOptValue)("load-package", "l", NULL);
 
 	if(usePackage) {
-		LOG_INFO("Loading package given by command line argument: '%s'", usePackage);
+		logNotice("Loading package given by command line argument: '%s'", usePackage);
 
 		char **moduleList = g_strsplit(usePackage, ",", -1);
 		for(int i = 0; moduleList[i] != NULL; i++) {
@@ -67,7 +67,7 @@ MODULE_INIT
 					Store *packageName = (Store *)iter->data;
 
 					if(packageName->type != STORE_STRING) {
-						LOG_WARNING("Package loading failed: '%s' must contain only strings", USE_PACKAGE_PATH);
+						logWarning("Package loading failed: '%s' must contain only strings", USE_PACKAGE_PATH);
 						continue;
 					}
 
@@ -76,12 +76,12 @@ MODULE_INIT
 			} else if(usePackageStore->type == STORE_STRING) {
 				loadPackage(usePackageStore->content.string);
 			} else {
-				LOG_WARNING("Package loading failed: '%s' must be a list or a string", USE_PACKAGE_PATH);
+				logWarning("Package loading failed: '%s' must be a list or a string", USE_PACKAGE_PATH);
 				return false;
 			}
 
 		} else {
-			LOG_INFO("No package given to load.");
+			logNotice("No package given to load.");
 		}
 	}
 
@@ -103,26 +103,26 @@ static void loadPackage(char *package)
 	Store *moduleList = $(Store *, config, getConfigPath)(packagePath);
 	if(moduleList) {
 		if(moduleList->type != STORE_LIST) {
-			LOG_WARNING("Package loading failed: Package '%s' cannot be loaded as the package is not a list", package);
+			logWarning("Package loading failed: Package '%s' cannot be loaded as the package is not a list", package);
 		} else {
 			GQueue *list = moduleList->content.list;
 			for(GList *iter = list->head; iter != NULL; iter = iter->next) {
 				Store *moduleName = (Store *)iter->data;
 
 				if(moduleName->type != STORE_STRING) {
-					LOG_WARNING("Package loading failed: Package '%s' contains non string values. All values must be strings. Ignoring value", package);
+					logWarning("Package loading failed: Package '%s' contains non string values. All values must be strings. Ignoring value", package);
 					continue;
 				}
 
 				if(!$$(bool, requestModule)(moduleName->content.string)) {
-					LOG_WARNING("Module load failed to request module '%s' for package '%s'", moduleName->content.string, package);
+					logWarning("Module load failed to request module '%s' for package '%s'", moduleName->content.string, package);
 				} else {
-					LOG_DEBUG("Module '%s' loaded successfully for package '%s'", moduleName->content.string, package);
+					logInfo("Module '%s' loaded successfully for package '%s'", moduleName->content.string, package);
 				}
 			}
 		}
 	} else {
-		LOG_WARNING("Package loading failed: Package '%s' does not exist", package);
+		logWarning("Package loading failed: Package '%s' does not exist", package);
 	}
 
 	free(packagePath);

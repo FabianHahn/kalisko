@@ -37,7 +37,7 @@ MODULE_DEPENDS(MODULE_DEPENDENCY("event", 0, 2, 0));
 
 static void listener_attached(void *subject, const char *event, void *data, va_list args);
 static void listener_detached(void *subject, const char *event, void *data, va_list args);
-static void eventLogHandler(const char *module, LogType type, const char *message);
+static void eventLogHandler(const char *module, LogLevel level, const char *message);
 
 static int count = 0;
 
@@ -50,7 +50,7 @@ MODULE_INIT
 
 	if(count > 0) {
 		$$(void, setLogHandler)(&eventLogHandler); // set log handler
-		LOG_DEBUG("Log event handler installed");
+		logInfo("Log event handler installed");
 	}
 
 	return true;
@@ -63,7 +63,7 @@ MODULE_FINALIZE
 
 	if(count > 0) {
 		$$(void, setLogHandler)(NULL); // restore log handler
-		LOG_DEBUG("Default log handler restored");
+		logInfo("Default log handler restored");
 	}
 }
 
@@ -74,7 +74,7 @@ static void listener_attached(void *subject, const char *event, void *data, va_l
 	if(g_strcmp0(attached_event, "log") == 0) {
 		if(count == 0) {
 			$$(void, setLogHandler)(&eventLogHandler); // set log handler
-			LOG_DEBUG("Log event handler installed");
+			logInfo("Log event handler installed");
 		}
 
 		count++;
@@ -88,7 +88,7 @@ static void listener_detached(void *subject, const char *event, void *data, va_l
 	if(g_strcmp0(attached_event, "log") == 0) {
 		if(count == 1) {
 			$$(void, setLogHandler)(NULL); // restore log handler
-			LOG_DEBUG("Default log handler restored");
+			logInfo("Default log handler restored");
 		}
 
 		count--;
@@ -102,7 +102,7 @@ static void listener_detached(void *subject, const char *event, void *data, va_l
  * @param type		the log type of the message
  * @param message	the log message
  */
-static void eventLogHandler(const char *module, LogType type, const char *message)
+static void eventLogHandler(const char *module, LogLevel level, const char *message)
 {
-	$(int, event, triggerEvent)(NULL, "log", module, type, message);
+	$(int, event, triggerEvent)(NULL, "log", module, level, message);
 }

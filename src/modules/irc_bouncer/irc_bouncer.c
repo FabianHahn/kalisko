@@ -56,7 +56,7 @@ MODULE_INIT
 	Store *bouncers;
 
 	if((bouncers = getConfigPath("irc/bouncers")) == NULL || bouncers->type != STORE_ARRAY) {
-		LOG_ERROR("Could not find required config value 'irc/bouncers' for this profile, aborting IRC bouncer");
+		logError("Could not find required config value 'irc/bouncers' for this profile, aborting IRC bouncer");
 		return false;
 	}
 
@@ -68,10 +68,10 @@ MODULE_INIT
 	while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &bnc)) {
 		IrcProxy *proxy;
 		if((proxy = createIrcProxyByStore(strdup(name), bnc)) == NULL) { // creating bouncer failed
-			LOG_WARNING("Failed to create IRC proxy for IRC bouncer configuration '%s', skipping", name);
+			logWarning("Failed to create IRC proxy for IRC bouncer configuration '%s', skipping", name);
 		} else {
 			attachEventListener(proxy, "client_authenticated", NULL, &listener_bouncerReattached);
-			LOG_INFO("Successfully created an IRC proxy for IRC bouncer configuration '%s'", name);
+			logNotice("Successfully created an IRC proxy for IRC bouncer configuration '%s'", name);
 			g_hash_table_insert(proxies, proxy->name, proxy); // add the proxy to the table
 		}
 	}
@@ -133,28 +133,28 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	Store *remote;
 
 	if((remote = getStorePath(config, "remote")) == NULL) {
-		LOG_ERROR("Could not find required config value 'remote' for IRC bouncer configuration '%s', aborting IRC proxy", name);
+		logError("Could not find required config value 'remote' for IRC bouncer configuration '%s', aborting IRC proxy", name);
 		return NULL;
 	}
 
 	if((irc = createIrcConnectionByStore(remote)) == NULL) {
-		LOG_ERROR("Failed to establich remote IRC connection, aborting IRC proxy");
+		logError("Failed to establich remote IRC connection, aborting IRC proxy");
 		return NULL;
 	}
 
 	if(!enableChannelTracking(irc)) {
-		LOG_ERROR("Failed to enable channel tracking for remote IRC connection %d, aborting IRC proxy", irc->socket->fd);
+		logError("Failed to enable channel tracking for remote IRC connection %d, aborting IRC proxy", irc->socket->fd);
 		freeIrcConnection(irc);
 		return NULL;
 	}
 
-	LOG_INFO("Successfully established remote IRC connection for IRC proxy");
+	logNotice("Successfully established remote IRC connection for IRC proxy");
 
 	Store *param;
 	char *password;
 
 	if((param = getStorePath(config, "password")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required config value 'password' for IRC bouncer configuration '%s', aborting IRC proxy", name);
+		logError("Could not find required config value 'password' for IRC bouncer configuration '%s', aborting IRC proxy", name);
 		freeIrcConnection(irc);
 		return NULL;
 	}
@@ -162,7 +162,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	password = strdup(param->content.string);
 
 	if((proxy = createIrcProxy(name, irc, password)) == NULL) {
-		LOG_ERROR("Failed to create IRC proxy for IRC  configuration '%s', aborting", name);
+		logError("Failed to create IRC proxy for IRC  configuration '%s', aborting", name);
 		freeIrcConnection(irc);
 		return false;
 	}
@@ -171,7 +171,7 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 	if(!enableIrcProxyPlugins(proxy)) {
 		freeIrcProxy(proxy);
 		freeIrcConnection(irc);
-		LOG_ERROR("Failed to enable IRC proxy plugins for IRC configuration '%s', aborting", name);
+		logError("Failed to enable IRC proxy plugins for IRC configuration '%s', aborting", name);
 		return false;
 	}
 
@@ -186,14 +186,14 @@ static IrcProxy *createIrcProxyByStore(char *name, Store *config)
 			if(pentry->type != STORE_STRING) {
 				freeIrcProxy(proxy);
 				freeIrcConnection(irc);
-				LOG_ERROR("Element %d of param list 'plugins' for IRC bouncer configuration '%s' is not a string but of store type %d, aborting", i, name, pentry->type);
+				logError("Element %d of param list 'plugins' for IRC bouncer configuration '%s' is not a string but of store type %d, aborting", i, name, pentry->type);
 				return false;
 			}
 
 			char *pname = pentry->content.string;
 
 			if(!enableIrcProxyPlugin(proxy, pname)) {
-				LOG_WARNING("Failed to enable perform plugin %s for IRC bouncer configuration '%s', skipping", pname, name);
+				logWarning("Failed to enable perform plugin %s for IRC bouncer configuration '%s', skipping", pname, name);
 			}
 		}
 	}

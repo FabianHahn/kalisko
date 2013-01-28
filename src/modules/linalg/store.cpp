@@ -84,7 +84,7 @@ API Store *convertMatrixToStore(Matrix *matrix)
 API Vector *convertStoreToVector(Store *store)
 {
 	if(store->type != STORE_LIST) {
-		LOG_WARNING("Tried to convert non-list store to vector, returning zero vector");
+		logWarning("Tried to convert non-list store to vector, returning zero vector");
 		return new Vector(0);
 	}
 
@@ -99,7 +99,7 @@ API Vector *convertStoreToVector(Store *store)
 		} else if (element->type == STORE_INTEGER) {
 			(*vector)[i] = element->content.integer;
 		} else {
-			LOG_WARNING("Encountered non-numeric when converting store to vector, setting element to 0");
+			logWarning("Encountered non-numeric when converting store to vector, setting element to 0");
 			(*vector)[i] = 0.0f;
 		}
 	}
@@ -116,7 +116,7 @@ API Vector *convertStoreToVector(Store *store)
 API Matrix *convertStoreToMatrix(Store *store)
 {
 	if(store->type != STORE_LIST) {
-		LOG_WARNING("Tried to convert non-list store to matrix, returning zero matrix");
+		logWarning("Tried to convert non-list store to matrix, returning zero matrix");
 		return new Matrix(0, 0);
 	}
 
@@ -131,7 +131,7 @@ API Matrix *convertStoreToMatrix(Store *store)
 	}
 
 	if(matrix == NULL) {
-		LOG_WARNING("Failed to convert non-list-of-lists store to matrix, returning zero matrix");
+		logWarning("Failed to convert non-list-of-lists store to matrix, returning zero matrix");
 		return new Matrix(0, 0);
 	}
 
@@ -149,12 +149,12 @@ API Matrix *convertStoreToMatrix(Store *store)
 				} else if (element->type == STORE_INTEGER) {
 					(*matrix)(i, j) = element->content.integer;
 				} else {
-					LOG_WARNING("Encountered non-float when converting store to matrix, setting element to 0");
+					logWarning("Encountered non-float when converting store to matrix, setting element to 0");
 					(*matrix)(i, j) = 0.0f;
 				}
 			}
 		} else {
-			LOG_WARNING("Encountered non-list row when converting store to matrix, setting row to 0");
+			logWarning("Encountered non-list row when converting store to matrix, setting row to 0");
 			for(unsigned int j = 0; j < matrix->getCols(); j++) {
 				(*matrix)(i, j) = 0.0f;
 			}

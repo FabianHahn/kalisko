@@ -46,7 +46,7 @@ API char *getGlobalKaliskoConfigPath()
 // case we use the GLib function (and also for other systems, which are not Unix/Linux based).
 	char const * const *globalConfigDirectories = g_get_system_config_dirs();
 	if(globalConfigDirectories[0] == NULL) {
-		LOG_INFO("Could not find a system wide configuration directory. Using the executable directory.");
+		logNotice("Could not find a system wide configuration directory. Using the executable directory.");
 		return g_build_path("/", $$(char *, getExecutablePath)(), KALISKO_DIR_NAME, NULL);
 	} else {
 		return g_build_path("/", globalConfigDirectories[0], KALISKO_DIR_NAME, NULL);

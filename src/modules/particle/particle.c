@@ -96,7 +96,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveParticles(unsigned int num_particles)
 API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to initialize OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to initialize OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 
@@ -123,7 +123,7 @@ API bool initOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to setup OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to setup OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 
@@ -156,7 +156,7 @@ API bool setupOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, OpenGLModel *
 API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to retrieve OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to retrieve OpenGL particles: Primitive is not a particle effect");
 		return NULL;
 	}
 
@@ -166,7 +166,7 @@ API OpenGLParticles *getOpenGLParticles(OpenGLPrimitive *primitive)
 API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to update OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to update OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 
@@ -192,7 +192,7 @@ API bool updateOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, double dt)
 API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to synchronize OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to synchronize OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 
@@ -213,7 +213,7 @@ API bool synchronizeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to draw OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to draw OpenGL particles: Primitive is not a particle effect");
 		return false;
 	}
 
@@ -249,7 +249,7 @@ API bool drawOpenGLPrimitiveParticles(OpenGLPrimitive *primitive, void *options_
 API void freeOpenGLPrimitiveParticles(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "particles") != 0) {
-		LOG_ERROR("Failed to free OpenGL particles: Primitive is not a particle effect");
+		logError("Failed to free OpenGL particles: Primitive is not a particle effect");
 		return;
 	}
 

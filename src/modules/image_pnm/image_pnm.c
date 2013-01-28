@@ -79,7 +79,7 @@ static Image *readImageFilePPM(const char *fileName)
 	file = fopen(fileName, "r");
 
 	if(file == NULL) {
-		LOG_ERROR("Failed to read PPM image '%s': fopen failed", fileName);
+		logError("Failed to read PPM image '%s': fopen failed", fileName);
 		return NULL;
 	}
 
@@ -88,7 +88,7 @@ static Image *readImageFilePPM(const char *fileName)
 	fgets(magic, 4, file);
 	if(strncmp(magic, "P3", 2) != 0)
 	{
-		LOG_ERROR("Failed to read PPM image '%s': invalid magic number", fileName);
+		logError("Failed to read PPM image '%s': invalid magic number", fileName);
 		fclose(file);
 		return NULL;
 	}
@@ -100,7 +100,7 @@ static Image *readImageFilePPM(const char *fileName)
 		// go to end of line
 		while(c != '\n') {
 			if(c == EOF) {
-				LOG_ERROR("Failed to read PPM image '%s': invalid header", fileName);
+				logError("Failed to read PPM image '%s': invalid header", fileName);
 				fclose(file);
 				return NULL;
 			}
@@ -118,7 +118,7 @@ static Image *readImageFilePPM(const char *fileName)
 	fscanf(file, "%u", &maxValue);
 
 	if(height == 0 || width == 0 || maxValue == 0) {
-		LOG_ERROR("Failed to read PPM image '%s': invalid header", fileName);
+		logError("Failed to read PPM image '%s': invalid header", fileName);
 		fclose(file);
 		return NULL;
 	}
@@ -135,7 +135,7 @@ static Image *readImageFilePPM(const char *fileName)
 			fscanf(file, "%u", &g);
 			fscanf(file, "%u", &b);
 			if(r > maxValue || g > maxValue || b > maxValue) {
-				LOG_ERROR("Failed to read PPM image '%s': invalid pixel data", fileName);
+				logError("Failed to read PPM image '%s': invalid pixel data", fileName);
 				$(void, image, freeImage)(image);
 				fclose(file);
 				return NULL;
@@ -147,7 +147,7 @@ static Image *readImageFilePPM(const char *fileName)
 	}
 
 	fclose(file);
-	LOG_DEBUG("Read PPN image '%s'", fileName);
+	logInfo("Read PPN image '%s'", fileName);
 	return image;
 }
 
@@ -166,7 +166,7 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	const unsigned int maxChannelValue = 255;
 
 	if(image->channels < 3) {
-		LOG_ERROR("Failed to write PPM image '%s': only RGB images are supported", fileName);
+		logError("Failed to write PPM image '%s': only RGB images are supported", fileName);
 		return false;
 	}
 
@@ -174,7 +174,7 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	file = fopen(fileName, "w");
 
 	if(file == NULL) {
-		LOG_ERROR("Failed to write PPM image '%s': fopen failed", fileName);
+		logError("Failed to write PPM image '%s': fopen failed", fileName);
 		return false;
 	}
 
@@ -193,7 +193,7 @@ static bool writeImageFilePPM(const char* fileName, Image* image)
 	}
 
 	fclose(file);
-	LOG_DEBUG("Wrote PPM image '%s'", fileName);
+	logInfo("Wrote PPM image '%s'", fileName);
 
 	return true;
 }
@@ -213,7 +213,7 @@ static bool writeImageFilePGM(const char* fileName, Image* image)
 	const unsigned int maxChannelValue = 255;
 
 	if(image->channels > 1) {
-		LOG_ERROR("Failed to write PGM image '%s': only single channel images are supported", fileName);
+		logError("Failed to write PGM image '%s': only single channel images are supported", fileName);
 		return false;
 	}
 
@@ -221,7 +221,7 @@ static bool writeImageFilePGM(const char* fileName, Image* image)
 	file = fopen(fileName, "w");
 
 	if(file == NULL) {
-		LOG_ERROR("Failed to write PGM image '%s': fopen failed", fileName);
+		logError("Failed to write PGM image '%s': fopen failed", fileName);
 		return false;
 	}
 
@@ -238,7 +238,7 @@ static bool writeImageFilePGM(const char* fileName, Image* image)
 	}
 
 	fclose(file);
-	LOG_DEBUG("Wrote PGM image '%s'", fileName);
+	logInfo("Wrote PGM image '%s'", fileName);
 
 	return true;
 }
@@ -256,7 +256,7 @@ static bool writeImageFilePBM(const char* fileName, Image* image)
 	assert(image != NULL);
 
 	if(image->channels > 1) {
-		LOG_ERROR("Failed to write PBM image '%s': only single channel images are supported", fileName);
+		logError("Failed to write PBM image '%s': only single channel images are supported", fileName);
 		return false;
 	}
 
@@ -264,7 +264,7 @@ static bool writeImageFilePBM(const char* fileName, Image* image)
 	file = fopen(fileName, "w");
 
 	if(file == NULL) {
-		LOG_ERROR("Failed to write PBM image '%s': fopen failed", fileName);
+		logError("Failed to write PBM image '%s': fopen failed", fileName);
 		return false;
 	}
 
@@ -280,7 +280,7 @@ static bool writeImageFilePBM(const char* fileName, Image* image)
 	}
 
 	fclose(file);
-	LOG_DEBUG("Wrote PBM image '%s'", fileName);
+	logInfo("Wrote PBM image '%s'", fileName);
 
 	return true;
 }

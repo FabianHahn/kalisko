@@ -45,7 +45,7 @@ API void *allocateMemory(int size)
 	void *mem = malloc(size);
 
 	if(mem == NULL) {
-		logMessage("core", LOG_TYPE_ERROR, "Failed to allocate %d more bytes of memory", size);
+		logMessage("core", LOG_LEVEL_ERROR, "Failed to allocate %d more bytes of memory", size);
 		exit(EXIT_FAILURE);
 	}
 
@@ -57,7 +57,7 @@ API void *reallocateMemory(void *ptr, int size)
 	void *mem = realloc(ptr, size);
 
 	if(mem == NULL) {
-		logMessage("core", LOG_TYPE_ERROR, "Could not reallocate memory block %p to requested size of %d", ptr, size);
+		logMessage("core", LOG_LEVEL_ERROR, "Could not reallocate memory block %p to requested size of %d", ptr, size);
 		exit(EXIT_FAILURE);
 	}
 

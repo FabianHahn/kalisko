@@ -90,21 +90,21 @@ TIMER_CALLBACK(GLFW_MAIN_LOOP)
 API bool openGlfwWindow(const char *title, int width, int height, bool fullscreen, bool vsync)
 {
 	if(windowOpen) {
-		LOG_ERROR("Failed to open glfw window: Only one glfw window can be opened at the same time");
+		logError("Failed to open glfw window: Only one glfw window can be opened at the same time");
 		return false;
 	}
 
 	int mode = fullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW;
 
 	if(glfwOpenWindow(width, height, 8, 8, 8, 8, 8, 0, mode) == GL_FALSE) {
-		LOG_ERROR("Failed to open glfw window");
+		logError("Failed to open glfw window");
 		return false;
 	}
 
 	int interval = vsync ? 1 : 0;
 	glfwSwapInterval(interval);
 
-	LOG_INFO("Opened glfw window with name '%s', OpenGL vendor: %s %s", title, glGetString(GL_VENDOR), glGetString(GL_VERSION));
+	logNotice("Opened glfw window with name '%s', OpenGL vendor: %s %s", title, glGetString(GL_VENDOR), glGetString(GL_VERSION));
 
 	glfwSetWindowTitle(title);
 	glfwSetWindowSizeCallback(&glfw_reshape);
@@ -117,11 +117,11 @@ API bool openGlfwWindow(const char *title, int width, int height, bool fullscree
 	// Initialize GLEW as well
 	GLenum err;
 	if((err = glewInit()) != GLEW_OK) {
-		LOG_ERROR("GLEW error #%d: %s", err, glewGetErrorString(err));
+		logError("GLEW error #%d: %s", err, glewGetErrorString(err));
 		return false;
 	}
 
-	LOG_INFO("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
+	logNotice("Successfully initialized GLEW %s", glewGetString(GLEW_VERSION));
 
 	windowOpen = true;
 

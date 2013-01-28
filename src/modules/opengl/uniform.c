@@ -94,7 +94,7 @@ API OpenGLUniform *createOpenGLUniformVector(Vector *value)
 {
 	unsigned int size = $(unsigned int, linalg, getVectorSize)(value);
 	if(!(size == 2 || size == 3 || size == 4)) {
-		LOG_ERROR("Failed to create vector uniform with size %u instead of 2, 3 or 4", size);
+		logError("Failed to create vector uniform with size %u instead of 2, 3 or 4", size);
 		return NULL;
 	}
 
@@ -111,7 +111,7 @@ API OpenGLUniform *createOpenGLUniformMatrix(Matrix *value)
 	unsigned int rows = $(unsigned int, linalg, getMatrixRows)(value);
 	unsigned int cols = $(unsigned int, linalg, getMatrixCols)(value);
 	if(rows != 4 || cols != 4) {
-		LOG_ERROR("Failed to create matrix uniform with size %ux%u instead of 4x4", rows, cols);
+		logError("Failed to create matrix uniform with size %ux%u instead of 4x4", rows, cols);
 		return NULL;
 	}
 
@@ -146,7 +146,7 @@ API OpenGLUniform *copyOpenGLUniform(OpenGLUniform *uniform)
 API bool useOpenGLUniform(OpenGLUniform *uniform)
 {
 	if(uniform->location == -1) {
-		LOG_ERROR("Tried to use uniform with unspecified location, aborting");
+		logError("Tried to use uniform with unspecified location, aborting");
 		return false;
 	}
 
@@ -199,7 +199,7 @@ API OpenGLUniformAttachment *createOpenGLUniformAttachment()
 API bool attachOpenGLUniform(OpenGLUniformAttachment *attachment, const char *name, OpenGLUniform *uniform)
 {
 	if(g_hash_table_lookup(attachment->uniforms, name) != NULL) {
-		LOG_ERROR("Failed to attach already existing uniform '%s' to attachment point", name);
+		logError("Failed to attach already existing uniform '%s' to attachment point", name);
 		return false;
 	}
 
@@ -234,7 +234,7 @@ API bool useOpenGLUniformAttachment(OpenGLUniformAttachment *attachment, GLuint 
 		}
 
 		if(uniform->location == -1 && attachment->staticLocation) { // global uniform lookup failures are normal
-			LOG_WARNING("Failed to lookup uniform location for '%s'", name);
+			logWarning("Failed to lookup uniform location for '%s'", name);
 			uniform->location = -2; // cache the lookup failure if the location is static
 		}
 

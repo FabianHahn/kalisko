@@ -28,7 +28,7 @@
  * Now we do some nasty stuff because of name conflicts between log.h and syslog.h.
  * First we undef some macros which are defined by log.h in dll.h. After that we
  * include syslog.h and load log.h after api.h as we only need the enum and not the
- * LOG_WARNING(...), LOG_INFO(...), ... macros of log.h.
+ * logWarning(...), logNotice(...), ... macros of log.h.
  */
 #undef LOG_WARNING
 #undef LOG_INFO
@@ -71,21 +71,23 @@ MODULE_FINALIZE
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
 	const char *module = va_arg(args, const char *);
-	LogType type = va_arg(args, LogType);
+	LogLevel level = va_arg(args, LogLevel);
 	char *message = va_arg(args, char *);
 
-	switch(type) {
-		case LOG_TYPE_ERROR:
+	switch(level) {
+		case LOG_LEVEL_ERROR:
 			syslog(LOG_ERR, "[%s] %s", module, message);
 		break;
-		case LOG_TYPE_WARNING:
+		case LOG_LEVEL_WARNING:
 			syslog(LOG_WARNING, "[%s] %s", module, message);
 		break;
-		case LOG_TYPE_INFO:
+		case LOG_LEVEL_NOTICE:
+			syslog(LOG_NOTICE, "[%s] %s", module, message);
+		break;
+		case LOG_LEVEL_INFO:
 			syslog(LOG_INFO, "[%s] %s", module, message);
 		break;
-		case LOG_TYPE_DEBUG:
-			syslog(LOG_DEBUG, "[%s] %s", module, message);
+		default:
 		break;
 	}
 }

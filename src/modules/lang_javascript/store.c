@@ -118,7 +118,7 @@ API jsval storeToJavaScriptValue(Store *store, JSContext *context)
 			jsval *list = JS_malloc(context, store->content.list->length * sizeof(jsval));
 
 			if(!list) {
-				LOG_WARNING("Could not allocate memory for store list.");
+				logWarning("Could not allocate memory for store list.");
 				return JSVAL_NULL;
 			}
 
@@ -151,7 +151,7 @@ API jsval storeToJavaScriptValue(Store *store, JSContext *context)
 			return STRING_TO_JSVAL(str);
 		}
 		default:
-			LOG_ERROR("Unknown Store Type. This is a bug, please report it");
+			logError("Unknown Store Type. This is a bug, please report it");
 			return JSVAL_NULL;
 	}
 }
@@ -216,7 +216,7 @@ API Store *javaScriptValueToStore(jsval value, JSContext *context)
 		case JSTYPE_BOOLEAN:
 			return $(Store *, store, createStoreIntegerValue)(JSVAL_IS_BOOLEAN(value) ? 1 : 0);
 		default:
-			LOG_WARNING("Could not convert JavaScript Type for Store.");
+			logWarning("Could not convert JavaScript Type for Store.");
 			return $(Store *, store, createStore)();
 	}
 }

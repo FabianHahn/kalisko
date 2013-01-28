@@ -97,7 +97,7 @@ API Store *parseLuaToStore(lua_State *state)
 static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 {
 	if(!lua_istable(state, -1)) {
-		LOG_ERROR("Tried to parse Lua value to store which is not a table, aborting");
+		logError("Tried to parse Lua value to store which is not a table, aborting");
 		return NULL;
 	}
 
@@ -169,7 +169,7 @@ static Store *parseLuaToStoreRec(lua_State *state, bool allow_list)
 
 		if(hashtable != NULL) { // it's not a list, it's an array
 			if(!lua_isstring(state, -2)) { // check if key can be converted to string
-				LOG_ERROR("Lua table key is not a string, aborting conversion to store");
+				logError("Lua table key is not a string, aborting conversion to store");
 				g_hash_table_destroy(hashtable);
 				return NULL;
 			} else {

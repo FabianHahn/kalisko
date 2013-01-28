@@ -50,7 +50,7 @@ API bool setSocketNonBlocking(int fd)
 #ifdef WIN32
 	unsigned long nbmode = 1;
 	if(ioctlsocket(fd, FIONBIO, &nbmode) != 0) {
-		LOG_WARNING("ioctrlsocket failed on fd %d", fd);
+		logWarning("ioctrlsocket failed on fd %d", fd);
 		return false;
 	}
 #else
@@ -61,7 +61,7 @@ API bool setSocketNonBlocking(int fd)
 	}
 
 	if(fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
-		LOG_WARNING("fcntl failed on fd %d", fd);
+		logWarning("fcntl failed on fd %d", fd);
 		return false;
 	}
 #endif
@@ -91,7 +91,7 @@ API bool closeSocket(Socket *s)
 #else
 		if(close(s->fd) != 0) {
 #endif
-			LOG_SYSTEM_ERROR("Failed to close socket %d", s->fd);
+			logSystemError("Failed to close socket %d", s->fd);
 			return false;
 		}
 	}

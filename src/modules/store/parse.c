@@ -39,12 +39,12 @@ API Store *parseStoreFile(const char *filename)
 	parser.store = NULL;
 
 	if(parser.resource == NULL) {
-		LOG_SYSTEM_ERROR("Could not open store file %s", filename);
+		logSystemError("Could not open store file %s", filename);
 		return NULL;
 	}
 
 	if(yyparse(&parser) != 0) {
-		LOG_ERROR("Parsing store file %s failed", filename);
+		logError("Parsing store file %s failed", filename);
 		fclose(parser.resource);
 		return NULL;
 	}
@@ -63,7 +63,7 @@ API Store *parseStoreString(const char *string)
 	parser.store = NULL;
 
 	if(yyparse(&parser) != 0) {
-		LOG_ERROR("Parsing store string failed: %s", string);
+		logError("Parsing store string failed: %s", string);
 		return NULL;
 	}
 

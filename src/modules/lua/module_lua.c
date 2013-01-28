@@ -48,7 +48,7 @@ MODULE_INIT
 	initLuaXCall();
 
 	if((state = lua_open()) == NULL) {
-		LOG_ERROR("Could not initialize the Lua interpreter");
+		logError("Could not initialize the Lua interpreter");
 		return false;
 	}
 

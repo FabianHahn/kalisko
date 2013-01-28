@@ -51,7 +51,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapDataSourceFromStore(Store *store)
 {
 	Store *paramType = getStorePath(store, "lodmap/source/type");
 	if(paramType == NULL || paramType->type != STORE_STRING) {
-		LOG_ERROR("Failed to create OpenGL LOD map data source factory: Config string value 'lodmap/source/type' not found!");
+		logError("Failed to create OpenGL LOD map data source factory: Config string value 'lodmap/source/type' not found!");
 		return NULL;
 	}
 
@@ -59,7 +59,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapDataSourceFromStore(Store *store)
 
 	OpenGLLodMapDataSourceFactory *factory = g_hash_table_lookup(factories, type);
 	if(factory == NULL) {
-		LOG_ERROR("Failed to create OpenGL LOD map data source factory for type '%s': A factory for that type already exists!", type);
+		logError("Failed to create OpenGL LOD map data source factory for type '%s': A factory for that type already exists!", type);
 		return NULL;
 	}
 
@@ -70,7 +70,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapDataSourceFromStore(Store *store)
 API bool registerOpenGLLodMapDataSourceFactory(const char *type, OpenGLLodMapDataSourceFactory *factory)
 {
 	if(g_hash_table_lookup(factories, type) != NULL) {
-		LOG_ERROR("Failed to register OpenGL LOD map data source factory for type '%s': A factory for that type already exists!", type);
+		logError("Failed to register OpenGL LOD map data source factory for type '%s': A factory for that type already exists!", type);
 		return false;
 	}
 

@@ -30,7 +30,7 @@
 API OpenGLTexture *createOpenGLTexture2D(Image *image, bool auto_init)
 {
 	if(image->type != IMAGE_TYPE_BYTE && image->type != IMAGE_TYPE_FLOAT) {
-		LOG_ERROR("Failed to create OpenGL 2D texture: Unsupported image type '%d'", image->type);
+		logError("Failed to create OpenGL 2D texture: Unsupported image type '%d'", image->type);
 		return NULL;
 	}
 
@@ -104,7 +104,7 @@ API OpenGLTexture *createOpenGLVertexTexture2D(Image *image)
 API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size, bool auto_init)
 {
 	if(size == 0) {
-		LOG_ERROR("Failed to create OpenGL 2D texture array: Passed empty set of images");
+		logError("Failed to create OpenGL 2D texture array: Passed empty set of images");
 		return NULL;
 	}
 
@@ -118,7 +118,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 			image = createImageFloat(images[0]->width, size * images[0]->height, images[0]->channels);
 		break;
 		default:
-			LOG_ERROR("Failed to create OpenGL 2D texture array: Unsupported image type '%d'", images[0]->type);
+			logError("Failed to create OpenGL 2D texture array: Unsupported image type '%d'", images[0]->type);
 			return NULL;
 		break;
 	}
@@ -126,7 +126,7 @@ API OpenGLTexture *createOpenGLTexture2DArray(Image **images, unsigned int size,
 	// Copy over the images
 	for(unsigned int i = 0; i < size; i++) {
 		if(images[i]->type != images[0]->type || images[i]->width != images[0]->width || images[i]->height != images[0]->height || images[i]->channels != images[0]->channels) {
-			LOG_ERROR("Failed to create OpenGL 2D texture array: Image '%u' doesn't match the parameters of the first image", i);
+			logError("Failed to create OpenGL 2D texture array: Image '%u' doesn't match the parameters of the first image", i);
 			freeImage(image);
 			return NULL;
 		}
@@ -191,7 +191,7 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 			typeEnum = GL_TEXTURE_2D_ARRAY;
 		break;
 		default:
-			LOG_ERROR("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
+			logError("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
 			return false;
 		break;
 	}
@@ -211,7 +211,7 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 				texture->format = GL_RGBA;
 			break;
 			default:
-				LOG_ERROR("Failed to init OpenGL texture: Unsupported number of image channels - %d", texture->image->channels);
+				logError("Failed to init OpenGL texture: Unsupported number of image channels - %d", texture->image->channels);
 				return false;
 			break;
 		}
@@ -260,7 +260,7 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 	}
 
 	if(checkOpenGLError()) {
-		LOG_ERROR("Failed to initialize OpenGL texture");
+		logError("Failed to initialize OpenGL texture");
 		return false;
 	}
 
@@ -297,7 +297,7 @@ API bool synchronizeOpenGLTexture(OpenGLTexture *texture)
 			}
 		break;
 		default:
-			LOG_ERROR("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
+			logError("Failed to initialize OpenGL texture: Unsupported texture type '%d'", texture->type);
 			return false;
 		break;
 	}

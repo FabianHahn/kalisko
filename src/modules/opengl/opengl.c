@@ -66,7 +66,7 @@ API bool checkOpenGLError()
 	if(err != GL_NO_ERROR) {
 		const GLubyte *errstr = gluErrorString(err);
 		if(errstr != NULL) {
-			LOG_ERROR("OpenGL error #%d: %s", err, errstr);
+			logError("OpenGL error #%d: %s", err, errstr);
 		}
 
 		return true;

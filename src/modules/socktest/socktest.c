@@ -76,13 +76,13 @@ MODULE_FINALIZE
 static void listener_socketConnected(void *subject, const char *event, void *data, va_list args)
 {
 	if(socketWriteRaw(subject, REQUEST, sizeof(REQUEST))) {
-		LOG_INFO("Wrote HTTP request");
+		logNotice("Wrote HTTP request");
 	}
 }
 
 static void listener_socketTimeoutError(void *subject, const char *event, void *data, va_list args)
 {
-	LOG_INFO("Client socket connection failed: %s", event);
+	logNotice("Client socket connection failed: %s", event);
 }
 
 static void listener_socketRead(void *subject, const char *event, void *data, va_list args)
@@ -91,7 +91,7 @@ static void listener_socketRead(void *subject, const char *event, void *data, va
 	char *read = va_arg(args, char *);
 
 	if(s != NULL) {
-		LOG_INFO("Read %d bytes from socket %d", (int) strlen(read), s->fd);
+		logNotice("Read %d bytes from socket %d", (int) strlen(read), s->fd);
 	}
 }
 

@@ -351,7 +351,7 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 				if(maxLinesConfig->type == STORE_INTEGER) {
 					buffer->defaultMaxLines = maxLinesConfig->content.integer;
 				} else {
-					LOG_INFO("Found 'maxLines' setting but it is not an Integer. Using internal default.");
+					logNotice("Found 'maxLines' setting but it is not an Integer. Using internal default.");
 					buffer->defaultMaxLines = MESSAGEBUF_MAX_LINES;
 				}
 			}
@@ -369,15 +369,15 @@ static bool initPlugin(IrcProxy *proxy, char *name)
 						if(value->type == STORE_INTEGER) {
 							g_hash_table_insert(buffer->chanMaxLines, strdup(key), GINT_TO_POINTER(value->content.integer));
 						} else {
-							LOG_INFO("Found setting for '%s' but the value is not an Integer. Ignoring.", key);
+							logNotice("Found setting for '%s' but the value is not an Integer. Ignoring.", key);
 						}
 					}
 				} else {
-					LOG_INFO("Found 'specific' setting but it is not an Array. Ignoring.");
+					logNotice("Found 'specific' setting but it is not an Array. Ignoring.");
 				}
 			}
 		} else {
-			LOG_INFO("No config for ircpp_messagebuffer found.");
+			logNotice("No config for ircpp_messagebuffer found.");
 		}
 
 		// clean up

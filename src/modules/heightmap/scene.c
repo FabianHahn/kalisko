@@ -37,7 +37,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 	Store *heightmapParam;
 
 	if((heightmapParam = getStorePath(store, "heightmap")) == NULL || heightmapParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': String parameter 'heightmap' not found", name);
+		logError("Failed to parse OpenGL scene primitive heightmap '%s': String parameter 'heightmap' not found", name);
 		return NULL;
 	}
 
@@ -47,7 +47,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 	g_string_free(path, true);
 
 	if(image == NULL) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to load heightmap image from '%s'", name, path->str);
+		logError("Failed to parse OpenGL scene primitive heightmap '%s': Failed to load heightmap image from '%s'", name, path->str);
 		return NULL;
 	}
 
@@ -55,7 +55,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 	OpenGLPrimitive *primitive;
 
 	if((primitive = createOpenGLPrimitiveHeightmap(image, image->width, image->height)) == NULL) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive heightmap '%s': Failed to create heightmap primitive from heightmap image", name);
+		logError("Failed to parse OpenGL scene primitive heightmap '%s': Failed to create heightmap primitive from heightmap image", name);
 		freeImage(image);
 		return NULL;
 	}

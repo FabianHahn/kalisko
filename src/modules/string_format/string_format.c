@@ -57,7 +57,7 @@ MODULE_INIT
 	delim_end_len = strlen(delim_end);
 
 	if(delim_start_len == 0 || delim_end_len == 0) {
-		LOG_WARNING("Either of the start and end delimiters is empty. Please set both to a specific value.");
+		logWarning("Either of the start and end delimiters is empty. Please set both to a specific value.");
 		return false;
 	}
 

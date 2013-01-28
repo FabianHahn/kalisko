@@ -45,7 +45,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store
 {
 	Store *pathParam = getStorePath(store, "lodmap/source/path");
 	if(pathParam == NULL || pathParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/path' not found!");
+		logError("Failed to create LOD map import source: Config integer value 'lodmap/source/path' not found!");
 		return NULL;
 	}
 
@@ -54,7 +54,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store
 	Store *configStore = parseStoreFile(configPath->str);
 
 	if(configStore == NULL) {
-		LOG_ERROR("Failed to create LOD map import source: Failed to load configuration store file from '%s'", configPath->str);
+		logError("Failed to create LOD map import source: Failed to load configuration store file from '%s'", configPath->str);
 		g_string_free(configPath, true);
 		return NULL;
 	}
@@ -68,28 +68,28 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSourceFromStore(Store *store
 	// load baseRange parameter
 	Store *baseLevelParam = getStorePath(store, "lodmap/source/baseLevel");
 	if(baseLevelParam == NULL || baseLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/baseLevel' not found!");
+		logError("Failed to create LOD map import source: Config integer value 'lodmap/source/baseLevel' not found!");
 		return NULL;
 	}
 
 	// load normalDetailLevel parameter
 	Store *normalDetailLevelParam = getStorePath(store, "lodmap/source/normalDetailLevel");
 	if(normalDetailLevelParam == NULL || normalDetailLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/normalDetailLevel' not found!");
+		logError("Failed to create LOD map import source: Config integer value 'lodmap/source/normalDetailLevel' not found!");
 		return NULL;
 	}
 
 	// load textureDetailLevel parameter
 	Store *textureDetailLevelParam = getStorePath(store, "lodmap/source/textureDetailLevel");
 	if(textureDetailLevelParam == NULL || textureDetailLevelParam->type != STORE_INTEGER) {
-		LOG_ERROR("Failed to create LOD map import source: Config integer value 'lodmap/source/textureDetailLevel' not found!");
+		logError("Failed to create LOD map import source: Config integer value 'lodmap/source/textureDetailLevel' not found!");
 		return NULL;
 	}
 
 	// load heightRatio parameter
 	Store *heightRatioParam = getStorePath(store, "lodmap/source/heightRatio");
 	if(heightRatioParam == NULL || !(heightRatioParam->type == STORE_INTEGER || heightRatioParam->type == STORE_FLOAT_NUMBER)) {
-		LOG_ERROR("Failed to create LOD map import source: Config float value 'lodmap/source/heightRatio' not found!");
+		logError("Failed to create LOD map import source: Config float value 'lodmap/source/heightRatio' not found!");
 		return NULL;
 	}
 
@@ -114,7 +114,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImportSource(const char *path)
 	Store *store = parseStoreFile(metaPath->str);
 
 	if(store == NULL) {
-		LOG_ERROR("Failed to create LOD map import source: Failed to load configuration store file from '%s'", metaPath->str);
+		logError("Failed to create LOD map import source: Failed to load configuration store file from '%s'", metaPath->str);
 		g_string_free(metaPath, true);
 		return NULL;
 	}

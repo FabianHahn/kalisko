@@ -152,7 +152,7 @@ static inline void bindOpenGLTexture(OpenGLTexture *texture)
 			glBindTexture(GL_TEXTURE_2D_ARRAY, texture->texture);
 		break;
 		default:
-			LOG_ERROR("Failed to bind OpenGL texture: Unsupported texture type '%d'", texture->type);
+			logError("Failed to bind OpenGL texture: Unsupported texture type '%d'", texture->type);
 		break;
 	}
 }

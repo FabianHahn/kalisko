@@ -114,7 +114,7 @@ API Store *invokeXCall(Store *xcall)
 		// Now try to read function name inside xcall meta array
 		if((func = $(Store *, store, getStorePath)(xcall, "xcall/function")) == NULL || func->type != STORE_STRING) {
 			GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-			LOG_ERROR("Failed to read XCall function name: %s", xcallstr->str);
+			logError("Failed to read XCall function name: %s", xcallstr->str);
 			g_string_free(xcallstr, true);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)("Failed to read XCall function name"));
 			break;
@@ -127,7 +127,7 @@ API Store *invokeXCall(Store *xcall)
 
 		if((function = g_hash_table_lookup(functions, funcname)) == NULL) {
 			GString *xcallstr = $(GString *, store, writeStoreGString)(xcall);
-			LOG_ERROR("Requested XCall functon '%s' not found: %s", funcname, xcallstr->str);
+			logError("Requested XCall functon '%s' not found: %s", funcname, xcallstr->str);
 			g_string_free(xcallstr, true);
 			GString *err = g_string_new("");
 			g_string_append_printf(err, "Requested XCall function '%s' not found", funcname);
@@ -139,7 +139,7 @@ API Store *invokeXCall(Store *xcall)
 		retstore = function(xcall);
 
 		if(retstore == NULL) { // Invalid returned store
-			LOG_ERROR("Requested XCall function '%s' returned invalid store", funcname);
+			logError("Requested XCall function '%s' returned invalid store", funcname);
 			GString *err = g_string_new("");
 			g_string_append_printf(err, "Requested XCall function '%s' returned invalid store", funcname);
 			$(bool, store, setStorePath)(metaret, "xcall/error", $(Store *, store, createStoreStringValue)(err->str));

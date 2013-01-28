@@ -54,7 +54,7 @@ API xmlDocPtr parseXmlString(const char *xml)
 {
 	xmlDocPtr document;
 	if((document = xmlParseMemory(xml, strlen(xml))) == NULL) {
-		LOG_ERROR("Failed to parse XML string");
+		logError("Failed to parse XML string");
 		return NULL;
 	}
 
@@ -63,11 +63,11 @@ API xmlDocPtr parseXmlString(const char *xml)
 
 API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath)
 {
-	LOG_DEBUG("Attempting to evaluate XPath expression '%s'...", xpath);
+	logInfo("Attempting to evaluate XPath expression '%s'...", xpath);
 
 	xmlXPathContextPtr context;
 	if((context = xmlXPathNewContext(document)) == NULL) {
-		LOG_ERROR("Failed to create XPath context for document");
+		logError("Failed to create XPath context for document");
 		return NULL;
 	}
 
@@ -75,7 +75,7 @@ API GQueue *evaluateXPathExpression(xmlDocPtr document, const char *xpath)
 	xmlXPathFreeContext(context);
 
 	if(result == NULL) {
-		LOG_ERROR("Failed to execute XPath expression: %s", xpath);
+		logError("Failed to execute XPath expression: %s", xpath);
 		return NULL;
 	}
 
@@ -103,7 +103,7 @@ API GString *evaluateXPathExpressionFirst(xmlDocPtr document, const char *xpath)
 	}
 
 	if(g_queue_is_empty(results)) {
-		LOG_ERROR("Failed to return first XPath expression result, empty result set");
+		logError("Failed to return first XPath expression result, empty result set");
 		return NULL;
 	}
 
@@ -129,6 +129,6 @@ static void libxmlErrorHandler(void *context, const char *message, ...)
 
 	GString *error = g_string_new("");
 	g_string_append_vprintf(error, message, va);
-	LOG_ERROR("libxml2 error: %s", error->str);
+	logError("libxml2 error: %s", error->str);
 	g_string_free(error, true);
 }

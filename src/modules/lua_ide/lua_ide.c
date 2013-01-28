@@ -155,7 +155,7 @@ MODULE_INIT
 	g_string_free(path, true);
 
 	if(builder == NULL) {
-		LOG_ERROR("Failed to load Lua IDE GUI");
+		logError("Failed to load Lua IDE GUI");
 		return false;
 	}
 
@@ -173,7 +173,7 @@ MODULE_INIT
 	// script tree
 	Store *config = getWritableConfig();
 	if((ide_config = getStorePath(config, "lua_ide")) == NULL) {
-		LOG_INFO("Writable config path 'lua_ide' doesn't exist yet, creating...");
+		logNotice("Writable config path 'lua_ide' doesn't exist yet, creating...");
 		ide_config = createStore();
 		setStorePath(config, "lua_ide", ide_config);
 	}
@@ -208,7 +208,7 @@ MODULE_INIT
 		g_signal_connect(G_OBJECT(sbuffer), "changed", G_CALLBACK(lua_ide_script_input_buffer_changed), NULL);
 		gtk_text_view_set_buffer(GTK_TEXT_VIEW(script_input), GTK_TEXT_BUFFER(sbuffer));
 	} else {
-		LOG_WARNING("Failed to set IDE editor language to lua");
+		logWarning("Failed to set IDE editor language to lua");
 	}
 
 	// window
@@ -718,9 +718,9 @@ static bool openScript(char *path)
 
 			gtk_text_buffer_insert(buffer, &start, script->content.string, -1);
 
-			LOG_INFO("Opened Lua IDE script: %s", path);
+			logNotice("Opened Lua IDE script: %s", path);
 		} else {
-			LOG_ERROR("Lua IDE config store path '%s' is not a string, aborting script opening", path);
+			logError("Lua IDE config store path '%s' is not a string, aborting script opening", path);
 			return false;
 		}
 	} else {
@@ -737,7 +737,7 @@ static bool openScript(char *path)
 					next = createStore();
 					setStorePath(last, "%s", next, part);
 				} else if(next->type != STORE_ARRAY) {
-					LOG_ERROR("Lua IDE config store part '%s' in path '%s' is not an array, aborting script creation", part, path);
+					logError("Lua IDE config store part '%s' in path '%s' is not an array, aborting script creation", part, path);
 					g_ptr_array_free(path_parts, true);
 					return false;
 				}
@@ -759,7 +759,7 @@ static bool openScript(char *path)
 
 		gtk_text_buffer_delete(buffer, &start, &end);
 
-		LOG_INFO("Created Lua IDE script: %s", path);
+		logNotice("Created Lua IDE script: %s", path);
 	}
 
 	if(current_script != NULL) {
@@ -780,7 +780,7 @@ static void refreshScriptTree()
 
 	Store *scripts;
 	if((scripts = getStorePath(ide_config, "scripts")) == NULL) {
-		LOG_INFO("Lua IDE config store path 'scripts' doesn't exist yet, creating...");
+		logNotice("Lua IDE config store path 'scripts' doesn't exist yet, creating...");
 		scripts = createStore();
 		setStorePath(ide_config, "scripts", scripts);
 	}
@@ -823,9 +823,9 @@ static void saveScript()
 		free(store->content.string);
 		store->content.string = script;
 		saveWritableConfig(); // write back to disk
-		LOG_INFO("Saved Lua IDE script: %s", current_script);
+		logNotice("Saved Lua IDE script: %s", current_script);
 	} else {
-		LOG_WARNING("Failed to save script '%s' to Lua IDE config store", current_script);
+		logWarning("Failed to save script '%s' to Lua IDE config store", current_script);
 		free(script);
 	}
 
@@ -869,17 +869,17 @@ static void createFolder(char *parent)
 			const char *entry_name = gtk_entry_get_text(GTK_ENTRY(text_input_dialog_entry));
 			if(entry_name != NULL && strlen(entry_name) > 0) {
 				if(getStorePath(parentStore, "%s", entry_name) == NULL) { // entry with that name doesn't exist yet
-					LOG_INFO("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
+					logNotice("Created Lua IDE folder '%s' in '%s'", entry_name, parent);
 					g_hash_table_insert(parentStore->content.array, strdup(entry_name), createStore());
 					saveWritableConfig(); // write back to disk
 					refreshScriptTree();
 				} else {
-					LOG_ERROR("Tried to create Lua IDE folder with already existing name '%s' in '%s', aborting", entry_name, parent);
+					logError("Tried to create Lua IDE folder with already existing name '%s' in '%s', aborting", entry_name, parent);
 				}
 			}
 		}
 	} else {
-		LOG_ERROR("Failed to create Lua IDE folder in parent config store path '%s': Not a store array", parent);
+		logError("Failed to create Lua IDE folder in parent config store path '%s': Not a store array", parent);
 	}
 }
 
@@ -897,7 +897,7 @@ static void deleteScript(char *script)
 	deleteStorePath(ide_config, script);
 	saveWritableConfig(); // write back to disk
 	refreshScriptTree();
-	LOG_INFO("Deleted Lua IDE script: %s", script);
+	logNotice("Deleted Lua IDE script: %s", script);
 
 	if(g_strcmp0(script, current_script) == 0) {
 		script_changed = false;
@@ -919,7 +919,7 @@ static void deleteFolder(char *folder)
 	deleteStorePath(ide_config, folder);
 	saveWritableConfig(); // write back to disk
 	refreshScriptTree();
-	LOG_INFO("Deleted Lua IDE folder: %s", folder);
+	logNotice("Deleted Lua IDE folder: %s", folder);
 }
 
 static int strpcmp(const void *p1, const void *p2)

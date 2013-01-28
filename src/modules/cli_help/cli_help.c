@@ -153,17 +153,17 @@ API bool addCLOptionHelp(char *moduleName, char *shortOpt, char *longOpt, char *
 {
 	// Check params
 	if(!moduleName) {
-		LOG_WARNING("CLI option owner module name must be given to add a new CLI help entry.");
+		logWarning("CLI option owner module name must be given to add a new CLI help entry.");
 		return false;
 	}
 
 	if(!briefHelp) {
-		LOG_WARNING("Brief help for CLI option help entry must be given.");
+		logWarning("Brief help for CLI option help entry must be given.");
 		return false;
 	}
 
 	if(!(shortOpt || longOpt)) {
-		LOG_WARNING("Short option or long option must be given to add a new CLI help entry.");
+		logWarning("Short option or long option must be given to add a new CLI help entry.");
 		return false;
 	}
 
@@ -185,17 +185,17 @@ API bool addCLArgumentHelp(char *moduleName, char *name, char *briefHelp)
 {
 	// Check params
 	if(!moduleName) {
-		LOG_WARNING("CLI argument owner module name must be given to add a new CLI help entry.");
+		logWarning("CLI argument owner module name must be given to add a new CLI help entry.");
 		return false;
 	}
 
 	if(!name) {
-		LOG_WARNING("CLI argument name is not given and the new CLI help entry cannot be added.");
+		logWarning("CLI argument name is not given and the new CLI help entry cannot be added.");
 		return false;
 	}
 
 	if(!briefHelp) {
-		LOG_WARNING("Brief help for CLI argument help entry must be given.");
+		logWarning("Brief help for CLI argument help entry must be given.");
 		return false;
 	}
 

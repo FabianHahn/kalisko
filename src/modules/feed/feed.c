@@ -56,7 +56,7 @@ MODULE_INIT
 	registerHttpServerRequestHandler(http, "^/[^/]*$", &indexHandler, NULL);
 
 	if(!startHttpServer(http)) {
-		LOG_ERROR("Failed to start feed HTTP server");
+		logError("Failed to start feed HTTP server");
 		destroyHttpServer(http);
 		return false;
 	}
@@ -106,7 +106,7 @@ TIMER_CALLBACK(feed_update)
 			FeedField *field = iter->data;
 			GString *value = evaluateXPathExpressionFirst(document, field->expression);
 			if(value != NULL) {
-				LOG_DEBUG("Feed '%s' field '%s' value: %s", name, field->name, value->str);
+				logInfo("Feed '%s' field '%s' value: %s", name, field->name, value->str);
 				g_hash_table_insert(entry, strdup(field->name), value->str);
 				g_string_free(value, false);
 			}
@@ -119,13 +119,13 @@ TIMER_CALLBACK(feed_update)
 			GHashTable *last = g_queue_peek_head(feed->content);
 			if(compareFeedContentEntries(last, entry)) {
 				g_hash_table_destroy(entry);
-				LOG_DEBUG("Feed entry for feed '%s' already exists, skipping", feed->name);
+				logInfo("Feed entry for feed '%s' already exists, skipping", feed->name);
 				continue;
 			}
 		}
 
 		g_queue_push_head(feed->content, entry);
-		LOG_DEBUG("Added new feed content entry for '%s'", feed->name);
+		logInfo("Added new feed content entry for '%s'", feed->name);
 
 		if(g_queue_get_length(feed->content) > FEED_LIMIT) {
 			GHashTable *first = g_queue_pop_tail(feed->content);
@@ -139,7 +139,7 @@ TIMER_CALLBACK(feed_update)
 API bool createFeed(const char *name, const char *url)
 {
 	if(g_hash_table_lookup(feeds, name) != NULL) {
-		LOG_ERROR("Failed to create feed '%s': A feed with that name already exists", name);
+		logError("Failed to create feed '%s': A feed with that name already exists", name);
 		return false;
 	}
 
@@ -164,12 +164,12 @@ API bool addFeedField(const char *name, const char *fieldName, const char *expre
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
-		LOG_ERROR("Failed to add field to feed '%s': A feed with that name doesn't exist", name);
+		logError("Failed to add field to feed '%s': A feed with that name doesn't exist", name);
 		return false;
 	}
 
 	if(feed->enabled) {
-		LOG_ERROR("Failed to add field to feed '%s': Feed is already enabled", name);
+		logError("Failed to add field to feed '%s': Feed is already enabled", name);
 		return false;
 	}
 
@@ -177,7 +177,7 @@ API bool addFeedField(const char *name, const char *fieldName, const char *expre
 		FeedField *field = iter->data;
 
 		if(g_strcmp0(field->name, fieldName) == 0) {
-			LOG_ERROR("Failed to add field '%s' to feed '%s': A field with that name already exists", name, fieldName);
+			logError("Failed to add field '%s' to feed '%s': A field with that name already exists", name, fieldName);
 			return false;
 		}
 	}
@@ -194,12 +194,12 @@ API bool deleteFeedField(const char *name, const char *fieldName)
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
-		LOG_ERROR("Failed to add field to feed '%s': A feed with that name doesn't exist", name);
+		logError("Failed to add field to feed '%s': A feed with that name doesn't exist", name);
 		return false;
 	}
 
 	if(feed->enabled) {
-		LOG_ERROR("Failed to add field to feed '%s': Feed is already enabled", name);
+		logError("Failed to add field to feed '%s': Feed is already enabled", name);
 		return false;
 	}
 
@@ -215,7 +215,7 @@ API bool deleteFeedField(const char *name, const char *fieldName)
 		}
 	}
 
-	LOG_ERROR("Failed to delete field '%s' from feed '%s': A field with that name doesn't exist", fieldName, name);
+	logError("Failed to delete field '%s' from feed '%s': A field with that name doesn't exist", fieldName, name);
 	return false;
 }
 
@@ -223,12 +223,12 @@ API bool enableFeed(const char *name)
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
-		LOG_ERROR("Failed to enable feed '%s': A feed with that name doesn't exist", name);
+		logError("Failed to enable feed '%s': A feed with that name doesn't exist", name);
 		return false;
 	}
 
 	if(feed->enabled) {
-		LOG_ERROR("Failed to enable feed '%s': Feed is already enabled", name);
+		logError("Failed to enable feed '%s': Feed is already enabled", name);
 		return false;
 	}
 
@@ -240,7 +240,7 @@ API Feed *getFeed(const char *name)
 {
 	Feed *feed;
 	if((feed = g_hash_table_lookup(feeds, name)) == NULL) {
-		LOG_ERROR("Failed to get feed '%s': A feed with that name doesn't exist", name);
+		logError("Failed to get feed '%s': A feed with that name doesn't exist", name);
 		return NULL;
 	}
 

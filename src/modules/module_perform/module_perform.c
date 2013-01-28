@@ -48,12 +48,12 @@ MODULE_INIT
 	char *appendModuleList = $(char *, getopts, getOptValue)("append-modules", NULL);
 
 	if(!moduleList) {
-		LOG_INFO("Requesting perform modules from configuration");
+		logNotice("Requesting perform modules from configuration");
 
 		Store *modules = $(Store *, config, getConfigPath)(PERFORM_CONFIG_PATH);
 		if(modules != NULL) {
 			if(modules->type != STORE_LIST) {
-				LOG_ERROR("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
+				logError("Module perform failed: Standard configuration value '%s' must be a list", PERFORM_CONFIG_PATH);
 				return false;
 			}
 
@@ -63,21 +63,21 @@ MODULE_INIT
 				Store *moduleName = (Store *) iter->data;
 
 				if(moduleName->type != STORE_STRING) {
-					LOG_WARNING("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
+					logWarning("Failed to read module perform entry: Every list value of '%s' must be a string", PERFORM_CONFIG_PATH);
 					continue;
 				}
 
 				if(!$$(bool, requestModule)(moduleName->content.string)) {
-					LOG_ERROR("Module perform failed to request module %s", moduleName->content.string);
+					logError("Module perform failed to request module %s", moduleName->content.string);
 				} else {
-					LOG_DEBUG("Module perform successfully requested %s", moduleName->content.string);
+					logInfo("Module perform successfully requested %s", moduleName->content.string);
 				}
 			}
 		} else {
-			LOG_DEBUG("Module perform does not have any modules to load.");
+			logInfo("Module perform does not have any modules to load.");
 		}
 	} else {
-		LOG_INFO("Requesting modules given by CLI option");
+		logNotice("Requesting modules given by CLI option");
 
 		char **modules = g_strsplit(moduleList, ",", -1);
 
@@ -85,24 +85,24 @@ MODULE_INIT
 			char *module = modules[i];
 
 			if(!$$(bool, requestModule)(module)) {
-				LOG_ERROR("Module perform failed to request module %s", module);
+				logError("Module perform failed to request module %s", module);
 			} else {
-				LOG_DEBUG("Module perform successfully requested %s", module);
+				logInfo("Module perform successfully requested %s", module);
 			}
 		}
 	}
 
 	if(appendModuleList) {
-		LOG_INFO("Requesting modules given by CLI option to append");
+		logNotice("Requesting modules given by CLI option to append");
 		char **modules = g_strsplit(appendModuleList, ",", -1);
 
 		for(int i = 0; modules[i] != NULL; i++) {
 			char *module = modules[i];
 
 			if(!$$(bool, requestModule)(module)) {
-				LOG_ERROR("Module perform failed to request module %s", module);
+				logError("Module perform failed to request module %s", module);
 			} else {
-				LOG_DEBUG("Module perform successfully requested %s", module);
+				logInfo("Module perform successfully requested %s", module);
 			}
 		}
 	}

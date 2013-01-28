@@ -59,7 +59,7 @@ API void freeImageIO()
 API bool addImageIOReadHandler(const char *extension, ImageIOReadHandler *handler)
 {
 	if(g_hash_table_lookup(readHandlers, extension) != NULL) {
-		LOG_ERROR("Trying to add image IO reading handler for already handled extension '%s'", extension);
+		logError("Trying to add image IO reading handler for already handled extension '%s'", extension);
 		return false;
 	}
 
@@ -75,14 +75,14 @@ API bool deleteImageIOReadHandler(const char *extension)
 API Image *readImageFromFile(const char *filename)
 {
 	if(!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
-		LOG_ERROR("Trying to read image from non existing file '%s'", filename);
+		logError("Trying to read image from non existing file '%s'", filename);
 		return NULL;
 	}
 
 	char *ext;
 
 	if((ext = g_strrstr(filename, ".")) == NULL) {
-		LOG_ERROR("Trying to read image from extensionless file '%s'", filename);
+		logError("Trying to read image from extensionless file '%s'", filename);
 		return NULL;
 	}
 
@@ -90,7 +90,7 @@ API Image *readImageFromFile(const char *filename)
 
 	ImageIOReadHandler *handler;
 	if((handler = g_hash_table_lookup(readHandlers, ext)) == NULL) {
-		LOG_ERROR("Tried to read image file '%s', but no handler was found for the extension '%s'", filename, ext);
+		logError("Tried to read image file '%s', but no handler was found for the extension '%s'", filename, ext);
 		return NULL;
 	}
 
@@ -102,7 +102,7 @@ API Image *readImageFromFile(const char *filename)
 API bool addImageIOWriteHandler(const char *extension, ImageIOWriteHandler *handler)
 {
 	if(g_hash_table_lookup(writeHandlers, extension) != NULL) {
-		LOG_ERROR("Trying to add image IO writing handler for already handled extension '%s'", extension);
+		logError("Trying to add image IO writing handler for already handled extension '%s'", extension);
 		return false;
 	}
 
@@ -120,7 +120,7 @@ API bool writeImageToFile(Image *image, const char *filename)
 	char *ext;
 
 	if((ext = g_strrstr(filename, ".")) == NULL) {
-		LOG_ERROR("Trying to write image to extensionless file '%s'", filename);
+		logError("Trying to write image to extensionless file '%s'", filename);
 		return false;
 	}
 
@@ -128,7 +128,7 @@ API bool writeImageToFile(Image *image, const char *filename)
 
 	ImageIOWriteHandler *handler;
 	if((handler = g_hash_table_lookup(writeHandlers, ext)) == NULL) {
-		LOG_ERROR("Tried to write image to file '%s', but no handler was found for the extension '%s'", filename, ext);
+		logError("Tried to write image to file '%s', but no handler was found for the extension '%s'", filename, ext);
 		return false;
 	}
 
@@ -146,7 +146,7 @@ static Image *readImageStore(const char *filename)
 {
 	Store *store;
 	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
-		LOG_ERROR("Failed to parse image store file '%s'", filename);
+		logError("Failed to parse image store file '%s'", filename);
 		return NULL;
 	}
 

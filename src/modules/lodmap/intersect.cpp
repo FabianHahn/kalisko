@@ -91,10 +91,10 @@ static int intersectAABBSphere(Vector *pmin, Vector *pmax, Vector *position, dou
 	float radius2 = radius * radius;
 
 	if(diff.getLength2() < radius2) { // radius is larger than distance, so we have an intersection
-		// LOG_DEBUG("Intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
+		// logInfo("Intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
 		return 1;
 	} else {
-		// LOG_DEBUG("No intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
+		// logInfo("No intersection: [%f,%f,%f]-[%f,%f,%f] with center [%f,%f,%f], r = %f", minPoint[0], minPoint[1], minPoint[2], maxPoint[0], maxPoint[1], maxPoint[2], (*position)[0], (*position)[1], (*position)[2], radius);
 		return 0;
 	}
 }

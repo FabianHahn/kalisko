@@ -105,7 +105,7 @@ API OpenGLPrimitive *createOpenGLPrimitiveHeightmap(Image *heights, unsigned int
 API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to initialize OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to initialize OpenGL heightmap: Primitive is not a heightmap");
 		return false;
 	}
 
@@ -115,7 +115,7 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 		computeHeightmapNormals(heightmap->heights, heightmap->normals, 1.0 / heightmap->width, 1.0 / heightmap->height);
 
 		if(!synchronizeOpenGLTexture(heightmap->normalsTexture)) {
-			LOG_ERROR("Failed to initialize OpenGL heightmap: Could synchronize normals texture");
+			logError("Failed to initialize OpenGL heightmap: Could synchronize normals texture");
 			return false;
 		}
 	}
@@ -170,7 +170,7 @@ API bool initOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *model, const char *material)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to setup OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to setup OpenGL heightmap: Primitive is not a heightmap");
 		return false;
 	}
 
@@ -182,7 +182,7 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
 		OpenGLUniform *texture;
 
 		if((texture = getOpenGLUniform(materialUniforms, "texture")) == NULL || texture->type != OPENGL_UNIFORM_TEXTURE || texture->content.texture_value->type != OPENGL_TEXTURE_TYPE_2D_ARRAY) {
-			LOG_ERROR("Failed to lookup OpenGL 'texture' uniform for heightmap primitive, expected 2D texture array");
+			logError("Failed to lookup OpenGL 'texture' uniform for heightmap primitive, expected 2D texture array");
 			return false;
 		}
 
@@ -216,7 +216,7 @@ API bool setupOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, OpenGLModel *
 API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to retrieve OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to retrieve OpenGL heightmap: Primitive is not a heightmap");
 		return false;
 	}
 
@@ -226,7 +226,7 @@ API OpenGLHeightmap *getOpenGLHeightmap(OpenGLPrimitive *primitive)
 API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to synchronize OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to synchronize OpenGL heightmap: Primitive is not a heightmap");
 		return false;
 	}
 
@@ -266,7 +266,7 @@ API bool synchronizeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_p)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to draw OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to draw OpenGL heightmap: Primitive is not a heightmap");
 		return false;
 	}
 
@@ -318,7 +318,7 @@ API bool drawOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive, void *options_
 API void freeOpenGLPrimitiveHeightmap(OpenGLPrimitive *primitive)
 {
 	if(g_strcmp0(primitive->type, "heightmap") != 0) {
-		LOG_ERROR("Failed to free OpenGL heightmap: Primitive is not a heightmap");
+		logError("Failed to free OpenGL heightmap: Primitive is not a heightmap");
 		return;
 	}
 

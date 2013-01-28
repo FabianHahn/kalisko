@@ -41,7 +41,7 @@ API GLuint createOpenGLShaderFromString(const char *source, GLenum type)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 		char errorstr[length];
 		glGetShaderInfoLog(shader, length, NULL, errorstr);
-		LOG_ERROR("Failed to compile shader: %s", errorstr);
+		logError("Failed to compile shader: %s", errorstr);
 		return 0;
 	}
 
@@ -53,7 +53,7 @@ API GLuint createOpenGLShaderFromFile(const char *filename, GLenum type)
 	char *shaderSource;
 	gsize shaderLength;
 	if(!g_file_get_contents(filename, &shaderSource, &shaderLength, NULL)) {
-		LOG_ERROR("Failed to read shader source from %s", filename);
+		logError("Failed to read shader source from %s", filename);
 		return false;
 	}
 
@@ -90,7 +90,7 @@ API GLuint createOpenGLShaderProgram(GLuint vertexShader, GLuint fragmentShader,
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
 		char errorstr[length];
 		glGetProgramInfoLog(program, length, NULL, errorstr);
-		LOG_ERROR("Failed to link shader: %s", errorstr);
+		logError("Failed to link shader: %s", errorstr);
 		return 0;
 	}
 

@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
 	initMemory();
 	initTimers();
-	initLog();
+	initLog(LOG_LEVEL_ERROR);
 	initModules();
 
 	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);

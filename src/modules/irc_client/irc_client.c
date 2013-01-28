@@ -175,7 +175,7 @@ MODULE_INIT
 	g_string_free(path, true);
 
 	if(builder == NULL) {
-		LOG_ERROR("Failed to load IRC client GUI");
+		logError("Failed to load IRC client GUI");
 		return false;
 	}
 
@@ -188,7 +188,7 @@ MODULE_INIT
 	Store *config = getWritableConfig();
 	if((client_config = getStorePath(config, "irc_client")) == NULL || client_config->type != STORE_ARRAY) {
 		deleteStorePath(config, "irc_client");
-		LOG_INFO("Writable config path 'irc_client' doesn't exist yet, creating...");
+		logNotice("Writable config path 'irc_client' doesn't exist yet, creating...");
 		client_config = createStore();
 		setStorePath(config, "irc_client", client_config);
 	}
@@ -258,7 +258,7 @@ MODULE_INIT
 	Store *configConnections;
 	if((configConnections = getStorePath(client_config, "connections")) == NULL || configConnections->type != STORE_ARRAY) {
 		deleteStorePath(client_config, "connections");
-		LOG_INFO("Writable config path 'irc_client/connections' doesn't exist yet, creating...");
+		logNotice("Writable config path 'irc_client/connections' doesn't exist yet, creating...");
 		configConnections = createStore();
 		setStorePath(client_config, "connections", configConnections);
 	}
@@ -302,7 +302,7 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     		gtk_text_view_set_buffer(GTK_TEXT_VIEW(chat_output), status_buffer);
     		active_type = CHAT_ELEMENT_STATUS;
     		setWindowTitle(NULL, NULL);
-    		LOG_INFO("Switched to status");
+    		logNotice("Switched to status");
     	} else if(type == 1) {
     		IrcClientConnection *connection = g_hash_table_lookup(connections, name);
 
@@ -311,9 +311,9 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     			active_type = CHAT_ELEMENT_CONNECTION;
     			active = connection;
     			setWindowTitle(name, NULL);
-    			LOG_INFO("Switched to connection '%s'", name);
+    			logNotice("Switched to connection '%s'", name);
     		} else {
-    			LOG_ERROR("Failed to lookup IRC client connection '%s'", name);
+    			logError("Failed to lookup IRC client connection '%s'", name);
     		}
     	} else if(type == 2) {
     		// retrieve parent connection
@@ -335,12 +335,12 @@ void irc_client_side_tree_cursor_changed(GtkTreeView *tree_view, gpointer user_d
     				active = channel;
     				setWindowTitle(parentName, name);
     				setChannelDirty(channel, false);
-    				LOG_INFO("Switched to channel '%s' in connection '%s'", name, parentName);
+    				logNotice("Switched to channel '%s' in connection '%s'", name, parentName);
     			} else {
-    				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s'", name, parentName);
+    				logError("Failed to lookup channel '%s' in IRC client connection '%s'", name, parentName);
     			}
     		} else {
-    			LOG_ERROR("Failed to lookup IRC client connection '%s'", parentName);
+    			logError("Failed to lookup IRC client connection '%s'", parentName);
     		}
     	}
     }
@@ -461,7 +461,7 @@ static void listener_channelUser(void *subject, const char *event, void *data, v
 {
 	IrcClientConnection *connection = getPropertyTableValue(subject, "irc_client_connection");
 	if(connection == NULL) {
-		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
+		logError("Failed to look up IRC client connection for IRC connection");
 		return;
 	}
 
@@ -470,7 +470,7 @@ static void listener_channelUser(void *subject, const char *event, void *data, v
 
 	IrcClientConnectionChannel *channel = g_hash_table_lookup(connection->channels, channelName);
 	if(channel == NULL) {
-		LOG_WARNING("Received channel event for unjoined channel '%s' in IRC client connection '%s', skipping", channelName, connection->name);
+		logWarning("Received channel event for unjoined channel '%s' in IRC client connection '%s', skipping", channelName, connection->name);
 		return;
 	}
 
@@ -488,7 +488,7 @@ static void listener_channel(void *subject, const char *event, void *data, va_li
 {
 	IrcClientConnection *connection = getPropertyTableValue(subject, "irc_client_connection");
 	if(connection == NULL) {
-		LOG_ERROR("Failed to look up IRC client connection for IRC connection");
+		logError("Failed to look up IRC client connection for IRC connection");
 		return;
 	}
 
@@ -547,7 +547,7 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 		if(message->params[0] != NULL) {
 			IrcUserMask *mask = parseIrcUserMask(message->prefix);
 			if(mask == NULL) {
-				LOG_ERROR("Failed to parse IRC user mask: %s", message->prefix);
+				logError("Failed to parse IRC user mask: %s", message->prefix);
 				return;
 			}
 
@@ -572,12 +572,12 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 
 					refreshSideTree();
 
-					LOG_INFO("New query from '%s' in IRC client connection '%s'", channel->name, clientConnection->name);
+					logNotice("New query from '%s' in IRC client connection '%s'", channel->name, clientConnection->name);
 				}
 			} else {
 				channel = g_hash_table_lookup(clientConnection->channels, message->params[0]);
 				if(channel == NULL) {
-					LOG_WARNING("Received channel message for unjoined channel '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
+					logWarning("Received channel message for unjoined channel '%s' in IRC client connection '%s', skipping", message->params[0], clientConnection->name);
 				}
 			}
 
@@ -605,29 +605,13 @@ static void listener_ircLine(void *subject, const char *event, void *data, va_li
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
 	const char *module = va_arg(args, const char *);
-	LogType type = va_arg(args, LogType);
+	LogLevel level = va_arg(args, LogLevel);
 	char *message = va_arg(args, char *);
 
 	GDateTime *now = g_date_time_new_now_local();
 
-	const char *typestr = NULL;
-	switch(type) {
-		case LOG_TYPE_DEBUG:
-			typestr = "debug";
-		break;
-		case LOG_TYPE_INFO:
-			typestr = "info";
-		break;
-		case LOG_TYPE_WARNING:
-			typestr = "warning";
-		break;
-		case LOG_TYPE_ERROR:
-			typestr = "error";
-		break;
-	}
-
 	GString *msg = g_string_new("");
-	g_string_append_printf(msg, "[%s:%s] %s", module, typestr, message);
+	g_string_append_printf(msg, "[%s:%s] %s", module, getStaticLogLevelName(level), message);
 	appendMessage(status_buffer, msg->str, CHAT_MESSAGE_STATUS_LOG);
 	g_string_free(msg, true);
 
@@ -657,7 +641,7 @@ static void addIrcClientConnection(char *name, Store *config)
 	connection->channels = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeIrcClientConnectionChannel);
 
 	if((connection->connection = createIrcConnectionByStore(config)) == NULL) {
-		LOG_ERROR("Failed to create IRC client connection '%s', aborting", name);
+		logError("Failed to create IRC client connection '%s', aborting", name);
 		free(connection->name);
 		free(connection);
 		return;
@@ -687,7 +671,7 @@ static void addIrcClientConnection(char *name, Store *config)
 	// Add to connections table
 	g_hash_table_insert(connections, connection->name, connection);
 
-	LOG_INFO("Added IRC client connection '%s'", name);
+	logNotice("Added IRC client connection '%s'", name);
 }
 
 /**
@@ -762,7 +746,7 @@ static void refreshSideTree()
 					active_found = true;
 				}
 			} else {
-				LOG_ERROR("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", (char *) channelEntries->pdata[j], connection->name);
+				logError("Failed to lookup channel '%s' in IRC client connection '%s' when refreshing side tree", (char *) channelEntries->pdata[j], connection->name);
 			}
 		}
 
@@ -779,7 +763,7 @@ static void refreshSideTree()
 		gtk_tree_selection_select_iter(select, &child); // select status
 		active_type = CHAT_ELEMENT_STATUS;
 		setWindowTitle(NULL, NULL);
-		LOG_INFO("Switched to status");
+		logNotice("Switched to status");
 	}
 }
 
@@ -854,7 +838,7 @@ static void setChannelDirty(IrcClientConnectionChannel *channel, bool value)
 	GtkTreeStore *store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(side_tree)));
 	const char *icon = value ? GTK_STOCK_YES : GTK_STOCK_NO;
 	gtk_tree_store_set(store, &channel->tree_iter, SIDE_TREE_ICON_COLUMN, icon, -1); // clear dirty state
-	LOG_DEBUG("Flagged channel '%s' as %s", channel->name, value ? "dirty" : "clean");
+	logInfo("Flagged channel '%s' as %s", channel->name, value ? "dirty" : "clean");
 }
 
 /**

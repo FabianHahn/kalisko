@@ -48,9 +48,9 @@ static void listener_reloadedConfig(void *subject, const char *event, void *data
 static void updateConfig();
 
 #ifdef WIN32
-	static void updateConfigFor(char *configPath, LogType type, int defaultValue);
+	static void updateConfigFor(char *configPath, LogLevel level, int defaultValue);
 #else
-	static void updateConfigFor(char *configPath, LogType type, char *defaultValue);
+	static void updateConfigFor(char *configPath, LogLevel level, char *defaultValue);
 #endif
 
 #ifdef WIN32
@@ -112,7 +112,7 @@ MODULE_FINALIZE
 static void listener_log(void *subject, const char *event, void *data, va_list args)
 {
 	const char *module = va_arg(args, const char *);
-	LogType type = va_arg(args, LogType);
+	LogLevel level = va_arg(args, LogLevel);
 	char *message = va_arg(args, char *);
 
 	GDateTime *now = g_date_time_new_now_local();
@@ -121,8 +121,8 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	unsigned int second = g_date_time_get_second(now);
     g_date_time_unref(now);
 
-	switch(type) {
-		case LOG_TYPE_ERROR:
+	switch(level) {
+		case LOG_LEVEL_ERROR:
 #ifdef WIN32
 			writeMessage(dateTime, errorColor, module, "ERROR", message);
 #else
@@ -130,7 +130,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #endif
 
 		break;
-		case LOG_TYPE_WARNING:
+		case LOG_LEVEL_WARNING:
 #ifdef WIN32
 			writeMessage(dateTime, warningColor, module, "WARNING", message);
 #else
@@ -138,7 +138,7 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #endif
 
 		break;
-		case LOG_TYPE_INFO:
+		case LOG_LEVEL_NOTICE:
 #ifdef WIN32
 			writeMessage(dateTime, infoColor, module, "INFO", message);
 #else
@@ -146,12 +146,14 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 #endif
 
 		break;
-		case LOG_TYPE_DEBUG:
+		case LOG_LEVEL_INFO:
 #ifdef WIN32
-			writeMessage(dateTime, debugColor, module, "DEBUG", message);
+			writeMessage(dateTime, debugColor, module, "NOTICE", message);
 #else
-			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sDEBUG: %s\033[m\n", hour, minute, second, module, debugColor, message);
+			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sNOTICE: %s\033[m\n", hour, minute, second, module, debugColor, message);
 #endif
+		break;
+		default:
 		break;
 	}
 
@@ -167,18 +169,18 @@ static void listener_reloadedConfig(void *subject, const char *event, void *data
  * Reads the standard configs to set the colors as the user want it. If no configuration is set the default colors are used.
  */
 static void updateConfig() {
-	LOG_INFO("Reading configuration for log_color_console.");
+	logNotice("Reading configuration for log_color_console.");
 
 #ifdef WIN32
-	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_TYPE_ERROR, STD_ERROR_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_TYPE_WARNING, STD_WARNING_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_TYPE_INFO, STD_INFO_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_TYPE_DEBUG, STD_DEBUG_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_NOTICE, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_LEVEL_INFO, STD_DEBUG_COLOR);
 #else
-	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_TYPE_ERROR, STD_ERROR_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_TYPE_WARNING, STD_WARNING_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_TYPE_INFO, STD_INFO_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_TYPE_DEBUG, STD_DEBUG_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_NOTICE, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_LEVEL_INFO, STD_DEBUG_COLOR);
 #endif
 }
 
@@ -190,9 +192,9 @@ static void updateConfig() {
  * @param defaultValue	The default color to use
  */
 #ifdef WIN32
-	static void updateConfigFor(char *configPath, LogType type, int defaultValue)
+	static void updateConfigFor(char *configPath, LogLevel level, int defaultValue)
 #else
-	static void updateConfigFor(char *configPath, LogType type, char *defaultValue)
+	static void updateConfigFor(char *configPath, LogLevel level, char *defaultValue)
 #endif
 {
 	#ifdef WIN32
@@ -208,39 +210,40 @@ static void updateConfig() {
 				int color = colorConfig->content.integer;
 
 				if(!inWindowsColorRange(color)) {
-					LOG_ERROR("On Windows systems the color code must be a number from 0 to 15 (inclusive). Currently it is: %i", color);
+					logError("On Windows systems the color code must be a number from 0 to 15 (inclusive). Currently it is: %i", color);
 				} else {
 					newColor = color;
 				}
 			} else {
-				LOG_ERROR("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
+				logError("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
 			}
 	#else
 			if(colorConfig->type == STORE_STRING) {
 				newColor = colorConfig->content.string;
 			} else {
-				LOG_ERROR("On *nix systems the color code must be a string.");
+				logError("On *nix systems the color code must be a string.");
 			}
 		#endif
 	} else {
-		LOG_DEBUG("No color set for log type error. Using default value");
+		logInfo("No color set for log type error. Using default value");
 	}
 
-	switch(type) {
-		case LOG_TYPE_ERROR:
+	switch(level) {
+		case LOG_LEVEL_ERROR:
 			errorColor = newColor;
 		break;
-		case LOG_TYPE_WARNING:
+		case LOG_LEVEL_WARNING:
 			warningColor = newColor;
 		break;
-		case LOG_TYPE_INFO:
+		case LOG_LEVEL_NOTICE:
 			infoColor = newColor;
 		break;
-		case LOG_TYPE_DEBUG:
+		case LOG_LEVEL_INFO:
 			debugColor = newColor;
 		break;
 		default:
-			LOG_DEBUG("Unknown LogType value given: '%i'", type);
+			logInfo("Unknown LogType value given: '%i'", level);
+		break;
 	}
 }
 

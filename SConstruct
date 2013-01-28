@@ -39,7 +39,6 @@ vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
 vars.Add(BoolVariable('release', 'Set to build release target', 1))
 vars.Add(BoolVariable('debug', 'Set to build debug target', 0))
-vars.Add(BoolVariable('test', 'Set to build test binary instead of the regular binary', 0))
 vars.Add(BoolVariable('force_zero_revision', 'Force Mercurial revision to zero to prevent rebuilds after committing when developing', 0))
 vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], modules))
 vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], test_modules))
@@ -144,14 +143,6 @@ for prefix, env in targets:
 				SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), ['test', 'custom_tests'])
 
 	# Build executable
-	if env['test']:
-		core = env.Clone()
-		core.Append(CPPDEFINES = ['DISABLE_LOG_DEFAULT'])
-		corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'kalisko.c']
-		binary_name = 'kalisko_test'
-		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles', 'binary_name'])
-	else:
-		core = env.Clone()
-		corefiles = [x for x in core.Glob(os.path.join(prefix, '*.c')) if not x.name == 'test.c']
-		binary_name = 'kalisko'
-		SConscript(os.path.join(prefix, 'SConscript'), ['core', 'corefiles', 'binary_name'])
+	core = env.Clone()
+	SConscript(os.path.join(prefix, 'SConscript'), ['core', 'prefix'])
+	

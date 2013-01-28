@@ -77,7 +77,7 @@ static void listener_remoteLine(void *subject, const char *event, void *data, va
 			if(g_strcmp0(message->command, "INVITE") == 0) { // we got an invite!
 				if(message->params_count > 1 && g_strcmp0(irc->nick, message->params[0]) == 0 && message->params[1] != NULL) { // it's a valid invite
 					char *channel = message->params[1];
-					LOG_INFO("Received invite to channel '%s', autojoining...", channel);
+					logNotice("Received invite to channel '%s', autojoining...", channel);
 					ircSend(irc, "JOIN %s", channel);
 				}
 			}

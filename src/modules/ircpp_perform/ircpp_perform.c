@@ -285,5 +285,5 @@ static void executePerformList(IrcProxy *proxy)
 		}
 	}
 
-	LOG_INFO("Executed %d perform commands for IRC proxy '%s'", i, proxy->name);
+	logNotice("Executed %d perform commands for IRC proxy '%s'", i, proxy->name);
 }

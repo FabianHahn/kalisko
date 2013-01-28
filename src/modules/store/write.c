@@ -66,7 +66,7 @@ API bool writeStoreFile(const char *filename, Store *store)
 {
 	StoreDumpContext context;
 	if((context.resource = fopen(filename, "w")) == NULL) {
-		LOG_SYSTEM_ERROR("Failed to open file '%s' to write store", filename);
+		logSystemError("Failed to open file '%s' to write store", filename);
 		return false;
 	}
 

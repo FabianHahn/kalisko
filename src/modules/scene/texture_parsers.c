@@ -38,7 +38,7 @@ API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_pr
 	// Parse filename parameter
 	Store *filenameParam;
 	if((filenameParam = $(Store *, store, getStorePath)(store, "filename")) == NULL || filenameParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL scene texture file '%s' - string parameter 'filename' not found", name);
+		logError("Failed to parse OpenGL scene texture file '%s' - string parameter 'filename' not found", name);
 		return NULL;
 	}
 
@@ -48,13 +48,13 @@ API OpenGLTexture *parseOpenGLSceneTextureFile(Scene *scene, const char *path_pr
 	g_string_free(filename, true);
 
 	if(image == NULL) {
-		LOG_ERROR("Failed to read image file from '%s' for texture '%s'", filename->str, name);
+		logError("Failed to read image file from '%s' for texture '%s'", filename->str, name);
 		return NULL;
 	}
 
 	OpenGLTexture *texture;
 	if((texture = $(OpenGLTexture *, opengl, createOpenGLTexture2D)(image, true)) == NULL) {
-		LOG_ERROR("Failed to create OpenGL texture '%s' for scene", name);
+		logError("Failed to create OpenGL texture '%s' for scene", name);
 		$(void, image, freeImage)(image);
 		return NULL;
 	}
@@ -67,7 +67,7 @@ API OpenGLTexture *parseOpenGLSceneTextureArray(Scene *scene, const char *path_p
 	// Parse textures parameter
 	Store *texturesParam;
 	if((texturesParam = $(Store *, store, getStorePath)(store, "textures")) == NULL || texturesParam->type != STORE_LIST) {
-		LOG_ERROR("Failed to parse OpenGL scene texture array '%s' - list parameter 'textures' not found", name);
+		logError("Failed to parse OpenGL scene texture array '%s' - list parameter 'textures' not found", name);
 		return NULL;
 	}
 
@@ -82,13 +82,13 @@ API OpenGLTexture *parseOpenGLSceneTextureArray(Scene *scene, const char *path_p
 					Image *textureImage = $(Image *, image, copyImage)(texture->image, texture->image->type); // clone image
 					g_ptr_array_add(images, textureImage);
 				} else {
-					LOG_WARNING("Failed to parse element %d for scene texture array: parsed texture is not a 2D texture", images->len);
+					logWarning("Failed to parse element %d for scene texture array: parsed texture is not a 2D texture", images->len);
 				}
 
 				$(void, opengl, freeOpenGLTexture)(texture);
 			}
 		} else {
-			LOG_WARNING("Failed to parse element %d for scene texture array: list element is not an array", images->len);
+			logWarning("Failed to parse element %d for scene texture array: list element is not an array", images->len);
 		}
 	}
 

@@ -71,7 +71,7 @@ MODULE_INIT
 	WSADATA wsaData;
 
 	if(WSAStartup(MAKEWORD(2,0), &wsaData) != 0) {
-		LOG_ERROR("WSAStartup failed");
+		logError("WSAStartup failed");
 		return false;
 	}
 #endif
@@ -82,14 +82,14 @@ MODULE_INIT
 	if(configPollInterval != NULL && configPollInterval->type == STORE_INTEGER) {
 		pollInterval = configPollInterval->content.integer;
 	} else {
-		LOG_INFO("Could not determine config value socket/pollInterval, using default");
+		logNotice("Could not determine config value socket/pollInterval, using default");
 	}
 
 	Store *configConnectionTimeout = $(Store *, store, getStorePath)($(Store *, config, getConfig)(), "socket/connectionTimeout");
 	if(configConnectionTimeout != NULL && configConnectionTimeout->type == STORE_INTEGER) {
 		connectionTimeout = configConnectionTimeout->content.integer;
 	} else {
-		LOG_INFO("Could not determine config value socket/connectionTimeout, using default");
+		logNotice("Could not determine config value socket/connectionTimeout, using default");
 	}
 
 	initPoll(pollInterval);
@@ -162,7 +162,7 @@ API Socket *createShellSocket(char **args)
 API bool connectSocket(Socket *s)
 {
 	if(s->connected) {
-		LOG_ERROR("Cannot connect already connected socket %d", s->fd);
+		logError("Cannot connect already connected socket %d", s->fd);
 		return false;
 	}
 
@@ -185,12 +185,12 @@ API bool connectSocket(Socket *s)
 			hints.ai_flags = AI_PASSIVE; // fill in the IP automaticly
 
 			if((ret = getaddrinfo(NULL, s->port, &hints, &server)) == -1) {
-				LOG_ERROR("Failed to create address info for server socket");
+				logError("Failed to create address info for server socket");
 				return false;
 			}
 
 			if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-				LOG_SYSTEM_ERROR("Failed to create server socket");
+				logSystemError("Failed to create server socket");
 				return false;
 			}
 
@@ -198,26 +198,26 @@ API bool connectSocket(Socket *s)
 
 			int param = 1;
 			if(setsockopt(s->fd, SOL_SOCKET, SO_REUSEADDR, (void *) &param, sizeof(int)) == -1) {
-				LOG_ERROR("Failed to set SO_REUSEADDR for socket %d", s->fd);
+				logError("Failed to set SO_REUSEADDR for socket %d", s->fd);
 				freeSocket(s);
 				return false;
 			}
 
 			if(bind(s->fd, server->ai_addr, server->ai_addrlen) == -1) {
-				LOG_SYSTEM_ERROR("Failed to bind server socket %d", s->fd);
+				logSystemError("Failed to bind server socket %d", s->fd);
 				freeSocket(s);
 				return false;
 			}
 
 			if(listen(s->fd, 5) == -1) {
-				LOG_SYSTEM_ERROR("Failed to listen server socket %d", s->fd);
+				logSystemError("Failed to listen server socket %d", s->fd);
 				freeSocket(s);
 				return false;
 			}
 
 			if(s->type != SOCKET_SERVER_BLOCK) {
 				if(!setSocketNonBlocking(s->fd)) {
-					LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+					logSystemError("Failed to set socket non-blocking");
 					freeSocket(s);
 					return false;
 				}
@@ -225,7 +225,7 @@ API bool connectSocket(Socket *s)
 
 			freeaddrinfo(server);
 
-			LOG_DEBUG("Connected server socket %d on port %s", s->fd, s->port);
+			logInfo("Connected server socket %d on port %s", s->fd, s->port);
 		break;
 		case SOCKET_CLIENT:
 			memset(&hints, 0, sizeof(struct addrinfo));
@@ -233,19 +233,19 @@ API bool connectSocket(Socket *s)
 			hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
 
 			if((ret = getaddrinfo(s->host, s->port, &hints, &server)) != 0) {
-				LOG_ERROR("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
+				logError("Failed to look up address %s:%s: %s", s->host, s->port, gai_strerror(ret));
 				return false;
 			}
 
 			if((s->fd = socket(server->ai_family, server->ai_socktype, server->ai_protocol)) == -1) {
-				LOG_SYSTEM_ERROR("Failed to create socket");
+				logSystemError("Failed to create socket");
 				return false;
 			}
 
 			s->connected = true;
 
 			if(!setSocketNonBlocking(s->fd)) {
-				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+				logSystemError("Failed to set socket non-blocking");
 				return false;
 			}
 
@@ -255,7 +255,7 @@ API bool connectSocket(Socket *s)
 #else
 				if(errno == EINPROGRESS) {
 #endif
-					LOG_DEBUG("Socket %d delayed connection, waiting...", s->fd);
+					logInfo("Socket %d delayed connection, waiting...", s->fd);
 					do {
 						// Initialize timeout
 						struct timeval tv;
@@ -274,7 +274,7 @@ API bool connectSocket(Socket *s)
 #else
 						if((ret = select(s->fd + 1, NULL, &fdset, NULL, &tv)) < 0 && errno != EINTR) {
 #endif
-							LOG_SYSTEM_ERROR("Error selecting socket %d for write flag (connected)", s->fd);
+							logSystemError("Error selecting socket %d for write flag (connected)", s->fd);
 							freeaddrinfo(server);
 							disconnectSocket(s);
 							return false;
@@ -283,12 +283,12 @@ API bool connectSocket(Socket *s)
 							int valopt;
 							socklen_t lon = sizeof(int);
 							if(getsockopt(s->fd, SOL_SOCKET, SO_ERROR, (void*) (&valopt), &lon) < 0) {
-								LOG_SYSTEM_ERROR("getsockopt() failed on socket %d", s->fd);
+								logSystemError("getsockopt() failed on socket %d", s->fd);
 								freeaddrinfo(server);
 								disconnectSocket(s);
 								return false;
 							} else if(valopt != 0) { // There was a connection error
-								LOG_SYSTEM_ERROR("Delayed connection on socket %d failed", s->fd);
+								logSystemError("Delayed connection on socket %d failed", s->fd);
 								freeaddrinfo(server);
 								disconnectSocket(s);
 								return false;
@@ -296,7 +296,7 @@ API bool connectSocket(Socket *s)
 
 							break; // Socket connected, break out of loop
 						} else {
-							LOG_ERROR("Connection for socket %d exceeded timeout of %d seconds, disconnecting", s->fd, connectionTimeout);
+							logError("Connection for socket %d exceeded timeout of %d seconds, disconnecting", s->fd, connectionTimeout);
 							freeaddrinfo(server);
 							disconnectSocket(s);
 							return false;
@@ -305,10 +305,10 @@ API bool connectSocket(Socket *s)
 				} else {
 #ifdef WIN32
 					char *error = g_win32_error_message(WSAGetLastError());
-					LOG_ERROR("Connection for socket %d failed: %s", s->fd, error);
+					logError("Connection for socket %d failed: %s", s->fd, error);
 					free(error);
 #else
-					LOG_SYSTEM_ERROR("Connection for socket %d failed", s->fd);
+					logSystemError("Connection for socket %d failed", s->fd);
 #endif
 					freeaddrinfo(server);
 					disconnectSocket(s);
@@ -318,10 +318,10 @@ API bool connectSocket(Socket *s)
 
 			freeaddrinfo(server);
 
-			LOG_DEBUG("Connected client socket %d to %s:%s", s->fd, s->host, s->port);
+			logInfo("Connected client socket %d to %s:%s", s->fd, s->host, s->port);
 		break;
 		case SOCKET_SERVER_CLIENT:
-			LOG_ERROR("Cannot connect to server client socket, aborting");
+			logError("Cannot connect to server client socket, aborting");
 			return false;
 		break;
 		case SOCKET_SHELL:
@@ -339,14 +339,14 @@ API bool connectSocket(Socket *s)
 			// stdout pipe
 			if(!CreatePipe(&handles[0], &handles[1], &attr, 0)) {
 				char *error = g_win32_error_message(GetLastError());
-				LOG_ERROR("CreatePipe() failed: %s", error);
+				logError("CreatePipe() failed: %s", error);
 				free(error);
 				return false;
 			}
 
 			if(!SetHandleInformation(handles[0], HANDLE_FLAG_INHERIT, 0)) {
 				char *error = g_win32_error_message(GetLastError());
-				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				logError("SetHandleInformation() failed: %s", error);
 				free(error);
 				return false;
 			}
@@ -354,14 +354,14 @@ API bool connectSocket(Socket *s)
 			// stdin pipe
 			if(!CreatePipe(&handles[2], &handles[3], &attr, 0)) {
 				char *error = g_win32_error_message(GetLastError());
-				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				logError("SetHandleInformation() failed: %s", error);
 				free(error);
 				return false;
 			}
 
 			if(!SetHandleInformation(handles[3], HANDLE_FLAG_INHERIT, 0)) {
 				char *error = g_win32_error_message(GetLastError());
-				LOG_ERROR("SetHandleInformation() failed: %s", error);
+				logError("SetHandleInformation() failed: %s", error);
 				free(error);
 				return false;
 			}
@@ -381,7 +381,7 @@ API bool connectSocket(Socket *s)
 
 			if(!CreateProcess(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL, &startInfo, &procInfo)) {
 				char *error = g_win32_error_message(GetLastError());
-				LOG_ERROR("CreateProcess() failed: %s", error);
+				logError("CreateProcess() failed: %s", error);
 				free(error);
 				free(command);
 				return false;
@@ -398,24 +398,24 @@ API bool connectSocket(Socket *s)
 			int writefd;
 
 			if((writefd = _open_osfhandle((intptr_t) handles[3], _O_APPEND)) == -1) {
-				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
+				logSystemError("_open_osfhandle() failed");
 				return false;
 			}
 
 			int readfd;
 
 			if((readfd = _open_osfhandle((intptr_t) handles[0], _O_RDONLY | _O_BINARY)) == -1) {
-				LOG_SYSTEM_ERROR("_open_osfhandle() failed");
+				logSystemError("_open_osfhandle() failed");
 				return false;
 			}
 
 			if((s->out = _fdopen(writefd, "a")) == NULL) {
-				LOG_SYSTEM_ERROR("_fdopen() failed");
+				logSystemError("_fdopen() failed");
 				return false;
 			}
 
 			if((s->in = _fdopen(readfd, "rb")) == NULL) {
-				LOG_SYSTEM_ERROR("_fdopen() failed");
+				logSystemError("_fdopen() failed");
 				return false;
 			}
 
@@ -424,7 +424,7 @@ API bool connectSocket(Socket *s)
 #else
 			// Create socket pair
 			if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != 0) {
-				LOG_SYSTEM_ERROR("socketpair() failed for shell socket");
+				logSystemError("socketpair() failed for shell socket");
 				return false;
 			}
 
@@ -432,7 +432,7 @@ API bool connectSocket(Socket *s)
 			s->fd = fds[0];
 
 			if(!setSocketNonBlocking(s->fd)) {
-				LOG_SYSTEM_ERROR("Failed to set socket non-blocking");
+				logSystemError("Failed to set socket non-blocking");
 				freeSocket(s);
 				return false;
 			}
@@ -441,7 +441,7 @@ API bool connectSocket(Socket *s)
 
 			// Fork and assign the other side of the socket pair to the executed application
 			if((pid = fork()) < 0) { // fork failed
-				LOG_SYSTEM_ERROR("fork() failed for shell socket, aborting");
+				logSystemError("fork() failed for shell socket, aborting");
 				freeSocket(s);
 				return false;
 			} else if(pid == 0) { // Child
@@ -460,7 +460,7 @@ API bool connectSocket(Socket *s)
 			s->connected = true;
 #endif
 
-			LOG_DEBUG("Connected shell socket %d", s->fd);
+			logInfo("Connected shell socket %d", s->fd);
 		break;
 	}
 
@@ -469,7 +469,7 @@ API bool connectSocket(Socket *s)
 
 API bool disconnectSocket(Socket *s)
 {
-	LOG_DEBUG("Disconnecting socket %d", s->fd);
+	logInfo("Disconnecting socket %d", s->fd);
 
 	if(s->connected) {
 		closeSocket(s);
@@ -477,7 +477,7 @@ API bool disconnectSocket(Socket *s)
 
 		return true;
 	} else {
-		LOG_ERROR("Cannot disconnect already disconnected socket %d", s->fd);
+		logError("Cannot disconnect already disconnected socket %d", s->fd);
 		return false;
 	}
 }
@@ -519,12 +519,12 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		LOG_ERROR("Cannot write to disconnected socket");
+		logError("Cannot write to disconnected socket");
 		return false;
 	}
 
 	if(s->type == SOCKET_SERVER) {
-		LOG_ERROR("Cannot write to server socket %d", s->fd);
+		logError("Cannot write to server socket %d", s->fd);
 		return false;
 	}
 
@@ -535,7 +535,7 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 				left -= ret;
 				buffer += ret;
 			} else {
-				LOG_SYSTEM_ERROR("Failed to write to pipe socket %d", s->fd);
+				logSystemError("Failed to write to pipe socket %d", s->fd);
 				return false;
 			}
 		} else
@@ -550,11 +550,11 @@ API bool socketWriteRaw(Socket *s, void *buffer, int size)
 		} else if(errno == EINTR) { // interrupted
 			continue;
 		} else if(errno == EPIPE) { // broken pipe means the connection broke down but we didn't get the disconnect event yet
-			LOG_INFO("Broken pipe for socket %d on write, disconnecting...", s->fd);
+			logNotice("Broken pipe for socket %d on write, disconnecting...", s->fd);
 			disconnectSocket(s);
 			return false;
 		} else { // error
-			LOG_SYSTEM_ERROR("Failed to write to socket %d", s->fd);
+			logSystemError("Failed to write to socket %d", s->fd);
 			return false;
 		}
 	}
@@ -569,12 +569,12 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	assert(size >= 0);
 
 	if(!s->connected) {
-		LOG_ERROR("Cannot read from disconnected socket");
+		logError("Cannot read from disconnected socket");
 		return -1;
 	}
 
 	if(s->type == SOCKET_SERVER || s->type == SOCKET_SERVER_BLOCK) {
-		LOG_ERROR("Cannot read from server socket");
+		logError("Cannot read from server socket");
 		return -1;
 	}
 
@@ -582,9 +582,9 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 	if(s->in != NULL) {
 		if((ret = fread(buffer, sizeof(char), size - 1, s->in)) == 0) {
 			if(feof(s->in)) {
-				LOG_INFO("EOF on pipe socket %d", s->fd);
+				logNotice("EOF on pipe socket %d", s->fd);
 			} else {
-				LOG_SYSTEM_ERROR("Failed to read from pipe socket %d", s->fd);
+				logSystemError("Failed to read from pipe socket %d", s->fd);
 			}
 
 			disconnectSocket(s);
@@ -594,7 +594,7 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 #endif
 
 	if((ret = recv(s->fd, buffer, size - 1, 0)) == 0) { // connection reset by peer
-		LOG_INFO("Connection on socket %d reset by peer", s->fd);
+		logNotice("Connection on socket %d reset by peer", s->fd);
 		disconnectSocket(s);
 		return -1;
 	} else if(ret < 0) {
@@ -608,10 +608,10 @@ API int socketReadRaw(Socket *s, void *buffer, int size)
 
 #ifdef WIN32
 		char *error = g_win32_error_message(GetLastError());
-		LOG_ERROR("Failed to read from socket %d: %s", s->fd, error);
+		logError("Failed to read from socket %d: %s", s->fd, error);
 		free(error);
 #else
-		LOG_SYSTEM_ERROR("Failed to read from socket %d", s->fd);
+		logSystemError("Failed to read from socket %d", s->fd);
 #endif
 		disconnectSocket(s);
 		return -1;
@@ -636,7 +636,7 @@ API Socket *socketAccept(Socket *server)
 		if(errno == EAGAIN || errno == EWOULDBLOCK) {
 #endif
 		} else {
-			LOG_SYSTEM_ERROR("Failed to accept client socket from server socket %d", server->fd);
+			logSystemError("Failed to accept client socket from server socket %d", server->fd);
 			disconnectSocket(server);
 		}
 
@@ -663,7 +663,7 @@ API Socket *socketAccept(Socket *server)
 	client->out = NULL;
 #endif
 
-	LOG_DEBUG("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
+	logInfo("Incoming connection %d from %s:%s on server socket %d", fd, client->host, client->port, server->fd);
 
 	g_string_free(ip, false);
 	g_string_free(port, false);

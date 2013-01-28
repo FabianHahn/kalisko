@@ -170,7 +170,7 @@ static JSBool js_addXCallFunction(JSContext *context, JSObject *object, uintN ar
 		return JS_FALSE;
 	}
 
-	LOG_ERROR("Added JavaScript function as XCall function: %s", functionName);
+	logError("Added JavaScript function as XCall function: %s", functionName);
 
 	return JS_TRUE;
 }
@@ -205,7 +205,7 @@ static JSBool js_delXCallFunction(JSContext *context, JSObject *object, uintN ar
 		return JS_FALSE;
 	}
 
-	LOG_ERROR("Removed JavaScript function as XCall function: %s", functionName);
+	logError("Removed JavaScript function as XCall function: %s", functionName);
 	return JS_TRUE;
 }
 
@@ -239,7 +239,7 @@ static Store *jsInvokeXCallFunction(Store *xcall)
 
 	if(!JS_EnterLocalRootScope(function->context)) {
 		char *errStr = "Could not enter local root scope. XCall Invoke stopped";
-		LOG_WARNING("%s", errStr);
+		logWarning("%s", errStr);
 
 		Store *ret = $(Store *, store, createStore)();
 		$(bool, store, setStorePath)(ret, "xcall", $(Store *, store, createStoreArrayValue)(NULL));

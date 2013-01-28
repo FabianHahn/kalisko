@@ -61,7 +61,7 @@ MODULE_INIT
 
 	envInfo.runtime = JS_NewRuntime(8L * 1024L * 1024L); // GC after 8MBytes were used
 	if(!envInfo.runtime) {
-		LOG_ERROR("Could not create JavaScript Runtime.");
+		logError("Could not create JavaScript Runtime.");
 		JS_ShutDown();
 
 		return false;
@@ -69,7 +69,7 @@ MODULE_INIT
 
 	envInfo.context = JS_NewContext(envInfo.runtime, 8192);
 	if(!envInfo.context) {
-		LOG_ERROR("Could not create JavaScript Context.");
+		logError("Could not create JavaScript Context.");
 		JS_DestroyRuntime(envInfo.runtime);
 		JS_ShutDown();
 
@@ -86,7 +86,7 @@ MODULE_INIT
 
 	envInfo.globalObject = JS_NewObject(envInfo.context, &globalClass, NULL, NULL);
 	if(!envInfo.globalObject) {
-		LOG_ERROR("Could not create global JavaScript object");
+		logError("Could not create global JavaScript object");
 		JS_DestroyContext(envInfo.context);
 		JS_DestroyRuntime(envInfo.runtime);
 		JS_ShutDown();
@@ -95,7 +95,7 @@ MODULE_INIT
 	}
 
 	if(!JS_InitStandardClasses(envInfo.context, envInfo.globalObject)) {
-		LOG_ERROR("Could not initialize standard classes for global JavaScript object.");
+		logError("Could not initialize standard classes for global JavaScript object.");
 		JS_DestroyContext(envInfo.context);
 		JS_DestroyRuntime(envInfo.runtime);
 		JS_ShutDown();
@@ -129,13 +129,13 @@ API bool evaluateJavaScript(char *script)
 
 	JSScript *compiledScript = JS_CompileScript(envInfo.context, envInfo.globalObject, script, strlen(script), "_inline", 0);
 	if(!compiledScript) {
-		LOG_WARNING("Could not compile given JavaScript script.");
+		logWarning("Could not compile given JavaScript script.");
 		return false;
 	}
 
 	scriptObj->data = JS_NewScriptObject(envInfo.context, compiledScript);
 	if(!scriptObj) {
-		LOG_WARNING("Could not create script object for given JavaScript script.");
+		logWarning("Could not create script object for given JavaScript script.");
 		JS_DestroyScript(envInfo.context, compiledScript);
 
 		return false;
@@ -144,7 +144,7 @@ API bool evaluateJavaScript(char *script)
 	assert(JS_AddNamedRoot(envInfo.context, &(scriptObj->data), "Kalisko JavaScript script"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
-		LOG_WARNING("Could not execute given JavaScript script.");
+		logWarning("Could not execute given JavaScript script.");
 		return false;
 	}
 
@@ -159,13 +159,13 @@ API bool evaluateJavaScriptFile(char *filename)
 
 	JSScript *compiledScript = JS_CompileFile(envInfo.context, envInfo.globalObject, filename);
 	if(!compiledScript) {
-		LOG_WARNING("Could not compile given JavaScript file: %s.", filename);
+		logWarning("Could not compile given JavaScript file: %s.", filename);
 		return false;
 	}
 
 	scriptObj->data = JS_NewScriptObject(envInfo.context, compiledScript);
 	if(!scriptObj) {
-		LOG_WARNING("Could not create script object for given JavaScript file: %s", filename);
+		logWarning("Could not create script object for given JavaScript file: %s", filename);
 		JS_DestroyScript(envInfo.context, compiledScript);
 
 		return false;
@@ -174,7 +174,7 @@ API bool evaluateJavaScriptFile(char *filename)
 	assert(JS_AddNamedRoot(envInfo.context, &(scriptObj->data), "Kalisko JavaScript file"));
 
 	if(!JS_ExecuteScript(envInfo.context, envInfo.globalObject, compiledScript, &lastReturnValue)) {
-		LOG_WARNING("Could not execute given JavaScript script.");
+		logWarning("Could not execute given JavaScript script.");
 		return false;
 	}
 
@@ -202,5 +202,5 @@ API JSEnvInfo getJavaScriptEnvInfo()
  */
 static void reportError(JSContext *context, const char *message, JSErrorReport *report)
 {
-	LOG_ERROR("JavaScript error in '%s':'%i': %s", report->filename, (unsigned int)report->lineno, message);
+	logError("JavaScript error in '%s':'%i': %s", report->filename, (unsigned int)report->lineno, message);
 }

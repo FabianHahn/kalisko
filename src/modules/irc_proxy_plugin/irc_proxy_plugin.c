@@ -65,7 +65,7 @@ MODULE_FINALIZE
 API bool addIrcProxyPlugin(IrcProxyPlugin *plugin)
 {
 	if(g_hash_table_lookup(plugins, plugin->name) != NULL) {
-		LOG_ERROR("Trying to enable already enabled IRC proxy plugin %s, aborting", plugin->name);
+		logError("Trying to enable already enabled IRC proxy plugin %s, aborting", plugin->name);
 		return false;
 	}
 
@@ -103,7 +103,7 @@ API bool enableIrcProxyPlugins(IrcProxy *proxy)
 	IrcProxyPluginHandler *handler;
 
 	if((handler = g_hash_table_lookup(handlers, proxy)) != NULL) {
-		LOG_ERROR("Trying to enable IRC proxy plugins for already enabled IRC proxy '%s'", proxy->name);
+		logError("Trying to enable IRC proxy plugins for already enabled IRC proxy '%s'", proxy->name);
 		return false;
 	}
 
@@ -137,12 +137,12 @@ API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 
 	// Lookup the handler for this proxy
 	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) {
-		LOG_ERROR("Trying to enable IRC proxy plugin %s for IRC proxy '%s' without plugins enabled, aborting", name, proxy->name);
+		logError("Trying to enable IRC proxy plugin %s for IRC proxy '%s' without plugins enabled, aborting", name, proxy->name);
 		return false;
 	}
 
 	if(g_hash_table_lookup(handler->plugins, name) != NULL) { // Plugin already loaded
-		LOG_ERROR("Trying to enable already enabled IRC proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
+		logError("Trying to enable already enabled IRC proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
 		return false;
 	}
 
@@ -150,20 +150,20 @@ API bool enableIrcProxyPlugin(IrcProxy *proxy, char *name)
 
 	// Lookup the plugin for the given plugin name
 	if((plugin = g_hash_table_lookup(plugins, name)) == NULL) {
-		LOG_ERROR("Trying to enable non existing proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
+		logError("Trying to enable non existing proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
 		return false;
 	}
 
 	// Actually initialize the plugin
 	if(!plugin->initialize(proxy, name)) {
-		LOG_ERROR("Failed to initialize IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
+		logError("Failed to initialize IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
 		return false;
 	}
 
 	g_hash_table_insert(handler->plugins, plugin->name, plugin);
 	g_queue_push_head(plugin->handlers, handler);
 
-	LOG_INFO("Enabled IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
+	logNotice("Enabled IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
 
 	return true;
 }
@@ -187,7 +187,7 @@ API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
 
 	// Lookup the handler for this proxy
 	if((handler = g_hash_table_lookup(handlers, proxy)) == NULL) {
-		LOG_ERROR("Trying to disable IRC proxy plugin %s for IRC proxy '%s' without plugins enabled, aborting", name, proxy->name);
+		logError("Trying to disable IRC proxy plugin %s for IRC proxy '%s' without plugins enabled, aborting", name, proxy->name);
 		return false;
 	}
 
@@ -195,25 +195,25 @@ API bool disableIrcProxyPlugin(IrcProxy *proxy, char *name)
 
 	// Lookup the plugin for the given plugin name
 	if((plugin = g_hash_table_lookup(plugins, name)) == NULL) {
-		LOG_ERROR("Trying to disable non existing proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
+		logError("Trying to disable non existing proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
 		return false;
 	}
 
 	if(g_hash_table_lookup(handler->plugins, name) != plugin) {
-		LOG_ERROR("Trying to disable non enabled IRC proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
+		logError("Trying to disable non enabled IRC proxy plugin %s for IRC proxy '%s', aborting", name, proxy->name);
 		return false;
 	}
 
 	// Unload the IRC proxy plugin for this proxy
 	if(!unloadIrcProxyPlugin(NULL, plugin, handler)) {
-		LOG_ERROR("Failed to disable IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
+		logError("Failed to disable IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
 		return false;
 	}
 
 	// Now also remove the plugin from the handler's plugin table
 	g_hash_table_remove(handler->plugins, name);
 
-	LOG_INFO("Disabled IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
+	logNotice("Disabled IRC proxy plugin %s for IRC proxy '%s'", name, proxy->name);
 
 	return true;
 }

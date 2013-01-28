@@ -194,7 +194,7 @@ API IrcConnection *createIrcConnection(char *server, char *port, char *password,
 	attachEventListener(irc, "line", NULL, &listener_ircLine);
 
 	if(!connectClientSocketAsync(irc->socket, 10)) {
-		LOG_ERROR("Failed to connect IRC connection socket");
+		logError("Failed to connect IRC connection socket");
 		freeIrcConnection(irc);
 		return NULL;
 	}
@@ -216,14 +216,14 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	int throttle;
 
 	if((param = getStorePath(params, "server")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required params value 'server', aborting IRC connection");
+		logError("Could not find required params value 'server', aborting IRC connection");
 		return NULL;
 	}
 
 	server = param->content.string;
 
 	if((param = getStorePath(params, "port")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required params value 'port', aborting IRC connection");
+		logError("Could not find required params value 'port', aborting IRC connection");
 		return NULL;
 	}
 
@@ -236,28 +236,28 @@ API IrcConnection *createIrcConnectionByStore(Store *params)
 	}
 
 	if((param = getStorePath(params, "user")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required params value 'user', aborting IRC connection");
+		logError("Could not find required params value 'user', aborting IRC connection");
 		return NULL;
 	}
 
 	user = param->content.string;
 
 	if((param = getStorePath(params, "real")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required params value 'real', aborting IRC connection");
+		logError("Could not find required params value 'real', aborting IRC connection");
 		return NULL;
 	}
 
 	real = param->content.string;
 
 	if((param = getStorePath(params, "nick")) == NULL || param->type != STORE_STRING) {
-		LOG_ERROR("Could not find required params value 'nick', aborting IRC connection");
+		logError("Could not find required params value 'nick', aborting IRC connection");
 		return NULL;
 	}
 
 	nick = param->content.string;
 
 	if((param = getStorePath(params, "throttle")) == NULL || param->type != STORE_INTEGER) {
-		LOG_ERROR("Could not find required params value 'throttle', aborting IRC connection");
+		logError("Could not find required params value 'throttle', aborting IRC connection");
 		return NULL;
 	}
 
@@ -279,7 +279,7 @@ API bool reconnectIrcConnection(IrcConnection *irc)
 			return true;
 		}
 	} else {
-		LOG_ERROR("Cannot reconnect already connected IRC connection with socket %d", irc->socket->fd);
+		logError("Cannot reconnect already connected IRC connection with socket %d", irc->socket->fd);
 	}
 
 	return false;
@@ -288,7 +288,7 @@ API bool reconnectIrcConnection(IrcConnection *irc)
 API bool enableIrcConnectionThrottle(IrcConnection *irc)
 {
 	if(irc->throttle) {
-		LOG_WARNING("Trying to enable throttling on already enabled IRC connection with socket %d", irc->socket->fd);
+		logWarning("Trying to enable throttling on already enabled IRC connection with socket %d", irc->socket->fd);
 		return false;
 	}
 
@@ -298,7 +298,7 @@ API bool enableIrcConnectionThrottle(IrcConnection *irc)
 
 	g_queue_push_tail(throttled, irc);
 
-	LOG_INFO("Enabled throttling for IRC connection with socket %d", irc->socket->fd);
+	logNotice("Enabled throttling for IRC connection with socket %d", irc->socket->fd);
 
 	return true;
 }

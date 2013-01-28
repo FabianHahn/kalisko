@@ -73,7 +73,7 @@ API Scene *createScene(char *filename, char *path_prefix)
 	Store *store;
 
 	if((store = $(Store *, store, parseStoreFile)(filename)) == NULL) {
-		LOG_ERROR("Failed to read scene file '%s'", filename);
+		logError("Failed to read scene file '%s'", filename);
 		return NULL;
 	}
 
@@ -104,19 +104,19 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 				if((texture = parseOpenGLSceneTexture(scene, path_prefix, key, value)) != NULL) {
 					if(addSceneTexture(scene, key, texture)) {
-						LOG_DEBUG("Added texture '%s' to scene", key);
+						logInfo("Added texture '%s' to scene", key);
 					}
 				} else {
-					LOG_WARNING("Failed to parse texture in 'texture/%s' for scene, skipping", key);
+					logWarning("Failed to parse texture in 'texture/%s' for scene, skipping", key);
 					continue;
 				}
 			} else {
-				LOG_WARNING("Expected array store value in 'texture/%s' when parsing scene texture, skipping", key);
+				logWarning("Expected array store value in 'texture/%s' when parsing scene texture, skipping", key);
 				continue;
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'textures' when creating scene by store, skipping texture loading");
+		logWarning("Expected array store value in 'textures' when creating scene by store, skipping texture loading");
 	}
 
 	// read parameters
@@ -128,11 +128,11 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		g_hash_table_iter_init(&iter, parameters->content.array);
 		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(addSceneParameterFromStore(scene, key, value)) {
-				LOG_DEBUG("Added scene parameter '%s'", key);
+				logInfo("Added scene parameter '%s'", key);
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
+		logWarning("Expected array store value in 'meshes' when creating scene by store, skipping mesh loading");
 	}
 
 	// read materials
@@ -144,16 +144,16 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		g_hash_table_iter_init(&iter, materials->content.array);
 		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type != STORE_ARRAY) {
-				LOG_WARNING("Expected array store value in 'materials/%s' when creating scene by store, skipping", key);
+				logWarning("Expected array store value in 'materials/%s' when creating scene by store, skipping", key);
 				continue;
 			}
 
 			if(addSceneMaterialFromStore(scene, key, path_prefix, value)) {
-				LOG_DEBUG("Added material '%s' to scene", key);
+				logInfo("Added material '%s' to scene", key);
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'materials' when creating scene by store, skipping material loading");
+		logWarning("Expected array store value in 'materials' when creating scene by store, skipping material loading");
 	}
 
 	// read primitives
@@ -169,19 +169,19 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 
 				if((primitive = parseOpenGLScenePrimitive(scene, path_prefix, key, value)) != NULL) {
 					if(addScenePrimitive(scene, key, primitive)) {
-						LOG_DEBUG("Added primitive '%s' to scene", key);
+						logInfo("Added primitive '%s' to scene", key);
 					}
 				} else {
-					LOG_WARNING("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
+					logWarning("Failed to parse primitive in 'primitives/%s' for scene, skipping", key);
 					continue;
 				}
 			} else {
-				LOG_WARNING("Expected array store value in 'primitives/%s' when parsing scene primitive, skipping", key);
+				logWarning("Expected array store value in 'primitives/%s' when parsing scene primitive, skipping", key);
 				continue;
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'primitives' when creating scene by store, skipping primitive loading");
+		logWarning("Expected array store value in 'primitives' when creating scene by store, skipping primitive loading");
 	}
 
 	// read models
@@ -193,16 +193,16 @@ API Scene *createSceneByStore(Store *store, char *path_prefix)
 		g_hash_table_iter_init(&iter, models->content.array);
 		while(g_hash_table_iter_next(&iter, (void **) &key, (void **) &value)) {
 			if(value->type != STORE_ARRAY) {
-				LOG_WARNING("Expected array store value in 'meshes/%s' when creating scene by store, skipping", key);
+				logWarning("Expected array store value in 'meshes/%s' when creating scene by store, skipping", key);
 				continue;
 			}
 
 			if(addSceneModelFromStore(scene, key, value)) {
-				LOG_DEBUG("Added model '%s' to scene", key);
+				logInfo("Added model '%s' to scene", key);
 			}
 		}
 	} else {
-		LOG_WARNING("Expected array store value in 'models' when creating scene by store, skipping model loading");
+		logWarning("Expected array store value in 'models' when creating scene by store, skipping model loading");
 	}
 
 	return scene;
@@ -233,7 +233,7 @@ API void freeScene(Scene *scene)
 API bool addScenePrimitive(Scene *scene, const char *key, OpenGLPrimitive *primitive)
 {
 	if(g_hash_table_lookup(scene->primitives, key) != NULL) {
-		LOG_ERROR("Failed to add primitive '%s' to scene, a primitive with that name already exists!", key);
+		logError("Failed to add primitive '%s' to scene, a primitive with that name already exists!", key);
 		return false;
 	}
 
@@ -266,12 +266,12 @@ API bool addSceneTexture2DFromFile(Scene *scene, const char *key, const char *fi
 				return false;
 			}
 		} else {
-			LOG_ERROR("Failed to create OpenGL texture '%s' from '%s' for scene", key, filename);
+			logError("Failed to create OpenGL texture '%s' from '%s' for scene", key, filename);
 			$(void, image, freeImage)(image);
 			return false;
 		}
 	} else {
-		LOG_ERROR("Failed to read texture '%s' from '%s'", key, filename);
+		logError("Failed to read texture '%s' from '%s'", key, filename);
 		return false;
 	}
 
@@ -287,7 +287,7 @@ API bool addSceneTexture2DArrayFromFiles(Scene *scene, const char *key, char **f
 		if((image = $(Image *, image, readImageFromFile)(filenames[i])) != NULL) {
 			g_ptr_array_add(images, image);
 		} else {
-			LOG_WARNING("Failed to read image %d from '%s' for 2D texture array to be added to scene, skipping", i, filenames[i]);
+			logWarning("Failed to read image %d from '%s' for 2D texture array to be added to scene, skipping", i, filenames[i]);
 		}
 	}
 
@@ -344,7 +344,7 @@ API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *value)
 		default:
 			free(parameter);
 			parameter = NULL;
-			LOG_WARNING("Expected integer, float, vector or matrix value for parameter '%s' for scene, skipping", key);
+			logWarning("Expected integer, float, vector or matrix value for parameter '%s' for scene, skipping", key);
 		break;
 	}
 
@@ -362,7 +362,7 @@ API bool addSceneParameterFromStore(Scene *scene, const char *key, Store *value)
 API bool addSceneParameter(Scene *scene, const char *key, SceneParameter *parameter)
 {
 	if(g_hash_table_lookup(scene->parameters, key) != NULL) {
-		LOG_ERROR("Failed to add parameter '%s' to scene, a parameter with that name already exists!", key);
+		logError("Failed to add parameter '%s' to scene, a parameter with that name already exists!", key);
 		return false;
 	}
 
@@ -381,12 +381,12 @@ API bool addSceneMaterialUniformParameter(Scene *scene, const char *material, co
 
 		OpenGLUniformAttachment *uniforms = $(OpenGLUniformAttachment *, opengl, getOpenGLMaterialUniforms)(material);
 		if(uniforms == NULL || !$(bool, opengl, attachOpenGLUniform)(uniforms, name, uniform)) {
-			LOG_ERROR("Failed to attach parameter '%s' as uniform '%s' to material '%s'", key, name, material);
+			logError("Failed to attach parameter '%s' as uniform '%s' to material '%s'", key, name, material);
 			free(uniform);
 			return false;
 		}
 	} else {
-		LOG_ERROR("Failed to attach parameter '%s' as uniform '%s' to material '%s': No such parameter found", key, name, material);
+		logError("Failed to attach parameter '%s' as uniform '%s' to material '%s': No such parameter found", key, name, material);
 		return false;
 	}
 
@@ -398,7 +398,7 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
 	// vertex shader path
 	Store *vertexShaderParam = $(Store *, store, getStorePath)(store, "vertex_shader");
 	if(vertexShaderParam == NULL || vertexShaderParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to read vertex_shader path property for material '%s' to be added to scene", material);
+		logError("Failed to read vertex_shader path property for material '%s' to be added to scene", material);
 		return false;
 	}
 
@@ -408,7 +408,7 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
 	// fragment shader path
 	Store *fragmentShaderParam = $(Store *, store, getStorePath)(store, "fragment_shader");
 	if(fragmentShaderParam == NULL || fragmentShaderParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to read fragment_shader path property for material '%s' to be added to scene", material);
+		logError("Failed to read fragment_shader path property for material '%s' to be added to scene", material);
 		g_string_free(vertexShaderPath, true);
 		return false;
 	}
@@ -430,16 +430,16 @@ API bool addSceneMaterialFromStore(Scene *scene, const char *material, const cha
 			g_hash_table_iter_init(&uniformIter, uniforms->content.array);
 			while(g_hash_table_iter_next(&uniformIter, (void **) &uniformKey, (void **) &uniformValue)) {
 				if(uniformValue->type != STORE_STRING) {
-					LOG_WARNING("Expected string store value in 'uniforms/%s' for material '%s' to be added to scene, skipping", uniformKey, material);
+					logWarning("Expected string store value in 'uniforms/%s' for material '%s' to be added to scene, skipping", uniformKey, material);
 					continue;
 				}
 
 				if(addSceneMaterialUniformParameter(scene, material, uniformValue->content.string, uniformKey)) {
-					LOG_DEBUG("Added parameter '%s' as uniform '%s' to material '%s' to be added to scene", uniformValue->content.string, uniformKey, material);
+					logInfo("Added parameter '%s' as uniform '%s' to material '%s' to be added to scene", uniformValue->content.string, uniformKey, material);
 				}
 			}
 		} else {
-			LOG_DEBUG("No uniforms specified for material '%s' to be added to scene", material);
+			logInfo("No uniforms specified for material '%s' to be added to scene", material);
 		}
 	}
 
@@ -466,7 +466,7 @@ API bool addSceneMaterial(Scene *scene, const char *material)
 {
 	for(GList *iter = scene->materials->head; iter != NULL; iter = iter->next) {
 		if(g_strcmp0(material, iter->data) == 0) {
-			LOG_ERROR("Failed to add material '%s' to scene: The scene already contains this material", material);
+			logError("Failed to add material '%s' to scene: The scene already contains this material", material);
 			return false;
 		}
 	}
@@ -480,7 +480,7 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 	// set primitive
 	Store *modelprimitive = $(Store *, store, getStorePath)(store, "primitive");
 	if(modelprimitive == NULL || modelprimitive->type != STORE_STRING) {
-		LOG_ERROR("Failed to read 'primitive' string store value for model '%s' to be added to scene", name);
+		logError("Failed to read 'primitive' string store value for model '%s' to be added to scene", name);
 		return false;
 	}
 
@@ -495,12 +495,12 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		char *materialname = modelmaterial->content.string;
 
 		if($(bool, opengl, attachOpenGLModelMaterial)(model, materialname)) {
-			LOG_DEBUG("Attached material '%s' to model '%s'", materialname, name);
+			logInfo("Attached material '%s' to model '%s'", materialname, name);
 		} else {
-			LOG_WARNING("Failed to attach material '%s' to model '%s' to be added to scene, skipping", materialname, name);
+			logWarning("Failed to attach material '%s' to model '%s' to be added to scene, skipping", materialname, name);
 		}
 	} else {
-		LOG_WARNING("Failed to read material for model '%s' to be added to scene, skipping", name);
+		logWarning("Failed to read material for model '%s' to be added to scene, skipping", name);
 	}
 
 	// set translation
@@ -508,7 +508,7 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 	if(modeltranslation != NULL && modeltranslation->type == STORE_LIST) {
 		Vector *translation = $(Vector *, linalg, convertStoreToVector)(modeltranslation);
 		$(void, linalg, assignVector)(model->translation, translation);
-		LOG_DEBUG("Set translation for model '%s'", name);
+		logInfo("Set translation for model '%s'", name);
 		$(void, linalg, freeVector)(translation);
 	}
 
@@ -518,14 +518,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(rotationX->type) {
 			case STORE_FLOAT_NUMBER:
 				model->rotationX = rotationX->content.float_number;
-				LOG_DEBUG("Set X rotation for model '%s'", name);
+				logInfo("Set X rotation for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->rotationX = rotationX->content.integer;
-				LOG_DEBUG("Set X rotation for model '%s'", name);
+				logInfo("Set X rotation for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set X rotation for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set X rotation for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -536,14 +536,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(rotationY->type) {
 			case STORE_FLOAT_NUMBER:
 				model->rotationX = rotationY->content.float_number;
-				LOG_DEBUG("Set Y rotation for model '%s'", name);
+				logInfo("Set Y rotation for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->rotationY = rotationY->content.integer;
-				LOG_DEBUG("Set Y rotation for model '%s'", name);
+				logInfo("Set Y rotation for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set Y rotation for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set Y rotation for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -554,14 +554,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(rotationZ->type) {
 			case STORE_FLOAT_NUMBER:
 				model->rotationZ = rotationZ->content.float_number;
-				LOG_DEBUG("Set Z rotation for model '%s'", name);
+				logInfo("Set Z rotation for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->rotationZ = rotationZ->content.integer;
-				LOG_DEBUG("Set Z rotation for model '%s'", name);
+				logInfo("Set Z rotation for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set Z rotation for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set Z rotation for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -572,14 +572,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(scaleX->type) {
 			case STORE_FLOAT_NUMBER:
 				model->scaleX = scaleX->content.float_number;
-				LOG_DEBUG("Set X scale for model '%s'", name);
+				logInfo("Set X scale for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->scaleX = scaleX->content.integer;
-				LOG_DEBUG("Set X scale for model '%s'", name);
+				logInfo("Set X scale for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set X scale for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set X scale for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -590,14 +590,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(scaleY->type) {
 			case STORE_FLOAT_NUMBER:
 				model->scaleY = scaleY->content.float_number;
-				LOG_DEBUG("Set Y scale for model '%s'", name);
+				logInfo("Set Y scale for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->scaleY = scaleY->content.integer;
-				LOG_DEBUG("Set Y scale for model '%s'", name);
+				logInfo("Set Y scale for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set Y scale for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set Y scale for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -608,14 +608,14 @@ API bool addSceneModelFromStore(Scene *scene, const char *name, Store *store)
 		switch(scaleZ->type) {
 			case STORE_FLOAT_NUMBER:
 				model->scaleZ = scaleZ->content.float_number;
-				LOG_DEBUG("Set Z scale for model '%s'", name);
+				logInfo("Set Z scale for model '%s'", name);
 			break;
 			case STORE_INTEGER:
 				model->scaleZ = scaleZ->content.integer;
-				LOG_DEBUG("Set Z scale for model '%s'", name);
+				logInfo("Set Z scale for model '%s'", name);
 			break;
 			default:
-				LOG_WARNING("Failed to set Z scale for model '%s' to be added to scene, skipping", name);
+				logWarning("Failed to set Z scale for model '%s' to be added to scene, skipping", name);
 			break;
 		}
 	}
@@ -630,7 +630,7 @@ API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, cons
 {
 	OpenGLPrimitive *primitive;
 	if((primitive = g_hash_table_lookup(scene->primitives, key)) == NULL) {
-		LOG_ERROR("Failed create model '%s' from primitive '%s' to be added to scene: No such primitive found in scene", name, key);
+		logError("Failed create model '%s' from primitive '%s' to be added to scene: No such primitive found in scene", name, key);
 		return NULL;
 	}
 
@@ -650,7 +650,7 @@ API OpenGLModel *addSceneModelFromPrimitive(Scene *scene, const char *name, cons
 API bool addSceneModel(Scene *scene, const char *name, OpenGLModel *model)
 {
 	if(g_hash_table_lookup(scene->models, name) != NULL) {
-		LOG_ERROR("Failed to add model '%s' to scene: A model with that name already exists", name);
+		logError("Failed to add model '%s' to scene: A model with that name already exists", name);
 		return false;
 	}
 
@@ -668,7 +668,7 @@ API void updateScene(Scene *scene, double dt)
 	g_hash_table_iter_init(&iter, scene->models);
 	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) { // loop over all models
 		if(!$(bool, opengl, updateOpenGLModel)(model, dt)) {
-			LOG_WARNING("Failed to update model '%s' in scene", name);
+			logWarning("Failed to update model '%s' in scene", name);
 		}
 	}
 }
@@ -681,7 +681,7 @@ API void drawScene(Scene *scene)
 	g_hash_table_iter_init(&iter, scene->models);
 	while(g_hash_table_iter_next(&iter, (void **) &name, (void **) &model)) { // loop over all models
 		if(!$(bool, opengl, drawOpenGLModel)(model, NULL)) {
-			LOG_WARNING("Failed to draw model '%s' in scene", name);
+			logWarning("Failed to draw model '%s' in scene", name);
 		}
 	}
 }

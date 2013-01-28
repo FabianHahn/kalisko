@@ -37,7 +37,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Scene *scene, const char *pat
 	Store *filenameParam;
 
 	if((filenameParam = $(Store *, store, getStorePath)(store, "filename")) == NULL || filenameParam->type != STORE_STRING) {
-		LOG_ERROR("Failed to parse OpenGL scene primitive mesh '%s' - string parameter 'filename' not found", name);
+		logError("Failed to parse OpenGL scene primitive mesh '%s' - string parameter 'filename' not found", name);
 		return NULL;
 	}
 
@@ -49,7 +49,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Scene *scene, const char *pat
 	GLenum usage;
 
 	if((usageParam = $(Store *, store, getStorePath)(store, "usage")) == NULL || usageParam->type != STORE_STRING) {
-		LOG_DEBUG("OpenGL scene primitive mesh '%s' 'usage' parameter not specified, defaulting to GL_STATIC_DRAW", name);
+		logInfo("OpenGL scene primitive mesh '%s' 'usage' parameter not specified, defaulting to GL_STATIC_DRAW", name);
 		usage = GL_STATIC_DRAW;
 	} else {
 		if(g_strcmp0(usageParam->content.string, "GL_STREAM_DRAW") == 0) {
@@ -59,7 +59,7 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveMesh(Scene *scene, const char *pat
 		} else if(g_strcmp0(usageParam->content.string, "GL_DYNAMIC_DRAW") == 0) {
 			usage = GL_DYNAMIC_DRAW;
 		} else {
-			LOG_WARNING("Invalid OpenGL scene primitive mesh '%s' 'usage' parameter specified, defaulting to GL_STATIC_DRAW", name);
+			logWarning("Invalid OpenGL scene primitive mesh '%s' 'usage' parameter specified, defaulting to GL_STATIC_DRAW", name);
 			usage = GL_STATIC_DRAW;
 		}
 	}

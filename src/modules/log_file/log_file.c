@@ -37,8 +37,9 @@
 #define LOG_FILES_CONFIG_FILEPATH_KEY "filepath"
 #define LOG_FILES_CONFIG_LOGTYPE_KEY "logtype"
 
-#define LOG_FILES_LOGTYPE_DEBUG "debug"
+#define LOG_FILES_LOGTYPE_TRACE "trace"
 #define LOG_FILES_LOGTYPE_INFO "info"
+#define LOG_FILES_LOGTYPE_NOTICE "notice"
 #define LOG_FILES_LOGTYPE_WARNING "warning"
 #define LOG_FILES_LOGTYPE_ERROR "error"
 
@@ -52,7 +53,7 @@ static GList *logFiles = NULL;
 MODULE_NAME("log_file");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("This log provider writes log messages to a user-defined file from the standard config");
-MODULE_VERSION(0, 2, 1);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -90,9 +91,11 @@ MODULE_INIT
 
 				// parse the string value to the needed type
 				LogLevel level = LOG_LEVEL_INFO;
-				if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_DEBUG) == 0) {
-					level = LOG_LEVEL_INFO;
+				if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_TRACE) == 0) {
+					level = LOG_LEVEL_TRACE;
 				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_INFO) == 0) {
+					level = LOG_LEVEL_INFO;
+				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_NOTICE) == 0) {
 					level = LOG_LEVEL_NOTICE;
 				} else if(strcmp(logType->content.string, LOG_FILES_LOGTYPE_WARNING) == 0) {
 					level = LOG_LEVEL_WARNING;
@@ -187,21 +190,8 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     		}
     	}
 
-    	switch(logFile->level) {
-			case LOG_LEVEL_INFO:
-				if(level == LOG_LEVEL_INFO)
-					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] NOTICE: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_LEVEL_NOTICE:
-				if(level == LOG_LEVEL_NOTICE)
-					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] INFO: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_LEVEL_WARNING:
-				if(level == LOG_LEVEL_WARNING)
-					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] WARNING: %s\n", day, month, year, hour, minute, second, module, message);
-			case LOG_LEVEL_ERROR:
-				if(level == LOG_LEVEL_ERROR)
-					fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s] ERROR: %s\n", day, month, year, hour, minute, second, module, message);
-			default:
-			break;
+    	if(level >= logFile->level) {
+    		fprintf(logFile->fileAppend, "[%02u.%02u.%04u-%02u:%02u:%02u] [%s:%s] %s\n", day, month, year, hour, minute, second, module, getStaticLogLevelName(level), message);
     	}
 
     	fflush(logFile->fileAppend);

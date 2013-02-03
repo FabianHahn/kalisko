@@ -67,7 +67,7 @@ static bool internalReloadConfig(bool doTriggerEvent);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 4, 3);
+MODULE_VERSION(0, 4, 4);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 12), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -311,10 +311,11 @@ static Store *loadReadOnlyConfigs()
 		retReadOnlyConfig = cmdConfig;
 	} else { // we load the default configuration files
 		// prepare paths
+		char *globalPath = getGlobalKaliskoConfigPath();
 		char *userDir = getUserKaliskoConfigPath();
 		char *userConfigFilePath = g_build_path("/", userDir, USER_CONFIG_FILE_NAME, NULL);
-		char *profilesConfigFilePath = g_build_path("/", getGlobalKaliskoConfigPath(), PROFILES_CONFIG_FILE_NAME, NULL);
-		char *globalConfigFilePath = g_build_path ("/", getGlobalKaliskoConfigPath(), GLOBAL_CONFIG_FILE_NAME, NULL);
+		char *profilesConfigFilePath = g_build_path("/", globalPath, PROFILES_CONFIG_FILE_NAME, NULL);
+		char *globalConfigFilePath = g_build_path ("/", globalPath, GLOBAL_CONFIG_FILE_NAME, NULL);
 
 		logInfo("Expecting user config at: %s", userConfigFilePath);
 		logInfo("Expecting profiles config at: %s", profilesConfigFilePath);
@@ -342,11 +343,6 @@ static Store *loadReadOnlyConfigs()
 				$(void, store, freeStore)(userConfig);
 			}
 		}
-
-		// clean up not needed file paths
-		free(userConfigFilePath);
-		free(profilesConfigFilePath);
-		free(userDir);
 
 		// Check if we found any config. If not we just create an empty one
 		if(retReadOnlyConfig == NULL) {
@@ -391,7 +387,10 @@ static Store *loadReadOnlyConfigs()
 			retReadOnlyConfig = globalConfig;
 		}
 
-		// clean up file path
+		free(globalPath);
+		free(userDir);
+		free(userConfigFilePath);
+		free(profilesConfigFilePath);
 		free(globalConfigFilePath);
 	}
 
@@ -402,7 +401,10 @@ static Store *loadWritableConfig()
 {
 	Store *retWritableConfig = NULL;
 
-	writableConfigFilePath = g_build_path("/", getUserKaliskoConfigPath(), USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	char *userDir = getUserKaliskoConfigPath();
+	writableConfigFilePath = g_build_path("/", userDir, USER_OVERRIDE_CONFIG_FILE_NAME, NULL);
+	free(userDir);
+
 	logInfo("Expecting writable config at: %s", writableConfigFilePath);
 
 	if(g_file_test(writableConfigFilePath, G_FILE_TEST_EXISTS)) {

@@ -31,7 +31,7 @@
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 3, 2);
+MODULE_VERSION(0, 3, 3);
 MODULE_BCVERSION(0, 2, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
@@ -94,9 +94,10 @@ TIMER_CALLBACK(feed_update)
 			continue;
 		}
 
-		xmlDocPtr document;
-		if((document = parseXmlString(xml->str)) == NULL) {
-			g_string_free(xml, true);
+		xmlDocPtr document = parseXmlString(xml->str);
+		g_string_free(xml, true);
+
+		if(document == NULL) {
 			continue;
 		}
 

@@ -37,7 +37,7 @@
 MODULE_NAME("module_perform");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The perform module loads other user-defined modules from the standard config upon startup");
-MODULE_VERSION(0, 2, 4);
+MODULE_VERSION(0, 2, 5);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("module_util", 0, 1, 0));
 
@@ -90,6 +90,8 @@ MODULE_INIT
 				logInfo("Module perform successfully requested %s", module);
 			}
 		}
+
+		g_strfreev(modules);
 	}
 
 	if(appendModuleList) {
@@ -105,6 +107,8 @@ MODULE_INIT
 				logInfo("Module perform successfully requested %s", module);
 			}
 		}
+
+		g_strfreev(modules);
 	}
 
 	$(int, event, triggerEvent)(NULL, "module_perform_finished");

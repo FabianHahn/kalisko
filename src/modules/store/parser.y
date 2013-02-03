@@ -159,5 +159,5 @@ array:		node // first element of the array
 
 void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error)
 {
-	LOG_ERROR("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
+	logError("Store parse error at line %d, column %d: %s", lloc->last_line, lloc->last_column - 1, error);
 }

@@ -39,6 +39,7 @@ vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
 vars.Add(BoolVariable('release', 'Set to build release target', 1))
 vars.Add(BoolVariable('debug', 'Set to build debug target', 0))
+vars.Add(BoolVariable('trace', 'Set to compile trace debug statements', 0))
 vars.Add(BoolVariable('force_zero_revision', 'Force Mercurial revision to zero to prevent rebuilds after committing when developing', 0))
 vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], modules))
 vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], test_modules))
@@ -86,6 +87,9 @@ for value in defines:
 		cppdefines = cppdefines + [(keyvalue[0], keyvalue[1])]
 	elif len(keyvalue) == 1:
 		cppdefines = cppdefines + [keyvalue[0]]
+
+if env['trace']:
+	cppdefines = cppdefines + ['TRACE']
 
 env.Append(CPPDEFINES = cppdefines)
 

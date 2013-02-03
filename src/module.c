@@ -835,6 +835,7 @@ static void unneedModule(void *name, void *mod_p, void *parent_p)
 	free(mod->version);
 	free(mod->bcversion);
 	free(mod->name);
+	free(mod->dlname);
 	free(mod);
 }
 

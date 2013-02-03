@@ -38,7 +38,7 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 2, 0);
+MODULE_VERSION(0, 3, 0);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -49,8 +49,10 @@ static void updateConfig();
 
 #ifdef WIN32
 	static void updateConfigFor(char *configPath, LogLevel level, int defaultValue);
+	static int getLogLevelColorCode(LogLevel level);
 #else
 	static void updateConfigFor(char *configPath, LogLevel level, char *defaultValue);
+	static const char *getLogLevelColorCode(LogLevel level);
 #endif
 
 #ifdef WIN32
@@ -63,31 +65,36 @@ static void updateConfig();
 #define COLORS_CONFIG_PATH "logColors"
 #define ERROR_COLOR_PATH "/error"
 #define WARNING_COLOR_PATH "/warning"
+#define NOTICE_COLOR_PATH "/notice"
 #define INFO_COLOR_PATH "/info"
-#define DEBUG_COLOR_PATH "/debug"
+#define TRACE_COLOR_PATH "/trace"
 
 #ifdef WIN32
 	#define STD_ERROR_COLOR 12 // red
-	#define STD_WARNING_COLOR 10 // green
-	#define STD_INFO_COLOR 15 // white
-	#define STD_DEBUG_COLOR 7 // grey
+	#define STD_WARNING_COLOR 14 // yellow
+	#define STD_NOTICE_COLOR 10 // lime
+	#define STD_INFO_COLOR 11 // aqua
+	#define STD_TRACE_COLOR 4 // maroon
 #else
-	#define STD_ERROR_COLOR "1;31m" // bold red
-	#define STD_WARNING_COLOR "31m" // red
-	#define STD_INFO_COLOR "32m" // green
-	#define STD_DEBUG_COLOR "34m" // blue
+	#define STD_ERROR_COLOR "31m" // bold red
+	#define STD_WARNING_COLOR "33m" // yellow
+	#define STD_NOTICE_COLOR "32m" // green
+	#define STD_INFO_COLOR "34m" // blue
+	#define STD_TRACE_COLOR "36m" // cyan
 #endif
 
 #ifdef WIN32
-	int errorColor = STD_ERROR_COLOR;
-	int warningColor = STD_WARNING_COLOR;
-	int infoColor = STD_INFO_COLOR;
-	int debugColor = STD_DEBUG_COLOR;
+	static int errorColor = STD_ERROR_COLOR;
+	static int warningColor = STD_WARNING_COLOR;
+	static int noticeColor = STD_NOTICE_COLOR;
+	static int infoColor = STD_INFO_COLOR;
+	static int traceColor = STD_TRACE_COLOR;
 #else
-	char *errorColor = STD_ERROR_COLOR;
-	char *warningColor = STD_WARNING_COLOR;
-	char *infoColor = STD_INFO_COLOR;
-	char *debugColor = STD_DEBUG_COLOR;
+	static char *errorColor = STD_ERROR_COLOR;
+	static char *warningColor = STD_WARNING_COLOR;
+	static char *noticeColor = STD_NOTICE_COLOR;
+	static char *infoColor = STD_INFO_COLOR;
+	static char *traceColor = STD_TRACE_COLOR;
 #endif
 
 MODULE_INIT
@@ -121,41 +128,11 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
 	unsigned int second = g_date_time_get_second(now);
     g_date_time_unref(now);
 
-	switch(level) {
-		case LOG_LEVEL_ERROR:
 #ifdef WIN32
-			writeMessage(dateTime, errorColor, module, "ERROR", message);
+    writeMessage(dateTime, getLogLevelColorCode(level), module, getStaticLogLevelName(level), message);
 #else
-			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sERROR: %s\033[m\n", hour, minute, second, module, errorColor, message);
+    fprintf(stderr, "[%02u:%02u:%02u] \033[%s[%s:%s] %s\033[m\n", hour, minute, second, getLogLevelColorCode(level), module, getStaticLogLevelName(level), message);
 #endif
-
-		break;
-		case LOG_LEVEL_WARNING:
-#ifdef WIN32
-			writeMessage(dateTime, warningColor, module, "WARNING", message);
-#else
-			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sWARNING: %s\033[m\n", hour, minute, second, module, warningColor, message);
-#endif
-
-		break;
-		case LOG_LEVEL_NOTICE:
-#ifdef WIN32
-			writeMessage(dateTime, infoColor, module, "INFO", message);
-#else
-			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sINFO: %s\033[m\n", hour, minute, second, module, infoColor, message);
-#endif
-
-		break;
-		case LOG_LEVEL_INFO:
-#ifdef WIN32
-			writeMessage(dateTime, debugColor, module, "NOTICE", message);
-#else
-			fprintf(stderr, "[%02u:%02u:%02u] [%s] \033[%sNOTICE: %s\033[m\n", hour, minute, second, module, debugColor, message);
-#endif
-		break;
-		default:
-		break;
-	}
 
 	fflush(stderr);
 }
@@ -174,13 +151,15 @@ static void updateConfig() {
 #ifdef WIN32
 	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_NOTICE, STD_INFO_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_LEVEL_INFO, STD_DEBUG_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH NOTICE_COLOR_PATH, LOG_LEVEL_NOTICE, STD_NOTICE_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_INFO, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH TRACE_COLOR_PATH, LOG_LEVEL_TRACE, STD_TRACE_COLOR);
 #else
 	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_NOTICE, STD_INFO_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH DEBUG_COLOR_PATH, LOG_LEVEL_INFO, STD_DEBUG_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH NOTICE_COLOR_PATH, LOG_LEVEL_NOTICE, STD_NOTICE_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_INFO, STD_INFO_COLOR);
+	updateConfigFor(COLORS_CONFIG_PATH TRACE_COLOR_PATH, LOG_LEVEL_TRACE, STD_TRACE_COLOR);
 #endif
 }
 
@@ -239,11 +218,33 @@ static void updateConfig() {
 			infoColor = newColor;
 		break;
 		case LOG_LEVEL_INFO:
-			debugColor = newColor;
+			infoColor = newColor;
 		break;
+		case LOG_LEVEL_TRACE:
 		default:
-			logInfo("Unknown LogType value given: '%i'", level);
+			traceColor = newColor;
 		break;
+	}
+}
+
+#ifdef WIN32
+static int getLogLevelColorCode(LogLevel level)
+#else
+static const char *getLogLevelColorCode(LogLevel level)
+#endif
+{
+	switch(level) {
+		case LOG_LEVEL_ERROR:
+			return errorColor;
+		case LOG_LEVEL_WARNING:
+			return warningColor;
+		case LOG_LEVEL_NOTICE:
+			return noticeColor;
+		case LOG_LEVEL_INFO:
+			return infoColor;
+		case LOG_LEVEL_TRACE:
+		default:
+			return traceColor;
 	}
 }
 
@@ -271,9 +272,9 @@ static void updateConfig() {
 	static void writeMessage(char *dateTime, int color, const char *module, char *logType, char *message) {
 		int currentColor = getWindowsConsoleColor();
 
-		fprintf(stderr, "%s [%s]", dateTime, module);
+		fprintf(stderr, "%s", dateTime);
 		setWindowsConsoleColor(color);
-		fprintf(stderr, " %s: %s\n", logType, message);
+		fprintf(stderr, " [%s:%s] %s\n", module, logType, message);
 
 		setWindowsConsoleColor(currentColor);
 	}

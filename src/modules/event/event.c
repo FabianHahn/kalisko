@@ -32,7 +32,7 @@
 MODULE_NAME("event");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The event module implements an observer pattern that's freely attachable to any object");
-MODULE_VERSION(0, 4, 1);
+MODULE_VERSION(0, 4, 2);
 MODULE_BCVERSION(0, 1, 1);
 MODULE_NODEPS;
 
@@ -171,7 +171,7 @@ API int triggerEvent(void *subject, const char *event, ...)
 
 	int counter = 0;
 
-	for(GList *iter = queue->head; iter != NULL; iter = iter->next, counter++) {
+	for(GList *iter = list; iter != NULL; iter = iter->next, counter++) {
 		va_list args;
 		// Get args and listener
 		va_start(args, event);

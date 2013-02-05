@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -38,28 +39,28 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 3, 0);
+MODULE_VERSION(0, 3, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
+
+#ifdef WIN32
+	typedef int ColorCode;
+#else
+	typedef char* ColorCode;
+#endif
 
 static void listener_log(void *subject, const char *event, void *data, va_list args);
 static void listener_reloadedConfig(void *subject, const char *event, void *data, va_list args);
 
 static void updateConfig();
+static void updateConfigFor(char *configPath, LogLevel level, ColorCode defaultValue);
+static ColorCode getLogLevelColorCode(LogLevel level);
 
 #ifdef WIN32
-	static void updateConfigFor(char *configPath, LogLevel level, int defaultValue);
-	static int getLogLevelColorCode(LogLevel level);
-#else
-	static void updateConfigFor(char *configPath, LogLevel level, char *defaultValue);
-	static const char *getLogLevelColorCode(LogLevel level);
-#endif
-
-#ifdef WIN32
-	static bool inWindowsColorRange(int color);
-	static void writeMessage(char *dateTime, int color, const char *module, char *logType, char *message);
-	static void setWindowsConsoleColor(int color);
-	static int getWindowsConsoleColor();
+	static bool inWindowsColorRange(ColorCode color);
+	static void writeMessage(char *dateTime, ColorCode color, const char *module, char *logType, char *message);
+	static void setWindowsConsoleColor(ColorCode color);
+	static ColorCode getWindowsConsoleColor();
 #endif
 
 #define COLORS_CONFIG_PATH "logColors"
@@ -83,19 +84,11 @@ static void updateConfig();
 	#define STD_TRACE_COLOR "36m" // cyan
 #endif
 
-#ifdef WIN32
-	static int errorColor = STD_ERROR_COLOR;
-	static int warningColor = STD_WARNING_COLOR;
-	static int noticeColor = STD_NOTICE_COLOR;
-	static int infoColor = STD_INFO_COLOR;
-	static int traceColor = STD_TRACE_COLOR;
-#else
-	static char *errorColor = STD_ERROR_COLOR;
-	static char *warningColor = STD_WARNING_COLOR;
-	static char *noticeColor = STD_NOTICE_COLOR;
-	static char *infoColor = STD_INFO_COLOR;
-	static char *traceColor = STD_TRACE_COLOR;
-#endif
+static ColorCode errorColor = STD_ERROR_COLOR;
+static ColorCode warningColor = STD_WARNING_COLOR;
+static ColorCode noticeColor = STD_NOTICE_COLOR;
+static ColorCode infoColor = STD_INFO_COLOR;
+static ColorCode traceColor = STD_TRACE_COLOR;
 
 MODULE_INIT
 {
@@ -147,20 +140,11 @@ static void listener_reloadedConfig(void *subject, const char *event, void *data
  */
 static void updateConfig() {
 	logNotice("Reading configuration for log_color_console.");
-
-#ifdef WIN32
 	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH NOTICE_COLOR_PATH, LOG_LEVEL_NOTICE, STD_NOTICE_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_INFO, STD_INFO_COLOR);
 	updateConfigFor(COLORS_CONFIG_PATH TRACE_COLOR_PATH, LOG_LEVEL_TRACE, STD_TRACE_COLOR);
-#else
-	updateConfigFor(COLORS_CONFIG_PATH ERROR_COLOR_PATH, LOG_LEVEL_ERROR, STD_ERROR_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH WARNING_COLOR_PATH, LOG_LEVEL_WARNING, STD_WARNING_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH NOTICE_COLOR_PATH, LOG_LEVEL_NOTICE, STD_NOTICE_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH INFO_COLOR_PATH, LOG_LEVEL_INFO, STD_INFO_COLOR);
-	updateConfigFor(COLORS_CONFIG_PATH TRACE_COLOR_PATH, LOG_LEVEL_TRACE, STD_TRACE_COLOR);
-#endif
 }
 
 /**
@@ -170,39 +154,29 @@ static void updateConfig() {
  * @param type			The LogType for which this setting is to applay
  * @param defaultValue	The default color to use
  */
-#ifdef WIN32
-	static void updateConfigFor(char *configPath, LogLevel level, int defaultValue)
-#else
-	static void updateConfigFor(char *configPath, LogLevel level, char *defaultValue)
-#endif
+static void updateConfigFor(char *configPath, LogLevel level, ColorCode defaultValue)
 {
-	#ifdef WIN32
-		int newColor = defaultValue;
-	#else
-		char *newColor = defaultValue;
-	#endif
-
+	ColorCode newColor = defaultValue;
 	Store *colorConfig = $(Store *, config, getConfigPath)(configPath);
 	if(colorConfig) {
-		#ifdef WIN32
-			if(colorConfig->type == STORE_INTEGER) {
-				int color = colorConfig->content.integer;
-
-				if(!inWindowsColorRange(color)) {
-					logError("On Windows systems the color code must be a number from 0 to 15 (inclusive). Currently it is: %i", color);
-				} else {
-					newColor = color;
-				}
+#ifdef WIN32
+		if(colorConfig->type == STORE_INTEGER) {
+			int color = colorConfig->content.integer;
+			if(!inWindowsColorRange(color)) {
+				logError("On Windows systems the color code must be a number from 0 to 15 (inclusive). Currently it is: %i", color);
 			} else {
-				logError("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
+				newColor = color;
 			}
-	#else
-			if(colorConfig->type == STORE_STRING) {
-				newColor = colorConfig->content.string;
-			} else {
-				logError("On *nix systems the color code must be a string.");
-			}
-		#endif
+		} else {
+			logError("On Windows systems the color code must be a number from 0 to 15 (inclusive).");
+		}
+#else
+		if(colorConfig->type == STORE_STRING) {
+			newColor = colorConfig->content.string;
+		} else {
+			logError("On *nix systems the color code must be a string.");
+		}
+#endif
 	} else {
 		logInfo("No color set for log type error. Using default value");
 	}
@@ -227,11 +201,7 @@ static void updateConfig() {
 	}
 }
 
-#ifdef WIN32
-static int getLogLevelColorCode(LogLevel level)
-#else
-static const char *getLogLevelColorCode(LogLevel level)
-#endif
+static ColorCode getLogLevelColorCode(LogLevel level)
 {
 	switch(level) {
 		case LOG_LEVEL_ERROR:

@@ -80,6 +80,13 @@ API void initLog(LogLevel level);
 API void setLogHandler(LogHandler *handler);
 
 /**
+ * Determines whether (under the current settings) the specified level should get logged
+ *
+ * @param level     the level to query
+ */
+API bool shouldLog(LogLevel level);
+
+/**
  * Creates a new log message and distribute it over the hook "log".
  *
  * @param module	the module in which the log message occurs

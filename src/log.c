@@ -40,6 +40,11 @@ API void initLog(LogLevel level)
 	g_log_set_default_handler(handleGlibLogMessage, NULL);
 }
 
+API bool shouldLog(LogLevel level)
+{
+	return defaultLevel & level;
+}
+
 API void setLogHandler(LogHandler *handler)
 {
 	if(handler == NULL) {
@@ -120,7 +125,7 @@ static void defaultLogHandler(const char *name, LogLevel level, const char *mess
 {
 	GDateTime *now = g_date_time_new_now_local();
 
-	if(defaultLevel & level) {
+	if(shouldLog(level)) {
 		fprintf(stderr, "[%02d:%02d:%02d] [%s:%s] %s\n", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), name, getStaticLogLevelName(level), message);
 	}
 

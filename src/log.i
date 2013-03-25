@@ -83,8 +83,19 @@ API void setLogHandler(LogHandler *handler);
  * Determines whether (under the current settings) the specified level should get logged
  *
  * @param level     the level to query
+ * @result          true if the log level should be displayed
  */
 API bool shouldLog(LogLevel level);
+
+/**
+ * Formats a log message in a standard way. Meant for use in client implementing their own logging callback
+ *
+ * @param source        a source describing where the message came from (usually a module name)
+ * @param level         the log level of the message to be logged
+ * @param message       the original logging message
+ * @result              a string containing the formatted message. The caller is responsible for free'ing the result.
+ */
+API char *formatLogMessage(const char *source, LogLevel level, const char *message);
 
 /**
  * Creates a new log message and distribute it over the hook "log".

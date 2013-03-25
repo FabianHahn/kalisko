@@ -45,6 +45,17 @@ API bool shouldLog(LogLevel level)
 	return defaultLevel & level;
 }
 
+API char *formatLogMessage(const char *source, LogLevel level, const char *message)
+{
+	GDateTime *now = g_date_time_new_now_local();
+	GString *result = g_string_new("");
+
+	g_string_append_printf(result, "[%02d:%02d:%02d] [%s:%s] %s", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), source, getStaticLogLevelName(level), message);
+
+	g_date_time_unref(now);
+	return g_string_free(result, false);
+}
+
 API void setLogHandler(LogHandler *handler)
 {
 	if(handler == NULL) {
@@ -123,13 +134,11 @@ static void handleGlibLogMessage(const char *domain, GLogLevelFlags logLevel, co
 
 static void defaultLogHandler(const char *name, LogLevel level, const char *message)
 {
-	GDateTime *now = g_date_time_new_now_local();
-
 	if(shouldLog(level)) {
-		fprintf(stderr, "[%02d:%02d:%02d] [%s:%s] %s\n", g_date_time_get_hour(now), g_date_time_get_minute(now), g_date_time_get_second(now), name, getStaticLogLevelName(level), message);
+		char *formatted = formatLogMessage(name, level, message);
+		fprintf(stderr, "%s\n", formatted);
+		free(formatted);
 	}
-
-	g_date_time_unref(now);
 	fflush(stderr);
 }
 

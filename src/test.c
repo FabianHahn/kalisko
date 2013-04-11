@@ -51,6 +51,9 @@ static unsigned int tests_passed = 0;
 /** Stores the number of tests which have been run so far */
 static unsigned int tests_ran = 0;
 
+/** Stores the test currently being run */
+static TestCase *current_test_case = NULL;
+
 /**
  * Stores a whitelist of regular expressions used to determine whether to
  * execute a test suite
@@ -177,6 +180,9 @@ API void runTestSuite(TestSuite *test_suite)
 	for(int i = 0; i < cases->len; ++i) {
 		TestCase *test_case = g_ptr_array_index(cases, i);
 
+		// Store the test case in the global pointer to allow redirecting the logging to the test case buffer
+		current_test_case = test_case;
+
 		GString *message = g_string_new("");
 		g_string_append_printf(message, "Test case [%s] %s:", test_suite->name, test_case->name);
 
@@ -198,6 +204,7 @@ API void runTestSuite(TestSuite *test_suite)
 		}
 
 		tests_ran++;
+		current_test_case = NULL;
 
 		TEST_OUTPUT_INFO("%s", message->str);
 		g_string_free(message, true);
@@ -294,6 +301,7 @@ static TestCase *createTestCase(char *name, TestFunction *function, TestFixture 
 	result->test_function = function;
 	result->test_fixture = fixture;
 	result->error = NULL;
+	result->log_lines = g_ptr_array_new_with_free_func(&free);
 	return result;
 }
 
@@ -304,6 +312,7 @@ static void destroyTestCase(TestCase *test_case)
 	}
 	free(test_case->name);
 	free(test_case->error);
+	g_ptr_array_free(test_case->log_lines, true);  // Frees the contained strings
 	free(test_case);
 }
 

@@ -70,6 +70,8 @@ typedef struct TestCaseStruct
 	TestFixture *test_fixture;
 	/** Optional error describing what went wrong */
 	char *error;
+	/** Array of raw strings storing log lines during test execution */
+	GPtrArray *log_lines;
 } TestCase;
 
 /**

@@ -144,6 +144,7 @@ for prefix, env in targets:
 			if os.path.isfile(os.path.join('src', 'tests', testdir, 'SConscript')):
 				# Build test module
 				test = env.Clone()
+				test.Append(CPPDEFINES = [('KALISKO_MODULE', 'test_' + testdir)])
 				SConscript(os.path.join(prefix, 'tests', testdir, 'SConscript'), ['test', 'custom_tests'])
 
 	# Build executable

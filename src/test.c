@@ -208,7 +208,7 @@ API void runTestSuite(TestSuite *test_suite)
 			// failed and dump the failing tests and the logs at the very end.
 			g_string_append(message, "  Logs recorded during failed test:\n");
 			for(int j = 0; j < test_case->log_lines->len; ++j) {
-				char *line = g_ptr_array_index(test_case->log_lines, i);
+				char *line = g_ptr_array_index(test_case->log_lines, j);
 				g_string_append_printf(message, "    %s\n", line);
 			}
 			logNotice("%s", message->str);

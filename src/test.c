@@ -37,11 +37,6 @@
 
 #define TERMINAL_WIDTH 80
 
-// TODO: Right now, this test binary does not play nice with the log_event
-// module, which defines a "log" event and replaces the kalisko log handler as
-// soon as anybody listens to the event. The clean way would probably be to
-// use the log_event module and install this test runner as a listener.
-
 /** Stores the number tests which passed */
 static unsigned int tests_passed = 0;
 
@@ -60,17 +55,24 @@ static GPtrArray *module_init_log_lines;
  * execute a test suite
  */
 static GPtrArray *test_suite_whitelist = NULL;
-
 static void populateWhitelist();
 static bool isWhitelisted(char *suite_name);
-static void appendRight(GString *message, char *suffix);
+
 static TestFixture *createTestFixture(char *name, SetupFunction *setup, TeardownFunction *teardown);
 static void destroyTestFixture(TestFixture *fixture);
 static TestCase *createTestCase(char *name, TestFunction *function, TestFixture *fixture);
 static void destroyTestCase(TestCase *test_case);
 static bool testCaseFailed(TestCase *test_case);
+static void appendRight(GString *message, char *suffix);
+
+/** A custom log handler used to decide when messages get logged. */
+static LogHandler *current_log_handler;
+static void listener_log(void *subject, const char *event, void *data, va_list args);
+static void setupLogHandling();
+static void teardownLogHandling();
 static void testCaseLogHandler(const char *name, LogLevel level, const char *message);
 static void testInitLogHandler(const char *name, LogLevel level, const char *message);
+static void stderrLogHandler(const char *name, LogLevel level, const char *message);
 
 int main(int argc, char **argv)
 {
@@ -86,9 +88,9 @@ int main(int argc, char **argv)
 	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);
 	module_init_log_lines = g_ptr_array_new_with_free_func(&free);
 	populateWhitelist();
+	setupLogHandling();
 
 	logNotice("Running test cases...");
-
 	char *execpath = getExecutablePath();
 	char *testdir = g_build_path("/", execpath, "tests", NULL);
 
@@ -106,13 +108,13 @@ int main(int argc, char **argv)
 		char *entry = g_build_path("/", testdir, node, NULL);
 		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
-			setLogHandler(&testInitLogHandler);
+			current_log_handler = &testInitLogHandler;
 			if(!requestModule(modname)) {
 				logError("Failed to load test module: %s", modname);
 			} else {
 				revokeModule(modname);
 			}
-			setLogHandler(NULL);
+			current_log_handler = &stderrLogHandler;
 			free(modname);
 		}
 		free(entry);
@@ -122,6 +124,8 @@ int main(int argc, char **argv)
 		double perc = 100.0 * tests_passed / tests_ran;
 		logNotice("%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
 	}
+
+	teardownLogHandling();
 
 	g_dir_close(tests);
 	free(testdir);
@@ -181,7 +185,7 @@ API void runTestSuite(TestSuite *test_suite)
 
 		// Store the test case in the global pointer to allow redirecting the logging to the test case buffer
 		current_test_case = test_case;
-		setLogHandler(&testCaseLogHandler);
+		current_log_handler = &testCaseLogHandler;
 
 		GString *message = g_string_new("");
 		g_string_append_printf(message, "Test case [%s] %s:", test_suite->name, test_case->name);
@@ -196,7 +200,7 @@ API void runTestSuite(TestSuite *test_suite)
 		}
 
 		tests_ran++;
-		setLogHandler(NULL);
+		current_log_handler = &stderrLogHandler;
 		current_test_case = NULL;
 
 		if(testCaseFailed(test_case)) {
@@ -219,7 +223,7 @@ API void runTestSuite(TestSuite *test_suite)
 		}
 
 		g_string_free(message, true);
-		setLogHandler(&testInitLogHandler);
+		current_log_handler = &testInitLogHandler;
 	}
 }
 
@@ -233,7 +237,7 @@ API void failTest(TestCase *test_case, char* error, ...)
 
 static void populateWhitelist()
 {
-	// TODO: Add the modules actually used here are dependencies in the
+	// TODO: Add the modules actually used here as dependencies in the
 	// SConscript file in order to make sure they get built.
 	requestModule("getopts");
 	requestModule("string_util");
@@ -271,23 +275,6 @@ static bool isWhitelisted(char *suite_name)
 		}
 	}
 	return false;
-}
-
-/**
- * Appends spaces and the provided suffix to message such that the suffix is
- * right-aligned in terminal output. If impossible, this just appends the suffix
- */
-static void appendRight(GString *message, char *suffix)
-{
-	int free_space = TERMINAL_WIDTH - (strlen(suffix) + message->len);
-	if (free_space < 0) {
-		// No room on this line, just append (and it won't look pretty)
-		g_string_append(message, suffix);
-		return;
-	}
-	char *whitespace = g_strnfill(free_space, ' ');
-	g_string_append_printf(message, "%s%s", whitespace, suffix);
-	free(whitespace);
 }
 
 static TestFixture *createTestFixture(char *name, SetupFunction *setup, TeardownFunction *teardown)
@@ -335,7 +322,61 @@ static bool testCaseFailed(TestCase *test_case)
 	return test_case->error != NULL;
 }
 
-// Stores the logged messages in the buffer of the current test case.
+/**
+ * Appends spaces and the provided suffix to message such that the suffix is
+ * right-aligned in terminal output. If impossible, this just appends the suffix
+ */
+static void appendRight(GString *message, char *suffix)
+{
+	int free_space = TERMINAL_WIDTH - (strlen(suffix) + message->len);
+	if (free_space < 0) {
+		// No room on this line, just append (and it won't look pretty)
+		g_string_append(message, suffix);
+		return;
+	}
+	char *whitespace = g_strnfill(free_space, ' ');
+	g_string_append_printf(message, "%s%s", whitespace, suffix);
+	free(whitespace);
+}
+
+
+static void listener_log(void *subject, const char *event, void *data, va_list args)
+{
+	const char *module = va_arg(args, const char *);
+	LogLevel level = va_arg(args, LogLevel);
+	char *message = va_arg(args, char *);
+	current_log_handler(module, level, message);
+}
+
+static void setupLogHandling()
+{
+	// TODO: Add the modules actually used here as dependencies in the
+	// SConscript file in order to make sure they get built.
+	requestModule("log_event");
+	typedef void (*AttachEventListenerType) (void *, char *, void *, void *);
+	AttachEventListenerType attachEventListener = (AttachEventListenerType) getLibraryFunctionByName("event", "attachEventListener");
+
+	current_log_handler = &stderrLogHandler;
+	attachEventListener(NULL, "log", NULL, &listener_log);
+}
+
+static void teardownLogHandling()
+{
+	typedef void (*DetachEventListenerType) (void *, char *, void *, void *);
+	DetachEventListenerType detachEventListener = (DetachEventListenerType) getLibraryFunctionByName("event", "detachEventListener");
+
+	detachEventListener(NULL, "log", NULL, &listener_log);
+	current_log_handler = NULL;
+	revokeModule("log_event");
+}
+
+/**
+ * Stores the logged messages in the buffer of the current test case.
+ *
+ * @param name       	the module from which the message is coming
+ * @param level         the log level of the message to be logged
+ * @param message       the original logging message
+ */
 static void testCaseLogHandler(const char *name, LogLevel level, const char *message)
 {
 	if(shouldLog(level)) {
@@ -344,7 +385,13 @@ static void testCaseLogHandler(const char *name, LogLevel level, const char *mes
 	}
 }
 
-// Puts the logged messages in a global buffer used to track how module initialization went.
+/**
+ * Puts the logged messages in a global buffer used to track how module initialization went.
+ *
+ * @param name       	the module from which the message is coming
+ * @param level         the log level of the message to be logged
+ * @param message       the original logging message
+ */
 static void testInitLogHandler(const char *name, LogLevel level, const char *message)
 {
 	if(shouldLog(level)) {
@@ -353,3 +400,19 @@ static void testInitLogHandler(const char *name, LogLevel level, const char *mes
 	}
 }
 
+/**
+ * Formats a log message and dumps it to stderr
+ *
+ * @param name       	the module from which the message is coming
+ * @param level         the log level of the message to be logged
+ * @param message       the original logging message
+ */
+static void stderrLogHandler(const char *name, LogLevel level, const char *message)
+{
+	if(shouldLog(level)) {
+		char *formatted = formatLogMessage(name, level, message);
+		fprintf(stderr, "%s\n", formatted);
+		free(formatted);
+	}
+	fflush(stderr);
+}

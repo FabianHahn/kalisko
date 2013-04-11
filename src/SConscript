@@ -33,4 +33,7 @@ if not core.GetOption('clean'):
 
 # Build core
 exe = core.Program('kalisko', [x for x in core.Glob('*.c') if not x.name == 'test.c'])
+
+core.Append(CPPDEFINES = [('KALISKO_MODULE', 'kalisko_test')])
 test_exe = core.Program('kalisko_test', [x for x in core.Glob('*.c') if not x.name == 'kalisko.c'])
+

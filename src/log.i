@@ -2,6 +2,7 @@
  * @file
  * <h3>Copyright</h3>
  * Copyright (c) 2013, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -63,7 +64,6 @@ typedef enum
  * Log handler function pointer type
  */
 typedef void (LogHandler)(const char *module, LogLevel level, const char *message);
-
 
 /**
  * Inits logging
@@ -132,7 +132,7 @@ API const char *getStaticLogLevelName(LogLevel level);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logNotice(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_INFO, __VA_ARGS__)
+#define logNotice(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_NOTICE, __VA_ARGS__)
 
 /**
  * Logs a message as a notice
@@ -140,7 +140,7 @@ API const char *getStaticLogLevelName(LogLevel level);
  * @see logMessage
  * @param ...	printf-like message to log
  */
-#define logInfo(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_NOTICE, __VA_ARGS__)
+#define logInfo(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_INFO, __VA_ARGS__)
 
 /**
  * Logs a message as a warning.

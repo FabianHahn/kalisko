@@ -149,4 +149,4 @@ for prefix, env in targets:
 	# Build executable
 	core = env.Clone()
 	SConscript(os.path.join(prefix, 'SConscript'), ['core', 'prefix'])
-	
+

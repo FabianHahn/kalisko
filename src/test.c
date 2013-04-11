@@ -37,13 +37,10 @@
 
 #define TERMINAL_WIDTH 80
 
-// TODO: Use the logging facilities instead of printf for these. Note that
-// logging is disabled for tests (in SConstruct), so implementing selective
-// logging is required for this. prtinf will do for now.
-// The desired behavior would be to log everything form the modules of level
-// warning or above and everything (unconditionally) from this file.
-#define TEST_OUTPUT_INFO(...) printf(__VA_ARGS__); printf("\n");
-#define TEST_OUTPUT_ERROR(...) fprintf(stderr, __VA_ARGS__); printf("\n");
+// TODO: Right now, this test binary does not play nice with the log_event
+// module, which defines a "log" event and replaces the kalisko log handler as
+// soon as anybody listens to the event. The clean way would probably be to
+// use the log_event module and install this test runner as a listener.
 
 /** Stores the number tests which passed */
 static unsigned int tests_passed = 0;
@@ -53,6 +50,10 @@ static unsigned int tests_ran = 0;
 
 /** Stores the test currently being run */
 static TestCase *current_test_case = NULL;
+
+/** Stores the messages logged during initialization of the modules under test */
+// TODO: Implement a command-line flag for displaying these if anything fails.
+static GPtrArray *module_init_log_lines;
 
 /**
  * Stores a whitelist of regular expressions used to determine whether to
@@ -68,23 +69,25 @@ static void destroyTestFixture(TestFixture *fixture);
 static TestCase *createTestCase(char *name, TestFunction *function, TestFixture *fixture);
 static void destroyTestCase(TestCase *test_case);
 static bool testCaseFailed(TestCase *test_case);
+static void testCaseLogHandler(const char *name, LogLevel level, const char *message);
+static void testInitLogHandler(const char *name, LogLevel level, const char *message);
 
 int main(int argc, char **argv)
 {
 	g_thread_init(NULL);
-
 	setArgc(argc);
 	setArgv(argv);
 
 	initMemory();
 	initTimers();
-	initLog(LOG_LEVEL_ERROR);
+	initLog(LOG_LEVEL_NOTICE_UP);
 	initModules();
 
 	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);
+	module_init_log_lines = g_ptr_array_new_with_free_func(&free);
 	populateWhitelist();
 
-	TEST_OUTPUT_INFO("Running test cases...\n");
+	logNotice("Running test cases...\n");
 
 	char *execpath = getExecutablePath();
 	char *testdir = g_build_path("/", execpath, "tests", NULL);
@@ -93,44 +96,40 @@ int main(int argc, char **argv)
 	GDir *tests = g_dir_open(testdir, 0, &error);
 
 	if(tests == NULL) {
-		TEST_OUTPUT_ERROR("Error: Could not open tests dir: %s\n", error != NULL ? error->message : "no error message");
+		logError("Could not open tests dir: %s\n", error != NULL ? error->message : "no error message");
 		g_error_free(error);
 		return EXIT_FAILURE;
 	}
 
 	char *node = NULL;
-
 	while((node = (char *) g_dir_read_name(tests)) != NULL) {
 		char *entry = g_build_path("/", testdir, node, NULL);
-
 		if(g_file_test(entry, G_FILE_TEST_IS_DIR)) {
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
+			setLogHandler(&testInitLogHandler);
 			if(!requestModule(modname)) {
-				TEST_OUTPUT_ERROR("Error: Failed to load test module: %s", modname);
+				logError("Failed to load test module: %s", modname);
 			} else {
 				revokeModule(modname);
 			}
-
+			setLogHandler(NULL);
 			free(modname);
 		}
-
 		free(entry);
 	}
 
 	g_dir_close(tests);
-
 	free(testdir);
 	free(execpath);
-
 	freeModules();
 
 	if(tests_ran > 0) {
 		double perc = 100.0 * tests_passed / tests_ran;
-		TEST_OUTPUT_INFO("\n%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
+		logNotice("%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
 	}
 
 	g_ptr_array_free(test_suite_whitelist, true);
-
+	g_ptr_array_free(module_init_log_lines, true);
 	return EXIT_SUCCESS;
 }
 
@@ -182,6 +181,7 @@ API void runTestSuite(TestSuite *test_suite)
 
 		// Store the test case in the global pointer to allow redirecting the logging to the test case buffer
 		current_test_case = test_case;
+		setLogHandler(&testCaseLogHandler);
 
 		GString *message = g_string_new("");
 		g_string_append_printf(message, "Test case [%s] %s:", test_suite->name, test_case->name);
@@ -204,10 +204,12 @@ API void runTestSuite(TestSuite *test_suite)
 		}
 
 		tests_ran++;
+		setLogHandler(NULL);
 		current_test_case = NULL;
 
-		TEST_OUTPUT_INFO("%s", message->str);
+		logNotice("%s", message->str);
 		g_string_free(message, true);
+		setLogHandler(&testInitLogHandler);
 	}
 }
 
@@ -221,27 +223,29 @@ API void failTest(TestCase *test_case, char* error, ...)
 
 static void populateWhitelist()
 {
+	// TODO: Add the modules actually used here are dependencies in the
+	// SConscript file in order to make sure they get built.
 	requestModule("getopts");
 	requestModule("string_util");
 
 	typedef char* (*GetOptValueType)(char *opt, ...);
 	GetOptValueType getOptValue = (GetOptValueType) getLibraryFunctionByName("getopts", "getOptValue");
 	if(getOptValue == NULL) {
-		TEST_OUTPUT_ERROR("Could not resolve function getOptValue, could not populate whitelist");
+		logError("Could not resolve function getOptValue, could not populate whitelist");
 		return;
 	}
 
 	typedef size_t (*ParseCommaSeparatedType)(char *str, GPtrArray *out);
 	ParseCommaSeparatedType parseCommaSeparated = (ParseCommaSeparatedType) getLibraryFunctionByName("string_util", "parseCommaSeparated");
 	if(parseCommaSeparated == NULL) {
-		TEST_OUTPUT_ERROR("Could not resolve parseCommaSeparated, could not populate whitelist");
+		logError("Could not resolve parseCommaSeparated, could not populate whitelist");
 		return;
 	}
 
 	char *module_list = getOptValue("test-modules", "t", NULL);  // Not owned.
 	if(module_list != NULL) {
 		size_t whitelisted = parseCommaSeparated(module_list, test_suite_whitelist);
-		TEST_OUTPUT_INFO("Whitelisted %lu test suite names", whitelisted);
+		logNotice("Whitelisted %lu test suite names", whitelisted);
 	}
 
 	revokeModule("string_util");
@@ -320,3 +324,22 @@ static bool testCaseFailed(TestCase *test_case)
 {
 	return test_case->error != NULL;
 }
+
+// Stores the logged messages in the buffer of the current test case.
+static void testCaseLogHandler(const char *name, LogLevel level, const char *message)
+{
+	if(shouldLog(level)) {
+		char *formatted = formatLogMessage(name, level, message);
+		g_ptr_array_add(current_test_case->log_lines, formatted);
+	}
+}
+
+// Puts the logged messages in a global buffer used to track how module initialization went.
+static void testInitLogHandler(const char *name, LogLevel level, const char *message)
+{
+	if(shouldLog(level)) {
+		char *formatted = formatLogMessage(name, level, message);
+		g_ptr_array_add(module_init_log_lines, formatted);
+	}
+}
+

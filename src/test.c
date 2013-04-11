@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
 	initMemory();
 	initTimers();
-	initLog(LOG_LEVEL_NOTICE_UP);
+	initLog(LOG_LEVEL_INFO_UP);
 	initModules();
 
 	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);
@@ -195,19 +195,29 @@ API void runTestSuite(TestSuite *test_suite)
 			fixture->teardown_function();
 		}
 
-		if(testCaseFailed(test_case)) {
-			appendRight(message, "FAIL");
-			g_string_append_printf(message, "\n   %s", test_case->error);
-		} else {
-			tests_passed++;
-			appendRight(message, "PASS");
-		}
-
 		tests_ran++;
 		setLogHandler(NULL);
 		current_test_case = NULL;
 
-		logNotice("%s", message->str);
+		if(testCaseFailed(test_case)) {
+			appendRight(message, "FAIL");
+			g_string_append_printf(message, "\n\t%s\n", test_case->error);
+
+			// Test failed, so dump the logs recorded during the test
+			// TODO: It might be more helpful to just record that the test
+			// failed and dump the failing tests and the logs at the very end.
+			GString *logs = g_string_new("Logs recorded during failed test:\n");
+			for(int j = 0; j < test_case->log_lines->len; ++j) {
+				char *line = g_ptr_array_index(test_case->log_lines, i);
+				g_string_append_printf(message, "\t%s\n", line);
+			}
+			logNotice("%s", message->str);
+		} else {
+			tests_passed++;
+			appendRight(message, "PASS");
+			logNotice("%s", message->str);
+		}
+
 		g_string_free(message, true);
 		setLogHandler(&testInitLogHandler);
 	}

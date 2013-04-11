@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 
 	initMemory();
 	initTimers();
-	initLog(LOG_LEVEL_INFO_UP);
+	initLog(LOG_LEVEL_NOTICE_UP);
 	initModules();
 
 	test_suite_whitelist = g_ptr_array_new_with_free_func(&free);

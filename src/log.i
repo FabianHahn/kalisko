@@ -29,11 +29,6 @@
 #include "types.h"
 
 /**
- * The maximal length for a log message.
- */
-#define LOG_MSG_MAXLEN 4096
-
-/**
  * Log level enum describing possible logging modes
  */
 typedef enum

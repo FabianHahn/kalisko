@@ -69,12 +69,11 @@ API void setLogHandler(LogHandler *handler)
 API void logMessage(const char *module, LogLevel level, const char *message, ...)
 {
 	va_list va;
-	char buffer[LOG_MSG_MAXLEN];
-
 	va_start(va, message);
-	vsnprintf(buffer, LOG_MSG_MAXLEN, message, va);
-
-	logHandler(module, level, buffer);
+	GString *assembled = g_string_new("");
+	g_string_append_vprintf(assembled, message, va);
+	logHandler(module, level, assembled->str);
+	g_string_free(assembled, true);
 }
 
 API const char *getStaticLogLevelName(LogLevel level)

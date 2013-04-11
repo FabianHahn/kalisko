@@ -201,15 +201,15 @@ API void runTestSuite(TestSuite *test_suite)
 
 		if(testCaseFailed(test_case)) {
 			appendRight(message, "FAIL");
-			g_string_append_printf(message, "\n\t%s\n", test_case->error);
+			g_string_append_printf(message, "\n    %s\n", test_case->error);
 
 			// Test failed, so dump the logs recorded during the test
 			// TODO: It might be more helpful to just record that the test
 			// failed and dump the failing tests and the logs at the very end.
-			GString *logs = g_string_new("Logs recorded during failed test:\n");
+			g_string_append(message, "  Logs recorded during failed test:\n");
 			for(int j = 0; j < test_case->log_lines->len; ++j) {
 				char *line = g_ptr_array_index(test_case->log_lines, i);
-				g_string_append_printf(message, "\t%s\n", line);
+				g_string_append_printf(message, "    %s\n", line);
 			}
 			logNotice("%s", message->str);
 		} else {

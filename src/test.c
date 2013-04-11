@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 	module_init_log_lines = g_ptr_array_new_with_free_func(&free);
 	populateWhitelist();
 
-	logNotice("Running test cases...\n");
+	logNotice("Running test cases...");
 
 	char *execpath = getExecutablePath();
 	char *testdir = g_build_path("/", execpath, "tests", NULL);
@@ -118,15 +118,15 @@ int main(int argc, char **argv)
 		free(entry);
 	}
 
-	g_dir_close(tests);
-	free(testdir);
-	free(execpath);
-	freeModules();
-
 	if(tests_ran > 0) {
 		double perc = 100.0 * tests_passed / tests_ran;
 		logNotice("%d of %d test cases passed (%.2f%%)", tests_passed, tests_ran, perc);
 	}
+
+	g_dir_close(tests);
+	free(testdir);
+	free(execpath);
+	freeModules();
 
 	g_ptr_array_free(test_suite_whitelist, true);
 	g_ptr_array_free(module_init_log_lines, true);

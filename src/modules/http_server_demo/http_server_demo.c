@@ -44,7 +44,7 @@ MODULE_VERSION(0, 1, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 2));
 
-static void appendHeader(HttpResponse *response);
+static void appendTitle(HttpResponse *response);
 
 static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *userdata);
 static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *userdata);
@@ -74,7 +74,7 @@ MODULE_FINALIZE
 	destroyHttpServer(server);
 }
 
-static void appendHeader(HttpResponse *response)
+static void appendTitle(HttpResponse *response)
 {
 	appendHttpResponseContent(response, "<h1>Kalisko Webserver Demo</h1>");
 }
@@ -89,7 +89,7 @@ static void appendHeader(HttpResponse *response)
  */
 static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
-	appendHeader(response);
+	appendTitle(response);
 	appendHttpResponseContent(response, "Kalisko now has a web server! Oh yes, and hello world!<br/><br/>");
 
 	if(g_hash_table_size(request->parameters) > 0) {
@@ -127,7 +127,7 @@ static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *
 		}
 	}
 
-	appendHeader(response);
+	appendTitle(response);
 	appendHttpResponseContent(response, "The counter is at %d<br/><br/>", post_demo_counter);
 	appendHttpResponseContent(response, "<form action=\"%s\" method=\"POST\">", POST_DEMO_URL);
 	appendHttpResponseContent(response, "Increment by ");
@@ -136,7 +136,6 @@ static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *
 	appendHttpResponseContent(response, "</form>");
 	return true;
 }
-
 
 /**
  * Displays a default page and lists all supported functionality of this demo.
@@ -148,11 +147,9 @@ static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *
  */
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
-	appendHeader(response);
+	appendTitle(response);
 	appendHttpResponseContent(response, "<a href=%s>Mirror</a>", MIRROR_URL);
 	appendHttpResponseContent(response, "<br/>");
 	appendHttpResponseContent(response, "<a href=%s>Post demo</a>", POST_DEMO_URL);
 	return true;
 }
-
-

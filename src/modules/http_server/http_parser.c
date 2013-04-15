@@ -43,7 +43,7 @@ static void tryParseContentLength(HttpRequest *request, char *line);
 
 API void parseHttpRequestLine(HttpRequest *request, char *line)
 {
-	// logInfo("Parsing HTTP line: %s", line);
+	logTrace("Parsing HTTP line: %s", line);
 	tryParseMethodLine(request, line);
 	tryParseContentLength(request, line);
 
@@ -57,7 +57,6 @@ API void parseHttpRequestBody(HttpRequest *request, char *body)
 {
 	parseParameters(request, body);
 }
-
 
 /**
  * Attempts to parse the given line as a method line, i.e. a line of the form <METHOD> <URI> HTTP/<NUMBER>.

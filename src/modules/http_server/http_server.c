@@ -225,7 +225,7 @@ API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 	for(int i = 0; i < mappings->len; ++i) {
 		RequestHandlerMapping *mapping = g_array_index(mappings, RequestHandlerMapping*, i);
 		if(g_regex_match_simple(mapping->regexp, request->hierarchical, 0, 0)) {
-			logInfo("%s matches %s", mapping->regexp, request->hierarchical);
+			logInfo("%s matches %s", request->hierarchical, mapping->regexp);
 			HttpResponse *response = createHttpResponse(OK_STATUS_STRING, "");
 			if(mapping->handler(request, response, mapping->userdata)) {
 				return response;

@@ -29,10 +29,12 @@
 
 #define PORT "1337"
 
-#define MIRROR_REGEXP "^/mirror.*"
+// TODO: Change the http server to search for exact matches, i.e., if the pattern is 'pat', then only the string 'pat' should match, but not 'foo/pat/bar'.
+// Once this is the case, remove the quick fixes below.
+#define MIRROR_REGEXP "^/mirror$"
 #define MIRROR_URL "/mirror"
 
-#define POST_DEMO_REGEXP "^/postdemo.*"
+#define POST_DEMO_REGEXP "^/postdemo$"
 #define POST_DEMO_URL "/postdemo"
 
 #define MATCH_EVERYTHING "/.*"

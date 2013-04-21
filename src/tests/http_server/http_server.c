@@ -46,6 +46,7 @@ static void setup()
 	server = createHttpServer("12345");
 	startHttpServer(server);
 	registerHttpServerRequestHandler(server, "/path", &incrementCounter, NULL);
+	registerHttpServerRequestHandler(server, "^/path2$", &incrementCounter, NULL);
 
 	counter = 0;
 
@@ -73,6 +74,16 @@ TEST(handler)
 	TEST_ASSERT(counter == 1);
 	destroyHttpResponse(response);
 }
+
+TEST(extra_symbols)
+{
+	request->hierarchical = strdup("/path2");
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 1);
+	destroyHttpResponse(response);
+}
+
 
 TEST(no_handler)
 {
@@ -114,6 +125,7 @@ TEST_SUITE_BEGIN(http_server)
 	ADD_TEST_FIXTURE(HttpServerTest, &setup, &teardown);
 	ADD_FIXTURED_TEST(lifecycle, HttpServerTest);
 	ADD_FIXTURED_TEST(handler, HttpServerTest);
+	ADD_FIXTURED_TEST(extra_symbols, HttpServerTest);
 	ADD_FIXTURED_TEST(no_handler, HttpServerTest);
 	ADD_FIXTURED_TEST(partial_match, HttpServerTest);
 	ADD_FIXTURED_TEST(prefix_match, HttpServerTest);

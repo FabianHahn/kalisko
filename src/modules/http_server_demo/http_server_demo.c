@@ -26,18 +26,20 @@
 
 #define API
 #include "modules/http_server/http_server.h"
+#include "modules/shared_http_server/shared_http_server.h"
 
-#define PORT "1337"
+#define BASE_URL "/" STR(KALISKO_MODULE)
+
 #define MIRROR_URL "/mirror"
 #define POST_DEMO_URL "/postdemo"
 #define MATCH_EVERYTHING ".*"
 
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
-MODULE_DESCRIPTION("This module provides a basic http server which demonstrates how to use the http server library.");
-MODULE_VERSION(0, 1, 2);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 2));
+MODULE_DESCRIPTION("This module provides a basic http service which demonstrates how to use the shared_http_server library.");
+MODULE_VERSION(0, 1, 3);
+MODULE_BCVERSION(0, 1, 3);
+MODULE_DEPENDS(MODULE_DEPENDENCY("shared_http_server", 0, 0, 1));
 
 static void appendTitle(HttpResponse *response);
 
@@ -45,28 +47,19 @@ static bool mirrorHandler(HttpRequest *request, HttpResponse *response, void *us
 static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *userdata);
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata);
 
-static HttpServer *server;
 static int post_demo_counter;
 
 MODULE_INIT
 {
 	post_demo_counter = 0;
-
-	server = createHttpServer(PORT);
-	registerHttpServerRequestHandler(server, MIRROR_URL, &mirrorHandler, NULL);
-	registerHttpServerRequestHandler(server, POST_DEMO_URL, &postDemoHandler, NULL);
-	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &indexHandler, NULL);
-	if(!startHttpServer(server)) {
-		logError("Failed to start HTTP server");
-		destroyHttpServer(server);
-		return false;
-	}
+	registerSharedHttpServerRequestHandler(MIRROR_URL, &mirrorHandler, NULL);
+	registerSharedHttpServerRequestHandler(POST_DEMO_URL, &postDemoHandler, NULL);
+	registerSharedHttpServerRequestHandler(MATCH_EVERYTHING, &indexHandler, NULL);
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	destroyHttpServer(server);
 }
 
 static void appendTitle(HttpResponse *response)
@@ -124,7 +117,7 @@ static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *
 
 	appendTitle(response);
 	appendHttpResponseContent(response, "The counter is at %d<br/><br/>", post_demo_counter);
-	appendHttpResponseContent(response, "<form action=\"%s\" method=\"POST\">", POST_DEMO_URL);
+	appendHttpResponseContent(response, "<form action=\"%s\" method=\"POST\">", BASE_URL POST_DEMO_URL);
 	appendHttpResponseContent(response, "Increment by ");
 	appendHttpResponseContent(response, "<input type=\"text\" name=\"increment\"><br>");
 	appendHttpResponseContent(response, "<input type=\"submit\" value=\"Increment\"><br>");
@@ -143,8 +136,8 @@ static bool postDemoHandler(HttpRequest *request, HttpResponse *response, void *
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata)
 {
 	appendTitle(response);
-	appendHttpResponseContent(response, "<a href=%s>Mirror</a>", MIRROR_URL);
+	appendHttpResponseContent(response, "<a href=%s>Mirror</a>", BASE_URL MIRROR_URL "?foo=bar");
 	appendHttpResponseContent(response, "<br/>");
-	appendHttpResponseContent(response, "<a href=%s>Post demo</a>", POST_DEMO_URL);
+	appendHttpResponseContent(response, "<a href=%s>Post demo</a>", BASE_URL POST_DEMO_URL);
 	return true;
 }

@@ -28,16 +28,9 @@
 #include "modules/http_server/http_server.h"
 
 #define PORT "1337"
-
-// TODO: Change the http server to search for exact matches, i.e., if the pattern is 'pat', then only the string 'pat' should match, but not 'foo/pat/bar'.
-// Once this is the case, remove the quick fixes below.
-#define MIRROR_REGEXP "^/mirror$"
 #define MIRROR_URL "/mirror"
-
-#define POST_DEMO_REGEXP "^/postdemo$"
 #define POST_DEMO_URL "/postdemo"
-
-#define MATCH_EVERYTHING "/.*"
+#define MATCH_EVERYTHING ".*"
 
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
@@ -60,8 +53,8 @@ MODULE_INIT
 	post_demo_counter = 0;
 
 	server = createHttpServer(PORT);
-	registerHttpServerRequestHandler(server, MIRROR_REGEXP, &mirrorHandler, NULL);
-	registerHttpServerRequestHandler(server, POST_DEMO_REGEXP, &postDemoHandler, NULL);
+	registerHttpServerRequestHandler(server, MIRROR_URL, &mirrorHandler, NULL);
+	registerHttpServerRequestHandler(server, POST_DEMO_URL, &postDemoHandler, NULL);
 	registerHttpServerRequestHandler(server, MATCH_EVERYTHING, &indexHandler, NULL);
 	if(!startHttpServer(server)) {
 		logError("Failed to start HTTP server");

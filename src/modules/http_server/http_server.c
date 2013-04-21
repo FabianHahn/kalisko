@@ -234,6 +234,8 @@ API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 				return response;
 			}
 			destroyHttpResponse(response);
+		} else {
+			logTrace("%s does not match %s", request->hierarchical, mapping->regexp);
 		}
 	}
 
@@ -244,7 +246,9 @@ API HttpResponse *handleHttpRequest(HttpServer *server, HttpRequest *request)
 static RequestHandlerMapping *createRequestHandlerMapping(char *regexp, HttpRequestHandler *handler, void *userdata)
 {
 	RequestHandlerMapping *mapping = ALLOCATE_OBJECT(RequestHandlerMapping);
-	mapping->regexp = g_strdup(regexp);
+
+	// Add leading and trailing metasymbols in order to force an exact match.
+	mapping->regexp = g_strdup_printf("^%s$", regexp);
 	mapping->handler = handler;
 	mapping->userdata = userdata;
 	return mapping;

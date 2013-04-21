@@ -27,7 +27,7 @@
 MODULE_NAME("test_http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("Test suite for the http_server module");
-MODULE_VERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 3));
 
@@ -45,7 +45,7 @@ static void setup()
 {
 	server = createHttpServer("12345");
 	startHttpServer(server);
-	registerHttpServerRequestHandler(server, "/some/hierarchical/part*", &incrementCounter, NULL);
+	registerHttpServerRequestHandler(server, "/path", &incrementCounter, NULL);
 
 	counter = 0;
 
@@ -67,7 +67,7 @@ TEST(lifecycle)
 
 TEST(handler)
 {
-	request->hierarchical = strdup("/some/hierarchical/part");
+	request->hierarchical = strdup("/path");
 	TEST_ASSERT(counter == 0);
 	HttpResponse *response = handleHttpRequest(server, request);
 	TEST_ASSERT(counter == 1);
@@ -76,7 +76,34 @@ TEST(handler)
 
 TEST(no_handler)
 {
-	request->hierarchical = strdup("/some/other/hierarchical/part");
+	request->hierarchical = strdup("/other_path");
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	destroyHttpResponse(response);
+}
+
+TEST(partial_match)
+{
+	request->hierarchical = strdup("/something/path/something_else");
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	destroyHttpResponse(response);
+}
+
+TEST(prefix_match)
+{
+	request->hierarchical = strdup("/path/something_else");
+	TEST_ASSERT(counter == 0);
+	HttpResponse *response = handleHttpRequest(server, request);
+	TEST_ASSERT(counter == 0);
+	destroyHttpResponse(response);
+}
+
+TEST(suffix_match)
+{
+	request->hierarchical = strdup("something_else/path");
 	TEST_ASSERT(counter == 0);
 	HttpResponse *response = handleHttpRequest(server, request);
 	TEST_ASSERT(counter == 0);
@@ -88,4 +115,7 @@ TEST_SUITE_BEGIN(http_server)
 	ADD_FIXTURED_TEST(lifecycle, HttpServerTest);
 	ADD_FIXTURED_TEST(handler, HttpServerTest);
 	ADD_FIXTURED_TEST(no_handler, HttpServerTest);
+	ADD_FIXTURED_TEST(partial_match, HttpServerTest);
+	ADD_FIXTURED_TEST(prefix_match, HttpServerTest);
+	ADD_FIXTURED_TEST(suffix_match, HttpServerTest);
 TEST_SUITE_END

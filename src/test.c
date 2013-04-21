@@ -379,10 +379,9 @@ static void teardownLogHandling()
  */
 static void testCaseLogHandler(const char *name, LogLevel level, const char *message)
 {
-	if(shouldLog(level)) {
-		char *formatted = formatLogMessage(name, level, message);
-		g_ptr_array_add(current_test_case->log_lines, formatted);
-	}
+	// We ignore the log level (and always log) since these logs are only shown on test failure.
+	char *formatted = formatLogMessage(name, level, message);
+	g_ptr_array_add(current_test_case->log_lines, formatted);
 }
 
 /**

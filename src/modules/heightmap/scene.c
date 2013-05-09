@@ -44,12 +44,14 @@ API OpenGLPrimitive *parseOpenGLScenePrimitiveHeightmap(Scene *scene, const char
 	GString *path = g_string_new(path_prefix);
 	g_string_append_printf(path, "/%s", heightmapParam->content.string);
 	Image *image = readImageFromFile(path->str);
-	g_string_free(path, true);
 
 	if(image == NULL) {
 		logError("Failed to parse OpenGL scene primitive heightmap '%s': Failed to load heightmap image from '%s'", name, path->str);
+		g_string_free(path, true);
 		return NULL;
 	}
+
+	g_string_free(path, true);
 
 	// Create heightmap
 	OpenGLPrimitive *primitive;

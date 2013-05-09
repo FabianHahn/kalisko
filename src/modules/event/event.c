@@ -48,7 +48,7 @@ static GHashTable *subjects;
 /**
  * Mutex to make the event module thread-safe
  */
-static GStaticRecMutex mutex = G_STATIC_REC_MUTEX_INIT;
+static GRecMutex mutex;
 
 MODULE_INIT
 {
@@ -69,7 +69,7 @@ API void attachEventListener(void *subject, const char *event, void *custom, Eve
 
 API void attachEventListenerWithPriority(void *subject, const char *event, int priority, void *custom, EventListener *listener)
 {
-	g_static_rec_mutex_lock(&mutex);
+	g_rec_mutex_lock(&mutex);
 
 	GHashTable *events;
 
@@ -104,12 +104,12 @@ API void attachEventListenerWithPriority(void *subject, const char *event, int p
 
 	triggerEvent(subject, "listener_attached", event);
 
-	g_static_rec_mutex_unlock(&mutex);
+	g_rec_mutex_unlock(&mutex);
 }
 
 API void detachEventListener(void *subject, const char *event, void *custom, EventListener *listener)
 {
-	g_static_rec_mutex_lock(&mutex);
+	g_rec_mutex_lock(&mutex);
 
 	GHashTable *events;
 
@@ -145,24 +145,24 @@ API void detachEventListener(void *subject, const char *event, void *custom, Eve
 		}
 	}
 
-	g_static_rec_mutex_unlock(&mutex);
+	g_rec_mutex_unlock(&mutex);
 }
 
 API int triggerEvent(void *subject, const char *event, ...)
 {
-	g_static_rec_mutex_lock(&mutex);
+	g_rec_mutex_lock(&mutex);
 
 	GHashTable *events;
 
 	if((events = g_hash_table_lookup(subjects, subject)) == NULL) {
-		g_static_rec_mutex_unlock(&mutex);
+		g_rec_mutex_unlock(&mutex);
 		return -1;
 	}
 
 	GQueue *queue;
 
 	if((queue = g_hash_table_lookup(events, event)) == NULL) {
-		g_static_rec_mutex_unlock(&mutex);
+		g_rec_mutex_unlock(&mutex);
 		return -1;
 	}
 
@@ -183,32 +183,32 @@ API int triggerEvent(void *subject, const char *event, ...)
 
 	g_list_free(list);
 
-	g_static_rec_mutex_unlock(&mutex);
+	g_rec_mutex_unlock(&mutex);
 
 	return counter;
 }
 
 API int getEventListenerCount(void *subject, const char *event)
 {
-	g_static_rec_mutex_lock(&mutex);
+	g_rec_mutex_lock(&mutex);
 
 	GHashTable *events;
 
 	if((events = g_hash_table_lookup(subjects, subject)) == NULL) { // Create events if it doesn't exist yet
-		g_static_rec_mutex_unlock(&mutex);
+		g_rec_mutex_unlock(&mutex);
 		return 0;
 	}
 
 	GQueue *queue;
 
 	if((queue = g_hash_table_lookup(events, event)) == NULL) { // Create queue if it doesn't exist yet
-		g_static_rec_mutex_unlock(&mutex);
+		g_rec_mutex_unlock(&mutex);
 		return 0;
 	}
 
 	unsigned int length = g_queue_get_length(queue);
 
-	g_static_rec_mutex_unlock(&mutex);
+	g_rec_mutex_unlock(&mutex);
 
 	return length;
 }

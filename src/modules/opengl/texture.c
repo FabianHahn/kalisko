@@ -229,8 +229,8 @@ API bool initOpenGLTexture(OpenGLTexture *texture)
 		break;
 		case OPENGL_TEXTURE_SAMPLING_LINEAR:
 			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_FALSE);
-			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(typeEnum, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(typeEnum, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		break;
 		case OPENGL_TEXTURE_SAMPLING_MIPMAP_NEAREST:
 			glTexParameteri(typeEnum, GL_GENERATE_MIPMAP, GL_TRUE); // regenerate mipmaps on update

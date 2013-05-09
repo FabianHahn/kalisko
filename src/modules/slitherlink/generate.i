@@ -18,25 +18,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dll.h"
-#define API
-#include "generate.h"
 
-MODULE_NAME("slitherlink");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("This module generates slitherlink riddles");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
+#ifndef SLITHERLINK_GENERATE_H
+#define SLITHERLINK_GENERATE_H
 
-MODULE_INIT
-{
-	generateSlitherlink();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-	return true;
+API void generateSlitherlink();
+
+#ifdef __cplusplus
 }
+#endif
 
-MODULE_FINALIZE
-{
-
-}
+#endif

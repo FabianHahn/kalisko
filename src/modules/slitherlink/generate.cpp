@@ -18,25 +18,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+
 #include "dll.h"
 #define API
 #include "generate.h"
 
-MODULE_NAME("slitherlink");
-MODULE_AUTHOR("The Kalisko team");
-MODULE_DESCRIPTION("This module generates slitherlink riddles");
-MODULE_VERSION(0, 1, 0);
-MODULE_BCVERSION(0, 1, 0);
-MODULE_NODEPS;
-
-MODULE_INIT
+API void generateSlitherlink()
 {
-	generateSlitherlink();
-
-	return true;
-}
-
-MODULE_FINALIZE
-{
-
+	std::cout << "Hello World" << std::endl;
 }

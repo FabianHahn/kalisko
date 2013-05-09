@@ -40,7 +40,7 @@ class Cell; // forward declaration
 class Grid
 {
 public:
-	Grid();
+	Grid(int rows, int cols);
 	virtual ~Grid();
 	int getNumRows();
 	int getNumCols();
@@ -49,7 +49,7 @@ public:
 private:
 	int m;
 	int n;
-	vector<Cell *> grid;
+	vector<Cell *> cells;
 };
 
 class Cell
@@ -59,7 +59,7 @@ public:
 		unknown, used, unused
 	} State;
 
-	Cell();
+	Cell(Grid *parentGrid, int posX, int posY, int value);
 	virtual ~Cell();
 	State& getTopBorder();
 	State& getBottomBorder();

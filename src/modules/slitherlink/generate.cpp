@@ -30,14 +30,20 @@ API void generateSlitherlink()
 
 }
 
-Grid::Grid()
+Grid::Grid(int rows, int cols) : m(rows), n(cols), cells((m+1)*(n+1))
 {
-
+	for (int i=0; i<m+1; i++){
+		for (int j=0; j<n+1; j++){
+			cells[i*(n+1)+j] = new Cell(this,i,j,-1);
+		}
+	}
 }
 
 Grid::~Grid()
 {
-
+	for (int i=0; i<(m+1)*(n+1); i++){
+		delete cells[i];
+	}
 }
 
 int Grid::getNumRows(){
@@ -49,10 +55,11 @@ int Grid::getNumCols(){
 }
 
 Cell& Grid::getCell(int x, int y){
-	return *grid[x*(n+1)+y];
+	return *cells[x*(n+1)+y];
 }
 
-Cell::Cell(){
+Cell::Cell(Grid *parentGrid, int posX, int posY, int value) : grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
+{
 
 }
 

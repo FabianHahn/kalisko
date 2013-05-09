@@ -32,4 +32,55 @@ API void generateSlitherlink();
 }
 #endif
 
+#ifdef __cplusplus
+
+#include <vector>
+class Cell; // forward declaration
+
+class Grid
+{
+public:
+	Grid();
+	virtual ~Grid();
+	int getNumRows();
+	int getNumCols();
+	Cell& getCell(int x,int y);
+
+private:
+	int m;
+	int n;
+	vector<Cell *> grid;
+};
+
+class Cell
+{
+public:
+	typedef enum {
+		unknown, used, unused
+	} State;
+
+	Cell();
+	virtual ~Cell();
+	State& getTopBorder();
+	State& getBottomBorder();
+	State& getLeftBorder();
+	State& getRightBorder();
+	Cell& getTopNeighbour();
+	Cell& getBottomNeighbour();
+	Cell& getLeftNeighbour();
+	Cell& getRightNeighbour();
+	int getContent();
+	void setContent(int c);
+
+private:
+	Grid *grid;
+	int x;
+	int y;
+	int content;
+	State topBorder;
+	State leftBorder;
+};
+
+#endif
+
 #endif

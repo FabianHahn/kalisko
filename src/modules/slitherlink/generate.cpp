@@ -19,6 +19,7 @@
  */
 
 #include <iostream>
+using namespace std;
 
 #include "dll.h"
 #define API
@@ -26,5 +27,75 @@
 
 API void generateSlitherlink()
 {
-	std::cout << "Hello World" << std::endl;
+
+}
+
+Grid::Grid()
+{
+
+}
+
+Grid::~Grid()
+{
+
+}
+
+int Grid::getNumRows(){
+	return m;
+}
+
+int Grid::getNumCols(){
+	return n;
+}
+
+Cell& Grid::getCell(int x, int y){
+	return *grid[x*(n+1)+y];
+}
+
+Cell::Cell(){
+
+}
+
+Cell::~Cell(){
+
+}
+
+Cell& Cell::getTopNeighbour(){
+	return grid->getCell(x-1,y);
+}
+
+Cell& Cell::getBottomNeighbour(){
+	return grid->getCell(x+1,y);
+}
+
+Cell& Cell::getLeftNeighbour(){
+	return grid->getCell(x,y-1);
+}
+
+Cell& Cell::getRightNeighbour(){
+	return grid->getCell(x,y+1);
+}
+
+Cell::State& Cell::getTopBorder(){
+	return topBorder;
+}
+
+Cell::State& Cell::getBottomBorder(){
+	return getBottomNeighbour().topBorder;
+}
+
+Cell::State& Cell::getLeftBorder(){
+	return leftBorder;
+}
+
+Cell::State& Cell::getRightBorder(){
+	return getRightNeighbour().leftBorder;
+}
+
+int Cell::getContent(){
+	return content;
+}
+
+void Cell::setContent(int c){
+	content = c;
 }

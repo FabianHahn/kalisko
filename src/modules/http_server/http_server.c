@@ -39,7 +39,7 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 
@@ -92,7 +92,6 @@ API HttpServer *createHttpServer(char* port)
 	server->handler_mappings = g_array_new(false, false, sizeof(RequestHandlerMapping*));
 	g_array_set_clear_func(server->handler_mappings, &freeRequestHandlerMappingContent);
 
-	enableSocketPolling(server->server_socket);
 	attachEventListener(server->server_socket, "accept", server, &clientAccepted);
 	return server;
 }
@@ -118,6 +117,7 @@ API bool startHttpServer(HttpServer *server)
 	}
 	logInfo("Starting HttpServer on port %s", server->server_socket->port);
 	server->state = SERVER_STATE_RUNNING;
+	enableSocketPolling(server->server_socket);
 	return true;
 }
 

@@ -76,7 +76,6 @@ static void stderrLogHandler(const char *name, LogLevel level, const char *messa
 
 int main(int argc, char **argv)
 {
-	g_thread_init(NULL);
 	setArgc(argc);
 	setArgv(argv);
 

@@ -134,10 +134,10 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 	int textureDetailLevel = 0;
 
 	if(normals != NULL) { // Check provided heights image
-		double widthRatio = (double) normals->width / heights->width;
-		double heightRatio = (double) normals->height / heights->height;
+		double normalWidthRatio = (double) normals->width / heights->width;
+		double normalHeightRatio = (double) normals->height / heights->height;
 
-		if(widthRatio != heightRatio || widthRatio < 1.0) {
+		if(normalWidthRatio != normalHeightRatio || normalWidthRatio < 1.0) {
 			logError("Failed to create LOD map image source: Normals image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
@@ -158,10 +158,10 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 	}
 
 	if(texture != NULL) { // Check provided texture image
-		double widthRatio = (double) texture->width / heights->width;
-		double heightRatio = (double) texture->height / heights->height;
+		double textureWidthRatio = (double) texture->width / heights->width;
+		double textureHeightRatio = (double) texture->height / heights->height;
 
-		if(widthRatio != heightRatio || widthRatio < 1.0) {
+		if(textureWidthRatio != textureHeightRatio || textureWidthRatio < 1.0) {
 			logError("Failed to create LOD map image source: Texture image must have the same aspect ratio as heights image and be at least as large");
 			return NULL;
 		}
@@ -183,7 +183,7 @@ API OpenGLLodMapDataSource *createOpenGLLodMapImageSource(Image *heights, Image 
 
 	if(normals == NULL) { // Compute normals if not provided
 		normals = createImage(heights->width, heights->height, 3, IMAGE_TYPE_FLOAT);
-		computeHeightmapNormals(heights, normals, 1.0 / tileSize, 1.0 / tileSize);
+		computeHeightmapNormals(heights, normals, 1.0f / tileSize, 1.0f / tileSize); // we look at the height values in [0,tileSize]x[0,tileSize] in image space as if they live in a 3D unit cube
 	}
 
 	if(texture == NULL) { // Clear texture if not provided

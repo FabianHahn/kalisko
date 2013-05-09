@@ -43,7 +43,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 18, 1);
+MODULE_VERSION(0, 18, 2);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 12), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 12, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
@@ -221,11 +221,11 @@ API void updateOpenGLLodMap(OpenGLLodMap *lodmap, Vector *position, bool autoExp
 			OpenGLLodMapTile *tile = node->data;
 
 			// wait until the node is fully loaded
-			g_mutex_lock(tile->mutex);
+			g_mutex_lock(&tile->mutex);
 			while(tile->status == OPENGL_LODMAP_TILE_LOADING) {
-				g_cond_wait(tile->condition, tile->mutex);
+				g_cond_wait(&tile->condition, &tile->mutex);
 			}
-			g_mutex_unlock(tile->mutex);
+			g_mutex_unlock(&tile->mutex);
 
 			// activate if not active yet
 			if(tile->status != OPENGL_LODMAP_TILE_ACTIVE) {
@@ -258,7 +258,7 @@ API void loadLodMapTile(void *node_p, void *lodmap_p)
 	OpenGLLodMapTile *tile = node->data;
 
 	assert(tile->status == OPENGL_LODMAP_TILE_LOADING);
-	g_mutex_lock(tile->mutex); // lock the node so we can properly edit it
+	g_mutex_lock(&tile->mutex); // lock the node so we can properly edit it
 
 	tile->heights = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_HEIGHT, node->x, node->y, node->level, &tile->minHeight, &tile->maxHeight);
 	tile->normals = queryOpenGLLodMapDataSource(lodmap->source, OPENGL_LODMAP_IMAGE_NORMALS, node->x, node->y, node->level, NULL, NULL);
@@ -271,8 +271,8 @@ API void loadLodMapTile(void *node_p, void *lodmap_p)
 	tile->status = OPENGL_LODMAP_TILE_READY;
 
 	// notify waiting threads and release the lock
-	g_cond_signal(tile->condition);
-	g_mutex_unlock(tile->mutex);
+	g_cond_signal(&tile->condition);
+	g_mutex_unlock(&tile->mutex);
 }
 
 API void freeOpenGLLodMap(OpenGLLodMap *lodmap)
@@ -414,8 +414,8 @@ static void createLodMapTile(Quadtree *tree, QuadtreeNode *node)
 {
 	OpenGLLodMapTile *tile = ALLOCATE_OBJECT(OpenGLLodMapTile);
 	tile->status = OPENGL_LODMAP_TILE_INACTIVE;
-	tile->mutex = g_mutex_new();
-	tile->condition = g_cond_new();
+	g_mutex_init(&tile->mutex);
+	g_cond_init(&tile->condition);
 	tile->heights = NULL;
 	tile->heightsTexture = NULL;
 	tile->normals = NULL;
@@ -489,11 +489,11 @@ static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node)
 		parentTile = node->parent->data;
 
 		// wait until the node is fully loaded
-		g_mutex_lock(parentTile->mutex);
+		g_mutex_lock(&parentTile->mutex);
 		while(parentTile->status == OPENGL_LODMAP_TILE_LOADING) {
-			g_cond_wait(parentTile->condition, parentTile->mutex);
+			g_cond_wait(&parentTile->condition, &parentTile->mutex);
 		}
-		g_mutex_unlock(parentTile->mutex);
+		g_mutex_unlock(&parentTile->mutex);
 
 		// activate if not active yet
 		if(parentTile->status != OPENGL_LODMAP_TILE_ACTIVE) {
@@ -614,8 +614,8 @@ static void freeLodMapTile(Quadtree *tree, void *data)
 {
 	OpenGLLodMapTile *tile = data;
 
-	g_mutex_free(tile->mutex);
-	g_cond_free(tile->condition);
+	g_mutex_clear(&tile->mutex);
+	g_cond_clear(&tile->condition);
 
 	if(tile->status == OPENGL_LODMAP_TILE_ACTIVE) {
 		deactivateLodMapTile(tile);

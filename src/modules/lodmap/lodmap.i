@@ -50,9 +50,9 @@ typedef struct {
 	/** The status of this tile */
 	OpenGLLodMapTileStatus status;
 	/** The mutex for multithreaded access to this tile */
-	GMutex *mutex;
+	GMutex mutex;
 	/** The locking condition for multithreaded access to this tile */
-	GCond *condition;
+	GCond condition;
 	/** The height field of the tile */
 	Image *heights;
 	/** The height texture of the tile */

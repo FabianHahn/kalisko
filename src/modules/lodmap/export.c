@@ -101,11 +101,11 @@ static void exportOpenGLLodMapQuadtreeNode(OpenGLLodMap *lodmap, QuadtreeNode *n
 		break;
 		case OPENGL_LODMAP_TILE_LOADING:
 			// wait until the node is fully loaded
-			g_mutex_lock(tile->mutex);
+			g_mutex_lock(&tile->mutex);
 			while(tile->status == OPENGL_LODMAP_TILE_LOADING) {
-				g_cond_wait(tile->condition, tile->mutex);
+				g_cond_wait(&tile->condition, &tile->mutex);
 			}
-			g_mutex_unlock(tile->mutex);
+			g_mutex_unlock(&tile->mutex);
 		break;
 		default:
 			// nothing to do

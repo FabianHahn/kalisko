@@ -45,6 +45,8 @@ public:
 	int getNumRows();
 	int getNumCols();
 	Cell& getCell(int x,int y);
+	bool checkContentToBorder();
+
 
 private:
 	int m;
@@ -61,10 +63,14 @@ public:
 
 	Cell(Grid *parentGrid, int posX, int posY, int value);
 	virtual ~Cell();
-	State& getTopBorder();
-	State& getBottomBorder();
-	State& getLeftBorder();
-	State& getRightBorder();
+	State getTopBorder();
+	State getBottomBorder();
+	State getLeftBorder();
+	State getRightBorder();
+	void setTopBorder(State state);
+	void setBottomBorder(State state);
+	void setLeftBorder(State state);
+	void setRightBorder(State state);
 	Cell& getTopNeighbour();
 	Cell& getBottomNeighbour();
 	Cell& getLeftNeighbour();

@@ -27,6 +27,31 @@ using namespace std;
 
 API void generateSlitherlink()
 {
+	Grid test1(4,4);
+	test1.getCell(0,0).setContent(1);
+	test1.getCell(0,1).setContent(-1);
+	test1.getCell(0,2).setContent(-1);
+	test1.getCell(0,3).setContent(0);
+	test1.getCell(1,0).setContent(-1);
+	test1.getCell(1,1).setContent(-1);
+	test1.getCell(1,2).setContent(-1);
+	test1.getCell(1,3).setContent(-1);
+	test1.getCell(2,0).setContent(1);
+	test1.getCell(2,1).setContent(-1);
+	test1.getCell(2,2).setContent(2);
+	test1.getCell(2,3).setContent(1);
+	test1.getCell(3,0).setContent(-1);
+	test1.getCell(3,1).setContent(2);
+	test1.getCell(3,2).setContent(3);
+	test1.getCell(3,3).setContent(-1);
+
+	if (test1.checkContentToBorder()){
+		cout << "Riddle solved correctly!" << endl;
+	}else{
+		cout << "Riddle not solved correctly!" << endl;
+	}
+
+
 
 }
 
@@ -58,6 +83,34 @@ Cell& Grid::getCell(int x, int y){
 	return *cells[x*(n+1)+y];
 }
 
+bool Grid::checkContentToBorder(){
+	bool check = true;
+	for (int i=0; i<m; i++){
+		for (int j=0; j<n; j++){
+			int count = 0;
+			if (getCell(i,j).getBottomBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getTopBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getLeftBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getRightBorder()==Cell::used){
+				count++;
+			}
+			int content = getCell(i,j).getContent();
+			if (content>-1 && content != count){
+				check = false;
+				cout << "Number of borders in [" << i << "," << j << "] do not match the content." << endl;
+			}
+		}
+	}
+	return check;
+}
+
+
 Cell::Cell(Grid *parentGrid, int posX, int posY, int value) : grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
 {
 
@@ -83,21 +136,38 @@ Cell& Cell::getRightNeighbour(){
 	return grid->getCell(x,y+1);
 }
 
-Cell::State& Cell::getTopBorder(){
+Cell::State Cell::getTopBorder(){
 	return topBorder;
 }
 
-Cell::State& Cell::getBottomBorder(){
-	return getBottomNeighbour().topBorder;
+Cell::State Cell::getBottomBorder(){
+	return getBottomNeighbour().getTopBorder();
 }
 
-Cell::State& Cell::getLeftBorder(){
+Cell::State Cell::getLeftBorder(){
 	return leftBorder;
 }
 
-Cell::State& Cell::getRightBorder(){
-	return getRightNeighbour().leftBorder;
+Cell::State Cell::getRightBorder(){
+	return getRightNeighbour().getLeftBorder();
 }
+
+void Cell::setTopBorder(Cell::State state){
+	topBorder = state;
+}
+
+void Cell::setBottomBorder(Cell::State state){
+	getBottomNeighbour().setTopBorder(state);
+}
+
+void Cell::setLeftBorder(Cell::State state){
+	leftBorder = state;
+}
+
+void Cell::setRightBorder(Cell::State state){
+	getRightNeighbour().setLeftBorder(state);
+}
+
 
 int Cell::getContent(){
 	return content;

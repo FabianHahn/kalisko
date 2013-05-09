@@ -43,7 +43,7 @@
 MODULE_NAME("lodmap");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module for OpenGL level-of-detail maps");
-MODULE_VERSION(0, 18, 2);
+MODULE_VERSION(0, 18, 3);
 MODULE_BCVERSION(0, 14, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("opengl", 0, 29, 12), MODULE_DEPENDENCY("heightmap", 0, 4, 4), MODULE_DEPENDENCY("quadtree", 0, 12, 2), MODULE_DEPENDENCY("image", 0, 5, 16), MODULE_DEPENDENCY("image_pnm", 0, 2, 6), MODULE_DEPENDENCY("image_png", 0, 2, 0), MODULE_DEPENDENCY("linalg", 0, 3, 4), MODULE_DEPENDENCY("store", 0, 6, 12));
 
@@ -456,12 +456,14 @@ static void activateLodMapTile(OpenGLLodMap *lodmap, QuadtreeNode *node)
 	tile->heightsTexture->managed = false; // let us free the image
 	tile->normalsTexture = createOpenGLTexture2D(tile->normals, false);
 	tile->normalsTexture->internalFormat = GL_RGB16;
-	tile->normalsTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
+	tile->normalsTexture->wrappingMode = OPENGL_TEXTURE_SAMPLING_LINEAR;
+	tile->normalsTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_MIRROR;
 	tile->normalsTexture->managed = false; // let us free the image
 	initOpenGLTexture(tile->normalsTexture);
 	synchronizeOpenGLTexture(tile->normalsTexture);
 	tile->textureTexture = createOpenGLTexture2D(tile->texture, false);
-	tile->textureTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_CLAMP;
+	tile->textureTexture->samplingMode = OPENGL_TEXTURE_SAMPLING_LINEAR;
+	tile->textureTexture->wrappingMode = OPENGL_TEXTURE_WRAPPING_MIRROR;
 	tile->textureTexture->managed = false; // let us free the image
 	initOpenGLTexture(tile->textureTexture);
 	synchronizeOpenGLTexture(tile->textureTexture);

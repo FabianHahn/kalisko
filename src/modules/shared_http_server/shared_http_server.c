@@ -20,10 +20,9 @@
  */
 
 #include "dll.h"
-
-#define API
 #include "modules/http_server/http_server.h"
-#include "modules/shared_http_server/shared_http_server.h"
+#define API
+#include "shared_http_server.h"
 
 #define PORT "8888"
 #define HOME "[/]+"
@@ -31,7 +30,7 @@
 MODULE_NAME("shared_http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a shared http server. Other modules should use this library to expose functionality over HTTP (instead of running their own server).");
-MODULE_VERSION(0, 0, 1);
+MODULE_VERSION(0, 0, 2);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("http_server", 0, 1, 2));
 

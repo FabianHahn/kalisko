@@ -23,10 +23,9 @@
 #include <glib.h>
 #include <stdlib.h>
 #include "dll.h"
-
-#define API
 #include "modules/http_server/http_server.h"
 #include "modules/shared_http_server/shared_http_server.h"
+#define API
 
 #define BASE_URL "/" STR(KALISKO_MODULE)
 
@@ -37,7 +36,7 @@
 MODULE_NAME("http_server_demo");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http service which demonstrates how to use the shared_http_server library.");
-MODULE_VERSION(0, 1, 3);
+MODULE_VERSION(0, 1, 4);
 MODULE_BCVERSION(0, 1, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("shared_http_server", 0, 0, 1));
 

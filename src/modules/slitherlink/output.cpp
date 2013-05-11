@@ -18,82 +18,46 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
 
-#ifndef SLITHERLINK_GENERATE_H
-#define SLITHERLINK_GENERATE_H
+#include "dll.h"
+#define API
+#include "output.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+std::ostream& operator<<(std::ostream& stream, const Grid& grid)
+{
+	int m = grid.getNumRows();
+	int n = grid.getNumCols();
 
-API void generateSlitherlink();
+	for(int i = 0; i < m; i++) {
+		for(int j = 0; j < n; j++) {
+			const Cell& cell = grid.getCell(i, j);
+			stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
+		}
 
-#ifdef __cplusplus
+		stream << "." << std::endl;
+
+		for(int j = 0; j < n; j++) {
+			const Cell& cell = grid.getCell(i, j);
+			int content = cell.getContent();
+			stream << Cell::getStateChar(cell.getLeftBorder(), false);
+
+			if(content < 0) {
+				stream << ' ';
+			} else {
+				stream << content;
+			}
+		}
+
+		stream << Cell::getStateChar(grid.getCell(i, n).getLeftBorder(), false) << std::endl;
+	}
+
+	for(int j = 0; j < n; j++) {
+		const Cell& cell = grid.getCell(m, j);
+		stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
+	}
+
+	stream << "." << std::endl;
+
+	return stream;
 }
-#endif
-
-#ifdef __cplusplus
-
-#include <vector>
-class Cell; // forward declaration
-
-class Grid
-{
-public:
-	Grid(int rows, int cols);
-	virtual ~Grid();
-	int getNumRows() const;
-	int getNumCols() const;
-	Cell& getCell(int x,int y);
-	const Cell& getCell(int x,int y) const;
-	bool checkContentToBorder();
-
-
-private:
-	int m;
-	int n;
-	std::vector<Cell *> cells;
-};
-
-class Cell
-{
-public:
-	typedef enum {
-		unknown, used, unused
-	} State;
-
-	Cell(Grid *parentGrid, int posX, int posY, int value);
-	virtual ~Cell();
-	State getTopBorder() const;
-	State getBottomBorder() const;
-	State getLeftBorder() const;
-	State getRightBorder() const;
-	void setTopBorder(State state);
-	void setBottomBorder(State state);
-	void setLeftBorder(State state);
-	void setRightBorder(State state);
-	Cell& getTopNeighbour();
-	const Cell& getTopNeighbour() const;
-	Cell& getBottomNeighbour();
-	const Cell& getBottomNeighbour() const;
-	Cell& getLeftNeighbour();
-	const Cell& getLeftNeighbour() const;
-	Cell& getRightNeighbour();
-	const Cell& getRightNeighbour() const;
-	int getContent() const;
-	void setContent(int c);
-
-	static char getStateChar(State state, bool horizontal);
-
-private:
-	Grid *grid;
-	int x;
-	int y;
-	int content;
-	State topBorder;
-	State leftBorder;
-};
-
-#endif
-
-#endif

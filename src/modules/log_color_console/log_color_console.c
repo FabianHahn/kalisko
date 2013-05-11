@@ -39,7 +39,7 @@
 MODULE_NAME("log_color_console");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Kalisko console log provider with colored output.");
-MODULE_VERSION(0, 3, 1);
+MODULE_VERSION(0, 3, 2);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_DEPENDS(MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("event", 0, 1, 2), MODULE_DEPENDENCY("log_event", 0, 1, 1));
 
@@ -58,7 +58,7 @@ static ColorCode getLogLevelColorCode(LogLevel level);
 
 #ifdef WIN32
 	static bool inWindowsColorRange(ColorCode color);
-	static void writeMessage(char *dateTime, ColorCode color, const char *module, char *logType, char *message);
+	static void writeMessage(GString *dateTime, ColorCode color, const char *module, char *logType, char *message);
 	static void setWindowsConsoleColor(ColorCode color);
 	static ColorCode getWindowsConsoleColor();
 #endif
@@ -122,7 +122,10 @@ static void listener_log(void *subject, const char *event, void *data, va_list a
     g_date_time_unref(now);
 
 #ifdef WIN32
+    GString *dateTime = g_string_new("");
+    g_string_append_printf(dateTime, "[%02u:%02u:%02u]", hour, minute, second);
     writeMessage(dateTime, getLogLevelColorCode(level), module, getStaticLogLevelName(level), message);
+    g_string_free(dateTime, true);
 #else
     fprintf(stderr, "[%02u:%02u:%02u] \033[%s[%s:%s] %s\033[m\n", hour, minute, second, getLogLevelColorCode(level), module, getStaticLogLevelName(level), message);
 #endif
@@ -239,10 +242,10 @@ static ColorCode getLogLevelColorCode(LogLevel level)
 	 * @param logType	The string representing the current log type
 	 * @param message	The message itself
 	 */
-	static void writeMessage(char *dateTime, int color, const char *module, char *logType, char *message) {
+	static void writeMessage(GString *dateTime, int color, const char *module, char *logType, char *message) {
 		int currentColor = getWindowsConsoleColor();
 
-		fprintf(stderr, "%s", dateTime);
+		fprintf(stderr, "%s", dateTime->str);
 		setWindowsConsoleColor(color);
 		fprintf(stderr, " [%s:%s] %s\n", module, logType, message);
 

@@ -19,21 +19,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "test.h"
-
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // strdup
 
 #include "dll.h"
+#define API
 #include "log.h"
 #include "memory_alloc.h"
 #include "module.h"
 #include "timer.h"
 #include "types.h"
 #include "util.h"
-#define API
+#include "test.h"
 
 #define TERMINAL_WIDTH 80
 

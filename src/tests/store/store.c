@@ -32,6 +32,7 @@
 #include "modules/store/clone.h"
 #include "modules/store/write.h"
 #include "modules/store/merge.h"
+#include "modules/store/schema.h"
 #define API
 
 TEST(lexer);
@@ -41,6 +42,7 @@ TEST(path_create);
 TEST(path_split);
 TEST(merge);
 TEST(parse_path);
+TEST(schema_parse);
 
 static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = -42\nfloat  = -3.14159265";
 static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -59,9 +61,9 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 3, 8);
-MODULE_BCVERSION(0, 3, 8);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 5, 3));
+MODULE_VERSION(0, 4, 0);
+MODULE_BCVERSION(0, 4, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 7, 0));
 
 TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(lexer);
@@ -71,6 +73,7 @@ TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(path_split);
 	ADD_SIMPLE_TEST(merge);
 	ADD_SIMPLE_TEST(parse_path);
+	ADD_SIMPLE_TEST(schema_parse);
 TEST_SUITE_END
 
 TEST(lexer)
@@ -233,6 +236,27 @@ TEST(parse_path)
 	TEST_ASSERT(g_strcmp0(path->content.string, "/home/user/file.cfg") == 0);
 
 	$(void, store, freeStore)(s);
+}
+
+TEST(schema_parse)
+{
+	char *execpath = getExecutablePath();
+	GString *schemapath = g_string_new(execpath);
+	free(execpath);
+
+	g_string_append(schemapath, "/tests/store/test_schema.store");
+
+	Store *schemaStore = parseStoreFile(schemapath->str);
+
+	g_string_free(schemapath, true);
+
+	TEST_ASSERT(schemaStore != NULL);
+
+	Schema *schema = parseSchema(schemaStore);
+
+	TEST_ASSERT(schema != NULL);
+
+	freeSchema(schema);
 }
 
 /**

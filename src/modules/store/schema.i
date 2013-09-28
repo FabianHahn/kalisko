@@ -34,7 +34,6 @@ typedef enum {
 	SCHEMA_TYPE_MODE_STRUCT,
 	SCHEMA_TYPE_MODE_ARRAY,
 	SCHEMA_TYPE_MODE_LIST,
-	SCHEMA_TYPE_MODE_ENUM,
 	SCHEMA_TYPE_MODE_VARIANT
 } SchemaTypeMode;
 
@@ -42,20 +41,12 @@ typedef enum {
  * Union type storing data for schema type modes
  */
 typedef union {
-	/** Default primitive int value */
-	int defaultInteger;
-	/** Default primitive float value */
-	double defaultFloat;
-	/** Default string value */
-	char *defaultString;
 	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
 	GHashTable *structElements;
 	/** Subtype for array and list mode */
 	struct SchemaTypeStruct *subtype;
-	/** Subtype list for enum mode */
+	/** Subtype list for variant mode */
 	GQueue *subtypes;
-	/** Custom data for variant mode */
-	void *variantData; // TODO
 } SchemaTypeModeData;
 
 /**

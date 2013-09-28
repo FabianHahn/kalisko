@@ -25,6 +25,10 @@
 #include "store.h"
 #include "schema.h"
 
+static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore);
+static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list);
 static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode);
 static SchemaStructElement *createSchemaStructElement(const char *key);
 static void freeSchemaType(void *schemaType_p);
@@ -36,12 +40,163 @@ API Schema *parseSchema(Store *store)
 	schema->types = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaType);
 	schema->rootElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
 
+	// add default types
+	g_hash_table_insert(schema->types, strdup("int"), createSchemaType("int", SCHEMA_TYPE_MODE_INTEGER));
+	g_hash_table_insert(schema->types, strdup("float"), createSchemaType("float", SCHEMA_TYPE_MODE_FLOAT));
+	g_hash_table_insert(schema->types, strdup("string"), createSchemaType("string", SCHEMA_TYPE_MODE_STRING));
+
 	return schema;
 }
 
 API void freeSchema(Schema *schema)
 {
 	free(schema);
+}
+
+/**
+ * Parses a schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param typeStore			the store representation of the type
+ * @result					the parsed SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore)
+{
+	switch(typeStore->type) {
+		case STORE_STRING:
+		case STORE_INTEGER:
+		case STORE_FLOAT_NUMBER:
+			return NULL; // invalid type
+		break;
+		case STORE_LIST:
+		{
+			if(g_queue_get_length(typeStore->content.list) == 0) {
+				return NULL; // invalid type
+			}
+
+			Store *identifier = g_queue_peek_head(typeStore->content.list);
+			if(identifier->type != STORE_STRING) {
+				return NULL; // invalid type
+			}
+
+			if(g_strcmp0(identifier->content.string, "array") == 0) {
+				return parseSchemaTypeArray(schema, name, typeStore->content.list);
+			} else if(g_strcmp0(identifier->content.string, "list") == 0) {
+				return parseSchemaTypeList(schema, name, typeStore->content.list);
+			} else if(g_strcmp0(identifier->content.string, "variant") == 0) {
+				return parseSchemaTypeVariant(schema, name, typeStore->content.list);
+			} else {
+				return NULL; // invalid type
+			}
+		}
+		break;
+		case STORE_ARRAY:
+		break;
+		default:
+			assert(false);
+		break;
+	}
+
+	return NULL;
+}
+
+/**
+ * Parses an array schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param typeStore			the store list representation of the array type
+ * @result					the parsed array SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list)
+{
+	if(list->head->next == NULL) {
+		return NULL; // invalid type
+	}
+
+	Store *typeName = list->head->next->data;
+
+	if(typeName->type != STORE_STRING) {
+		return NULL; // invalid type
+	}
+
+	SchemaType *subtype;
+	if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
+		return NULL; // subtype not found
+	}
+
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_ARRAY);
+	type->data.subtype = subtype;
+
+	return type;
+}
+
+/**
+ * Parses an list schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param typeStore			the store list representation of the list type
+ * @result					the parsed list SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list)
+{
+	if(list->head->next == NULL) {
+		return NULL; // invalid type
+	}
+
+	Store *typeName = list->head->next->data;
+
+	if(typeName->type != STORE_STRING) {
+		return NULL; // invalid type
+	}
+
+	SchemaType *subtype;
+	if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
+		return NULL; // subtype not found
+	}
+
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_LIST);
+	type->data.subtype = subtype;
+
+	return type;
+}
+
+/**
+ * Parses an variant schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param typeStore			the store list representation of the variant type
+ * @result					the parsed variant SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list)
+{
+	GQueue *typeList = g_queue_new();
+
+	for(GList *iter = list->head->next; iter != NULL; iter = iter->next) {
+		Store *typeName = iter->data;
+
+		if(typeName->type != STORE_STRING) {
+			g_queue_free(typeList);
+			return NULL; // invalid type
+		}
+
+		SchemaType *subtype;
+		if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
+			g_queue_free(typeList);
+			return NULL; // subtype not found
+		}
+
+		g_queue_push_tail(typeList, subtype);
+	}
+
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_VARIANT);
+	free(type->data.subtypes);
+	type->data.subtypes = typeList;
+
+	return type;
 }
 
 /**
@@ -59,13 +214,9 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 
 	switch(schemaType->mode) {
 		case SCHEMA_TYPE_MODE_INTEGER:
-			schemaType->data.defaultInteger = 0;
-		break;
 		case SCHEMA_TYPE_MODE_FLOAT:
-			schemaType->data.defaultFloat = 0.0;
-		break;
 		case SCHEMA_TYPE_MODE_STRING:
-			schemaType->data.defaultString = NULL;
+			// nothing to do
 		break;
 		case SCHEMA_TYPE_MODE_STRUCT:
 			schemaType->data.structElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
@@ -74,11 +225,8 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 		case SCHEMA_TYPE_MODE_LIST:
 			schemaType->data.subtype = NULL;
 		break;
-		case SCHEMA_TYPE_MODE_ENUM:
-			schemaType->data.subtypes = g_queue_new();
-		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
-			assert(false); // TODO
+			schemaType->data.subtypes = g_queue_new();
 		break;
 		default:
 			assert(false);
@@ -114,10 +262,8 @@ static void freeSchemaType(void *schemaType_p)
 	switch(schemaType->mode) {
 		case SCHEMA_TYPE_MODE_INTEGER:
 		case SCHEMA_TYPE_MODE_FLOAT:
-			// default number doesn't need to be freed
-		break;
 		case SCHEMA_TYPE_MODE_STRING:
-			free(schemaType->data.defaultString);
+			// nothing to do
 		break;
 		case SCHEMA_TYPE_MODE_STRUCT:
 			g_hash_table_destroy(schemaType->data.structElements);
@@ -126,11 +272,8 @@ static void freeSchemaType(void *schemaType_p)
 		case SCHEMA_TYPE_MODE_LIST:
 			// only one type pointer, nothing to free...
 		break;
-		case SCHEMA_TYPE_MODE_ENUM:
-			g_queue_free(schemaType->data.subtypes);
-		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
-			assert(false); // TODO
+			g_queue_free(schemaType->data.subtypes);
 		break;
 		default:
 			assert(false);

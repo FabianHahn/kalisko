@@ -125,7 +125,7 @@ API Schema *parseSchema(Store *store)
 
 		SchemaStructElement *structElement;
 		if((structElement = parseSchemaStructElement(schema, key, structElementStore->content.list)) == NULL) {
-			logError("Failed to parse schema: Failed to parse leyout struct element '%s'", key);
+			logError("Failed to parse schema: Failed to parse layout struct element '%s'", key);
 			freeSchema(schema);
 			return NULL;
 		}

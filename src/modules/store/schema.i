@@ -21,4 +21,62 @@
 #ifndef STORE_SCHEMA_H
 #define STORE_SCHEMA_H
 
+// Forward declaration
+struct SchemaTypeStruct;
+
+/**
+ * Enum type specifiying what the matching mode of a schema type is
+ */
+typedef enum {
+	SCHEMA_MODE_STRUCT,
+	SCHEMA_MODE_ARRAY,
+	SCHEMA_MODE_LIST,
+	SCHEMA_MODE_ENUM,
+	SCHEMA_MODE_VARIANT
+} SchemaTypeMode;
+
+/**
+ * Union type storing data for schema type modes
+ */
+typedef union {
+	/** Hash table connecting string keys to SchemaType subtype objects for struct mode */
+	GHashTable *structTypes;
+	/** Subtype for array and list mode */
+	struct SchemaTypeStruct *subtype;
+	/** Subtype list for enum mode */
+	GQueue *subtypes;
+	/** Custom data for variant mode */
+	void *variantData; // TODO
+} SchemaTypeModeData;
+
+/**
+ * Data type representing a schema value type
+ */
+struct SchemaTypeStruct {
+	char *name;
+	SchemaTypeMode mode;
+	SchemaTypeModeData data;
+};
+
+typedef struct SchemaTypeStruct SchemaType;
+
+/**
+ * Data type representing a schema element of a certain type
+ */
+typedef struct {
+	char *key;
+	SchemaType *type;
+	bool required;
+} SchemaElement;
+
+/**
+ * Data type representing a store schema that can be used to validate a store
+ */
+typedef struct {
+	/** A hash table strings mapping to SchemaType objects */
+	GHashTable *types;
+	/** The root type of the schema */
+	SchemaType *root;
+} Schema;
+
 #endif

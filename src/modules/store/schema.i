@@ -39,8 +39,8 @@ typedef enum {
  * Union type storing data for schema type modes
  */
 typedef union {
-	/** Hash table connecting string keys to SchemaType subtype objects for struct mode */
-	GHashTable *structTypes;
+	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
+	GHashTable *structElements;
 	/** Subtype for array and list mode */
 	struct SchemaTypeStruct *subtype;
 	/** Subtype list for enum mode */
@@ -61,13 +61,13 @@ struct SchemaTypeStruct {
 typedef struct SchemaTypeStruct SchemaType;
 
 /**
- * Data type representing a schema element of a certain type
+ * Data type representing a schema element of a struct mode schema type
  */
 typedef struct {
 	char *key;
 	SchemaType *type;
 	bool required;
-} SchemaElement;
+} SchemaStructElement;
 
 /**
  * Data type representing a store schema that can be used to validate a store
@@ -75,8 +75,23 @@ typedef struct {
 typedef struct {
 	/** A hash table strings mapping to SchemaType objects */
 	GHashTable *types;
-	/** The root type of the schema */
-	SchemaType *root;
+	/** A table of SchemaStructElement objects representing the root type of the schema */
+	GHashTable *rootElements;
 } Schema;
+
+/**
+ * Parses a schema from its store representation
+ *
+ * @param store			the store from which to parse the schema
+ * @result				the parsed schema or NULL on error
+ */
+API Schema *parseSchema(Store *store);
+
+/**
+ * Frees a schema
+ *
+ * @param schema		the schema to free
+ */
+API void freeSchema(Schema *schema);
 
 #endif

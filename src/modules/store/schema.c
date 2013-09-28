@@ -18,7 +18,106 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
+#include <glib.h>
 #include "dll.h"
 #define API
 #include "store.h"
 #include "schema.h"
+
+static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode);
+static void freeSchemaType(void *schemaType_p);
+static void freeSchemaStructElement(void *schemaStructElement_p);
+
+API Schema *parseSchema(Store *store)
+{
+	Schema *schema = ALLOCATE_OBJECT(Schema);
+	schema->types = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaType);
+	schema->rootElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
+
+	return schema;
+}
+
+API void freeSchema(Schema *schema)
+{
+	free(schema);
+}
+
+/**
+ * Creates a schema type with a certain mode
+ *
+ * @param name			the name of the schema type to create
+ * @param mode			the mode of the schema type to create
+ * @result				the created SchemaType object
+ */
+static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
+{
+	SchemaType *schemaType = ALLOCATE_OBJECT(SchemaType);
+	schemaType->name = strdup(name);
+	schemaType->mode = mode;
+
+	switch(schemaType->mode) {
+		case SCHEMA_MODE_STRUCT:
+			schemaType->data.structElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
+		break;
+		case SCHEMA_MODE_ARRAY:
+		case SCHEMA_MODE_LIST:
+			schemaType->data.subtype = NULL;
+		break;
+		case SCHEMA_MODE_ENUM:
+			schemaType->data.subtypes = g_queue_new();
+		break;
+		case SCHEMA_MODE_VARIANT:
+			assert(false); // TODO
+		break;
+		default:
+			assert(false);
+		break;
+	}
+
+	return schemaType;
+}
+
+/**
+ * Callback function to free a schema type
+ *
+ * @param schemaType_p			a pointer to the schema type
+ */
+static void freeSchemaType(void *schemaType_p)
+{
+	SchemaType *schemaType = schemaType_p;
+	free(schemaType->name);
+
+	switch(schemaType->mode) {
+		case SCHEMA_MODE_STRUCT:
+			g_hash_table_destroy(schemaType->data.structElements);
+		break;
+		case SCHEMA_MODE_ARRAY:
+		case SCHEMA_MODE_LIST:
+			// only one type pointer, nothing to free...
+		break;
+		case SCHEMA_MODE_ENUM:
+			g_queue_free(schemaType->data.subtypes);
+		break;
+		case SCHEMA_MODE_VARIANT:
+			assert(false); // TODO
+		break;
+		default:
+			assert(false);
+		break;
+	}
+
+	free(schemaType);
+}
+
+/**
+ * Callback function to free a schema struct element
+ *
+ * @param schemaStructElement_p		a pointer to the schema struct element to free
+ */
+static void freeSchemaStructElement(void *schemaStructElement_p)
+{
+	SchemaStructElement *schemaStructElement = schemaStructElement_p;
+	free(schemaStructElement->key);
+	free(schemaStructElement);
+}

@@ -75,8 +75,8 @@ typedef struct {
 typedef struct {
 	/** A hash table strings mapping to SchemaType objects */
 	GHashTable *types;
-	/** A table of SchemaStructElement objects representing the root type of the schema */
-	GHashTable *rootElements;
+	/** A table of SchemaStructElement objects representing the layout of the schema */
+	GHashTable *layoutElements;
 } Schema;
 
 /**

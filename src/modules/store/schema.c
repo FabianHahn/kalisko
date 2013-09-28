@@ -38,20 +38,108 @@ static void freeSchemaStructElement(void *schemaStructElement_p);
 
 API Schema *parseSchema(Store *store)
 {
+	if(store->type != STORE_ARRAY) {
+		return NULL;
+	}
+
 	Schema *schema = ALLOCATE_OBJECT(Schema);
 	schema->types = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaType);
-	schema->rootElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
+	schema->layoutElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
 
 	// add default types
 	g_hash_table_insert(schema->types, strdup("int"), createSchemaType("int", SCHEMA_TYPE_MODE_INTEGER));
 	g_hash_table_insert(schema->types, strdup("float"), createSchemaType("float", SCHEMA_TYPE_MODE_FLOAT));
 	g_hash_table_insert(schema->types, strdup("string"), createSchemaType("string", SCHEMA_TYPE_MODE_STRING));
 
+	// parse schema types
+	Store *types;
+	if((types = g_hash_table_lookup(store->content.array, "types")) == NULL) {
+		logError("Failed to parse schema: No 'types' section found");
+		freeSchema(schema); // invalid schema
+		return NULL;
+	}
+
+	if(types->type != STORE_ARRAY) {
+		logError("Failed to parse schema: 'types' section is not an array");
+		freeSchema(schema); // invalid schema
+		return NULL;
+	}
+
+	bool stuck = true;
+	while(stuck) {
+		stuck = false;
+		int parsed = 0;
+
+		GHashTableIter iter;
+		char *name;
+		Store *typeStore;
+		g_hash_table_iter_init(&iter, types->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &typeStore)) {
+			if(g_hash_table_lookup(schema->types, name) != NULL) {
+				continue; // we already parsed this type
+			}
+
+			SchemaType *type;
+			if((type = parseSchemaType(schema, name, typeStore)) == NULL) {
+				logInfo("Failed to parse schema type '%s'", name);
+				stuck = true;
+				continue;
+			}
+
+			logNotice("Parsed schema type '%s'", name);
+			g_hash_table_insert(schema->types, strdup(name), type);
+			parsed++;
+		}
+
+		if(stuck && parsed == 0) { // we are still stuck and made no progress
+			logError("Failed to parse schema: Some types failed to parse");
+			freeSchema(schema);
+			return NULL;
+		}
+	}
+
+	// parse root layout
+	Store *layout;
+	if((layout = g_hash_table_lookup(store->content.array, "layout")) == NULL) {
+		logError("Failed to parse schema: No 'layout' section found");
+		freeSchema(schema); // invalid schema
+		return NULL;
+	}
+
+	if(layout->type != STORE_ARRAY) {
+		logError("Failed to parse schema: 'layout' section is not an array");
+		freeSchema(schema); // invalid schema
+		return NULL;
+	}
+
+	GHashTableIter iter;
+	char *key;
+	Store *structElementStore;
+	g_hash_table_iter_init(&iter, layout->content.array);
+	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &structElementStore)) {
+		if(structElementStore->type != STORE_LIST) {
+			logError("Failed to parse schema: Layout element '%s' is not a valid struct element", key);
+			freeSchema(schema);
+			return NULL;
+		}
+
+		SchemaStructElement *structElement;
+		if((structElement = parseSchemaStructElement(schema, key, structElementStore->content.list)) == NULL) {
+			logError("Failed to parse schema: Failed to parse leyout struct element '%s'", key);
+			freeSchema(schema);
+			return NULL;
+		}
+
+		g_hash_table_insert(schema->layoutElements, strdup(key), structElement);
+	}
+
 	return schema;
 }
 
 API void freeSchema(Schema *schema)
 {
+	g_hash_table_destroy(schema->layoutElements);
+	g_hash_table_destroy(schema->types);
 	free(schema);
 }
 

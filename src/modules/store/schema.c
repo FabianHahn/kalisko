@@ -29,6 +29,8 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeStruct(Schema *schema, const char *name, GHashTable *array);
+static SchemaStructElement *parseSchemaStructElement(Schema *schema, const char *key, GQueue *list);
 static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode);
 static SchemaStructElement *createSchemaStructElement(const char *key);
 static void freeSchemaType(void *schemaType_p);
@@ -92,6 +94,7 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 		}
 		break;
 		case STORE_ARRAY:
+			return parseSchemaTypeStruct(schema, name, typeStore->content.array);
 		break;
 		default:
 			assert(false);
@@ -173,30 +176,104 @@ static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue 
  */
 static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list)
 {
-	GQueue *typeList = g_queue_new();
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_VARIANT);
 
 	for(GList *iter = list->head->next; iter != NULL; iter = iter->next) {
 		Store *typeName = iter->data;
 
 		if(typeName->type != STORE_STRING) {
-			g_queue_free(typeList);
+			freeSchemaType(type);
 			return NULL; // invalid type
 		}
 
 		SchemaType *subtype;
 		if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
-			g_queue_free(typeList);
+			freeSchemaType(type);
 			return NULL; // subtype not found
 		}
 
-		g_queue_push_tail(typeList, subtype);
+		g_queue_push_tail(type->data.subtypes, subtype);
 	}
 
-	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_VARIANT);
-	free(type->data.subtypes);
-	type->data.subtypes = typeList;
+	return type;
+}
+
+/**
+ * Parses an struct schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param array				the store array representation of the struct type
+ * @result					the parsed struct SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeStruct(Schema *schema, const char *name, GHashTable *array)
+{
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_STRUCT);
+
+	GHashTableIter iter;
+	char *key;
+	Store *structElementStore;
+	g_hash_table_iter_init(&iter, array);
+	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &structElementStore)) {
+		if(structElementStore->type != STORE_LIST) {
+			freeSchemaType(type);
+			return NULL; // invalid type
+		}
+
+		SchemaStructElement *structElement;
+		if((structElement = parseSchemaStructElement(schema, key, structElementStore->content.list)) == NULL) {
+			freeSchemaType(type);
+			return NULL; // invalid type
+		}
+
+		g_hash_table_insert(type->data.structElements, strdup(key), structElement);
+	}
 
 	return type;
+}
+
+/**
+ * Parses a struct element from its store representation
+ *
+ * @param schema			the schema for which to parse the struct element
+ * @param key				the key of the struct element to parse
+ * @param list				the store list representation of the struct element
+ * @result					the parsed SchemaStructElement or NULL if the parse failed
+ */
+static SchemaStructElement *parseSchemaStructElement(Schema *schema, const char *key, GQueue *list)
+{
+	SchemaStructElement *structElement = createSchemaStructElement(key);
+
+	if(list->head == NULL) {
+		freeSchemaStructElement(structElement);
+		return NULL; // invalid type
+	}
+
+	Store *requiredFlag = list->head->data;
+
+	if(requiredFlag->type != STORE_STRING) {
+		freeSchemaStructElement(structElement);
+		return NULL; // invalid type
+	}
+
+	structElement->required = (g_strcmp0(requiredFlag->content.string, "required") == 0);
+
+	if(list->head->next == NULL) {
+		freeSchemaStructElement(structElement);
+		return NULL; // invalid type
+	}
+
+	Store *typeName = list->head->next->data;
+
+	SchemaType *type;
+	if((type = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
+		freeSchemaStructElement(structElement);
+		return NULL; // type not found
+	}
+
+	structElement->type = type;
+
+	return structElement;
 }
 
 /**

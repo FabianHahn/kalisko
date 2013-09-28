@@ -28,17 +28,26 @@ struct SchemaTypeStruct;
  * Enum type specifiying what the matching mode of a schema type is
  */
 typedef enum {
-	SCHEMA_MODE_STRUCT,
-	SCHEMA_MODE_ARRAY,
-	SCHEMA_MODE_LIST,
-	SCHEMA_MODE_ENUM,
-	SCHEMA_MODE_VARIANT
+	SCHEMA_TYPE_MODE_INTEGER,
+	SCHEMA_TYPE_MODE_FLOAT,
+	SCHEMA_TYPE_MODE_STRING,
+	SCHEMA_TYPE_MODE_STRUCT,
+	SCHEMA_TYPE_MODE_ARRAY,
+	SCHEMA_TYPE_MODE_LIST,
+	SCHEMA_TYPE_MODE_ENUM,
+	SCHEMA_TYPE_MODE_VARIANT
 } SchemaTypeMode;
 
 /**
  * Union type storing data for schema type modes
  */
 typedef union {
+	/** Default primitive int value */
+	int defaultInteger;
+	/** Default primitive float value */
+	double defaultFloat;
+	/** Default string value */
+	char *defaultString;
 	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
 	GHashTable *structElements;
 	/** Subtype for array and list mode */

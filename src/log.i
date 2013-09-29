@@ -122,7 +122,7 @@ API const char *getStaticLogLevelName(LogLevel level);
 #endif
 
 /**
- * Logs a message as an info
+ * Logs a message as an notice
  *
  * @see logMessage
  * @param ...	printf-like message to log
@@ -130,7 +130,7 @@ API const char *getStaticLogLevelName(LogLevel level);
 #define logNotice(...) logMessage(STR(KALISKO_MODULE), LOG_LEVEL_NOTICE, __VA_ARGS__)
 
 /**
- * Logs a message as a notice
+ * Logs a message as a info
  *
  * @see logMessage
  * @param ...	printf-like message to log

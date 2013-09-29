@@ -31,49 +31,53 @@ using namespace std;
  * constructor, destructor, getter for rows & columns, checkContentToBorder
  */
 
-Grid::Grid(int rows, int cols) : m(rows), n(cols), cells((m+1)*(n+1))
+Grid::Grid(int rows, int cols) :
+m(rows), n(cols), cells((m + 1) * (n + 1))
 {
-	for (int i=0; i<m+1; i++){
-		for (int j=0; j<n+1; j++){
-			cells[i*(n+1)+j] = new Cell(this,i,j,-1);
+	for(int i = 0; i < m + 1; i++) {
+		for(int j = 0; j < n + 1; j++) {
+			cells[i * (n + 1) + j] = new Cell(this, i, j, -1);
 		}
 	}
 }
 
 Grid::~Grid()
 {
-	for (int i=0; i<(m+1)*(n+1); i++){
+	for(int i = 0; i < (m + 1) * (n + 1); i++) {
 		delete cells[i];
 	}
 }
 
-int Grid::getNumRows() const {
+int Grid::getNumRows() const
+{
 	return m;
 }
 
-int Grid::getNumCols() const {
+int Grid::getNumCols() const
+{
 	return n;
 }
 
-bool Grid::checkContentToBorder(){  // compares content-value to the number of occupied borders
+bool Grid::checkContentToBorder()
+{  // compares content-value to the number of occupied borders
 	bool check = true;
-	for (int i=0; i<m; i++){
-		for (int j=0; j<n; j++){
+	for(int i = 0; i < m; i++) {
+		for(int j = 0; j < n; j++) {
 			int count = 0;
-			if (getCell(i,j).getBottomBorder()==Cell::used){
+			if(getCell(i, j).getBottomBorder() == Cell::used) {
 				count++;
 			}
-			if (getCell(i,j).getTopBorder()==Cell::used){
+			if(getCell(i, j).getTopBorder() == Cell::used) {
 				count++;
 			}
-			if (getCell(i,j).getLeftBorder()==Cell::used){
+			if(getCell(i, j).getLeftBorder() == Cell::used) {
 				count++;
 			}
-			if (getCell(i,j).getRightBorder()==Cell::used){
+			if(getCell(i, j).getRightBorder() == Cell::used) {
 				count++;
 			}
-			int content = getCell(i,j).getContent();
-			if (content>-1 && content != count){
+			int content = getCell(i, j).getContent();
+			if(content > -1 && content != count) {
 				check = false;
 				cout << "Number of borders in [" << i << "," << j << "] do not match the content." << endl;
 			}
@@ -82,10 +86,12 @@ bool Grid::checkContentToBorder(){  // compares content-value to the number of o
 	return check;
 }
 
-Cell& Grid::getCell(int x, int y){
-	return *cells[x*(n+1)+y];
+Cell& Grid::getCell(int x, int y)
+{
+	return *cells[x * (n + 1) + y];
 }
 
-const Cell& Grid::getCell(int x, int y) const {
-	return *cells[x*(n+1)+y];
+const Cell& Grid::getCell(int x, int y) const
+{
+	return *cells[x * (n + 1) + y];
 }

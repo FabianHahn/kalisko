@@ -25,92 +25,109 @@ using namespace std;
 #define API
 #include "Cell.h"
 
-
 /**
  * Implementation of functions for class Cell:
  * constructor, destructor, getter for neighbours, getter & setter for borders & content
  */
 
-
-Cell::Cell(Grid *parentGrid, int posX, int posY, int value) : grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
+Cell::Cell(Grid *parentGrid, int posX, int posY, int value) :
+grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
 {
 
 }
 
-Cell::~Cell(){
+Cell::~Cell()
+{
 
 }
 
-Cell& Cell::getTopNeighbour(){
-	return grid->getCell(x-1,y);
+Cell& Cell::getTopNeighbour()
+{
+	return grid->getCell(x - 1, y);
 }
 
-const Cell& Cell::getTopNeighbour() const {
-	return grid->getCell(x-1,y);
+const Cell& Cell::getTopNeighbour() const
+{
+	return grid->getCell(x - 1, y);
 }
 
-Cell& Cell::getBottomNeighbour(){
-	return grid->getCell(x+1,y);
+Cell& Cell::getBottomNeighbour()
+{
+	return grid->getCell(x + 1, y);
 }
 
-const Cell& Cell::getBottomNeighbour() const {
-	return grid->getCell(x+1,y);
+const Cell& Cell::getBottomNeighbour() const
+{
+	return grid->getCell(x + 1, y);
 }
 
-Cell& Cell::getLeftNeighbour(){
-	return grid->getCell(x,y-1);
+Cell& Cell::getLeftNeighbour()
+{
+	return grid->getCell(x, y - 1);
 }
 
-const Cell& Cell::getLeftNeighbour() const {
-	return grid->getCell(x,y-1);
+const Cell& Cell::getLeftNeighbour() const
+{
+	return grid->getCell(x, y - 1);
 }
 
-Cell& Cell::getRightNeighbour(){
-	return grid->getCell(x,y+1);
+Cell& Cell::getRightNeighbour()
+{
+	return grid->getCell(x, y + 1);
 }
 
-const Cell& Cell::getRightNeighbour() const {
-	return grid->getCell(x,y+1);
+const Cell& Cell::getRightNeighbour() const
+{
+	return grid->getCell(x, y + 1);
 }
 
-Cell::State Cell::getTopBorder() const {
+Cell::State Cell::getTopBorder() const
+{
 	return topBorder;
 }
 
-Cell::State Cell::getBottomBorder() const {
+Cell::State Cell::getBottomBorder() const
+{
 	return getBottomNeighbour().getTopBorder();
 }
 
-Cell::State Cell::getLeftBorder() const {
+Cell::State Cell::getLeftBorder() const
+{
 	return leftBorder;
 }
 
-Cell::State Cell::getRightBorder() const {
+Cell::State Cell::getRightBorder() const
+{
 	return getRightNeighbour().getLeftBorder();
 }
 
-void Cell::setTopBorder(Cell::State state){
+void Cell::setTopBorder(Cell::State state)
+{
 	topBorder = state;
 }
 
-void Cell::setBottomBorder(Cell::State state){
+void Cell::setBottomBorder(Cell::State state)
+{
 	getBottomNeighbour().setTopBorder(state);
 }
 
-void Cell::setLeftBorder(Cell::State state){
+void Cell::setLeftBorder(Cell::State state)
+{
 	leftBorder = state;
 }
 
-void Cell::setRightBorder(Cell::State state){
+void Cell::setRightBorder(Cell::State state)
+{
 	getRightNeighbour().setLeftBorder(state);
 }
 
-
-int Cell::getContent() const {
+int Cell::getContent() const
+{
 	return content;
 }
 
-void Cell::setContent(int c){
+void Cell::setContent(int c)
+{
 	content = c;
 }
 

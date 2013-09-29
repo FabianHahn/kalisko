@@ -29,41 +29,42 @@
 
 class Cell
 {
-public:
-	typedef enum {
-		unknown, used, unused
-	} State;
+	public:
+		typedef enum
+		{
+			unknown, used, unused
+		} State;
 
-	Cell(Grid *parentGrid, int posX, int posY, int value);
-	virtual ~Cell();
-	State getTopBorder() const;
-	State getBottomBorder() const;
-	State getLeftBorder() const;
-	State getRightBorder() const;
-	void setTopBorder(State state);
-	void setBottomBorder(State state);
-	void setLeftBorder(State state);
-	void setRightBorder(State state);
-	Cell& getTopNeighbour();
-	const Cell& getTopNeighbour() const;
-	Cell& getBottomNeighbour();
-	const Cell& getBottomNeighbour() const;
-	Cell& getLeftNeighbour();
-	const Cell& getLeftNeighbour() const;
-	Cell& getRightNeighbour();
-	const Cell& getRightNeighbour() const;
-	int getContent() const;
-	void setContent(int c);
+		Cell(Grid *parentGrid, int posX, int posY, int value);
+		virtual ~Cell();
+		State getTopBorder() const;
+		State getBottomBorder() const;
+		State getLeftBorder() const;
+		State getRightBorder() const;
+		void setTopBorder(State state);
+		void setBottomBorder(State state);
+		void setLeftBorder(State state);
+		void setRightBorder(State state);
+		Cell& getTopNeighbour();
+		const Cell& getTopNeighbour() const;
+		Cell& getBottomNeighbour();
+		const Cell& getBottomNeighbour() const;
+		Cell& getLeftNeighbour();
+		const Cell& getLeftNeighbour() const;
+		Cell& getRightNeighbour();
+		const Cell& getRightNeighbour() const;
+		int getContent() const;
+		void setContent(int c);
 
-	static char getStateChar(State state, bool horizontal);
+		static char getStateChar(State state, bool horizontal);
 
-private:
-	Grid *grid;
-	int x;
-	int y;
-	int content;
-	State topBorder;
-	State leftBorder;
+	private:
+		Grid *grid;
+		int x;
+		int y;
+		int content;
+		State topBorder;
+		State leftBorder;
 };
 
 #endif

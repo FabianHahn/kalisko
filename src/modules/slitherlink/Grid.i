@@ -28,20 +28,19 @@ class Cell; // forward declaration
 
 class Grid
 {
-public:
-	Grid(int rows, int cols);
-	virtual ~Grid();
-	int getNumRows() const;
-	int getNumCols() const;
-	Cell& getCell(int x, int y);
-	const Cell& getCell(int x, int y) const;
-	bool checkContentToBorder();
+	public:
+		Grid(int rows, int cols);
+		virtual ~Grid();
+		int getNumRows() const;
+		int getNumCols() const;
+		Cell& getCell(int x, int y);
+		const Cell& getCell(int x, int y) const;
+		bool checkContentToBorder();
 
-
-private:
-	int m;
-	int n;
-	vector<Cell *> cells;
+	private:
+		int m;
+		int n;
+		vector<Cell *> cells;
 };
 
 #endif

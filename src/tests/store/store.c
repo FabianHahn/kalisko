@@ -64,8 +64,8 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 5, 0);
-MODULE_BCVERSION(0, 5, 0);
+MODULE_VERSION(0, 5, 1);
+MODULE_BCVERSION(0, 5, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 8, 0));
 
 TEST_SUITE_BEGIN(store)
@@ -306,6 +306,7 @@ TEST(schema_crossvalidation)
 	free(execpath);
 
 	TEST_ASSERT(validateStoreByStoreSchema(testStore, schemaStore));
+	TEST_ASSERT(!validateStoreByStoreSchema(schemaStore, testStore));
 
 	freeStore(schemaStore);
 	freeStore(testStore);

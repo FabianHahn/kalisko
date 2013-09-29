@@ -18,17 +18,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GENERATE_H
-#define SLITHERLINK_GENERATE_H
+#ifndef SLITHERLINK_GRID_H
+#define SLITHERLINK_GRID_H
 
 #ifdef __cplusplus
-extern "C" {
-#endif
 
-API void generateSlitherlink();
+#include <vector>
+class Cell; // forward declaration
 
-#ifdef __cplusplus
-}
+class Grid
+{
+public:
+	Grid(int rows, int cols);
+	virtual ~Grid();
+	int getNumRows();
+	int getNumCols();
+	Cell& getCell(int x,int y);
+	bool checkContentToBorder();
+
+
+private:
+	int m;
+	int n;
+	vector<Cell *> cells;
+};
+
 #endif
 
 #endif

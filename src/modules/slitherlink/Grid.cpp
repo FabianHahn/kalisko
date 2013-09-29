@@ -18,17 +18,70 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GENERATE_H
-#define SLITHERLINK_GENERATE_H
+#include <iostream>
+using namespace std;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "dll.h"
+#define API
+#include "Cell.h"
+#include "Grid.h"
 
-API void generateSlitherlink();
+/**
+ * Implementation of functions for class Grid:
+ * constructor, destructor, getter for rows & columns, checkContentToBorder
+ */
 
-#ifdef __cplusplus
+Grid::Grid(int rows, int cols) : m(rows), n(cols), cells((m+1)*(n+1))
+{
+	for (int i=0; i<m+1; i++){
+		for (int j=0; j<n+1; j++){
+			cells[i*(n+1)+j] = new Cell(this,i,j,-1);
+		}
+	}
 }
-#endif
 
-#endif
+Grid::~Grid()
+{
+	for (int i=0; i<(m+1)*(n+1); i++){
+		delete cells[i];
+	}
+}
+
+int Grid::getNumRows(){
+	return m;
+}
+
+int Grid::getNumCols(){
+	return n;
+}
+
+bool Grid::checkContentToBorder(){  // compares content-value to the number of occupied borders
+	bool check = true;
+	for (int i=0; i<m; i++){
+		for (int j=0; j<n; j++){
+			int count = 0;
+			if (getCell(i,j).getBottomBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getTopBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getLeftBorder()==Cell::used){
+				count++;
+			}
+			if (getCell(i,j).getRightBorder()==Cell::used){
+				count++;
+			}
+			int content = getCell(i,j).getContent();
+			if (content>-1 && content != count){
+				check = false;
+				cout << "Number of borders in [" << i << "," << j << "] do not match the content." << endl;
+			}
+		}
+	}
+	return check;
+}
+
+Cell& Grid::getCell(int x, int y){
+	return *cells[x*(n+1)+y];
+}

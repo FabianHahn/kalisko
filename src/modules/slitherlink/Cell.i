@@ -18,17 +18,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GENERATE_H
-#define SLITHERLINK_GENERATE_H
+
+#ifndef SLITHERLINK_CELL_H
+#define SLITHERLINK_CELL_H
 
 #ifdef __cplusplus
-extern "C" {
-#endif
 
-API void generateSlitherlink();
+#include <vector>
+#include "Grid.h"
 
-#ifdef __cplusplus
-}
+class Cell
+{
+public:
+	typedef enum {
+		unknown, used, unused
+	} State;
+
+	Cell(Grid *parentGrid, int posX, int posY, int value);
+	virtual ~Cell();
+	State getTopBorder();
+	State getBottomBorder();
+	State getLeftBorder();
+	State getRightBorder();
+	void setTopBorder(State state);
+	void setBottomBorder(State state);
+	void setLeftBorder(State state);
+	void setRightBorder(State state);
+	Cell& getTopNeighbour();
+	Cell& getBottomNeighbour();
+	Cell& getLeftNeighbour();
+	Cell& getRightNeighbour();
+	int getContent();
+	void setContent(int c);
+
+private:
+	Grid *grid;
+	int x;
+	int y;
+	int content;
+	State topBorder;
+	State leftBorder;
+};
+
 #endif
 
 #endif

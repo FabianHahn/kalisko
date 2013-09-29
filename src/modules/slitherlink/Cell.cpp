@@ -18,17 +18,82 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GENERATE_H
-#define SLITHERLINK_GENERATE_H
+#include <iostream>
+using namespace std;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "dll.h"
+#define API
+#include "Cell.h"
 
-API void generateSlitherlink();
 
-#ifdef __cplusplus
+/**
+ * Implementation of functions for class Cell:
+ * constructor, destructor, getter for neighbours, getter & setter for borders & content
+ */
+
+
+Cell::Cell(Grid *parentGrid, int posX, int posY, int value) : grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
+{
+
 }
-#endif
 
-#endif
+Cell::~Cell(){
+
+}
+
+Cell& Cell::getTopNeighbour(){
+	return grid->getCell(x-1,y);
+}
+
+Cell& Cell::getBottomNeighbour(){
+	return grid->getCell(x+1,y);
+}
+
+Cell& Cell::getLeftNeighbour(){
+	return grid->getCell(x,y-1);
+}
+
+Cell& Cell::getRightNeighbour(){
+	return grid->getCell(x,y+1);
+}
+
+Cell::State Cell::getTopBorder(){
+	return topBorder;
+}
+
+Cell::State Cell::getBottomBorder(){
+	return getBottomNeighbour().getTopBorder();
+}
+
+Cell::State Cell::getLeftBorder(){
+	return leftBorder;
+}
+
+Cell::State Cell::getRightBorder(){
+	return getRightNeighbour().getLeftBorder();
+}
+
+void Cell::setTopBorder(Cell::State state){
+	topBorder = state;
+}
+
+void Cell::setBottomBorder(Cell::State state){
+	getBottomNeighbour().setTopBorder(state);
+}
+
+void Cell::setLeftBorder(Cell::State state){
+	leftBorder = state;
+}
+
+void Cell::setRightBorder(Cell::State state){
+	getRightNeighbour().setLeftBorder(state);
+}
+
+
+int Cell::getContent(){
+	return content;
+}
+
+void Cell::setContent(int c){
+	content = c;
+}

@@ -21,6 +21,8 @@
 #ifndef STORE_SCHEMA_H
 #define STORE_SCHEMA_H
 
+#include "store.h"
+
 // Forward declaration
 struct SchemaTypeStruct;
 

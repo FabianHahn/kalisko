@@ -21,6 +21,18 @@
 #ifndef STORE_VALIDATE_H
 #define STORE_VALIDATE_H
 
+#include "store.h"
+#include "schema.h"
+
+/**
+ * Validates a store according to a provided schema.
+ *
+ * @param store			the store to validate
+ * @param schemaStore	the store representation of the schema according to which the store should be validated
+ * @result				true if the store is valid according to the schema
+ */
+API bool validateStoreByStoreSchema(Store *store, Store *schemaStore);
+
 /**
  * Validates a store according to a provided schema.
  *
@@ -28,6 +40,6 @@
  * @param schema	the schema according to which the store should be validated
  * @result			true if the store is valid according to the schema
  */
-API bool validateStore(Store *store, Store *schema);
+API bool validateStore(Store *store, Schema *schema);
 
 #endif

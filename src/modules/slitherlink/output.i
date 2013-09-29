@@ -25,7 +25,7 @@
 #ifdef __cplusplus
 
 #include <iostream>
-#include "generate.h"
+#include "Grid.h"
 
 std::ostream& operator<<(std::ostream& stream, const Grid& grid);
 

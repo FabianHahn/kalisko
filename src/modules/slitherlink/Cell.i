@@ -18,48 +18,55 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
 
-#include "dll.h"
-#define API
-#include "Cell.h"
+#ifndef SLITHERLINK_CELL_H
+#define SLITHERLINK_CELL_H
+
+#ifdef __cplusplus
+
+#include <vector>
 #include "Grid.h"
-#include "output.h"
 
-std::ostream& operator<<(std::ostream& stream, const Grid& grid)
+class Cell
 {
-	int m = grid.getNumRows();
-	int n = grid.getNumCols();
+	public:
+		typedef enum
+		{
+			unknown, used, unused
+		} State;
 
-	for(int i = 0; i < m; i++) {
-		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-		}
+		Cell(Grid *parentGrid, int posX, int posY, int value);
+		virtual ~Cell();
+		State getTopBorder() const;
+		State getBottomBorder() const;
+		State getLeftBorder() const;
+		State getRightBorder() const;
+		void setTopBorder(State state);
+		void setBottomBorder(State state);
+		void setLeftBorder(State state);
+		void setRightBorder(State state);
+		Cell& getTopNeighbour();
+		const Cell& getTopNeighbour() const;
+		Cell& getBottomNeighbour();
+		const Cell& getBottomNeighbour() const;
+		Cell& getLeftNeighbour();
+		const Cell& getLeftNeighbour() const;
+		Cell& getRightNeighbour();
+		const Cell& getRightNeighbour() const;
+		int getContent() const;
+		void setContent(int c);
 
-		stream << "." << std::endl;
+		static char getStateChar(State state, bool horizontal);
 
-		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			int content = cell.getContent();
-			stream << Cell::getStateChar(cell.getLeftBorder(), false);
+	private:
+		Grid *grid;
+		int x;
+		int y;
+		int content;
+		State topBorder;
+		State leftBorder;
+};
 
-			if(content < 0) {
-				stream << ' ';
-			} else {
-				stream << content;
-			}
-		}
+#endif
 
-		stream << Cell::getStateChar(grid.getCell(i, n).getLeftBorder(), false) << std::endl;
-	}
-
-	for(int j = 0; j < n; j++) {
-		const Cell& cell = grid.getCell(m, j);
-		stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-	}
-
-	stream << "." << std::endl;
-
-	return stream;
-}
+#endif

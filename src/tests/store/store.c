@@ -33,6 +33,7 @@
 #include "modules/store/write.h"
 #include "modules/store/merge.h"
 #include "modules/store/schema.h"
+#include "modules/store/validate.h"
 #define API
 
 TEST(lexer);
@@ -43,6 +44,8 @@ TEST(path_split);
 TEST(merge);
 TEST(parse_path);
 TEST(schema_parse);
+TEST(schema_selfvalidation);
+TEST(schema_crossvalidation);
 
 static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = -42\nfloat  = -3.14159265";
 static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
@@ -61,9 +64,9 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 4, 0);
-MODULE_BCVERSION(0, 4, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 7, 0));
+MODULE_VERSION(0, 5, 0);
+MODULE_BCVERSION(0, 5, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 8, 0));
 
 TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(lexer);
@@ -74,6 +77,8 @@ TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(merge);
 	ADD_SIMPLE_TEST(parse_path);
 	ADD_SIMPLE_TEST(schema_parse);
+	ADD_SIMPLE_TEST(schema_selfvalidation);
+	ADD_SIMPLE_TEST(schema_crossvalidation);
 TEST_SUITE_END
 
 TEST(lexer)
@@ -257,6 +262,53 @@ TEST(schema_parse)
 	TEST_ASSERT(schema != NULL);
 
 	freeSchema(schema);
+	freeStore(schemaStore);
+}
+
+TEST(schema_selfvalidation)
+{
+	char *execpath = getExecutablePath();
+	GString *schemapath = g_string_new(execpath);
+	free(execpath);
+
+	g_string_append(schemapath, "/tests/store/selfvalidation_schema.store");
+
+	Store *schemaStore = parseStoreFile(schemapath->str);
+
+	g_string_free(schemapath, true);
+
+	TEST_ASSERT(schemaStore != NULL);
+
+	Schema *schema = parseSchema(schemaStore);
+
+	TEST_ASSERT(schema != NULL);
+
+	TEST_ASSERT(validateStore(schemaStore, schema));
+
+	freeSchema(schema);
+	freeStore(schemaStore);
+}
+
+TEST(schema_crossvalidation)
+{
+	char *execpath = getExecutablePath();
+
+	GString *schemapath = g_string_new(execpath);
+	g_string_append(schemapath, "/tests/store/selfvalidation_schema.store");
+	Store *schemaStore = parseStoreFile(schemapath->str);
+	g_string_free(schemapath, true);
+
+	GString *testpath = g_string_new(execpath);
+	g_string_append(testpath, "/tests/store/test_schema.store");
+	Store *testStore = parseStoreFile(testpath->str);
+	g_string_free(testpath, true);
+
+	free(execpath);
+
+	TEST_ASSERT(validateStoreByStoreSchema(testStore, schemaStore));
+
+	freeStore(schemaStore);
+	freeStore(testStore);
 }
 
 /**

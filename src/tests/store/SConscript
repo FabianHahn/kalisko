@@ -21,3 +21,4 @@ test.Append(CPPPATH = ['../..','../../modules/store'])
 
 test.SharedLibrary('../../modules/kalisko_test_store', Glob('*.c'))
 test.Command("test_schema.store", File("test_schema.store").srcnode(), Copy("$TARGET", "$SOURCE"))
+test.Command("selfvalidation_schema.store", File("selfvalidation_schema.store").srcnode(), Copy("$TARGET", "$SOURCE"))

@@ -32,7 +32,7 @@
 MODULE_NAME("store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The store module provides a recursive key-value data type that can be easily converted back and forth from a string and to its abstract memory representation");
-MODULE_VERSION(0, 7, 0);
+MODULE_VERSION(0, 8, 0);
 MODULE_BCVERSION(0, 5, 3);
 MODULE_NODEPS;
 

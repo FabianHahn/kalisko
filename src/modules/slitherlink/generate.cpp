@@ -19,10 +19,11 @@
  */
 
 #include <iostream>
-using namespace std;
 
 #include "dll.h"
 #define API
+#include "Cell.h"
+#include "Grid.h"
 #include "generate.h"
 #include "output.h"
 
@@ -47,9 +48,9 @@ API void generateSlitherlink()
 	test1.getCell(3, 3).setContent(-1);
 
 	if(test1.checkContentToBorder()) { // should return negative, since riddle not solved yet
-		cout << "Riddle solved correctly!" << endl;
+		std::cout << "Riddle solved correctly!" << std::endl;
 	} else {
-		cout << "Riddle not solved correctly!" << endl;
+		std::cout << "Riddle not solved correctly!" << std::endl;
 	}
 
 	test1.getCell(0, 0).setTopBorder(Cell::unused); // insert solution
@@ -109,204 +110,10 @@ API void generateSlitherlink()
 	test1.getCell(3, 3).setRightBorder(Cell::unused);
 
 	if(test1.checkContentToBorder()) { // should return positive, since solution was entered
-		cout << "Riddle solved correctly!" << endl;
+		std::cout << "Riddle solved correctly!" << std::endl;
 	} else {
-		cout << "Riddle not solved correctly!" << endl;
+		std::cout << "Riddle not solved correctly!" << std::endl;
 	}
 
 	std::cout << test1 << std::endl;
-}
-
-/**
- * Implementation of functions for class Grid:
- * constructor, destructor, getter for rows & columns, checkContentToBorder
- */
-
-Grid::Grid(int rows, int cols) :
-	m(rows), n(cols), cells((m + 1) * (n + 1))
-{
-	for(int i = 0; i < m + 1; i++) {
-		for(int j = 0; j < n + 1; j++) {
-			cells[i * (n + 1) + j] = new Cell(this, i, j, -1);
-		}
-	}
-}
-
-Grid::~Grid()
-{
-	for(int i = 0; i < (m + 1) * (n + 1); i++) {
-		delete cells[i];
-	}
-}
-
-int Grid::getNumRows() const
-{
-	return m;
-}
-
-int Grid::getNumCols() const
-{
-	return n;
-}
-
-bool Grid::checkContentToBorder()
-{ // compares content-value to the number of occupied borders
-	bool check = true;
-	for(int i = 0; i < m; i++) {
-		for(int j = 0; j < n; j++) {
-			int count = 0;
-			if(getCell(i, j).getBottomBorder() == Cell::used) {
-				count++;
-			}
-			if(getCell(i, j).getTopBorder() == Cell::used) {
-				count++;
-			}
-			if(getCell(i, j).getLeftBorder() == Cell::used) {
-				count++;
-			}
-			if(getCell(i, j).getRightBorder() == Cell::used) {
-				count++;
-			}
-			int content = getCell(i, j).getContent();
-			if(content > -1 && content != count) {
-				check = false;
-				cout << "Number of borders in [" << i << "," << j << "] do not match the content." << endl;
-			}
-		}
-	}
-	return check;
-}
-
-Cell& Grid::getCell(int x, int y)
-{
-	return *cells[x * (n + 1) + y];
-}
-
-const Cell& Grid::getCell(int x, int y) const
-{
-	return *cells[x * (n + 1) + y];
-}
-
-/**
- * Implementation of functions for class Cell:
- * constructor, destructor, getter for neighbours, getter & setter for borders & content
- */
-
-Cell::Cell(Grid *parentGrid, int posX, int posY, int value) :
-	grid(parentGrid), x(posX), y(posY), content(value), topBorder(unknown), leftBorder(unknown)
-{
-
-}
-
-Cell::~Cell()
-{
-
-}
-
-Cell& Cell::getTopNeighbour()
-{
-	return grid->getCell(x - 1, y);
-}
-
-const Cell& Cell::getTopNeighbour() const
-{
-	return grid->getCell(x - 1, y);
-}
-
-Cell& Cell::getBottomNeighbour()
-{
-	return grid->getCell(x + 1, y);
-}
-
-const Cell& Cell::getBottomNeighbour() const
-{
-	return grid->getCell(x + 1, y);
-}
-
-Cell& Cell::getLeftNeighbour()
-{
-	return grid->getCell(x, y - 1);
-}
-
-const Cell& Cell::getLeftNeighbour() const
-{
-	return grid->getCell(x, y - 1);
-}
-
-Cell& Cell::getRightNeighbour()
-{
-	return grid->getCell(x, y + 1);
-}
-
-const Cell& Cell::getRightNeighbour() const
-{
-	return grid->getCell(x, y + 1);
-}
-
-Cell::State Cell::getTopBorder() const
-{
-	return topBorder;
-}
-
-Cell::State Cell::getBottomBorder() const
-{
-	return getBottomNeighbour().getTopBorder();
-}
-
-Cell::State Cell::getLeftBorder() const
-{
-	return leftBorder;
-}
-
-Cell::State Cell::getRightBorder() const
-{
-	return getRightNeighbour().getLeftBorder();
-}
-
-void Cell::setTopBorder(Cell::State state)
-{
-	topBorder = state;
-}
-
-void Cell::setBottomBorder(Cell::State state)
-{
-	getBottomNeighbour().setTopBorder(state);
-}
-
-void Cell::setLeftBorder(Cell::State state)
-{
-	leftBorder = state;
-}
-
-void Cell::setRightBorder(Cell::State state)
-{
-	getRightNeighbour().setLeftBorder(state);
-}
-
-int Cell::getContent() const
-{
-	return content;
-}
-
-void Cell::setContent(int c)
-{
-	content = c;
-}
-
-char Cell::getStateChar(State state, bool horizontal)
-{
-	switch(state) {
-		case unknown:
-			return ' ';
-		case used:
-			if(horizontal) {
-				return '-';
-			} else {
-				return '|';
-			}
-		case unused:
-			return 'x';
-		default:
-			return ' ';
-	}
 }

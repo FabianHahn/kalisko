@@ -24,13 +24,14 @@
 #include "schema.h"
 #include "validate.h"
 
-static bool validateSchemaInteger(const char *typeName, Store *store);
-static bool validateSchemaFloat(const char *typeName, Store *store);
-static bool validateSchemaString(const char *typeName, Store *store);
-static bool validateSchemaStruct(const char *typeName, GHashTable *structElementTable, Store *store);
-static bool validateSchemaArray(const char *typeName, SchemaType *subtype, Store *store);
-static bool validateSchemaList(const char *typeName, SchemaType *subtype, Store *store);
-static bool validateSchemaVariant(const char *typeName, GQueue *subtypes, Store *store);
+static bool validateSchemaType(SchemaType *type, Store *store);
+static bool validateSchemaTypeInteger(const char *typeName, Store *store);
+static bool validateSchemaTypeFloat(const char *typeName, Store *store);
+static bool validateSchemaTypeString(const char *typeName, Store *store);
+static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store);
+static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store);
+static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store);
+static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store);
 
 API bool validateStoreByStoreSchema(Store *store, Store *schemaStore)
 {
@@ -48,7 +49,7 @@ API bool validateStoreByStoreSchema(Store *store, Store *schemaStore)
 
 API bool validateStore(Store *store, Schema *schema)
 {
-	return validateSchemaStruct("[schema root layout]", schema->layoutElements, store);
+	return validateSchemaTypeStruct("[schema root layout]", schema->layoutElements, store);
 }
 
 /**
@@ -64,25 +65,25 @@ static bool validateSchemaType(SchemaType *type, Store *store)
 
 	switch(type->mode) {
 		case SCHEMA_TYPE_MODE_INTEGER:
-			validation &= validateSchemaInteger(type->name, store);
+			validation &= validateSchemaTypeInteger(type->name, store);
 		break;
 		case SCHEMA_TYPE_MODE_FLOAT:
-			validation &= validateSchemaFloat(type->name, store);
+			validation &= validateSchemaTypeFloat(type->name, store);
 		break;
 		case SCHEMA_TYPE_MODE_STRING:
-			validation &= validateSchemaString(type->name, store);
+			validation &= validateSchemaTypeString(type->name, store);
 		break;
 		case SCHEMA_TYPE_MODE_STRUCT:
-			validation &= validateSchemaStruct(type->name, type->data.structElements, store);
+			validation &= validateSchemaTypeStruct(type->name, type->data.structElements, store);
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
-			validation &= validateSchemaArray(type->name, type->data.subtype, store);
+			validation &= validateSchemaTypeArray(type->name, type->data.subtype, store);
 		break;
 		case SCHEMA_TYPE_MODE_LIST:
-			validation &= validateSchemaList(type->name, type->data.subtype, store);
+			validation &= validateSchemaTypeList(type->name, type->data.subtype, store);
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
-			validation &= validateSchemaVariant(type->name, type->data.subtypes, store);
+			validation &= validateSchemaTypeVariant(type->name, type->data.subtypes, store);
 		break;
 		default:
 			assert(false);
@@ -99,7 +100,7 @@ static bool validateSchemaType(SchemaType *type, Store *store)
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaInteger(const char *typeName, Store *store)
+static bool validateSchemaTypeInteger(const char *typeName, Store *store)
 {
 	if(store->type != STORE_INTEGER) {
 		logError("Failed to validate store: Store element is not an integer, but should be integer type '%s'", typeName);
@@ -116,7 +117,7 @@ static bool validateSchemaInteger(const char *typeName, Store *store)
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaFloat(const char *typeName, Store *store)
+static bool validateSchemaTypeFloat(const char *typeName, Store *store)
 {
 	if(store->type != STORE_FLOAT_NUMBER) {
 		logError("Failed to validate store: Store element is not a float, but should be float type '%s'", typeName);
@@ -133,7 +134,7 @@ static bool validateSchemaFloat(const char *typeName, Store *store)
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaString(const char *typeName, Store *store)
+static bool validateSchemaTypeString(const char *typeName, Store *store)
 {
 	if(store->type != STORE_STRING) {
 		logError("Failed to validate store: Store element is not a string, but should be string type '%s'", typeName);
@@ -151,7 +152,7 @@ static bool validateSchemaString(const char *typeName, Store *store)
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaStruct(const char *typeName, GHashTable *structElementTable, Store *store)
+static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store)
 {
 	if(store->type != STORE_ARRAY) {
 		logError("Failed to validate store: Store element is not an array, but should be struct type '%s'", typeName);
@@ -188,8 +189,22 @@ static bool validateSchemaStruct(const char *typeName, GHashTable *structElement
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaArray(const char *typeName, SchemaType *subtype, Store *store)
+static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store)
 {
+	if(store->type != STORE_ARRAY) {
+		logError("Failed to validate store: Store element is not an array, but should be array type '%s'", typeName);
+		return false;
+	}
+
+	GHashTableIter iter;
+	char *key;
+	Store *arrayElement;
+	g_hash_table_iter_init(&iter, store->content.array);
+	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &arrayElement)) {
+		if(!validateSchemaType(subtype, arrayElement)) {
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -202,8 +217,21 @@ static bool validateSchemaArray(const char *typeName, SchemaType *subtype, Store
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaList(const char *typeName, SchemaType *subtype, Store *store)
+static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store)
 {
+	if(store->type != STORE_LIST) {
+		logError("Failed to validate store: Store element is not a list, but should be list type '%s'", typeName);
+		return false;
+	}
+
+	for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next) {
+		Store *listElement = iter->data;
+
+		if(!validateSchemaType(subtype, listElement)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -215,7 +243,16 @@ static bool validateSchemaList(const char *typeName, SchemaType *subtype, Store 
  * @param store					the store we are validating
  * @result true					true if validation passes
  */
-static bool validateSchemaVariant(const char *typeName, GQueue *subtypes, Store *store)
+static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store)
 {
-	return true;
+	for(GList *iter = subtypes->head; iter != NULL; iter = iter->next) {
+		SchemaType *subtype = iter->data;
+
+		if(validateSchemaType(subtype, store)) {
+			return true;
+		}
+	}
+
+	logError("Failed to validate store: Store element does not match any of the variant subtypes of type '%s'", typeName);
+	return false;
 }

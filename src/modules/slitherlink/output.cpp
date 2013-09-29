@@ -18,32 +18,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GRID_H
-#define SLITHERLINK_GRID_H
+#include <iostream>
 
-#ifdef __cplusplus
+#include "dll.h"
+#define API
+#include "Cell.h"
+#include "Grid.h"
+#include "output.h"
 
-#include <vector>
-class Cell; // forward declaration
-
-class Grid
+std::ostream& operator<<(std::ostream& stream, const Grid& grid)
 {
-public:
-	Grid(int rows, int cols);
-	virtual ~Grid();
-	int getNumRows() const;
-	int getNumCols() const;
-	Cell& getCell(int x, int y);
-	const Cell& getCell(int x, int y) const;
-	bool checkContentToBorder();
+	int m = grid.getNumRows();
+	int n = grid.getNumCols();
 
+	for(int i = 0; i < m; i++) {
+		for(int j = 0; j < n; j++) {
+			const Cell& cell = grid.getCell(i, j);
+			stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
+		}
 
-private:
-	int m;
-	int n;
-	vector<Cell *> cells;
-};
+		stream << "." << std::endl;
 
-#endif
+		for(int j = 0; j < n; j++) {
+			const Cell& cell = grid.getCell(i, j);
+			int content = cell.getContent();
+			stream << Cell::getStateChar(cell.getLeftBorder(), false);
 
-#endif
+			if(content < 0) {
+				stream << ' ';
+			} else {
+				stream << content;
+			}
+		}
+
+		stream << Cell::getStateChar(grid.getCell(i, n).getLeftBorder(), false) << std::endl;
+	}
+
+	for(int j = 0; j < n; j++) {
+		const Cell& cell = grid.getCell(m, j);
+		stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
+	}
+
+	stream << "." << std::endl;
+
+	return stream;
+}

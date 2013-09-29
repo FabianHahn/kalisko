@@ -22,12 +22,12 @@
 #include <stdarg.h>
 #include <glib.h>
 #include "dll.h"
-
+#include "modules/event/event.h"
+#include "modules/socket/socket.h"
+#include "modules/socket/poll.h"
 #define API
 #include "http_server.h"
 #include "http_parser.h"
-#include "modules/event/event.h"
-#include "modules/socket/poll.h"
 
 #define OK_STATUS_STRING "200 OK"
 #define FILE_NOT_FOUND_STATUS_STRING "404 Not Found"
@@ -39,7 +39,7 @@
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");
-MODULE_VERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 5);
 MODULE_BCVERSION(0, 1, 2);
 MODULE_DEPENDS(MODULE_DEPENDENCY("socket", 0, 7, 0), MODULE_DEPENDENCY("event", 0, 1, 2));
 

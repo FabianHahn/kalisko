@@ -18,31 +18,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SLITHERLINK_GRID_H
-#define SLITHERLINK_GRID_H
+
+#ifndef SLITHERLINK_OUTPUT_H
+#define SLITHERLINK_OUTPUT_H
 
 #ifdef __cplusplus
 
-#include <vector>
-class Cell; // forward declaration
+#include <iostream>
+#include "Grid.h"
 
-class Grid
-{
-public:
-	Grid(int rows, int cols);
-	virtual ~Grid();
-	int getNumRows() const;
-	int getNumCols() const;
-	Cell& getCell(int x, int y);
-	const Cell& getCell(int x, int y) const;
-	bool checkContentToBorder();
-
-
-private:
-	int m;
-	int n;
-	vector<Cell *> cells;
-};
+std::ostream& operator<<(std::ostream& stream, const Grid& grid);
 
 #endif
 

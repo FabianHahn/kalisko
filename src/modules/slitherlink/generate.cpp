@@ -26,92 +26,95 @@ using namespace std;
 #include "Cell.h"
 #include "Grid.h"
 #include "generate.h"
+#include "output.h"
 
 API void generateSlitherlink()
 {
-	Grid test1(4,4); // simple 4 x 4 riddle-example
-	test1.getCell(0,0).setContent(1);
-	test1.getCell(0,1).setContent(-1);
-	test1.getCell(0,2).setContent(-1);
-	test1.getCell(0,3).setContent(0);
-	test1.getCell(1,0).setContent(-1);
-	test1.getCell(1,1).setContent(-1);
-	test1.getCell(1,2).setContent(-1);
-	test1.getCell(1,3).setContent(-1);
-	test1.getCell(2,0).setContent(1);
-	test1.getCell(2,1).setContent(-1);
-	test1.getCell(2,2).setContent(2);
-	test1.getCell(2,3).setContent(1);
-	test1.getCell(3,0).setContent(-1);
-	test1.getCell(3,1).setContent(2);
-	test1.getCell(3,2).setContent(3);
-	test1.getCell(3,3).setContent(-1);
+	Grid test1(4, 4); // simple 4 x 4 riddle-example
+	test1.getCell(0, 0).setContent(1);
+	test1.getCell(0, 1).setContent(-1);
+	test1.getCell(0, 2).setContent(-1);
+	test1.getCell(0, 3).setContent(0);
+	test1.getCell(1, 0).setContent(-1);
+	test1.getCell(1, 1).setContent(-1);
+	test1.getCell(1, 2).setContent(-1);
+	test1.getCell(1, 3).setContent(-1);
+	test1.getCell(2, 0).setContent(1);
+	test1.getCell(2, 1).setContent(-1);
+	test1.getCell(2, 2).setContent(2);
+	test1.getCell(2, 3).setContent(1);
+	test1.getCell(3, 0).setContent(-1);
+	test1.getCell(3, 1).setContent(2);
+	test1.getCell(3, 2).setContent(3);
+	test1.getCell(3, 3).setContent(-1);
 
-	if (test1.checkContentToBorder()){ // should return negative, since riddle not solved yet
+	if(test1.checkContentToBorder()) { // should return negative, since riddle not solved yet
 		cout << "Riddle solved correctly!" << endl;
-	}else{
+	} else {
 		cout << "Riddle not solved correctly!" << endl;
 	}
 
-	test1.getCell(0,0).setTopBorder(Cell::unused); // insert solution
-	test1.getCell(0,0).setLeftBorder(Cell::unused);
+	test1.getCell(0, 0).setTopBorder(Cell::unused); // insert solution
+	test1.getCell(0, 0).setLeftBorder(Cell::unused);
 
-	test1.getCell(0,1).setTopBorder(Cell::used);
-	test1.getCell(0,1).setLeftBorder(Cell::used);
+	test1.getCell(0, 1).setTopBorder(Cell::used);
+	test1.getCell(0, 1).setLeftBorder(Cell::used);
 
-	test1.getCell(0,2).setTopBorder(Cell::unused);
-	test1.getCell(0,2).setLeftBorder(Cell::used);
+	test1.getCell(0, 2).setTopBorder(Cell::unused);
+	test1.getCell(0, 2).setLeftBorder(Cell::used);
 
-	test1.getCell(0,3).setTopBorder(Cell::unused);
-	test1.getCell(0,3).setLeftBorder(Cell::unused);
-	test1.getCell(0,3).setRightBorder(Cell::unused);
+	test1.getCell(0, 3).setTopBorder(Cell::unused);
+	test1.getCell(0, 3).setLeftBorder(Cell::unused);
+	test1.getCell(0, 3).setRightBorder(Cell::unused);
 
-	test1.getCell(1,0).setTopBorder(Cell::unused);
-	test1.getCell(1,0).setLeftBorder(Cell::unused);
+	test1.getCell(1, 0).setTopBorder(Cell::unused);
+	test1.getCell(1, 0).setLeftBorder(Cell::unused);
 
-	test1.getCell(1,1).setTopBorder(Cell::unused);
-	test1.getCell(1,1).setLeftBorder(Cell::used);
+	test1.getCell(1, 1).setTopBorder(Cell::unused);
+	test1.getCell(1, 1).setLeftBorder(Cell::used);
 
-	test1.getCell(1,2).setTopBorder(Cell::unused);
-	test1.getCell(1,2).setLeftBorder(Cell::used);
+	test1.getCell(1, 2).setTopBorder(Cell::unused);
+	test1.getCell(1, 2).setLeftBorder(Cell::used);
 
-	test1.getCell(1,3).setTopBorder(Cell::unused);
-	test1.getCell(1,3).setLeftBorder(Cell::unused);
-	test1.getCell(1,3).setRightBorder(Cell::unused);
+	test1.getCell(1, 3).setTopBorder(Cell::unused);
+	test1.getCell(1, 3).setLeftBorder(Cell::unused);
+	test1.getCell(1, 3).setRightBorder(Cell::unused);
 
-	test1.getCell(2,0).setTopBorder(Cell::unused);
-	test1.getCell(2,0).setLeftBorder(Cell::unused);
+	test1.getCell(2, 0).setTopBorder(Cell::unused);
+	test1.getCell(2, 0).setLeftBorder(Cell::unused);
 
-	test1.getCell(2,1).setTopBorder(Cell::unused);
-	test1.getCell(2,1).setLeftBorder(Cell::used);
+	test1.getCell(2, 1).setTopBorder(Cell::unused);
+	test1.getCell(2, 1).setLeftBorder(Cell::used);
 
-	test1.getCell(2,2).setTopBorder(Cell::used);
-	test1.getCell(2,2).setLeftBorder(Cell::unused);
+	test1.getCell(2, 2).setTopBorder(Cell::used);
+	test1.getCell(2, 2).setLeftBorder(Cell::unused);
 
-	test1.getCell(2,3).setTopBorder(Cell::unused);
-	test1.getCell(2,3).setLeftBorder(Cell::used);
-	test1.getCell(2,3).setRightBorder(Cell::unused);
+	test1.getCell(2, 3).setTopBorder(Cell::unused);
+	test1.getCell(2, 3).setLeftBorder(Cell::used);
+	test1.getCell(2, 3).setRightBorder(Cell::unused);
 
-	test1.getCell(3,0).setBottomBorder(Cell::unused);
-	test1.getCell(3,0).setTopBorder(Cell::unused);
-	test1.getCell(3,0).setLeftBorder(Cell::unused);
+	test1.getCell(3, 0).setBottomBorder(Cell::unused);
+	test1.getCell(3, 0).setTopBorder(Cell::unused);
+	test1.getCell(3, 0).setLeftBorder(Cell::unused);
 
-	test1.getCell(3,1).setBottomBorder(Cell::unused);
-	test1.getCell(3,1).setTopBorder(Cell::used);
-	test1.getCell(3,1).setLeftBorder(Cell::unused);
+	test1.getCell(3, 1).setBottomBorder(Cell::unused);
+	test1.getCell(3, 1).setTopBorder(Cell::used);
+	test1.getCell(3, 1).setLeftBorder(Cell::unused);
 
-	test1.getCell(3,2).setBottomBorder(Cell::used);
-	test1.getCell(3,2).setTopBorder(Cell::unused);
-	test1.getCell(3,2).setLeftBorder(Cell::used);
+	test1.getCell(3, 2).setBottomBorder(Cell::used);
+	test1.getCell(3, 2).setTopBorder(Cell::unused);
+	test1.getCell(3, 2).setLeftBorder(Cell::used);
 
-	test1.getCell(3,3).setBottomBorder(Cell::unused);
-	test1.getCell(3,3).setTopBorder(Cell::unused);
-	test1.getCell(3,3).setLeftBorder(Cell::used);
-	test1.getCell(3,3).setRightBorder(Cell::unused);
+	test1.getCell(3, 3).setBottomBorder(Cell::unused);
+	test1.getCell(3, 3).setTopBorder(Cell::unused);
+	test1.getCell(3, 3).setLeftBorder(Cell::used);
+	test1.getCell(3, 3).setRightBorder(Cell::unused);
 
-	if (test1.checkContentToBorder()){ // should return positive, since solution was entered
+	if(test1.checkContentToBorder()) { // should return positive, since solution was entered
 		cout << "Riddle solved correctly!" << endl;
-	}else{
+	} else {
 		cout << "Riddle not solved correctly!" << endl;
 	}
+
+	std::cout << test1 << std::endl;
 }

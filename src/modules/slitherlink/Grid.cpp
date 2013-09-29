@@ -47,11 +47,11 @@ Grid::~Grid()
 	}
 }
 
-int Grid::getNumRows(){
+int Grid::getNumRows() const {
 	return m;
 }
 
-int Grid::getNumCols(){
+int Grid::getNumCols() const {
 	return n;
 }
 
@@ -83,5 +83,9 @@ bool Grid::checkContentToBorder(){  // compares content-value to the number of o
 }
 
 Cell& Grid::getCell(int x, int y){
+	return *cells[x*(n+1)+y];
+}
+
+const Cell& Grid::getCell(int x, int y) const {
 	return *cells[x*(n+1)+y];
 }

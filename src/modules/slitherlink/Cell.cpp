@@ -45,7 +45,15 @@ Cell& Cell::getTopNeighbour(){
 	return grid->getCell(x-1,y);
 }
 
+const Cell& Cell::getTopNeighbour() const {
+	return grid->getCell(x-1,y);
+}
+
 Cell& Cell::getBottomNeighbour(){
+	return grid->getCell(x+1,y);
+}
+
+const Cell& Cell::getBottomNeighbour() const {
 	return grid->getCell(x+1,y);
 }
 
@@ -53,23 +61,31 @@ Cell& Cell::getLeftNeighbour(){
 	return grid->getCell(x,y-1);
 }
 
+const Cell& Cell::getLeftNeighbour() const {
+	return grid->getCell(x,y-1);
+}
+
 Cell& Cell::getRightNeighbour(){
 	return grid->getCell(x,y+1);
 }
 
-Cell::State Cell::getTopBorder(){
+const Cell& Cell::getRightNeighbour() const {
+	return grid->getCell(x,y+1);
+}
+
+Cell::State Cell::getTopBorder() const {
 	return topBorder;
 }
 
-Cell::State Cell::getBottomBorder(){
+Cell::State Cell::getBottomBorder() const {
 	return getBottomNeighbour().getTopBorder();
 }
 
-Cell::State Cell::getLeftBorder(){
+Cell::State Cell::getLeftBorder() const {
 	return leftBorder;
 }
 
-Cell::State Cell::getRightBorder(){
+Cell::State Cell::getRightBorder() const {
 	return getRightNeighbour().getLeftBorder();
 }
 
@@ -90,10 +106,28 @@ void Cell::setRightBorder(Cell::State state){
 }
 
 
-int Cell::getContent(){
+int Cell::getContent() const {
 	return content;
 }
 
 void Cell::setContent(int c){
 	content = c;
+}
+
+char Cell::getStateChar(State state, bool horizontal)
+{
+	switch(state) {
+		case unknown:
+			return ' ';
+		case used:
+			if(horizontal) {
+				return '-';
+			} else {
+				return '|';
+			}
+		case unused:
+			return 'x';
+		default:
+			return ' ';
+	}
 }

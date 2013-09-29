@@ -40,7 +40,7 @@ class Grid
 	private:
 		int m;
 		int n;
-		vector<Cell *> cells;
+		std::vector<Cell *> cells;
 };
 
 #endif

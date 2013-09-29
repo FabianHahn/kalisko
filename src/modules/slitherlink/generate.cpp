@@ -19,7 +19,6 @@
  */
 
 #include <iostream>
-using namespace std;
 
 #include "dll.h"
 #define API
@@ -49,9 +48,9 @@ API void generateSlitherlink()
 	test1.getCell(3, 3).setContent(-1);
 
 	if(test1.checkContentToBorder()) { // should return negative, since riddle not solved yet
-		cout << "Riddle solved correctly!" << endl;
+		std::cout << "Riddle solved correctly!" << std::endl;
 	} else {
-		cout << "Riddle not solved correctly!" << endl;
+		std::cout << "Riddle not solved correctly!" << std::endl;
 	}
 
 	test1.getCell(0, 0).setTopBorder(Cell::unused); // insert solution
@@ -111,9 +110,9 @@ API void generateSlitherlink()
 	test1.getCell(3, 3).setRightBorder(Cell::unused);
 
 	if(test1.checkContentToBorder()) { // should return positive, since solution was entered
-		cout << "Riddle solved correctly!" << endl;
+		std::cout << "Riddle solved correctly!" << std::endl;
 	} else {
-		cout << "Riddle not solved correctly!" << endl;
+		std::cout << "Riddle not solved correctly!" << std::endl;
 	}
 
 	std::cout << test1 << std::endl;

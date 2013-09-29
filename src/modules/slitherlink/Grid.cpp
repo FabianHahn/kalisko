@@ -19,7 +19,6 @@
  */
 
 #include <iostream>
-using namespace std;
 
 #include "dll.h"
 #define API
@@ -79,7 +78,7 @@ bool Grid::checkContentToBorder()
 			int content = getCell(i, j).getContent();
 			if(content > -1 && content != count) {
 				check = false;
-				cout << "Number of borders in [" << i << "," << j << "] do not match the content." << endl;
+				std::cout << "Number of borders in [" << i << "," << j << "] do not match the content." << std::endl;
 			}
 		}
 	}

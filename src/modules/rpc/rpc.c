@@ -69,7 +69,7 @@ MODULE_INIT
 
 MODULE_FINALIZE
 {
-
+	g_hash_table_destroy(service_map);
 }
 
 API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation *implementation)

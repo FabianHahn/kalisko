@@ -27,26 +27,34 @@
 #include "modules/socket/socket.h"
 #include "modules/store/store.h"
 
-/**
- * Struct representing an RPC interface(stub) which can be implemented.
- */
-typedef struct
-{
-  /** Stores (pun intended) the request schema of the service. */
-  Store *request_schema;
-  /** Stores the response schema of the service. */
-  Store *response_schema;
-} RpcInterface;
+/** Type of function which can be used to implement an RPC stub. */
+typedef Store* (*RpcImplementation) (Store *);
 
-
-/**
- * Creates a new RpcInterface struct. Does *not* take ownership of the passed stores.
+/** 
+ * Makes an RPC implementation available to clients. Does not take ownership of any passed parameters.
+ * @param path the path of the RPC on this server
+ * @param request_schema    a schema to validate request stores passed into the implementation
+ * @param response_schema   a schema used to validate the result of calling the implementation
+ * @param implementation    a function to be called when an rpc occurs. The function may assume that the request
+ *                          is valid according to the request schema and must produce a valid response.
+ * @return                  whether or not registering the rpc was successful.
  */
-API RpcInterface *createRpcInterface(Store *requestSchema, Store *responseSchema);
+API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation *implementation);
 
 /**
- * Returns all resources associated with the rpcInterface and frees it.
+ * Unregisters a previously registered rpc, making it no longer available to clients.
+ * @param path    the path of the rpc to unregister
+ * @return        whether or not unregistering was successful
  */
-API void destroyRpcInterface(RpcInterface *rpcInterface);
+API bool unregisterRpc(char *path);
+
+/**
+ * Makes an RPC call.
+ * @param path      the path the rpc to call
+ * @param request   the request store passed to the rpc. Must be valid according to the rpc request schema
+ * @return          a new valid store according to the rpc response schema or NULL if the rpc failed. The 
+ *                  caller takes responsability to call freeStore on the result. 
+ */
+API Store *callRpc(char *path, Store *request);
 
 #endif

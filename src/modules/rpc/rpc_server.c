@@ -45,7 +45,7 @@ API RpcServer *startRpcServer(char *port, RpcCallback rpc_callback)
 	RpcServer *server = createRpcServer(port, rpc_callback);
 	logInfo("Starting RpcServer on port %s", port);
 	attachEventListener(server->server_socket, "accept", server, &clientAccepted);
-  if(!connectSocket(server->server_socket)) {
+	if(!connectSocket(server->server_socket)) {
 		logInfo("Unable to connect server socket on port %s", server->server_socket->port);
 		return false;
 	}

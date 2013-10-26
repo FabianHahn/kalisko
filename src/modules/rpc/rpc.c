@@ -68,13 +68,13 @@ static Store *rpcServerCallback(char *path, Store *request);
 MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
-  rpc_server = startRpcServer(PORT, (RpcCallback) &rpcServerCallback);
+	rpc_server = startRpcServer(PORT, (RpcCallback) &rpcServerCallback);
 	return true;
 }
 
 MODULE_FINALIZE
 {
-  stopRpcServer(rpc_server);
+	stopRpcServer(rpc_server);
 	g_hash_table_destroy(service_map);
 }
 

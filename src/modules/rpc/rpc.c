@@ -24,14 +24,15 @@
 #include "dll.h"
 #include "modules/event/event.h"
 #include "modules/rpc/rpc.h"
-#include "modules/socket/socket.h"
-#include "modules/socket/poll.h"
+#include "modules/rpc/rpc_server.h"
 #include "modules/store/clone.h"
 #define API
 
+#define PORT "8889"
+
 MODULE_NAME("rpc");
 MODULE_AUTHOR("Dino Wernli");
-MODULE_DESCRIPTION("This module provides an easy way to implement an RPC interface built on top of stores.");
+MODULE_DESCRIPTION("This module provides an easy way to implement an rpc interface built on top of stores.");
 MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(
@@ -46,33 +47,38 @@ typedef struct
 {
 	/** The path under which the RPC is available. */
 	char *path;
-  /** Stores (pun intended) the request schema of the service. */
-  Store *request_schema;
-  /** Stores the response schema of the service. */
-  Store *response_schema;
+	/** Stores (pun intended) the request schema of the service. */
+	Store *request_schema;
+	/** Stores the response schema of the service. */
+	Store *response_schema;
 	/** The function to be called for this RPC. */
-	RpcImplementation *implementation;
+	RpcImplementation implementation;
 } RpcService;
 
 /** Stores the mapping from path to the correspinding services. **/
 static GHashTable *service_map;
 
-static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation *implementation);
+/** Stores the central rpc server. */
+static RpcServer *rpc_server;
+
+static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation implementation);
 static void destroyRpcService(RpcService *rpcService);
+static Store *rpcServerCallback(char *path, Store *request);
 
 MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
-	logInfo("Hello World from the rpc module");
+  rpc_server = startRpcServer(PORT, (RpcCallback) &rpcServerCallback);
 	return true;
 }
 
 MODULE_FINALIZE
 {
+  stopRpcServer(rpc_server);
 	g_hash_table_destroy(service_map);
 }
 
-API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation *implementation)
+API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)
 {
 	if (g_hash_table_contains(service_map, path)) {
 		logWarning("Failed to register rpc because path %s is already bound", path);
@@ -113,7 +119,12 @@ API Store *callRpc(char *path, Store *request)
   // 4) Return the response store
 }
 
-RpcService *createRpcService(char *path, Store *request_schema, Store *response_schema, RpcImplementation *implementation)
+Store *rpcServerCallback(char *path, Store *request)
+{
+  return callRpc(path, request);
+}
+
+RpcService *createRpcService(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)
 {
 	RpcService *result = ALLOCATE_OBJECT(RpcService);
 	result->path = g_strdup(path);

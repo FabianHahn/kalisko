@@ -39,7 +39,7 @@ typedef Store* (*RpcImplementation) (Store *);
  *                          is valid according to the request schema and must produce a valid response.
  * @return                  whether or not registering the rpc was successful.
  */
-API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation *implementation);
+API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation);
 
 /**
  * Unregisters a previously registered rpc, making it no longer available to clients.
@@ -49,7 +49,7 @@ API bool registerRpc(char *path, Store *request_schema, Store *response_schema, 
 API bool unregisterRpc(char *path);
 
 /**
- * Makes an RPC call.
+ * Makes a local RPC call, acting as if a client had opened a connection and executed "rpc call <path>\n <request>\n\n".
  * @param path      the path the rpc to call
  * @param request   the request store passed to the rpc. Must be valid according to the rpc request schema
  * @return          a new valid store according to the rpc response schema or NULL if the rpc failed. The 

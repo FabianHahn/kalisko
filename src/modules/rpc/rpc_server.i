@@ -30,17 +30,27 @@
 /** Function executed by the server whenever a client issues the command to execute an rpc. */
 typedef Store* (*RpcCallback) (char *, Store *);
 
+typedef enum
+{
+	/** State in which the rpc server accepts and processes new incoming connections. */
+	RPC_SERVER_STATE_RUNNING,
+	/** State of the rpc server after calling stop or between creation and start. */
+	RPC_SERVER_STATE_STOPPED
+} RpcServerState;
+
 /**
  * Struct representing the rpc server.
  */
 typedef struct
 {
-  /** The server socket which accepts new connections. */
-  Socket *server_socket;
-  /** Stores the number of client currently connected. */
-  unsigned long open_connections;
-  /** Callback executed when a user makes an rpc all. */
-  RpcCallback rpc_callback;
+	/** The current state of the server. */
+	RpcServerState state;
+	/** The server socket which accepts new connections. */
+	Socket *socket;
+	/** Stores the number of client currently connected. */
+	unsigned long open_connections;
+	/** Callback executed when a user makes an rpc all. */
+	RpcCallback rpc_callback;
 } RpcServer;
 
 /**

@@ -44,42 +44,48 @@ API RpcServer *startRpcServer(char *port, RpcCallback rpc_callback)
 {
 	RpcServer *server = createRpcServer(port, rpc_callback);
 	logInfo("Starting RpcServer on port %s", port);
-	attachEventListener(server->server_socket, "accept", server, &clientAccepted);
-	if(!connectSocket(server->server_socket)) {
-		logInfo("Unable to connect server socket on port %s", server->server_socket->port);
+	attachEventListener(server->socket, "accept", server, &clientAccepted);
+	if(!connectSocket(server->socket)) {
+		logInfo("Unable to connect server socket on port %s", server->socket->port);
 		return false;
 	}
-	enableSocketPolling(server->server_socket);
+	enableSocketPolling(server->socket);
+	server->state = RPC_SERVER_STATE_RUNNING;
 	return server;
 }
 
 API void stopRpcServer(RpcServer *server)
 {
-	// TODO: Make sure the server no longer accepts new connections by setting state to stopped.
-	disableSocketPolling(server->server_socket);
-	detachEventListener(server->server_socket, "accept", server, &clientAccepted);
+	disableSocketPolling(server->socket);
+	detachEventListener(server->socket, "accept", server, &clientAccepted);
+	server->state = RPC_SERVER_STATE_STOPPED;
 
 	// Causes the server to get freed as soon as there are no more open connections.
 	tryFreeServer(server);
 }
 
-RpcServer *createRpcServer(char *port, RpcCallback *rpc_callback)
+RpcServer *createRpcServer(char *port, RpcCallback rpc_callback)
 {
 	RpcServer *result = ALLOCATE_OBJECT(RpcServer);
+	result->state = RPC_SERVER_STATE_STOPPED;
 	result->open_connections = 0;
-	result->server_socket = createServerSocket(port);
+	result->socket = createServerSocket(port);
 	result->rpc_callback = rpc_callback;
 	return result;
 }
 
 static void destroyRpcServer(RpcServer *server)
 {
-	freeSocket(server->server_socket);
+	freeSocket(server->socket);
 	free(server);
 }
 
 static void tryFreeServer(RpcServer *server)
 {
+	if (server->state != RPC_SERVER_STATE_STOPPED) {
+		logError("Illegal call to tryFreeServer in state other than STOPPED: %d", server->state);
+		return;
+	}
 	if (server->open_connections == 0) {
 		destroyRpcServer(server);
 	}
@@ -96,7 +102,9 @@ static void clientSocketDisconnected(void *subject, const char *event, void *dat
 	freeSocket(client_socket);
 
 	server->open_connections--;
-	// TODO: Call tryFreeServer if the server is in stopped state.
+	if (server->state == RPC_SERVER_STATE_STOPPED) {
+		tryFreeServer(server);
+	}
 }
 
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args)

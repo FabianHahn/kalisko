@@ -24,7 +24,7 @@
 #include "dll.h"
 #include "modules/event/event.h"
 #include "modules/rpc/rpc.h"
-#include "modules/rpc/rpc_server.h"
+#include "modules/rpc/line_server.h"
 #include "modules/store/clone.h"
 #define API
 
@@ -59,22 +59,22 @@ typedef struct
 static GHashTable *service_map;
 
 /** Stores the central rpc server. */
-static RpcServer *rpc_server;
+static LineServer *line_server;
 
 static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation implementation);
 static void destroyRpcService(RpcService *rpcService);
-static Store *rpcServerCallback(char *path, Store *request);
+static Store *lineServerCallback(char *path, Store *request);
 
 MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
-	rpc_server = startRpcServer(PORT, (RpcCallback) &rpcServerCallback);
+	line_server = startLineServer(PORT, (LineCallback) &lineServerCallback);
 	return true;
 }
 
 MODULE_FINALIZE
 {
-	stopRpcServer(rpc_server);
+	stopLineServer(line_server);
 	g_hash_table_destroy(service_map);
 }
 
@@ -119,7 +119,7 @@ API Store *callRpc(char *path, Store *request)
   // 4) Return the response store
 }
 
-Store *rpcServerCallback(char *path, Store *request)
+Store *lineServerCallback(char *path, Store *request)
 {
   return callRpc(path, request);
 }

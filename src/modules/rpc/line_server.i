@@ -27,8 +27,8 @@
 #include "modules/socket/socket.h"
 #include "modules/store/store.h"
 
-/** Function executed by the server whenever a client issues the command to execute an rpc. */
-typedef Store* (*RpcCallback) (char *, Store *);
+/** Function executed by the server whenever a client send a new line. */
+typedef Store* (*LineCallback) (char *, Store *);
 
 typedef enum
 {
@@ -36,7 +36,7 @@ typedef enum
 	RPC_SERVER_STATE_RUNNING,
 	/** State of the rpc server after calling stop or between creation and start. */
 	RPC_SERVER_STATE_STOPPED
-} RpcServerState;
+} LineServerState;
 
 /**
  * Struct representing the rpc server.
@@ -44,27 +44,48 @@ typedef enum
 typedef struct
 {
 	/** The current state of the server. */
-	RpcServerState state;
+	LineServerState state;
 	/** The server socket which accepts new connections. */
 	Socket *socket;
 	/** Stores the number of client currently connected. */
 	unsigned long open_connections;
 	/** Callback executed when a user makes an rpc all. */
-	RpcCallback rpc_callback;
-} RpcServer;
+	LineCallback line_callback;
+} LineServer;
+
+typedef struct
+{
+	/** Stores the socket on which to communicate with the client. */
+	Socket *socket;
+	/** Stores the line server instance this client is connected to. */
+	LineServer *server;
+} LineServerClient;
 
 /**
  * Creates and starts the central rpc server.
  * @param   port         the port on which to listen
  * @param   rpcCallback  a callback executed whenever a client issues the command to execute an rpc
- * @return  a newly running RpcServer. The caller is responsible for eventually calling stopRpcServer()
+ * @return  a newly running LineServer. The caller is responsible for eventually calling stopLineServer()
  */
-API RpcServer *startRpcServer(char *port, RpcCallback rpc_callback);
+API LineServer *startLineServer(char *port, LineCallback line_callback);
 
 /**
- * Stops the provided RpcServer and frees it. Calling this invalidates the passed pointer.
+ * Stops the provided LineServer and frees it. Calling this invalidates the passed pointer.
  * @param   server       the server to stop
  */
-API void stopRpcServer(RpcServer *server);
+API void stopLineServer(LineServer *server);
+
+/**
+ * Causes the server to disconnect from the client.
+ * @param   client       the client to disconnect
+ */
+API void disconnectLineServerClient(LineServerClient *client);
+
+/**
+ * Send the passed string to the client in question.
+ * @param   client       the client to talk to
+ * @param   message      the string to send to the client
+ */
+API void sendToLineServerClient(LineServerClient *client, char *message);
 
 #endif

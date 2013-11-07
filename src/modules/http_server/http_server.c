@@ -33,9 +33,6 @@
 #define FILE_NOT_FOUND_STATUS_STRING "404 Not Found"
 #define BAD_REQUEST_STATUS_STRING "400 Bad Request"
 
-// TODO: Observed bug: if you create and start multiple HTTP server, all request go to the first one started.
-// The working theory is that this is a bug in the socket module (and not in http_server). Need to investigate.
-
 MODULE_NAME("http_server");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides a basic http server library which can be used to easily create http servers.");

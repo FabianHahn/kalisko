@@ -23,27 +23,30 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/event/event.h"
-#include "modules/rpc/rpc_server.h"
+#include "modules/rpc/line_server.h"
 #include "modules/socket/socket.h"
 #include "modules/socket/poll.h"
 #include "modules/store/clone.h"
 #define API
 
-// TODO: Change this to be a generic line-by-line-read server, move this to an own module and
-// refactor HttpServer to be implemented on top of this as well.
+// TODO: Refactor HttpServer to be built on top of this.
 
-static RpcServer *createRpcServer();
-static void destroyRpcServer(RpcServer *server);
-static void tryFreeServer(RpcServer *server);
+static LineServer *createLineServer();
+static void destroyLineServer(LineServer *server);
+static void tryFreeServer(LineServer *server);
+
+// Takes no ownership of the passed pointers.
+static LineServerClient *createLineServerClient(LineServer *server, Socket *socket);
+static void destroyLineServerClient(LineServerClient *client);
 
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args);
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args);
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
 
-API RpcServer *startRpcServer(char *port, RpcCallback rpc_callback)
+API LineServer *startLineServer(char *port, LineCallback line_callback)
 {
-	RpcServer *server = createRpcServer(port, rpc_callback);
-	logInfo("Starting RpcServer on port %s", port);
+	LineServer *server = createLineServer(port, line_callback);
+	logInfo("Starting LineServer on port %s", port);
 	attachEventListener(server->socket, "accept", server, &clientAccepted);
 	if(!connectSocket(server->socket)) {
 		logInfo("Unable to connect server socket on port %s", server->socket->port);
@@ -54,7 +57,7 @@ API RpcServer *startRpcServer(char *port, RpcCallback rpc_callback)
 	return server;
 }
 
-API void stopRpcServer(RpcServer *server)
+API void stopLineServer(LineServer *server)
 {
 	disableSocketPolling(server->socket);
 	detachEventListener(server->socket, "accept", server, &clientAccepted);
@@ -64,42 +67,80 @@ API void stopRpcServer(RpcServer *server)
 	tryFreeServer(server);
 }
 
-RpcServer *createRpcServer(char *port, RpcCallback rpc_callback)
+API void disconnectLineServerClient(LineServerClient *client)
 {
-	RpcServer *result = ALLOCATE_OBJECT(RpcServer);
+	// TODO: Close the socket. See if clientSocketDisconnected is called.
+}
+
+API void sendToLineServerClient(LineServerClient *client, char *message)
+{
+	socketWriteRaw(client->socket, message, strlen(message) * sizeof(char));
+}
+
+// ***********************************************************
+// ************ Memory management for LineServer *************
+// ***********************************************************
+
+LineServer *createLineServer(char *port, LineCallback line_callback)
+{
+	LineServer *result = ALLOCATE_OBJECT(LineServer);
 	result->state = RPC_SERVER_STATE_STOPPED;
 	result->open_connections = 0;
 	result->socket = createServerSocket(port);
-	result->rpc_callback = rpc_callback;
+	result->line_callback = line_callback;
 	return result;
 }
 
-static void destroyRpcServer(RpcServer *server)
+static void destroyLineServer(LineServer *server)
 {
 	freeSocket(server->socket);
 	free(server);
 }
 
-static void tryFreeServer(RpcServer *server)
+static void tryFreeServer(LineServer *server)
 {
 	if (server->state != RPC_SERVER_STATE_STOPPED) {
 		logError("Illegal call to tryFreeServer in state other than STOPPED: %d", server->state);
 		return;
 	}
 	if (server->open_connections == 0) {
-		destroyRpcServer(server);
+		destroyLineServer(server);
 	}
 }
 
+// *****************************************************************
+// ************ Memory management for LineServerClient *************
+// *****************************************************************
+
+static LineServerClient *createLineServerClient(LineServer *server, Socket *socket)
+{
+	LineServerClient *result = ALLOCATE_OBJECT(LineServerClient);
+	result->socket = socket;
+	result->server = server;
+	return result;
+}
+
+static void destroyLineServerClient(LineServerClient *client)
+{
+	free(client);
+}
+
+// ****************************************************************
+// ********************** Socket callbacks ************************
+// ****************************************************************
+
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args)
 {
-	RpcServer *server = data;
+	LineServerClient *client = data;
+	LineServer *server = client->server;
 	Socket *client_socket = subject;
 
 	disableSocketPolling(client_socket);
 	detachEventListener(client_socket, "read", server, &clientSocketRead);
 	detachEventListener(client_socket, "disconnect", server, &clientSocketDisconnected);
 	freeSocket(client_socket);
+	
+	destroyLineServerClient(client);
 
 	server->open_connections--;
 	if (server->state == RPC_SERVER_STATE_STOPPED) {
@@ -119,11 +160,13 @@ static void clientSocketRead(void *subject, const char *event, void *data, va_li
 
 static void clientAccepted(void *subject, const char *event, void *data, va_list args)
 {
-	RpcServer *server = data;
+	LineServer *server = data;
 	server->open_connections++;
 
 	Socket *s = va_arg(args, Socket *);
-	attachEventListener(s, "read", server, &clientSocketRead);
-	attachEventListener(s, "disconnect", server, &clientSocketDisconnected);
+	LineServerClient *client = createLineServerClient(server, s);
+
+	attachEventListener(s, "read", client, &clientSocketRead);
+	attachEventListener(s, "disconnect", client, &clientSocketDisconnected);
 	enableSocketPolling(s);
 }

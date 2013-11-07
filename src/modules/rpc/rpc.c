@@ -115,8 +115,8 @@ API Store *callRpc(char *path, Store *request)
 	// TODO Pseudocode:
 	// 1) Validate the request store
 	// 2) Fetch the implementation function and call it on request
- 	// 3) Validate the response store
- 	// 4) Return the response store
+	// 3) Validate the response store
+	// 4) Return the response store
 }
 
 void lineServerCallback(LineServerClient *client)

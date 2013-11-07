@@ -39,13 +39,18 @@ static void tryFreeServer(LineServer *server);
 static LineServerClient *createLineServerClient(LineServer *server, Socket *socket);
 static void destroyLineServerClient(LineServerClient *client);
 
+// Extract all completed lines from the client buffer and updates the lines array of the client.
+// After a call to this function, the client buffer contains no more newlines. Returns the number
+// of new lines added to client->lines.
+static unsigned int processClientBuffer(LineServerClient *client);
+
 static void clientSocketDisconnected(void *subject, const char *event, void *data, va_list args);
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args);
 static void clientAccepted(void *subject, const char *event, void *data, va_list args);
 
-API LineServer *startLineServer(char *port, LineCallback line_callback)
+API LineServer *startLineServer(char *port, LineServerCallback callback)
 {
-	LineServer *server = createLineServer(port, line_callback);
+	LineServer *server = createLineServer(port, callback);
 	logInfo("Starting LineServer on port %s", port);
 	attachEventListener(server->socket, "accept", server, &clientAccepted);
 	if(!connectSocket(server->socket)) {
@@ -81,13 +86,13 @@ API void sendToLineServerClient(LineServerClient *client, char *message)
 // ************ Memory management for LineServer *************
 // ***********************************************************
 
-LineServer *createLineServer(char *port, LineCallback line_callback)
+LineServer *createLineServer(char *port, LineServerCallback callback)
 {
 	LineServer *result = ALLOCATE_OBJECT(LineServer);
 	result->state = RPC_SERVER_STATE_STOPPED;
 	result->open_connections = 0;
 	result->socket = createServerSocket(port);
-	result->line_callback = line_callback;
+	result->callback = callback;
 	return result;
 }
 
@@ -117,11 +122,15 @@ static LineServerClient *createLineServerClient(LineServer *server, Socket *sock
 	LineServerClient *result = ALLOCATE_OBJECT(LineServerClient);
 	result->socket = socket;
 	result->server = server;
+	result->lines = g_ptr_array_new_with_free_func(&free);
+	result->line_buffer = g_string_new("");
 	return result;
 }
 
 static void destroyLineServerClient(LineServerClient *client)
 {
+	g_ptr_array_free(client->lines, true);     // Calls free on the stored pointers.
+	g_string_free(client->line_buffer, true);  // Frees the underlying raw string.
 	free(client);
 }
 
@@ -150,12 +159,16 @@ static void clientSocketDisconnected(void *subject, const char *event, void *dat
 
 static void clientSocketRead(void *subject, const char *event, void *data, va_list args)
 {
-	// TODO: Implement line-by-line reading instead of just mirroring what is read.
-
-	Socket *client_socket = subject;
+	LineServerClient *client = data;
 	char *message = va_arg(args, char *);
 	logTrace("Read message: %s", message);
-	socketWriteRaw(client_socket, message, strlen(message) * sizeof(char));
+
+	g_string_append(client->line_buffer, message);
+	unsigned int added_lines = processClientBuffer(client);
+	if (added_lines > 0) {
+		LineServerCallback callback = client->server->callback;
+		callback(client);
+	}
 }
 
 static void clientAccepted(void *subject, const char *event, void *data, va_list args)
@@ -169,4 +182,10 @@ static void clientAccepted(void *subject, const char *event, void *data, va_list
 	attachEventListener(s, "read", client, &clientSocketRead);
 	attachEventListener(s, "disconnect", client, &clientSocketDisconnected);
 	enableSocketPolling(s);
+}
+
+static unsigned int processClientBuffer(LineServerClient *client)
+{
+	// TODO: Implement this.
+	return 1337;
 }

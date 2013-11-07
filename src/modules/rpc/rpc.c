@@ -63,12 +63,12 @@ static LineServer *line_server;
 
 static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation implementation);
 static void destroyRpcService(RpcService *rpcService);
-static Store *lineServerCallback(char *path, Store *request);
+static void lineServerCallback(LineServerClient *client);
 
 MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
-	line_server = startLineServer(PORT, (LineCallback) &lineServerCallback);
+	line_server = startLineServer(PORT, (LineServerCallback) &lineServerCallback);
 	return true;
 }
 
@@ -112,16 +112,21 @@ API Store *callRpc(char *path, Store *request)
 	logWarning("Calling rpcs not yet implemented");
 	return NULL;
 
-	// Pseudocode:
+	// TODO Pseudocode:
 	// 1) Validate the request store
 	// 2) Fetch the implementation function and call it on request
-  // 3) Validate the response store
-  // 4) Return the response store
+ 	// 3) Validate the response store
+ 	// 4) Return the response store
 }
 
-Store *lineServerCallback(char *path, Store *request)
+void lineServerCallback(LineServerClient *client)
 {
-  return callRpc(path, request);
+	// TODO Pseudocode:
+	// 1) Check if the last line are empty.
+	// 2) If so, attempt to parse the request and call callRpc.
+	// 3) If successful, respond with the serialized response.
+	// 4) In any case, close the connection.
+	logInfo("LineServerCallback called with buffer: %s", client->line_buffer->str);
 }
 
 RpcService *createRpcService(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)

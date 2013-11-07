@@ -27,8 +27,23 @@
 #include "modules/socket/socket.h"
 #include "modules/store/store.h"
 
+// Forward declaration.
+struct LineServerStruct;
+
+typedef struct
+{
+	/** Stores the socket on which to communicate with the client. */
+	Socket *socket;
+	/** Stores the line server instance this client is connected to. */
+	struct LineServerStruct *server;
+	/** Stores the lines (as char *) of raw input received from the client since they connected. */
+	GPtrArray *lines;
+	/** Stores the line currently being processed. Private, client should not touch this. */
+	GString *line_buffer;
+} LineServerClient;
+
 /** Function executed by the server whenever a client send a new line. */
-typedef Store* (*LineCallback) (char *, Store *);
+typedef void (*LineServerCallback) (LineServerClient*);
 
 typedef enum
 {
@@ -41,7 +56,7 @@ typedef enum
 /**
  * Struct representing the rpc server.
  */
-typedef struct
+typedef struct LineServerStruct
 {
 	/** The current state of the server. */
 	LineServerState state;
@@ -50,24 +65,16 @@ typedef struct
 	/** Stores the number of client currently connected. */
 	unsigned long open_connections;
 	/** Callback executed when a user makes an rpc all. */
-	LineCallback line_callback;
+	LineServerCallback callback;
 } LineServer;
-
-typedef struct
-{
-	/** Stores the socket on which to communicate with the client. */
-	Socket *socket;
-	/** Stores the line server instance this client is connected to. */
-	LineServer *server;
-} LineServerClient;
 
 /**
  * Creates and starts the central rpc server.
- * @param   port         the port on which to listen
- * @param   rpcCallback  a callback executed whenever a client issues the command to execute an rpc
+ * @param   port           the port on which to listen
+ * @param   lineCallback   a callback executed whenever a client has finished sending a full line
  * @return  a newly running LineServer. The caller is responsible for eventually calling stopLineServer()
  */
-API LineServer *startLineServer(char *port, LineCallback line_callback);
+API LineServer *startLineServer(char *port, LineServerCallback callback);
 
 /**
  * Stops the provided LineServer and frees it. Calling this invalidates the passed pointer.

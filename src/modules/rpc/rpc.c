@@ -64,6 +64,7 @@ static LineServer *line_server;
 static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation implementation);
 static void destroyRpcService(RpcService *rpcService);
 static void lineServerCallback(LineServerClient *client);
+static void processRequest(LineServerClient *client, int empty_line_index);
 
 MODULE_INIT
 {
@@ -121,12 +122,31 @@ API Store *callRpc(char *path, Store *request)
 
 void lineServerCallback(LineServerClient *client)
 {
-	// TODO Pseudocode:
-	// 1) Check if the last line are empty.
-	// 2) If so, attempt to parse the request and call callRpc.
-	// 3) If successful, respond with the serialized response.
-	// 4) In any case, close the connection.
-	logInfo("LineServerCallback called with buffer: %s", client->line_buffer->str);
+	// Locate the first empty line, if any.
+	int empty_line_index = -1;
+	for (int i = 0; i < client->lines->len; ++i) {
+		char *line = g_ptr_array_index(client->lines, i);
+		if (strlen(line) == 0) {
+			empty_line_index = i;
+			break;
+		}
+	}
+
+	if (empty_line_index != -1) {
+		processRequest(client, empty_line_index);
+		disconnectLineServerClient(client);
+	}
+}
+
+void processRequest(LineServerClient *client, int empty_line_index)
+{
+	logInfo("Processing request for client");
+	sendToLineServerClient(client, "Failed to process rpc request, not yet implemented\n");
+	// TODO: Implement:
+	// 1) Parse the first line and try to map it to supported operations (list, call, etc.)
+	// 2) Assemble all remaining lines which constitute the request store (if any)
+	// 3) Call the appropriate method such as callRpc()
+	// 4) Send the response as string
 }
 
 RpcService *createRpcService(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)

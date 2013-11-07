@@ -74,7 +74,7 @@ API void stopLineServer(LineServer *server)
 
 API void disconnectLineServerClient(LineServerClient *client)
 {
-	// TODO: Close the socket. See if clientSocketDisconnected is called.
+	disconnectSocket(client->socket);
 }
 
 API void sendToLineServerClient(LineServerClient *client, char *message)
@@ -186,6 +186,27 @@ static void clientAccepted(void *subject, const char *event, void *data, va_list
 
 static unsigned int processClientBuffer(LineServerClient *client)
 {
-	// TODO: Implement this.
-	return 1337;
+	// Reset the buffer.
+	char *buffer_contents = g_string_free(client->line_buffer, false);
+	client->line_buffer = g_string_new("");
+
+	// Move all the completed lines over to the lines array.
+	unsigned int added = 0;
+	char **parts = g_strsplit(buffer_contents, "\n", 0);
+	for(char **iter = parts; *iter != NULL; ++iter) {
+		if (*(iter + 1) == NULL) {
+			// The last part could be part of an ongoing line. Put it back in the buffer.
+			g_string_append(client->line_buffer, *iter);
+		} else {
+			// The current part corresponds to a full line. Trim some characters and append to lines.
+			g_strdelimit(*iter, "\r", ' ');
+			g_strstrip(*iter);
+			g_ptr_array_add(client->lines, strdup(*iter));
+			++added;
+		}
+	}
+
+	g_strfreev(parts);
+	free(buffer_contents);
+	return added;
 }

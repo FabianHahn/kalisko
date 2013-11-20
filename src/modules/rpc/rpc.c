@@ -29,6 +29,7 @@
 #define API
 
 #define PORT "8889"
+#define FIRST_REQUEST_LINE_REGEX "^rpc[ ]+(list|call)[ ]+(.*)$"
 
 MODULE_NAME("rpc");
 MODULE_AUTHOR("Dino Wernli");
@@ -61,10 +62,16 @@ static GHashTable *service_map;
 /** Stores the central rpc server. */
 static LineServer *line_server;
 
+static void lineServerCallback(LineServerClient *client);
+static void processRequest(LineServerClient *client, int empty_line_index, GString *response);
+static void processListRequest(LineServerClient *client, char *path, GString *response);
+static void processCallRequest(LineServerClient *client, char *path, GString *response);
+
+static bool matchFirstLine(char *first_line, GString *method, GString *path);
+static unsigned int findMatchingServices(GHashTable *service_map, char *path, GPtrArray *results);
+
 static RpcService *createRpcService(char *path, Store *requestSchema, Store *responseSchema, RpcImplementation implementation);
 static void destroyRpcService(RpcService *rpcService);
-static void lineServerCallback(LineServerClient *client);
-static void processRequest(LineServerClient *client, int empty_line_index);
 
 MODULE_INIT
 {
@@ -133,20 +140,106 @@ void lineServerCallback(LineServerClient *client)
 	}
 
 	if (empty_line_index != -1) {
-		processRequest(client, empty_line_index);
+		GString *response = g_string_new("");
+		processRequest(client, empty_line_index, response);
+		sendToLineServerClient(client, response->str);
+		g_string_free(response, true);
 		disconnectLineServerClient(client);
 	}
 }
 
-void processRequest(LineServerClient *client, int empty_line_index)
+void processRequest(LineServerClient *client, int empty_line_index, GString *response)
 {
-	logInfo("Processing request for client");
-	sendToLineServerClient(client, "Failed to process rpc request, not yet implemented\n");
-	// TODO: Implement:
-	// 1) Parse the first line and try to map it to supported operations (list, call, etc.)
-	// 2) Assemble all remaining lines which constitute the request store (if any)
-	// 3) Call the appropriate method such as callRpc()
-	// 4) Send the response as string
+	if (empty_line_index == 0) {
+		g_string_append(response, "Failed to process rpc, empty request\n");
+		return;
+	}
+	char *first_line = g_ptr_array_index(client->lines, 0);
+
+	GString *method = g_string_new("");
+	GString *path = g_string_new("");
+	if (!matchFirstLine(first_line, method, path)) {
+		g_string_free(method, true);
+		g_string_free(path, true);
+		g_string_append(response, "Invalid request\n");
+		return;
+	}
+
+	if (g_strcmp0("list", method->str) == 0) {
+		processListRequest(client, path->str, response);
+	} else if (g_strcmp0("call", method->str) == 0) {
+		processCallRequest(client, path->str, response);
+	}
+
+	g_string_free(method, true);
+	g_string_free(path, true);
+}
+
+void processCallRequest(LineServerClient *client, char *path, GString *response)
+{
+	logInfo("Processing rpc call for path: %s", path);
+	g_string_append(response, "Calling rpcs not yet implemented");
+	// TODO:
+	//  * Parse request store
+	//  * Execure callRpc
+	//  * Send the response
+}
+
+void processListRequest(LineServerClient *client, char *path, GString *response)
+{
+	logInfo("Processing rpc list for path: %s", path);
+
+	GPtrArray *matching = g_ptr_array_new_with_free_func(&free);
+	if (findMatchingServices(service_map, path, matching) == 0) {
+		g_string_append_printf(response, "No services matching: %s\n", path);
+	} else {
+		for (int i = 0; i < matching->len; ++i) {
+			char *service = g_ptr_array_index(matching, i);
+			g_string_append_printf(response, "%s\n", service);
+		}
+	}
+	g_ptr_array_free(matching, true);
+}
+
+// Returns true iff first_line valid. If true, populates method with the parsed
+// method and path with the parsed path.
+bool matchFirstLine(char *first_line, GString *method, GString *path)
+{
+	GRegex *regex = g_regex_new(FIRST_REQUEST_LINE_REGEX, 0, 0, NULL);
+	GMatchInfo *match_info;
+
+	bool matched = g_regex_match(regex, first_line, 0, &match_info);
+	if (matched) {
+		char *matched_method = g_match_info_fetch(match_info, 1);
+		g_string_assign(method, matched_method);
+		free(matched_method);
+
+		char *matched_path = g_match_info_fetch(match_info, 2);
+		g_string_assign(path, matched_path);
+		free(matched_path);
+	}
+
+	g_match_info_free(match_info);
+	g_regex_unref(regex);
+	return matched;
+}
+
+// Add all services matching path to results. The caller is responsible for
+// freeing all items added to services. Returns the number of services added.
+unsigned int findMatchingServices(GHashTable *service_map, char *path, GPtrArray *results)
+{
+	GHashTableIter iter;
+	gpointer key, value;
+
+	unsigned int added = 0;
+	g_hash_table_iter_init(&iter, service_map);
+	while (g_hash_table_iter_next(&iter, &key, &value)) {
+		if (g_str_has_prefix(key, path)) {
+			g_ptr_array_add(results, strdup(key));
+			++added;
+		}
+	}
+	return added;
 }
 
 RpcService *createRpcService(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)

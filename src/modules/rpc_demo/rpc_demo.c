@@ -23,10 +23,12 @@
 #include <stdlib.h>
 #include "dll.h"
 #include "modules/rpc/rpc.h"
+#include "modules/store/path.h"
+#include "modules/store/store.h"
 #define API
 
 // It is good practice to prepend a common path prefix used to identify the providing module.
-#define RPC_GREETING_PATH "/rpcdemo"
+#define RPC_GREETING_PATH "/rpcdemo/greeting"
 
 MODULE_NAME("rpc_demo");
 MODULE_AUTHOR("Dino Wernli");
@@ -35,9 +37,33 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("rpc", 0, 0, 1));
 
+/*
+Example usage of this module:
+
+duh@laptop ~ $ telnet localhost 8889
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+rpc call /rpcdemo/greeting
+other = 13
+user = duh
+
+"greeting" = "Hello, duh"
+Connection closed by foreign host.
+*/
+
+static Store *greetingServiceImplementation(Store *request);
+
 MODULE_INIT
 {
 	logWarning("Hello World");
+
+	// TODO: Load request and response schema from greetings_request.store and greetings_response.store.
+	registerRpc(RPC_GREETING_PATH,
+	            NULL,  // Request schema.
+	            NULL,  // Response schema.
+	            &greetingServiceImplementation);
+
 	return true;
 }
 
@@ -45,3 +71,20 @@ MODULE_FINALIZE
 {
 }
 
+// Simple implementation which extract a username from the request and returns a greeting.
+Store *greetingServiceImplementation(Store *request)
+{
+	GString *greeting = g_string_new("Hello, ");
+	Store *user_store = getStorePath(request, "user");
+	if (user_store == NULL) {
+		logWarning("No user provided");
+		g_string_append(greeting, "unknown user");
+	} else {
+		g_string_append(greeting, (char *) getStoreValueContent(user_store));
+	}
+
+	Store *response = createStore();
+	setStorePath(response, "greeting", createStoreStringValue(greeting->str));
+	g_string_free(greeting, true);
+	return response;
+}

@@ -36,8 +36,8 @@ typedef Store* (*RpcImplementation) (Store *);
 /** 
  * Makes an RPC implementation available to clients. Does not take ownership of any passed parameters.
  * @param path the path of the RPC on this server
- * @param request_schema    a schema to validate request stores passed into the implementation
- * @param response_schema   a schema used to validate the result of calling the implementation
+ * @param request_schema    an optional schema to validate request stores passed into the implementation
+ * @param response_schema   an optional schema used to validate the result of calling the implementation
  * @param implementation    a function to be called when an rpc occurs. The function may assume that the request
  *                          is valid according to the request schema and must produce a valid response.
  * @return                  whether or not registering the rpc was successful.

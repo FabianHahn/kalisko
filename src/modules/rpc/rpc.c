@@ -128,12 +128,12 @@ API Store *callRpc(char *path, Store *request)
 		return NULL;
 	}
 
-	if (!validateStoreByStoreSchema(request, service->request_schema)) {
+	if (service->request_schema != NULL && !validateStoreByStoreSchema(request, service->request_schema)) {
 		logWarning("Request store validation failed");
 		return NULL;
 	}
 	Store *response = service->implementation(request);
-	if (!validateStoreByStoreSchema(response, service->response_schema)) {
+	if (service->response_schema != NULL && !validateStoreByStoreSchema(response, service->response_schema)) {
 		logWarning("Response store validation failed");
 		freeStore(response);
 		return NULL;
@@ -198,20 +198,20 @@ void processCallRequest(LineServerClient *client, char *path, GString *response)
 	GString *serialized_request_store = g_string_new("");
 	for (int i = 1; i < client->lines->len; ++i) {
 		char *line = g_ptr_array_index(client->lines, i);
-		g_string_append(serialized_request_store, line);
+		g_string_append_printf(serialized_request_store, "%s\n", line);
 	}
 	Store *request = parseStoreString(serialized_request_store->str);
 	g_string_free(serialized_request_store, true);
 
 	Store *response_store = callRpc(path, request);
-	if (response == NULL) {
-		g_string_append(response, "Failed to execute rpc");
+	if (response_store == NULL) {
+		g_string_append(response, "Failed to execute rpc\n");
 	} else {
 		GString *serialized_response_store = writeStoreGString(response_store);
-		g_string_append(response, serialized_response_store->str);
+		g_string_append_printf(response, "%s\n", serialized_response_store->str);
 		g_string_free(serialized_response_store, true);
+		freeStore(response_store);
 	}
-	freeStore(response_store);
 }
 
 void processListRequest(LineServerClient *client, char *path, GString *response)
@@ -220,7 +220,7 @@ void processListRequest(LineServerClient *client, char *path, GString *response)
 
 	GPtrArray *matching = g_ptr_array_new_with_free_func(&free);
 	if (findMatchingServices(service_map, path, matching) == 0) {
-		g_string_append_printf(response, "No matching services\n");
+		g_string_append(response, "No matching services\n");
 	} else {
 		for (int i = 0; i < matching->len; ++i) {
 			char *service = g_ptr_array_index(matching, i);
@@ -282,15 +282,19 @@ RpcService *createRpcService(char *path, Store *request_schema, Store *response_
 	RpcService *result = ALLOCATE_OBJECT(RpcService);
 	result->path = g_strdup(path);
 	result->implementation = implementation;
-	result->request_schema = cloneStore(request_schema);
-	result->response_schema = cloneStore(response_schema);
+	result->request_schema = request_schema == NULL ? NULL : cloneStore(request_schema);
+	result->response_schema = response_schema == NULL ? NULL : cloneStore(response_schema);
 	return result;
 }
 
 void destroyRpcService(RpcService *rpc_service)
 {
 	free(rpc_service->path);
-	freeStore(rpc_service->request_schema);
-	freeStore(rpc_service->response_schema);
+	if (rpc_service->request_schema != NULL) {
+		freeStore(rpc_service->request_schema);
+	}
+	if (rpc_service->response_schema != NULL) {
+		freeStore(rpc_service->response_schema);
+	}
 	free(rpc_service);
 }

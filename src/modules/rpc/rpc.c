@@ -220,7 +220,7 @@ void processListRequest(LineServerClient *client, char *path, GString *response)
 
 	GPtrArray *matching = g_ptr_array_new_with_free_func(&free);
 	if (findMatchingServices(service_map, path, matching) == 0) {
-		g_string_append_printf(response, "No matching services\n", path);
+		g_string_append_printf(response, "No matching services\n");
 	} else {
 		for (int i = 0; i < matching->len; ++i) {
 			char *service = g_ptr_array_index(matching, i);

@@ -89,6 +89,14 @@ MODULE_FINALIZE
 	g_hash_table_destroy(service_map);
 }
 
+/***************************************************************/
+/* TODO: Remove this once actual store validation is available */
+/***************************************************************/
+bool validateStoreByStoreSchema(Store *store, Store *schema)
+{
+	return true;
+}
+
 API bool registerRpc(char *path, Store *request_schema, Store *response_schema, RpcImplementation implementation)
 {
 	if (g_hash_table_contains(service_map, path)) {
@@ -120,14 +128,17 @@ API Store *callRpc(char *path, Store *request)
 		return NULL;
 	}
 
-	logWarning("Calling rpcs not yet implemented");
-	return NULL;
-
-	// TODO Pseudocode:
-	// 1) Validate the request store
-	// 2) Fetch the implementation function and call it on request
-	// 3) Validate the response store
-	// 4) Return the response store
+	if (!validateStoreByStoreSchema(request, service->request_schema)) {
+		logWarning("Request store validation failed");
+		return NULL;
+	}
+	Store *response = service->implementation(request);
+	if (!validateStoreByStoreSchema(response, service->response_schema)) {
+		logWarning("Response store validation failed");
+		freeStore(response);
+		return NULL;
+	}
+	return response;
 }
 
 void lineServerCallback(LineServerClient *client)
@@ -209,7 +220,7 @@ void processListRequest(LineServerClient *client, char *path, GString *response)
 
 	GPtrArray *matching = g_ptr_array_new_with_free_func(&free);
 	if (findMatchingServices(service_map, path, matching) == 0) {
-		g_string_append_printf(response, "No services matching: %s\n", path);
+		g_string_append_printf(response, "No matching services\n", path);
 	} else {
 		for (int i = 0; i < matching->len; ++i) {
 			char *service = g_ptr_array_index(matching, i);

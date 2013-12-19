@@ -27,7 +27,10 @@
 #include "modules/socket/socket.h"
 #include "modules/store/store.h"
 
-/** Type of function which can be used to implement an RPC stub. */
+/**
+ * Type of function which can be used to implement an RPC stub.
+ * The caller is responsible for calling freeStore() on the returned store.
+ */
 typedef Store* (*RpcImplementation) (Store *);
 
 /** 

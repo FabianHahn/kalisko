@@ -26,10 +26,13 @@
 #include "modules/rpc/rpc.h"
 #include "modules/rpc/line_server.h"
 #include "modules/store/clone.h"
+#include "modules/store/parse.h"
+#include "modules/store/store.h"
+#include "modules/store/write.h"
 #define API
 
-#define PORT "8889"
-#define FIRST_REQUEST_LINE_REGEX "^rpc[ ]+(list|call)[ ]+(.*)$"
+#define RPC_PORT "8889"
+#define REQUEST_FIRST_LINE_REGEX "^rpc[ ]+(?<METHOD>list|call)([ ]+(?<PATH>.*))?$"
 
 MODULE_NAME("rpc");
 MODULE_AUTHOR("Dino Wernli");
@@ -76,7 +79,7 @@ static void destroyRpcService(RpcService *rpcService);
 MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
-	line_server = startLineServer(PORT, (LineServerCallback) &lineServerCallback);
+	line_server = startLineServer(RPC_PORT, (LineServerCallback) &lineServerCallback);
 	return true;
 }
 
@@ -178,11 +181,26 @@ void processRequest(LineServerClient *client, int empty_line_index, GString *res
 void processCallRequest(LineServerClient *client, char *path, GString *response)
 {
 	logInfo("Processing rpc call for path: %s", path);
-	g_string_append(response, "Calling rpcs not yet implemented");
-	// TODO:
-	//  * Parse request store
-	//  * Execure callRpc
-	//  * Send the response
+
+	// TODO: Figure out if stores can be parsed as a stream. For now, reconstruct
+	// serialized store string from the lines and parse the whole thing at once.
+	GString *serialized_request_store = g_string_new("");
+	for (int i = 1; i < client->lines->len; ++i) {
+		char *line = g_ptr_array_index(client->lines, i);
+		g_string_append(serialized_request_store, line);
+	}
+	Store *request = parseStoreString(serialized_request_store->str);
+	g_string_free(serialized_request_store, true);
+
+	Store *response_store = callRpc(path, request);
+	if (response == NULL) {
+		g_string_append(response, "Failed to execute rpc");
+	} else {
+		GString *serialized_response_store = writeStoreGString(response_store);
+		g_string_append(response, serialized_response_store->str);
+		g_string_free(serialized_response_store, true);
+	}
+	freeStore(response_store);
 }
 
 void processListRequest(LineServerClient *client, char *path, GString *response)
@@ -202,20 +220,25 @@ void processListRequest(LineServerClient *client, char *path, GString *response)
 }
 
 // Returns true iff first_line valid. If true, populates method with the parsed
-// method and path with the parsed path.
+// method and path with the parsed path. If no path is found, then path is
+// populated with the empty string.
 bool matchFirstLine(char *first_line, GString *method, GString *path)
 {
-	GRegex *regex = g_regex_new(FIRST_REQUEST_LINE_REGEX, 0, 0, NULL);
+	GRegex *regex = g_regex_new(REQUEST_FIRST_LINE_REGEX, 0, 0, NULL);
 	GMatchInfo *match_info;
 
 	bool matched = g_regex_match(regex, first_line, 0, &match_info);
 	if (matched) {
-		char *matched_method = g_match_info_fetch(match_info, 1);
+		char *matched_method = g_match_info_fetch_named(match_info, "METHOD");
 		g_string_assign(method, matched_method);
 		free(matched_method);
 
-		char *matched_path = g_match_info_fetch(match_info, 2);
-		g_string_assign(path, matched_path);
+		char *matched_path = g_match_info_fetch_named(match_info, "PATH");
+		if (matched_path == NULL) {
+			g_string_assign(path, "");
+		} else {
+			g_string_assign(path, matched_path);
+		}
 		free(matched_path);
 	}
 
@@ -226,6 +249,7 @@ bool matchFirstLine(char *first_line, GString *method, GString *path)
 
 // Add all services matching path to results. The caller is responsible for
 // freeing all items added to services. Returns the number of services added.
+// Note that if path is the empty string, all services are matched.
 unsigned int findMatchingServices(GHashTable *service_map, char *path, GPtrArray *results)
 {
 	GHashTableIter iter;

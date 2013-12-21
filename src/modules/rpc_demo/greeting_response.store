@@ -1,0 +1,3 @@
+layout = {
+	greeting = (optional string)
+}

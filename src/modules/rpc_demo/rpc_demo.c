@@ -56,8 +56,6 @@ static Store *greetingServiceImplementation(Store *request);
 
 MODULE_INIT
 {
-	logWarning("Hello World");
-
 	// TODO: Load request and response schema from greetings_request.store and greetings_response.store.
 	registerRpc(RPC_GREETING_PATH,
 	            NULL,  // Request schema.

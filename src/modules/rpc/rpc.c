@@ -200,10 +200,12 @@ void processCallRequest(LineServerClient *client, char *path, GString *response)
 		char *line = g_ptr_array_index(client->lines, i);
 		g_string_append_printf(serialized_request_store, "%s\n", line);
 	}
-	Store *request = parseStoreString(serialized_request_store->str);
+	Store *request_store = parseStoreString(serialized_request_store->str);
 	g_string_free(serialized_request_store, true);
 
-	Store *response_store = callRpc(path, request);
+	Store *response_store = callRpc(path, request_store);
+	freeStore(request_store);
+
 	if (response_store == NULL) {
 		g_string_append(response, "Failed to execute rpc\n");
 	} else {

@@ -23,8 +23,10 @@
 #include <glib.h>
 #include "dll.h"
 #include "modules/event/event.h"
-#include "modules/rpc/rpc.h"
+#include "modules/rpc/http.h"
 #include "modules/rpc/line_server.h"
+#include "modules/rpc/rpc.h"
+#include "modules/shared_http_server/shared_http_server.h"
 #include "modules/store/clone.h"
 #include "modules/store/parse.h"
 #include "modules/store/store.h"
@@ -34,6 +36,8 @@
 #define RPC_PORT "8889"
 #define REQUEST_FIRST_LINE_REGEX "^rpc[ ]+(?<METHOD>list|call)([ ]+(?<PATH>.*))?$"
 
+#define HTTP_STATUS_PAGE "/status"
+
 MODULE_NAME("rpc");
 MODULE_AUTHOR("Dino Wernli");
 MODULE_DESCRIPTION("This module provides an easy way to implement an rpc interface built on top of stores.");
@@ -41,6 +45,7 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_DEPENDS(
 		MODULE_DEPENDENCY("event", 0, 1, 2),
+		MODULE_DEPENDENCY("shared_http_server", 0, 0, 1),
 		MODULE_DEPENDENCY("socket", 0, 7, 0),
 		MODULE_DEPENDENCY("store", 0, 5, 3));
 
@@ -80,6 +85,10 @@ MODULE_INIT
 {
 	service_map = g_hash_table_new_full(g_str_hash, g_str_equal, free, (GDestroyNotify) &destroyRpcService);
 	line_server = startLineServer(RPC_PORT, (LineServerCallback) &lineServerCallback);
+
+	// Note that all http actions provided by this module are prefixed with /rpc.
+	registerSharedHttpServerRequestHandler(HTTP_STATUS_PAGE, &renderRpcStatusPage, NULL);
+
 	return true;
 }
 

@@ -25,18 +25,21 @@
 #include "modules/curl/curl.h"
 #include "modules/xml/xml.h"
 #include "modules/http_server/http_server.h"
+#include "modules/config/config.h"
+#include "modules/store/store.h"
+#include "modules/store/path.h"
 #define API
 #include "feed.h"
 
 MODULE_NAME("feed");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Module to track XML feeds");
-MODULE_VERSION(0, 3, 3);
+MODULE_VERSION(0, 4, 0);
 MODULE_BCVERSION(0, 2, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2));
+MODULE_DEPENDS(MODULE_DEPENDENCY("xml", 0, 1, 2), MODULE_DEPENDENCY("curl", 0, 1, 1), MODULE_DEPENDENCY("http_server", 0, 1, 2), MODULE_DEPENDENCY("config", 0, 3, 8), MODULE_DEPENDENCY("store", 0, 5, 3));
 
 #define FEED_LIMIT 200
-#define GENERIC_FEED_URI "^/feeds/%s.*$"
+#define GENERIC_FEED_URI "^/feeds/%s$"
 
 TIMER_CALLBACK(feed_update);
 static bool indexHandler(HttpRequest *request, HttpResponse *response, void *userdata_p);
@@ -52,7 +55,20 @@ static HttpServer *http;
 
 MODULE_INIT
 {
-	http = createHttpServer("1337");
+	Store *feed;
+
+	if((feed = getConfigPath("feed")) == NULL || feed->type != STORE_ARRAY) {
+		logError("Could not find required config value 'feed' for this profile, aborting feed");
+		return false;
+	}
+
+	Store *feedPort;
+	if((feedPort = getConfigPath("feed/port")) == NULL || feedPort->type != STORE_STRING) {
+		logError("Could not find required config value 'feed/port' for this profile, aborting feed");
+		return false;
+	}
+
+	http = createHttpServer(feedPort->content.string);
 	registerHttpServerRequestHandler(http, "^/[^/]*$", &indexHandler, NULL);
 
 	if(!startHttpServer(http)) {
@@ -64,11 +80,61 @@ MODULE_INIT
 	feeds = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeFeed);
 	TIMER_ADD_TIMEOUT(0, feed_update);
 
-	createFeed("generations", "http://generations.fr/winradio/prog.xml");
-	addFeedField("generations", "time", "/prog/morceau[@id='1']/date_prog");
-	addFeedField("generations", "artist", "/prog/morceau[@id='1']/chanteur");
-	addFeedField("generations", "title", "/prog/morceau[@id='1']/chanson");
-	enableFeed("generations");
+	Store *feedFeeds = getConfigPath("feed/feeds");
+
+	if(feedFeeds != NULL && feedFeeds->type == STORE_ARRAY) {
+		GHashTableIter iter;
+		char *name;
+		Store *feedsItem;
+
+		g_hash_table_iter_init(&iter, feedFeeds->content.array);
+		while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &feedsItem)) {
+			Store *feedUrl = getStorePath(feedsItem, "url");
+
+			if(feedUrl == NULL || feedUrl->type != STORE_STRING) {
+				logWarning("Failed to add feed '%s': Config value 'url' not found", name);
+				continue;
+			}
+
+			Store *feedFields = getStorePath(feedsItem, "fields");
+
+			if(feedFields->type != STORE_LIST) {
+				logWarning("Failed to add feed '%s': Config value 'fields' is not a list", name);
+				continue;
+			}
+
+			createFeed(name, feedUrl->content.string);
+			logNotice("Added feed '%s' with URL '%s'", name, feedUrl->content.string);
+
+			for(GList *iter = feedFields->content.list->head; iter != NULL; iter = iter->next) {
+				Store *feedField = iter->data;
+
+				if(feedField->type != STORE_ARRAY) {
+					logWarning("Failed to add field feed '%s': List item is not an array!", name);
+					continue;
+				}
+
+				Store *fieldName = getStorePath(feedField, "name");
+
+				if(fieldName->type != STORE_STRING) {
+					logWarning("Failed to add feed '%s' field: List item config value 'name' not found!", name);
+					continue;
+				}
+
+				Store *fieldExpression = getStorePath(feedField, "expression");
+
+				if(fieldExpression->type != STORE_STRING) {
+					logWarning("Failed to add feed field '%s': List item config value 'expression' not found!", fieldName->content.string);
+					continue;
+				}
+
+				addFeedField(name, fieldName->content.string, fieldExpression->content.string);
+				logNotice("Added field '%s' with XPath expression '%s' to feed '%s'", fieldName->content.string, fieldExpression->content.string, name);
+			}
+
+			enableFeed(name);
+		}
+	}
 
 	return true;
 }

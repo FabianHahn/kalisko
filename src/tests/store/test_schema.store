@@ -1,0 +1,44 @@
+types = {
+	Scene = {
+		primitives = (required PrimitiveArray)
+		textures = (optional TextureArray)
+		parameters = (optional ParameterArray)
+		materials = (required MaterialArray)
+		models = (required ModelArray)
+	}
+	
+	Material = {
+		vertexShader = (required string)
+		fragmentShader = (required string)
+		uniforms = (optional StringArray)
+	}
+	
+	Model = {
+		primitive = (required string)
+		material = (required string)
+		translation = (optional Vector)
+		scaleX = (optional float)
+		scaleY = (optional float)
+		scaleZ = (optional float)
+		rotationX = (optional float)
+		rotationY = (optional float)
+		rotationZ = (optional float)
+	}
+	
+	Primitive = { }
+	Texture = { }
+	
+	StringArray = (array string)
+	PrimitiveArray = (array Primitive)
+	TextureArray = (array Texture)
+	ParameterArray = (array Parameter)
+	MaterialArray = (array Material)
+	ModelArray = (array Model)
+	Vector = (list float)
+	Matrix = (list Vector)
+	Parameter = (variant int float Vector Matrix)
+}
+
+layout = {
+	scene = (required Scene)
+}

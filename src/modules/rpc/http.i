@@ -1,7 +1,8 @@
 /**
  * @file
  * <h3>Copyright</h3>
- * Copyright (c) 2013, Kalisko Project Leaders
+ * Copyright (c) 2009, Kalisko Project Leaders
+ * Copyright (c) 2013, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,48 +19,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef RPC_HTTP_H
+#define RPC_HTTP_H
 
-#include "dll.h"
-#define API
-#include "Cell.h"
-#include "Grid.h"
-#include "output.h"
+#include "modules/http_server/http_server.h"
 
-std::ostream& operator<<(std::ostream& stream, const Grid& grid)
-{
-	int m = grid.getNumRows();
-	int n = grid.getNumCols();
+API bool renderRpcStatusPage(HttpRequest *request, HttpResponse *response, void *userdata);
 
-	for(int i = 0; i < m; i++) {
-		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-		}
-
-		stream << "." << std::endl;
-
-		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			int content = cell.getContent();
-			stream << Cell::getStateChar(cell.getLeftBorder(), false);
-
-			if(content < 0) {
-				stream << ' ';
-			} else {
-				stream << content;
-			}
-		}
-
-		stream << Cell::getStateChar(grid.getCell(i, n).getLeftBorder(), false) << std::endl;
-	}
-
-	for(int j = 0; j < n; j++) {
-		const Cell& cell = grid.getCell(m, j);
-		stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-	}
-
-	stream << "." << std::endl;
-
-	return stream;
-}
+#endif

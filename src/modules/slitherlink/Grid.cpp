@@ -24,42 +24,73 @@
 #define API
 #include "Cell.h"
 #include "Grid.h"
-#include "output.h"
 
-std::ostream& operator<<(std::ostream& stream, const Grid& grid)
+/**
+ * Implementation of functions for class Grid:
+ * constructor, destructor, getter for rows & columns, checkContentToBorder
+ */
+
+Grid::Grid(int rows, int cols) :
+m(rows), n(cols), cells((m + 1) * (n + 1))
 {
-	int m = grid.getNumRows();
-	int n = grid.getNumCols();
+	for(int i = 0; i < m + 1; i++) {
+		for(int j = 0; j < n + 1; j++) {
+			cells[i * (n + 1) + j] = new Cell(this, i, j, -1);
+		}
+	}
+}
 
+Grid::~Grid()
+{
+	for(int i = 0; i < (m + 1) * (n + 1); i++) {
+		delete cells[i];
+	}
+}
+
+int Grid::getNumRows() const
+{
+	return m;
+}
+
+int Grid::getNumCols() const
+{
+	return n;
+}
+
+bool Grid::checkContentToBorder()
+{  // compares content-value to the number of occupied borders
+	bool check = true;
 	for(int i = 0; i < m; i++) {
 		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-		}
-
-		stream << "." << std::endl;
-
-		for(int j = 0; j < n; j++) {
-			const Cell& cell = grid.getCell(i, j);
-			int content = cell.getContent();
-			stream << Cell::getStateChar(cell.getLeftBorder(), false);
-
-			if(content < 0) {
-				stream << ' ';
-			} else {
-				stream << content;
+			int count = 0;
+			if(getCell(i, j).getBottomBorder() == Cell::used) {
+				count++;
+			}
+			if(getCell(i, j).getTopBorder() == Cell::used) {
+				count++;
+			}
+			if(getCell(i, j).getLeftBorder() == Cell::used) {
+				count++;
+			}
+			if(getCell(i, j).getRightBorder() == Cell::used) {
+				count++;
+			}
+			int content = getCell(i, j).getContent();
+			if(content > -1 && content != count) {
+				check = false;
+				std::cout << "Number of borders in [" << i << "," << j << "] do not match the content." << std::endl;
 			}
 		}
-
-		stream << Cell::getStateChar(grid.getCell(i, n).getLeftBorder(), false) << std::endl;
 	}
+	return check;
+}
 
-	for(int j = 0; j < n; j++) {
-		const Cell& cell = grid.getCell(m, j);
-		stream << "." << Cell::getStateChar(cell.getTopBorder(), true);
-	}
+Cell& Grid::getCell(int x, int y)
+{
+	return *cells[x * (n + 1) + y];
+}
 
-	stream << "." << std::endl;
-
-	return stream;
+const Cell& Grid::getCell(int x, int y) const
+{
+	return *cells[x * (n + 1) + y];
 }

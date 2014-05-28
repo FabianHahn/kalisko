@@ -84,7 +84,6 @@ TEST(extra_symbols)
 	destroyHttpResponse(response);
 }
 
-
 TEST(no_handler)
 {
 	request->hierarchical = strdup("/other_path");

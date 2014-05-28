@@ -67,7 +67,7 @@ static bool internalReloadConfig(bool doTriggerEvent);
 MODULE_NAME("config");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("The config module provides access to config files and a profile feature");
-MODULE_VERSION(0, 4, 4);
+MODULE_VERSION(0, 4, 5);
 MODULE_BCVERSION(0, 3, 8);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 6, 12), MODULE_DEPENDENCY("getopts", 0, 1, 0), MODULE_DEPENDENCY("event", 0, 1, 1));
 
@@ -329,6 +329,10 @@ static Store *loadReadOnlyConfigs()
 
 		if(g_file_test(userConfigFilePath, G_FILE_TEST_EXISTS)) {
 			Store *userConfig = $(Store *, store, parseStoreFile)(userConfigFilePath);
+
+			if(userConfig == NULL) {
+				userConfig = createStore();
+			}
 
 			if(retReadOnlyConfig == NULL) {
 				retReadOnlyConfig = userConfig;

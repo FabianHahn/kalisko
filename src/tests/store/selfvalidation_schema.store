@@ -1,0 +1,14 @@
+types = {
+	Specification = (list string)
+	StructSpecification = (array Specification)
+	
+	StringList = (list string)
+		
+	Type = (variant StringList StructSpecification)
+	TypeArray = (array Type)
+}
+
+layout = {
+	types = (optional TypeArray)
+	layout = (required StructSpecification)
+}

@@ -52,50 +52,49 @@ API Schema *parseSchema(Store *store)
 	g_hash_table_insert(schema->types, strdup("string"), createSchemaType("string", SCHEMA_TYPE_MODE_STRING));
 
 	// parse schema types
-	Store *types;
-	if((types = g_hash_table_lookup(store->content.array, "types")) == NULL) {
-		logError("Failed to parse schema: No 'types' section found");
-		freeSchema(schema); // invalid schema
-		return NULL;
-	}
+	Store *types = g_hash_table_lookup(store->content.array, "types");
 
-	if(types->type != STORE_ARRAY) {
-		logError("Failed to parse schema: 'types' section is not an array");
-		freeSchema(schema); // invalid schema
-		return NULL;
-	}
-
-	bool stuck = true;
-	while(stuck) {
-		stuck = false;
-		int parsed = 0;
-
-		GHashTableIter iter;
-		char *name;
-		Store *typeStore;
-		g_hash_table_iter_init(&iter, types->content.array);
-		while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &typeStore)) {
-			if(g_hash_table_lookup(schema->types, name) != NULL) {
-				continue; // we already parsed this type
-			}
-
-			SchemaType *type;
-			if((type = parseSchemaType(schema, name, typeStore)) == NULL) {
-				logInfo("Failed to parse schema type '%s'", name);
-				stuck = true;
-				continue;
-			}
-
-			logNotice("Parsed schema type '%s'", name);
-			g_hash_table_insert(schema->types, strdup(name), type);
-			parsed++;
-		}
-
-		if(stuck && parsed == 0) { // we are still stuck and made no progress
-			logError("Failed to parse schema: Some types failed to parse");
-			freeSchema(schema);
+	if(types != NULL) {
+		if(types->type != STORE_ARRAY) {
+			logError("Failed to parse schema: 'types' section is not an array");
+			freeSchema(schema); // invalid schema
 			return NULL;
 		}
+
+		bool stuck = true;
+		while(stuck) {
+			stuck = false;
+			int parsed = 0;
+
+			GHashTableIter iter;
+			char *name;
+			Store *typeStore;
+			g_hash_table_iter_init(&iter, types->content.array);
+			while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &typeStore)) {
+				if(g_hash_table_lookup(schema->types, name) != NULL) {
+					continue; // we already parsed this type
+				}
+
+				SchemaType *type;
+				if((type = parseSchemaType(schema, name, typeStore)) == NULL) {
+					logInfo("Failed to parse schema type '%s'", name);
+					stuck = true;
+					continue;
+				}
+
+				logNotice("Parsed schema type '%s'", name);
+				g_hash_table_insert(schema->types, strdup(name), type);
+				parsed++;
+			}
+
+			if(stuck && parsed == 0) { // we are still stuck and made no progress
+				logError("Failed to parse schema: Some types failed to parse");
+				freeSchema(schema);
+				return NULL;
+			}
+		}
+	} else {
+		logNotice("Schema does not contain a types section");
 	}
 
 	// parse root layout

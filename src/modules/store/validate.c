@@ -85,6 +85,8 @@ static bool validateSchemaType(SchemaType *type, Store *store)
 		case SCHEMA_TYPE_MODE_VARIANT:
 			validation &= validateSchemaTypeVariant(type->name, type->data.subtypes, store);
 		break;
+		case SCHEMA_TYPE_MODE_ALIAS:
+			validation &= validateSchemaType(type->data.subtype, store);
 		default:
 			assert(false);
 		break;

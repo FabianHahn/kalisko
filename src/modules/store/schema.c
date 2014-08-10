@@ -43,13 +43,14 @@ API Schema *parseSchema(Store *store)
 	}
 
 	Schema *schema = ALLOCATE_OBJECT(Schema);
-	schema->types = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaType);
+	schema->namedTypes = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaType);
+	schema->anonymousTypes = g_ptr_array_new_with_free_func(&freeSchemaType);
 	schema->layoutElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
 
 	// add default types
-	g_hash_table_insert(schema->types, strdup("int"), createSchemaType("int", SCHEMA_TYPE_MODE_INTEGER));
-	g_hash_table_insert(schema->types, strdup("float"), createSchemaType("float", SCHEMA_TYPE_MODE_FLOAT));
-	g_hash_table_insert(schema->types, strdup("string"), createSchemaType("string", SCHEMA_TYPE_MODE_STRING));
+	g_hash_table_insert(schema->namedTypes, strdup("int"), createSchemaType("int", SCHEMA_TYPE_MODE_INTEGER));
+	g_hash_table_insert(schema->namedTypes, strdup("float"), createSchemaType("float", SCHEMA_TYPE_MODE_FLOAT));
+	g_hash_table_insert(schema->namedTypes, strdup("string"), createSchemaType("string", SCHEMA_TYPE_MODE_STRING));
 
 	// parse schema types
 	Store *types = g_hash_table_lookup(store->content.array, "types");
@@ -71,20 +72,16 @@ API Schema *parseSchema(Store *store)
 			Store *typeStore;
 			g_hash_table_iter_init(&iter, types->content.array);
 			while(g_hash_table_iter_next(&iter, (void *) &name, (void *) &typeStore)) {
-				if(g_hash_table_lookup(schema->types, name) != NULL) {
+				if(g_hash_table_lookup(schema->namedTypes, name) != NULL) {
 					continue; // we already parsed this type
 				}
 
-				SchemaType *type;
-				if((type = parseSchemaType(schema, name, typeStore)) == NULL) {
+				if(parseSchemaType(schema, name, typeStore)) {
+					parsed++;
+				} else {
 					logInfo("Failed to parse schema type '%s'", name);
 					stuck = true;
-					continue;
 				}
-
-				logNotice("Parsed schema type '%s'", name);
-				g_hash_table_insert(schema->types, strdup(name), type);
-				parsed++;
 			}
 
 			if(stuck && parsed == 0) { // we are still stuck and made no progress
@@ -138,25 +135,46 @@ API Schema *parseSchema(Store *store)
 API void freeSchema(Schema *schema)
 {
 	g_hash_table_destroy(schema->layoutElements);
-	g_hash_table_destroy(schema->types);
+	g_ptr_array_unref(schema->anonymousTypes);
+	g_hash_table_destroy(schema->namedTypes);
 	free(schema);
 }
 
 /**
- * Parses a schema type from its store representation
+ * Parses a schema type from its store representation and adds it to the schema
  *
- * @param schema			the schema for which to parse the type
- * @param name				the name of the type to parse
+ * @param schema			the schema for which to parse the type and to add the type to
+ * @param name				the name of the type to parse or NULL if parsing an anonymous type
  * @param typeStore			the store representation of the type
  * @result					the parsed SchemaType or NULL if the parse failed
  */
 static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore)
 {
+	SchemaType *type = NULL;
+
 	switch(typeStore->type) {
 		case STORE_STRING:
-		case STORE_INTEGER:
-		case STORE_FLOAT_NUMBER:
-			return NULL; // invalid type
+		{
+			// String values can be used to refer to existing named types - in that
+			// case, we check if a type with that name already exists and copy it if
+			// we find one.
+			SchemaType *namedType = g_hash_table_lookup(schema->namedTypes, typeStore->content.string);
+
+			if(namedType == NULL) {
+				return NULL;
+			}
+
+			if(name == NULL) {
+				// We are parsing an anonymous string type - in other words, we are just aliasing an existing type.
+				// In this special case, we can just return the aliased type instead of creating an alias object.
+				logTrace("Aliasing named schema type '%s'", namedType->name);
+				return namedType;
+			} else {
+				// We are parsing a named type that referes to an existing named type, so create an alias type
+				type = createSchemaType(name, SCHEMA_TYPE_MODE_ALIAS);
+				type->data.subtype = namedType;
+			}
+		}
 		break;
 		case STORE_LIST:
 		{
@@ -170,25 +188,35 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 			}
 
 			if(g_strcmp0(identifier->content.string, "array") == 0) {
-				return parseSchemaTypeArray(schema, name, typeStore->content.list);
+				type = parseSchemaTypeArray(schema, name, typeStore->content.list);
 			} else if(g_strcmp0(identifier->content.string, "list") == 0) {
-				return parseSchemaTypeList(schema, name, typeStore->content.list);
+				type = parseSchemaTypeList(schema, name, typeStore->content.list);
 			} else if(g_strcmp0(identifier->content.string, "variant") == 0) {
-				return parseSchemaTypeVariant(schema, name, typeStore->content.list);
+				type = parseSchemaTypeVariant(schema, name, typeStore->content.list);
 			} else {
 				return NULL; // invalid type
 			}
 		}
 		break;
 		case STORE_ARRAY:
-			return parseSchemaTypeStruct(schema, name, typeStore->content.array);
+			type = parseSchemaTypeStruct(schema, name, typeStore->content.array);
 		break;
 		default:
-			assert(false);
+			// Nothing to do, we will just return NULL
 		break;
 	}
 
-	return NULL;
+	if(type != NULL) {
+		if(name != NULL) { // add as named type
+			g_hash_table_insert(schema->namedTypes, strdup(name), type);
+			logNotice("Parsed named schema type '%s'", name);
+		} else { // add as anonymous type
+			g_ptr_array_add(schema->anonymousTypes, type);
+			logNotice("Parsed anonymous schema type");
+		}
+	}
+
+	return type;
 }
 
 /**
@@ -205,21 +233,18 @@ static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue
 		return NULL; // invalid type
 	}
 
-	Store *typeName = list->head->next->data;
+	Store *subtypeStore = list->head->next->data;
 
-	if(typeName->type != STORE_STRING) {
-		return NULL; // invalid type
+	SchemaType *subtype = parseSchemaType(schema, NULL, subtypeStore);
+
+	if(subtype != NULL) {
+		SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_ARRAY);
+		type->data.subtype = subtype;
+
+		return type;
+	} else {
+		return NULL;
 	}
-
-	SchemaType *subtype;
-	if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
-		return NULL; // subtype not found
-	}
-
-	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_ARRAY);
-	type->data.subtype = subtype;
-
-	return type;
 }
 
 /**
@@ -236,21 +261,18 @@ static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue 
 		return NULL; // invalid type
 	}
 
-	Store *typeName = list->head->next->data;
+	Store *subtypeStore = list->head->next->data;
 
-	if(typeName->type != STORE_STRING) {
-		return NULL; // invalid type
+	SchemaType *subtype = parseSchemaType(schema, NULL, subtypeStore);
+
+	if(subtype != NULL) {
+		SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_LIST);
+		type->data.subtype = subtype;
+
+		return type;
+	} else {
+		return NULL;
 	}
-
-	SchemaType *subtype;
-	if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
-		return NULL; // subtype not found
-	}
-
-	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_LIST);
-	type->data.subtype = subtype;
-
-	return type;
 }
 
 /**
@@ -266,20 +288,16 @@ static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQue
 	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_VARIANT);
 
 	for(GList *iter = list->head->next; iter != NULL; iter = iter->next) {
-		Store *typeName = iter->data;
+		Store *subtypeStore = iter->data;
 
-		if(typeName->type != STORE_STRING) {
+		SchemaType *subtype = parseSchemaType(schema, NULL, subtypeStore);
+
+		if(subtype != NULL) {
+			g_queue_push_tail(type->data.subtypes, subtype);
+		} else {
 			freeSchemaType(type);
-			return NULL; // invalid type
+			return NULL; // failed to parse subtype
 		}
-
-		SchemaType *subtype;
-		if((subtype = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
-			freeSchemaType(type);
-			return NULL; // subtype not found
-		}
-
-		g_queue_push_tail(type->data.subtypes, subtype);
 	}
 
 	return type;
@@ -350,15 +368,16 @@ static SchemaStructElement *parseSchemaStructElement(Schema *schema, const char 
 		return NULL; // invalid type
 	}
 
-	Store *typeName = list->head->next->data;
+	Store *subtypeStore = list->head->next->data;
 
-	SchemaType *type;
-	if((type = g_hash_table_lookup(schema->types, typeName->content.string)) == NULL) {
+	SchemaType *type = parseSchemaType(schema, NULL, subtypeStore);
+
+	if(type != NULL) {
+		structElement->type = type;
+	} else {
 		freeSchemaStructElement(structElement);
-		return NULL; // type not found
+		return NULL; // could not parse type
 	}
-
-	structElement->type = type;
 
 	return structElement;
 }
@@ -373,7 +392,7 @@ static SchemaStructElement *parseSchemaStructElement(Schema *schema, const char 
 static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 {
 	SchemaType *schemaType = ALLOCATE_OBJECT(SchemaType);
-	schemaType->name = strdup(name);
+	schemaType->name = (name == NULL ? NULL : strdup(name));
 	schemaType->mode = mode;
 
 	switch(schemaType->mode) {
@@ -387,6 +406,7 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
 		case SCHEMA_TYPE_MODE_LIST:
+		case SCHEMA_TYPE_MODE_ALIAS:
 			schemaType->data.subtype = NULL;
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:

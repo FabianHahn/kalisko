@@ -36,7 +36,8 @@ typedef enum {
 	SCHEMA_TYPE_MODE_STRUCT,
 	SCHEMA_TYPE_MODE_ARRAY,
 	SCHEMA_TYPE_MODE_LIST,
-	SCHEMA_TYPE_MODE_VARIANT
+	SCHEMA_TYPE_MODE_VARIANT,
+	SCHEMA_TYPE_MODE_ALIAS
 } SchemaTypeMode;
 
 /**
@@ -45,7 +46,7 @@ typedef enum {
 typedef union {
 	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
 	GHashTable *structElements;
-	/** Subtype for array and list mode */
+	/** Subtype for array, list and alias mode */
 	struct SchemaTypeStruct *subtype;
 	/** Subtype list for variant mode */
 	GQueue *subtypes;
@@ -75,8 +76,10 @@ typedef struct {
  * Data type representing a store schema that can be used to validate a store
  */
 typedef struct {
-	/** A hash table strings mapping to SchemaType objects */
-	GHashTable *types;
+	/** A hash table strings mapping to SchemaType objects representing names types of the schema */
+	GHashTable *namedTypes;
+	/** An array of SchemaType objects representing anonymous types of the schema */
+	GPtrArray *anonymousTypes;
 	/** A table of SchemaStructElement objects representing the layout of the schema */
 	GHashTable *layoutElements;
 } Schema;

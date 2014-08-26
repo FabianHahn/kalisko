@@ -19,8 +19,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef JNI_JNI_H
-#define JNI_JNI_H
+#ifndef JAVAMODULE_JAVAMODULE_H
+#define JAVAMODULE_JAVAMODULE_H
+
+#include "types.h"
 
 /**
  * Looks for a class with the given name, instantiates it and starts by calling its init method on

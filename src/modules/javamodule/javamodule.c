@@ -32,7 +32,7 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
-#define CLASSPATH_OPTION "-Djava.class.path=/home/dinowernli/playground/jni/java"
+#define CLASSPATH_OPTION "-Djava.class.path=bin/release/java"
 
 static JavaVM *java_vm;
 static JNIEnv *java_env;
@@ -50,10 +50,42 @@ MODULE_INIT
 
 	jint result = JNI_CreateJavaVM(&java_vm, (void **)&java_env, &vm_args);
 	if (result < 0) {
-		logError("Unable to create JVM");
+		logError("Could not create JVM");
 		return false;
   }
-	return true;
+
+	jclass module_manager_class = (*java_env)->FindClass(java_env, "org/kalisko/core/ModuleManager");
+ 	if (module_manager_class == NULL) {
+		logError("Could not find ModuleManager class");
+		return false;
+ 	}
+
+	jmethodID constructor = (*java_env)->GetMethodID(java_env, module_manager_class, "<init>","()V");
+ 	if (constructor == NULL) {
+		logError("Could not find ModuleManager constructor");
+		return false;
+ 	}
+
+	jobject module_manager = (*java_env)->NewObject(java_env, module_manager_class, constructor);
+ 	if (module_manager == NULL) {
+		logError("Could not instantiate ModuleManager");
+		return false;
+ 	}
+
+	jmethodID execute_module = (*java_env)->GetMethodID(java_env, module_manager_class, "executeModule", "(Ljava/lang/String;)Z");
+ 	if (execute_module == NULL) {
+		logError("Could not find executeModule in ModuleManager");
+		return false;
+ 	}
+
+	jstring module_string = (*java_env)->NewStringUTF(java_env, "org.kalisko.core.DemoModule");
+ 	if (module_string == NULL) {
+		logError("Could not create module string argument");
+		return false;
+ 	}
+
+	jboolean success = (*java_env)->CallBooleanMethod(java_env, module_manager, execute_module, module_string);
+	return success;
 }
 
 MODULE_FINALIZE
@@ -63,27 +95,6 @@ MODULE_FINALIZE
 
 API bool executeJavaModule(char *moduleClass)
 {
-	/*
-	jclass cls = (*env)->FindClass(env, moduleClass);
- 	if (cls == NULL) {
-		logError("Could not find module class %s", moduleClass);
-		return false;
- 	}
-
- 	jmethodID mid = (*env)->GetStaticMethodID(env, cls, "main", "([Ljava/lang/String;)V");
- 	if (mid == NULL) {
-		logError("Could not find module class %s", moduleClass);
-		return false;
- 	}
-
-	jstring jstr;
-	jstring argString = (*env)->NewStringUTF(env, "");
-	jobjectArray args = (*env)->NewObjectArray(env, 1, (*env)->FindClass(env, "java/lang/String"), jstr);
-	if (args == NULL) {
-		printf("Out of memory\n");
-		return 1;
-	}
-	*/
 	logWarning("Executing Java modules not yet implemented");
 	return false;
 }

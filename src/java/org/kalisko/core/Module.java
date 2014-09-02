@@ -29,11 +29,11 @@ public interface Module {
 	 * Is synchronously on the native thread during startup of the native module. This method should
 	 * be kept cheap. In particular, it should never block or wait for anything external.
 	 */
- 	void initialize();
+	void initialize();
 
 	/**
 	 * The main entry point of the module. This is executed on a dedicated thread. By the time this
 	 * gets run, it is legal to assume that initialize() has been called.
 	 */
- 	void run();
+	void run();
 }

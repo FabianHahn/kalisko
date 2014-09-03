@@ -20,10 +20,12 @@ import os
 
 Import('module')    # The environment for this module.
 Import('src_path')  # A path to the "src" directory.
-Import('tdir')      # A path to the target directory (such as /bin/release).
 
 # Build all the java source files.
-module.Java(source = os.path.join(src_path, 'java'), target = os.path.join(tdir, 'java'))
+# TODO: Right now, this module needs to be recompiled for java changes to take effect. It
+# would be nice if compiling the individual java-based modules would also trigger a
+# recompile of the java sources.
+module.Java(source = os.path.join(src_path, 'java'), target = os.path.join('..', '..', 'java'))
 
 # TODO: use proper pkg-config for the jni config.
 module.Append(CPPPATH = ['/usr/lib/jvm/java-7-openjdk-amd64/include'])

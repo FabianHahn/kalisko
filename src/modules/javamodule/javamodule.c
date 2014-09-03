@@ -78,7 +78,7 @@ MODULE_INIT
 		return false;
  	}
 
-	jstring module_string = (*java_env)->NewStringUTF(java_env, "org.kalisko.core.DemoModule");
+	jstring module_string = (*java_env)->NewStringUTF(java_env, "org.kalisko.modules.demo.DemoModule");
  	if (module_string == NULL) {
 		logError("Could not create module string argument");
 		return false;

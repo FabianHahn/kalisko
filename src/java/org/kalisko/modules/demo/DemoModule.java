@@ -19,20 +19,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.kalisko.core;
+package org.kalisko.modules.demo;
 
-public class ModuleManager {
-  public boolean executeModule(String className) {
-    System.out.println("Attempting to execute module: " + className);
-    try {
-      Class<?> moduleClass = Class.forName(className);
-      Module module = (Module) moduleClass.newInstance();
-      module.initialize();
-      // TODO: Actually call module.execute() in a separate thread.
-    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-      e.printStackTrace();
-      return false;
-    }
-    return true;
+import org.kalisko.core.Module;
+
+public class DemoModule implements Module {
+  @Override
+  public void initialize() {
+    System.out.println("Initializing DemoModule");
+  }
+
+  @Override
+  public void run() {
   }
 }

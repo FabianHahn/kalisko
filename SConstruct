@@ -136,7 +136,7 @@ for prefix, env in targets:
 				# Build module
 				module = env.Clone()
 				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
-				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests', 'tdir', 'src_path'])
+				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests', 'src_path'])
 
 	# Build test modules
 	for testdir in test_modules:

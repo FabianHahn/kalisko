@@ -31,3 +31,6 @@ kic/kic
 # ignore custom Makefiles
 Makefile
 
+# ignore java class files
+*.class
+

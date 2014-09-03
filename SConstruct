@@ -21,19 +21,19 @@ import os
 import re
 from util.kic import kic
 
-ABSOLUTE_PATH = os.getcwd()
-
-kic.buildInterfaces(os.path.join(ABSOLUTE_PATH, 'util', 'kic'), os.path.join(ABSOLUTE_PATH, 'src'))
-modules = os.listdir(os.path.join(ABSOLUTE_PATH, 'src', 'modules'))
-test_modules = os.listdir(os.path.join(ABSOLUTE_PATH, 'src', 'tests'))
-
 def CheckPKGConfig(context, name):
      context.Message( 'Checking pkg-config for %s... ' % name )
      ret = context.TryAction('pkg-config --exists %s' % name)[0]
      context.Result( ret )
      return ret
 
+ABSOLUTE_PATH = os.getcwd()
 custom_tests = {'CheckPKGConfig' : CheckPKGConfig}
+src_path = os.path.join(ABSOLUTE_PATH, 'src')
+
+kic.buildInterfaces(os.path.join(ABSOLUTE_PATH, 'util', 'kic'), src_path)
+modules = os.listdir(os.path.join(src_path, 'modules'))
+test_modules = os.listdir(os.path.join(src_path, 'tests'))
 
 vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
@@ -136,7 +136,7 @@ for prefix, env in targets:
 				# Build module
 				module = env.Clone()
 				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
-				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests'])
+				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests', 'tdir', 'src_path'])
 
 	# Build test modules
 	for testdir in test_modules:

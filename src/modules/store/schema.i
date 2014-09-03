@@ -37,7 +37,8 @@ typedef enum {
 	SCHEMA_TYPE_MODE_ARRAY,
 	SCHEMA_TYPE_MODE_LIST,
 	SCHEMA_TYPE_MODE_VARIANT,
-	SCHEMA_TYPE_MODE_ALIAS
+	SCHEMA_TYPE_MODE_ALIAS,
+	SCHEMA_TYPE_MODE_ENUM
 } SchemaTypeMode;
 
 /**
@@ -50,6 +51,8 @@ typedef union {
 	struct SchemaTypeStruct *subtype;
 	/** Subtype list for variant mode */
 	GQueue *subtypes;
+	/** String constant list for enum mode */
+	GQueue *constants;
 } SchemaTypeModeData;
 
 /**

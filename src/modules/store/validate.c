@@ -32,6 +32,7 @@ static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structEle
 static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store);
 static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store);
 static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store);
+static bool validateSchemaTypeEnum(const char *typeName, GQueue *subtypes, Store *store);
 
 API bool validateStoreByStoreSchema(Store *store, Store *schemaStore)
 {
@@ -84,6 +85,9 @@ static bool validateSchemaType(SchemaType *type, Store *store)
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
 			validation &= validateSchemaTypeVariant(type->name, type->data.subtypes, store);
+		break;
+		case SCHEMA_TYPE_MODE_ENUM:
+			validation &= validateSchemaTypeEnum(type->name, type->data.constants, store);
 		break;
 		case SCHEMA_TYPE_MODE_ALIAS:
 			validation &= validateSchemaType(type->data.subtype, store);
@@ -256,5 +260,32 @@ static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, St
 	}
 
 	logError("Failed to validate store: Store element does not match any of the variant subtypes of type '%s'", typeName);
+	return false;
+}
+
+/**
+ * Validate an enum type within a schema against a given store
+ *
+ * @param typeName				the name of the type we are validating
+ * @param subtypes				the constants list of the schema enum type which we want to validate
+ * @param store					the store we are validating
+ * @result true					true if validation passes
+ */
+static bool validateSchemaTypeEnum(const char *typeName, GQueue *constants, Store *store)
+{
+	if(store->type != STORE_STRING) {
+		logError("Failed to validate store: Store element should be a '%s' enum constant, but is not a string!", typeName);
+		return false;
+	}
+
+	for(GList *iter = constants->head; iter != NULL; iter = iter->next) {
+		char *constant = iter->data;
+
+		if(g_strcmp0(store->content.string, constant) == 0) {
+			return true;
+		}
+	}
+
+	logError("Failed to validate store: Store element should be a '%s' enum constant, but is '%s'", typeName, store->content.string);
 	return false;
 }

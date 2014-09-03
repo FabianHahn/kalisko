@@ -66,4 +66,13 @@ API char *convertToUtf8(const char *str);
  */
 API size_t parseCommaSeparated(char *str, GPtrArray *out);
 
+/**
+ * Indents a string by prepending '\t' to every line
+ *
+ * @param input				the input string to indent
+ * @param levels			the number of levels by which to indent
+ * @result					the indented string, must be freed by the caller
+ */
+API char *indentString(const char *input, int levels);
+
 #endif

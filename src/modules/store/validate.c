@@ -19,20 +19,21 @@
  */
 
 #include "dll.h"
+#include "modules/string_util/string_util.h"
 #define API
 #include "store.h"
 #include "schema.h"
 #include "validate.h"
 
-static bool validateSchemaType(SchemaType *type, Store *store);
-static bool validateSchemaTypeInteger(const char *typeName, Store *store);
-static bool validateSchemaTypeFloat(const char *typeName, Store *store);
-static bool validateSchemaTypeString(const char *typeName, Store *store);
-static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store);
-static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store);
-static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store);
-static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store);
-static bool validateSchemaTypeEnum(const char *typeName, GQueue *subtypes, Store *store);
+static bool validateSchemaType(SchemaType *type, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeInteger(const char *typeName, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeFloat(const char *typeName, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeString(const char *typeName, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeEnum(const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString);
 
 API bool validateStoreByStoreSchema(Store *store, Store *schemaStore)
 {
@@ -50,7 +51,19 @@ API bool validateStoreByStoreSchema(Store *store, Store *schemaStore)
 
 API bool validateStore(Store *store, Schema *schema)
 {
-	return validateSchemaTypeStruct("[schema root layout]", schema->layoutElements, store);
+	GString *storePath = g_string_new("");
+	GString *errorString = g_string_new("");
+
+	bool validated = validateSchemaTypeStruct("[schema root layout]", schema->layoutElements, store, storePath->str, errorString);
+
+	if(!validated) {
+		logError("Failed to validate schema:%s", errorString->str);
+	}
+
+	g_string_free(storePath, true);
+	g_string_free(errorString, true);
+
+	return validated;
 }
 
 /**
@@ -58,39 +71,41 @@ API bool validateStore(Store *store, Schema *schema)
  *
  * @param type					the schema type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated*
  * @result true					true if validation passes
  */
-static bool validateSchemaType(SchemaType *type, Store *store)
+static bool validateSchemaType(SchemaType *type, Store *store, const char *storePath, GString *errorString)
 {
 	bool validation = true;
 
 	switch(type->mode) {
 		case SCHEMA_TYPE_MODE_INTEGER:
-			validation &= validateSchemaTypeInteger(type->name, store);
+			validation &= validateSchemaTypeInteger(type->name, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_FLOAT:
-			validation &= validateSchemaTypeFloat(type->name, store);
+			validation &= validateSchemaTypeFloat(type->name, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_STRING:
-			validation &= validateSchemaTypeString(type->name, store);
+			validation &= validateSchemaTypeString(type->name, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_STRUCT:
-			validation &= validateSchemaTypeStruct(type->name, type->data.structElements, store);
+			validation &= validateSchemaTypeStruct(type->name, type->data.structElements, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
-			validation &= validateSchemaTypeArray(type->name, type->data.subtype, store);
+			validation &= validateSchemaTypeArray(type->name, type->data.subtype, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_LIST:
-			validation &= validateSchemaTypeList(type->name, type->data.subtype, store);
+			validation &= validateSchemaTypeList(type->name, type->data.subtype, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
-			validation &= validateSchemaTypeVariant(type->name, type->data.subtypes, store);
+			validation &= validateSchemaTypeVariant(type->name, type->data.subtypes, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_ENUM:
-			validation &= validateSchemaTypeEnum(type->name, type->data.constants, store);
+			validation &= validateSchemaTypeEnum(type->name, type->data.constants, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_ALIAS:
-			validation &= validateSchemaType(type->data.subtype, store);
+			validation &= validateSchemaType(type->data.subtype, store, storePath, errorString);
 		default:
 			assert(false);
 		break;
@@ -104,12 +119,14 @@ static bool validateSchemaType(SchemaType *type, Store *store)
  *
  * @param typeName				the name of the type we are validating
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeInteger(const char *typeName, Store *store)
+static bool validateSchemaTypeInteger(const char *typeName, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_INTEGER) {
-		logError("Failed to validate store: Store element is not an integer, but should be integer type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not an integer, but should be of integer type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -121,12 +138,14 @@ static bool validateSchemaTypeInteger(const char *typeName, Store *store)
  *
  * @param typeName				the name of the type we are validating
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeFloat(const char *typeName, Store *store)
+static bool validateSchemaTypeFloat(const char *typeName, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_FLOAT_NUMBER) {
-		logError("Failed to validate store: Store element is not a float, but should be float type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not a float, but should be of float type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -138,12 +157,14 @@ static bool validateSchemaTypeFloat(const char *typeName, Store *store)
  *
  * @param typeName				the name of the type we are validating
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeString(const char *typeName, Store *store)
+static bool validateSchemaTypeString(const char *typeName, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_STRING) {
-		logError("Failed to validate store: Store element is not a string, but should be string type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not a string, but should be of string type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -156,12 +177,14 @@ static bool validateSchemaTypeString(const char *typeName, Store *store)
  * @param typeName				the name of the type we are validating
  * @param structElementTable	a hash table of SchemaStructElement objects comprising the schema struct type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store)
+static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structElementTable, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_ARRAY) {
-		logError("Failed to validate store: Store element is not an array, but should be struct type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not an array, but should be of struct type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -173,12 +196,18 @@ static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structEle
 		Store *storeStructElement = g_hash_table_lookup(store->content.array, key);
 
 		if(storeStructElement == NULL && schemaStructElement->required) {
-			logError("Failed to validate store: Key '%s' of struct type '%s' required but not found", key, typeName);
+			g_string_append_printf(errorString, "\nStore element at '%s/%s' of struct type '%s' is required, but was not found", storePath, key, typeName);
 			return false;
 		}
 
 		if(storeStructElement != NULL) {
-			if(!validateSchemaType(schemaStructElement->type, storeStructElement)) {
+			GString *storePathAppended = g_string_new(storePath);
+			g_string_append_printf(storePathAppended, "/%s", key);
+
+			bool validated = validateSchemaType(schemaStructElement->type, storeStructElement, storePathAppended->str, errorString);
+			g_string_free(storePathAppended, true);
+
+			if(!validated) {
 				return false;
 			}
 		}
@@ -193,12 +222,14 @@ static bool validateSchemaTypeStruct(const char *typeName, GHashTable *structEle
  * @param typeName				the name of the type we are validating
  * @param subtype				the subtype of the schema array type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store)
+static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_ARRAY) {
-		logError("Failed to validate store: Store element is not an array, but should be array type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not an array, but should be of array type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -207,7 +238,13 @@ static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, S
 	Store *arrayElement;
 	g_hash_table_iter_init(&iter, store->content.array);
 	while(g_hash_table_iter_next(&iter, (void *) &key, (void *) &arrayElement)) {
-		if(!validateSchemaType(subtype, arrayElement)) {
+		GString *storePathAppended = g_string_new(storePath);
+		g_string_append_printf(storePathAppended, "/%s", key);
+
+		bool validated = validateSchemaType(subtype, arrayElement, storePathAppended->str, errorString);
+		g_string_free(storePathAppended, true);
+
+		if(!validated) {
 			return false;
 		}
 	}
@@ -221,19 +258,29 @@ static bool validateSchemaTypeArray(const char *typeName, SchemaType *subtype, S
  * @param typeName				the name of the type we are validating
  * @param subtype				the subtype of the schema list type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store)
+static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_LIST) {
-		logError("Failed to validate store: Store element is not a list, but should be list type '%s'", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not a list, but should be of list type '%s'", storePath, typeName);
 		return false;
 	}
 
-	for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next) {
+	int i = 0;
+
+	for(GList *iter = store->content.list->head; iter != NULL; iter = iter->next, i++) {
 		Store *listElement = iter->data;
 
-		if(!validateSchemaType(subtype, listElement)) {
+		GString *storePathAppended = g_string_new(storePath);
+		g_string_append_printf(storePathAppended, "/%d", i);
+
+		bool validated = validateSchemaType(subtype, listElement, storePathAppended->str, errorString);
+		g_string_free(storePathAppended, true);
+
+		if(!validated) {
 			return false;
 		}
 	}
@@ -247,19 +294,37 @@ static bool validateSchemaTypeList(const char *typeName, SchemaType *subtype, St
  * @param typeName				the name of the type we are validating
  * @param subtypes				the subtypes list of the schema variant type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store)
+static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString)
 {
+	GString *variantErrorString = g_string_new("");
+	g_string_append_printf(variantErrorString, "\nStore element at '%s' does not match any of the variant subtypes of type '%s':", storePath, typeName);
+
 	for(GList *iter = subtypes->head; iter != NULL; iter = iter->next) {
 		SchemaType *subtype = iter->data;
 
-		if(validateSchemaType(subtype, store)) {
+		GString *variantAttemptErrorString = g_string_new("");
+
+		bool validated = validateSchemaType(subtype, store, storePath, variantAttemptErrorString);
+
+		char *indented = indentString(variantAttemptErrorString->str, "\t", 2);
+
+		g_string_append_printf(variantErrorString, "\n\tAttempting to parse as variant subtype '%s':%s", subtype->name, indented);
+
+		g_string_free(variantAttemptErrorString, true);
+		free(indented);
+
+		if(validated) {
+			g_string_free(variantErrorString, true);
 			return true;
 		}
 	}
 
-	logError("Failed to validate store: Store element does not match any of the variant subtypes of type '%s'", typeName);
+	g_string_append(errorString, variantErrorString->str);
+	g_string_free(variantErrorString, true);
 	return false;
 }
 
@@ -269,12 +334,14 @@ static bool validateSchemaTypeVariant(const char *typeName, GQueue *subtypes, St
  * @param typeName				the name of the type we are validating
  * @param subtypes				the constants list of the schema enum type which we want to validate
  * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeEnum(const char *typeName, GQueue *constants, Store *store)
+static bool validateSchemaTypeEnum(const char *typeName, GQueue *constants, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_STRING) {
-		logError("Failed to validate store: Store element should be a '%s' enum constant, but is not a string!", typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' should be an enum constant of type '%s', but is not a string!", storePath, typeName);
 		return false;
 	}
 
@@ -286,6 +353,6 @@ static bool validateSchemaTypeEnum(const char *typeName, GQueue *constants, Stor
 		}
 	}
 
-	logError("Failed to validate store: Store element should be a '%s' enum constant, but is '%s'", typeName, store->content.string);
+	g_string_append_printf(errorString, "\nStore element at '%s' should be an enum constant of type '%s', but is '%s'", storePath, typeName, store->content.string);
 	return false;
 }

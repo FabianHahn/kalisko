@@ -33,7 +33,7 @@
 MODULE_NAME("string_util");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Util function for working with strings.");
-MODULE_VERSION(0, 1, 6);
+MODULE_VERSION(0, 2, 1);
 MODULE_BCVERSION(0, 1, 0);
 MODULE_NODEPS;
 
@@ -147,4 +147,29 @@ API size_t parseCommaSeparated(char *str, GPtrArray *out)
 	}
 	g_strfreev(parts);
 	return added;
+}
+
+API char *indentString(const char *input, const char *indentation, int levels)
+{
+	GString *assembly = g_string_new("");
+
+	char **parts = g_strsplit(input, "\n", -1);
+	for(int i = 0; parts[i] != NULL; i++) {
+		if(i != 0) {
+			g_string_append_c(assembly, '\n');
+		}
+
+		for(int j = 0; j < levels; j++) {
+			g_string_append(assembly, indentation);
+		}
+
+		g_string_append(assembly, parts[i]);
+	}
+
+	g_strfreev(parts);
+
+	char *assemblyStr = assembly->str;
+	g_string_free(assembly, false);
+
+	return assemblyStr;
 }

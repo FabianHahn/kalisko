@@ -108,11 +108,24 @@ int main(int argc, char **argv)
 			char *modname = g_strjoin(NULL, "test_", node, NULL);
 			current_log_handler = &testInitLogHandler;
 			if(!requestModule(modname)) {
+				current_log_handler = &stderrLogHandler;
 				logError("Failed to load test module: %s", modname);
+
+				GString *failMessage = g_string_new("");
+				g_string_append_printf(failMessage, "Logs recorded during failed loading of '%s':", modname);
+				for(int j = 0; j < module_init_log_lines->len; ++j) {
+					char *line = g_ptr_array_index(module_init_log_lines, j);
+					g_string_append_printf(failMessage, "\n  %s", line);
+				}
+
+				logNotice("%s", failMessage->str);
+
+				g_ptr_array_set_size(module_init_log_lines, 0);
+				g_string_free(failMessage, true);
 			} else {
 				revokeModule(modname);
+				current_log_handler = &stderrLogHandler;
 			}
-			current_log_handler = &stderrLogHandler;
 			free(modname);
 		}
 		free(entry);

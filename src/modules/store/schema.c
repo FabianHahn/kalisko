@@ -24,11 +24,13 @@
 #define API
 #include "store.h"
 #include "schema.h"
+#include "write.h"
 
 static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore);
 static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeEnum(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeStruct(Schema *schema, const char *name, GHashTable *array);
 static SchemaStructElement *parseSchemaStructElement(Schema *schema, const char *key, GQueue *list);
 static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode);
@@ -193,6 +195,8 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 				type = parseSchemaTypeList(schema, name, typeStore->content.list);
 			} else if(g_strcmp0(identifier->content.string, "variant") == 0) {
 				type = parseSchemaTypeVariant(schema, name, typeStore->content.list);
+			} else if(g_strcmp0(identifier->content.string, "enum") == 0) {
+				type = parseSchemaTypeEnum(schema, name, typeStore->content.list);
 			} else {
 				return NULL; // invalid type
 			}
@@ -211,8 +215,14 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 			g_hash_table_insert(schema->namedTypes, strdup(name), type);
 			logNotice("Parsed named schema type '%s'", name);
 		} else { // add as anonymous type
+			assert(type->name == NULL);
+
+			GString *typeString = writeStoreGString(typeStore);
+			type->name = typeString->str; // steal the char representation
+			g_string_free(typeString, false);
+
 			g_ptr_array_add(schema->anonymousTypes, type);
-			logNotice("Parsed anonymous schema type");
+			logNotice("Parsed anonymous schema type '%s'", type->name);
 		}
 	}
 
@@ -298,6 +308,32 @@ static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQue
 			freeSchemaType(type);
 			return NULL; // failed to parse subtype
 		}
+	}
+
+	return type;
+}
+
+/**
+ * Parses an enum schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param typeStore			the store list representation of the enum type
+ * @result					the parsed enum SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeEnum(Schema *schema, const char *name, GQueue *list)
+{
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_ENUM);
+
+	for(GList *iter = list->head->next; iter != NULL; iter = iter->next) {
+		Store *constantStore = iter->data;
+
+		if(constantStore->type != STORE_STRING) {
+			freeSchemaType(type); // expected string constant
+			return NULL;
+		}
+
+		g_queue_push_tail(type->data.constants, strdup(constantStore->content.string));
 	}
 
 	return type;
@@ -412,6 +448,9 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 		case SCHEMA_TYPE_MODE_VARIANT:
 			schemaType->data.subtypes = g_queue_new();
 		break;
+		case SCHEMA_TYPE_MODE_ENUM:
+			schemaType->data.constants = g_queue_new();
+		break;
 		default:
 			assert(false);
 		break;
@@ -458,6 +497,9 @@ static void freeSchemaType(void *schemaType_p)
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
 			g_queue_free(schemaType->data.subtypes);
+		break;
+		case SCHEMA_TYPE_MODE_ENUM:
+			g_queue_free(schemaType->data.constants);
 		break;
 		default:
 			assert(false);

@@ -78,12 +78,6 @@ MODULE_INIT
  	}
 
 	(*java_env)->DeleteLocalRef(java_env, module_manager_local);
-
-	// *************************************
-	// TODO: Only here for testing purposes.
-	executeJavaModule("org.kalisko.modules.demo.DemoModule");
-	// *************************************
-
 	return true;
 }
 

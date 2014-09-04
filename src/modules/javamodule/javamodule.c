@@ -33,9 +33,11 @@ MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
 #define CLASSPATH_OPTION "-Djava.class.path=bin/release/java"
+#define MODULE_MANAGER_CLASS_PATH "org/kalisko/core/ModuleManager"
 
 static JavaVM *java_vm;
 static JNIEnv *java_env;
+static jobject module_manager;
 
 MODULE_INIT
 {
@@ -53,48 +55,66 @@ MODULE_INIT
 		logError("Could not create JVM");
 		return false;
   }
-
-	jclass module_manager_class = (*java_env)->FindClass(java_env, "org/kalisko/core/ModuleManager");
+	jclass module_manager_class = (*java_env)->FindClass(java_env, MODULE_MANAGER_CLASS_PATH);
  	if (module_manager_class == NULL) {
 		logError("Could not find ModuleManager class");
 		return false;
  	}
-
 	jmethodID constructor = (*java_env)->GetMethodID(java_env, module_manager_class, "<init>","()V");
  	if (constructor == NULL) {
 		logError("Could not find ModuleManager constructor");
 		return false;
  	}
-
-	jobject module_manager = (*java_env)->NewObject(java_env, module_manager_class, constructor);
- 	if (module_manager == NULL) {
+	jobject module_manager_local = (*java_env)->NewObject(java_env, module_manager_class, constructor);
+ 	if (module_manager_local == NULL) {
 		logError("Could not instantiate ModuleManager");
 		return false;
  	}
 
+	module_manager = (*java_env)->NewGlobalRef(java_env, module_manager_local);
+ 	if (module_manager == NULL) {
+		logError("Could not create global reference to module manager");
+		return false;
+ 	}
+
+	(*java_env)->DeleteLocalRef(java_env, module_manager_local);
+
+	// *************************************
+	// TODO: Only here for testing purposes.
+	executeJavaModule("org.kalisko.modules.demo.DemoModule");
+	// *************************************
+
+	return true;
+}
+
+MODULE_FINALIZE
+{
+	(*java_env)->DeleteGlobalRef(java_env, module_manager);
+	// TODO: Teardown the JVM.
+}
+
+API bool executeJavaModule(char *moduleClass)
+{
+	jclass module_manager_class = (*java_env)->FindClass(java_env, MODULE_MANAGER_CLASS_PATH);
+ 	if (module_manager_class == NULL) {
+		logError("Could not find ModuleManager class");
+		return false;
+ 	}
 	jmethodID execute_module = (*java_env)->GetMethodID(java_env, module_manager_class, "executeModule", "(Ljava/lang/String;)Z");
  	if (execute_module == NULL) {
 		logError("Could not find executeModule in ModuleManager");
 		return false;
  	}
-
-	jstring module_string = (*java_env)->NewStringUTF(java_env, "org.kalisko.modules.demo.DemoModule");
+	jstring module_string = (*java_env)->NewStringUTF(java_env, moduleClass);
  	if (module_string == NULL) {
 		logError("Could not create module string argument");
 		return false;
  	}
 
 	jboolean success = (*java_env)->CallBooleanMethod(java_env, module_manager, execute_module, module_string);
-	return success;
-}
-
-MODULE_FINALIZE
-{
-	// Teardown the JVM.
-}
-
-API bool executeJavaModule(char *moduleClass)
-{
-	logWarning("Executing Java modules not yet implemented");
-	return false;
+	if (!success) {
+		logError("Could not execute module, ModuleManager.executeModule() failed");
+		return false;
+	}
+	return true;
 }

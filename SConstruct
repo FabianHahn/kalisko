@@ -41,6 +41,7 @@ vars.Add(BoolVariable('release', 'Set to build release target', 1))
 vars.Add(BoolVariable('debug', 'Set to build debug target', 0))
 vars.Add(BoolVariable('trace', 'Set to compile trace debug statements', 0))
 vars.Add(BoolVariable('force_zero_revision', 'Force Mercurial revision to zero to prevent rebuilds after committing when developing', 0))
+vars.Add(BoolVariable('build_java', 'Set to build the Kalisko java source tree', 0))
 vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], modules))
 vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], test_modules))
 vars.Add(ListVariable('exclude', 'Prevents the selected modules from being built', [], modules))
@@ -128,6 +129,9 @@ if env['debug']:
 	tenv.VariantDir(tdir, 'src', 0)
 	targets.append((tdir, tenv))
 
+if env['build_java']:
+	tenv.Java(source = os.path.join(src_path, 'java'), target = os.path.join(tdir, 'java'))
+
 for prefix, env in targets:
 	# Build modules
 	for moddir in modules:
@@ -136,7 +140,7 @@ for prefix, env in targets:
 				# Build module
 				module = env.Clone()
 				module.Append(CPPDEFINES = [('KALISKO_MODULE', moddir)])
-				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests', 'src_path'])
+				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests'])
 
 	# Build test modules
 	for testdir in test_modules:

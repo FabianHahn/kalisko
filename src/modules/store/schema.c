@@ -24,6 +24,7 @@
 #define API
 #include "store.h"
 #include "schema.h"
+#include "write.h"
 
 static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore);
 static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list);
@@ -214,8 +215,14 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 			g_hash_table_insert(schema->namedTypes, strdup(name), type);
 			logNotice("Parsed named schema type '%s'", name);
 		} else { // add as anonymous type
+			assert(type->name == NULL);
+
+			GString *typeString = writeStoreGString(typeStore);
+			type->name = typeString->str; // steal the char representation
+			g_string_free(typeString, false);
+
 			g_ptr_array_add(schema->anonymousTypes, type);
-			logNotice("Parsed anonymous schema type");
+			logNotice("Parsed anonymous schema type '%s'", type->name);
 		}
 	}
 

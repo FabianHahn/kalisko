@@ -24,19 +24,22 @@ package org.kalisko.core;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Manages the life cycles of module instances. This class is *not* thread safe.
- */
+/** Manages the life cycles of module instances. This class is *not* thread safe. */
 public class ModuleManager {
   private Map<Class<? extends Module>, ModuleState> moduleStates;
 
-  /**
-   * This default constructor is called by the native code through JNI.
-   */
+  /** This default constructor is called by the native code through JNI. */
   public ModuleManager() {
     moduleStates = new HashMap<>();
   }
 
+  /**
+   * Instantiates and runs the specified module. The module must have a default constructor and
+   * must not already be executing.
+   * @param className the fully qualified class name of the module, e.g.,
+   *    org.kalisko.modules.demo.DemoModule.
+   * @return whether or not the module has been loaded successfully
+   */
   public boolean executeModule(String className) {
     // TODO: Switch to proper Loggers instead of printing to stdout.
     System.out.println("Executing module: " + className);

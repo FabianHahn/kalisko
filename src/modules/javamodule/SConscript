@@ -19,10 +19,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 
 Import('module')    # The environment for this module.
+Import('custom_tests')
 
-# TODO: use proper pkg-config for the jni config.
-module.Append(CPPPATH = ['/usr/lib/jvm/java-7-openjdk-amd64/include'])
-module.Append(LIBPATH = ['/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server'])
-module.Append(LIBS = ['jvm'])
+module.Append(CPPPATH = [os.environ['JAVA_HOME'] + '/include'])
+module.Append(LIBPATH = [os.environ['JAVA_HOME'] + '/jre/lib/amd64/server'])
 
-module.SharedLibrary('../kalisko_javamodule', Glob('*.c'))
+conf = Configure(module, custom_tests)
+check = True
+	
+check = check and conf.CheckLibWithHeader('jvm', 'jni.h', 'C')
+
+module = conf.Finish()
+
+if check:
+	module.SharedLibrary('../kalisko_javamodule', Glob('*.c'))
+else:
+	print('A required library for the \'javamodule\' module is not available, skipping build...')

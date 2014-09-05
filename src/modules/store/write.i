@@ -21,6 +21,7 @@
 #ifndef STORE_WRITE_H
 #define STORE_WRITE_H
 
+#include <glib.h>
 
 /**
  * Writes a store from memory to a file
@@ -38,5 +39,13 @@ API bool writeStoreFile(const char *filename, Store *store);
  * @result			the written store string, must be freed with g_string_free
  */
 API GString *writeStoreGString(Store *store) G_GNUC_WARN_UNUSED_RESULT;
+
+/**
+ * Writes a store from memory to a string
+ *
+ * @param store		the store to write
+ * @result			the written string, must be freed by the caller
+ */
+API char *writeStoreString(Store *store) G_GNUC_WARN_UNUSED_RESULT;
 
 #endif

@@ -92,6 +92,15 @@ API GString *writeStoreGString(Store *store)
 	return context.resource;
 }
 
+API char *writeStoreString(Store *store)
+{
+	GString *dumped = writeStoreGString(store);
+
+	char *dumpedString = dumped->str;
+	g_string_free(dumped, false);
+	return dumpedString;
+}
+
 
 /**
  * A StoreWriter function for files

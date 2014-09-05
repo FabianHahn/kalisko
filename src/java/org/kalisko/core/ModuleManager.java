@@ -77,7 +77,12 @@ public class ModuleManager {
     Thread thread = new Thread(new Runnable() {
       @Override
       public void run() {
-        module.run();
+        try {
+          module.run();
+        } catch (Throwable t) {
+          System.out.println("Uncaught execption in module.run(). Aborting.");
+          t.printStackTrace();
+        }
       }
     });
     moduleStates.put(module.getClass(), new ModuleState(module, thread));

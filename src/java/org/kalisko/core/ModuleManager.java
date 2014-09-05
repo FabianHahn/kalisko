@@ -21,18 +21,81 @@
 
 package org.kalisko.core;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Manages the life cycles of module instances. This class is *not* thread safe.
+ */
 public class ModuleManager {
+  private Map<Class<? extends Module>, ModuleState> moduleStates;
+
+  /**
+   * This default constructor is called by the native code through JNI.
+   */
+  public ModuleManager() {
+    moduleStates = new HashMap<>();
+  }
+
   public boolean executeModule(String className) {
-    System.out.println("Attempting to execute module: " + className);
+    // TODO: Switch to proper Loggers instead of printing to stdout.
+    System.out.println("Executing module: " + className);
+
+    // Resolve the class by name.
+    final Class<?> moduleClass;
     try {
-      Class<?> moduleClass = Class.forName(className);
-      Module module = (Module) moduleClass.newInstance();
-      module.initialize();
-      // TODO: Actually call module.execute() in a separate thread.
-    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+      moduleClass = Class.forName(className);
+    } catch (ClassNotFoundException e) {
       e.printStackTrace();
       return false;
     }
+
+    // Check that this module is not already being executed.
+    if (moduleStates.containsKey(moduleClass)) {
+      System.out.println("Already executed module of class: " + moduleClass.getName());
+      return false;
+    }
+
+    // Instantiate the module.
+    final Module module;
+    try {
+      module = (Module) moduleClass.newInstance();
+    } catch (IllegalAccessException | InstantiationException e) {
+      e.printStackTrace();
+      return false;
+    }
+
+    // Attempt to initialize the module.
+    try {
+      module.initialize();
+    } catch (Throwable t) {
+      t.printStackTrace();
+      return false;
+    }
+
+    // Run the module's execute method in a separate thread.
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        module.run();
+      }
+    });
+    moduleStates.put(module.getClass(), new ModuleState(module, thread));
+    thread.run();
+
     return true;
+  }
+
+  private static class ModuleState {
+    @SuppressWarnings("unused")  // TODO: remove suppression when building cleanup.
+    public final Module module;
+
+    @SuppressWarnings("unused")  // TODO: remove suppression when building cleanup.
+    public final Thread thread;
+
+    private ModuleState(Module module, Thread thread) {
+      this.module = module;
+      this.thread = thread;
+    }
   }
 }

@@ -31,5 +31,6 @@ public class DemoModule implements Module {
 
   @Override
   public void run() {
+    System.out.println("Running DemoModule");
   }
 }

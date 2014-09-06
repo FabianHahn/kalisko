@@ -37,6 +37,7 @@
 #define API
 
 TEST(lexer);
+TEST(parser_longstring);
 TEST(parser_clone_dump);
 TEST(path_modify);
 TEST(path_create);
@@ -64,12 +65,13 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 5, 1);
-MODULE_BCVERSION(0, 5, 1);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 8, 0));
+MODULE_VERSION(0, 6, 0);
+MODULE_BCVERSION(0, 6, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 12, 0));
 
 TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(lexer);
+	ADD_SIMPLE_TEST(parser_longstring);
 	ADD_SIMPLE_TEST(parser_clone_dump);
 	ADD_SIMPLE_TEST(path_modify);
 	ADD_SIMPLE_TEST(path_create);
@@ -118,6 +120,26 @@ TEST(lexer)
 		memset(&val, 0, sizeof(YYSTYPE));
 		solution_values++;
 	}
+}
+
+TEST(parser_longstring)
+{
+	GString *input = g_string_new("longstring = ");
+
+	for(int i = 0; i < 10000; i++) {
+		g_string_append_c(input, 'a');
+	}
+
+	Store *store = parseStoreString(input->str);
+
+	TEST_ASSERT(store != NULL);
+
+	Store *longstring = g_hash_table_lookup(store->content.array, "longstring");
+
+	TEST_ASSERT(longstring->type == STORE_STRING);
+
+	freeStore(store);
+	g_string_free(input, true);
 }
 
 TEST(parser_clone_dump)

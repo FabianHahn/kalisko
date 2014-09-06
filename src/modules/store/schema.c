@@ -157,25 +157,9 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 	switch(typeStore->type) {
 		case STORE_STRING:
 		{
-			// String values can be used to refer to existing named types - in that
-			// case, we check if a type with that name already exists and copy it if
-			// we find one.
-			SchemaType *namedType = g_hash_table_lookup(schema->namedTypes, typeStore->content.string);
-
-			if(namedType == NULL) {
-				return NULL;
-			}
-
-			if(name == NULL) {
-				// We are parsing an anonymous string type - in other words, we are just aliasing an existing type.
-				// In this special case, we can just return the aliased type instead of creating an alias object.
-				logTrace("Aliasing named schema type '%s'", namedType->name);
-				return namedType;
-			} else {
-				// We are parsing a named type that referes to an existing named type, so create an alias type
-				type = createSchemaType(name, SCHEMA_TYPE_MODE_ALIAS);
-				type->data.subtype = namedType;
-			}
+			// We are parsing an alias to a named type, that might or might not be parsed yet
+			type = createSchemaType(name, SCHEMA_TYPE_MODE_ALIAS);
+			type->data.alias = strdup(typeStore->content.string);
 		}
 		break;
 		case STORE_LIST:
@@ -442,11 +426,13 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
 		case SCHEMA_TYPE_MODE_LIST:
-		case SCHEMA_TYPE_MODE_ALIAS:
 			schemaType->data.subtype = NULL;
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
 			schemaType->data.subtypes = g_queue_new();
+		break;
+		case SCHEMA_TYPE_MODE_ALIAS:
+			schemaType->data.alias = NULL;
 		break;
 		case SCHEMA_TYPE_MODE_ENUM:
 			schemaType->data.constants = g_queue_new();
@@ -497,6 +483,9 @@ static void freeSchemaType(void *schemaType_p)
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
 			g_queue_free(schemaType->data.subtypes);
+		break;
+		case SCHEMA_TYPE_MODE_ALIAS:
+			free(schemaType->data.alias);
 		break;
 		case SCHEMA_TYPE_MODE_ENUM:
 			g_queue_free(schemaType->data.constants);

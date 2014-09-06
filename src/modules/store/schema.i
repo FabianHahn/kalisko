@@ -47,10 +47,12 @@ typedef enum {
 typedef union {
 	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
 	GHashTable *structElements;
-	/** Subtype for array, list and alias mode */
+	/** Subtype for array and list mode */
 	struct SchemaTypeStruct *subtype;
 	/** Subtype list for variant mode */
 	GQueue *subtypes;
+	/** Aliased type name for alias mode */
+	char *alias;
 	/** String constant list for enum mode */
 	GQueue *constants;
 } SchemaTypeModeData;

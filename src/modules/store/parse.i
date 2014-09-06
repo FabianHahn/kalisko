@@ -70,12 +70,6 @@ typedef struct
 } StoreParser;
 
 /**
- * A store string's maximum length
- */
-#define STORE_MAX_STRING_LENGTH 1024
-
-
-/**
  * Parses a store file
  *
  * @param filename		the file name of the store file to parse

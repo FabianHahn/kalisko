@@ -54,7 +54,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 	bool reading_numeric = false;
 	bool numeric_is_float = false;
 	int commenting = 0;
-	char assemble[STORE_MAX_STRING_LENGTH];
+	GString *assemble = g_string_new("");
 	int i = 0;
 
 	while(true) {
@@ -81,8 +81,9 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 			case '=':
 				if(reading_string) {
 					if(!string_is_delimited) { // end of undelimited string reached
-						assemble[i] = '\0';
-						lval->string = strdup(assemble);
+						lval->string = assemble->str;
+						g_string_free(assemble, false);
+
 						if(c != EOF) {
 							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
@@ -91,16 +92,18 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					} // else just continue reading
 				} else if(reading_numeric) {
 					if(numeric_is_float) { // end of float reached
-						assemble[i] = '\0';
-						lval->float_number = atof(assemble);
+						lval->float_number = atof(assemble->str);
+						g_string_free(assemble, true);
+
 						if(c != EOF) {
 							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
 						}
 						return FLOAT_NUMBER;
 					} else { // end of int reached
-						assemble[i] = '\0';
-						lval->integer = atoi(assemble);
+						lval->integer = atoi(assemble->str);
+						g_string_free(assemble, true);
+
 						if(c != EOF) {
 							parser->unread(parser, c); // push back to stream
 							lloc->last_column--;
@@ -109,8 +112,10 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					}
 				} else {
 					if(c == EOF) {
+						g_string_free(assemble, true);
 						return 0;
 					} else {
+						g_string_free(assemble, true);
 						return c;
 					}
 				}
@@ -125,8 +130,9 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					if(escaping) { // delimiter is escaped
 						escaping = false;
 					} else { // end of delimited string reached
-						assemble[i] = '\0';
-						lval->string = strdup(assemble);
+						lval->string = assemble->str;
+						g_string_free(assemble, false);
+
 						return STRING;
 					}
 				} else if(c == '\\') { // escape character
@@ -140,10 +146,12 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 			} else {
 				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
 					yyerror(lloc, parser, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
+					g_string_free(assemble, true);
 					return 0; // error
 				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
-					assemble[i] = '\0';
-					lval->string = strdup(assemble);
+					lval->string = assemble->str;
+					g_string_free(assemble, false);
+
 					return STRING;
 				}
 			}
@@ -151,18 +159,21 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 			if(c == '.') { // delimiter
 				if(numeric_is_float) {
 					yyerror(lloc, parser, "Multiple occurences of delimiter '.' in numeric value");
+					g_string_free(assemble, true);
 					return 0; // error
 				} else {
 					numeric_is_float = true;
 				}
 			} else if(IS_DELIMITER(c)) { // whitespace, end of number
 				if(numeric_is_float) {
-					assemble[i] = '\0';
-					lval->float_number = atof(assemble);
+					lval->float_number = atof(assemble->str);
+					g_string_free(assemble, true);
+
 					return FLOAT_NUMBER;
 				} else {
-					assemble[i] = '\0';
-					lval->integer = atoi(assemble);
+					lval->integer = atoi(assemble->str);
+					g_string_free(assemble, true);
+
 					return INTEGER;
 				}
 			} else if(!isdigit(c)) { // we're actually reading a non-delimited string
@@ -177,7 +188,9 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 				commenting++;
 				continue;
 			} else if(commenting == 1) { // #1418: We thought we were beginning to read a comment, but it's actually the beginning of an undelimited string
-				assemble[i++] = '/'; // insert a compensating slash
+				g_string_append_c(assemble, '/'); // insert a compensating slash
+				i++;
+
 				commenting = 0;
 				reading_string = true;
 				string_is_delimited = false;
@@ -197,6 +210,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					continue;
 				} else if(c == '\\') {
 					yyerror(lloc, parser, "Escape character '\\' not allowed in non-delimited string");
+					g_string_free(assemble, true);
 					return 0; // error
 				} // else just continue reading the non-delimited string
 			}
@@ -204,16 +218,18 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 
 		if(escaping) { // escape character wasn't used
 			yyerror(lloc, parser, "Unused escape character '\\'");
+			g_string_free(assemble, true);
 			return 0; // error
 		}
 
-		assemble[i++] = c;
-
-		if(i >= STORE_MAX_STRING_LENGTH) {
-			yyerror(lloc, parser, "String value exceeded maximum length");
-			return 0; // error
-		}
+		g_string_append_c(assemble, c);
+		i++;
 	}
+
+	// this should never happen...
+	assert(false);
+	g_string_free(assemble, true);
+	return 0;
 }
 
 API GString *lexStoreString(char *string)

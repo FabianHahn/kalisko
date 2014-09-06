@@ -25,7 +25,7 @@
 /**
  * Returns the path to the core executable
  *
- * @result		the executable's path
+ * @result a string containing the executable's path. Must be freed by the caller
  */
 API char *getExecutablePath();
 

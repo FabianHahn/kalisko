@@ -19,11 +19,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glib.h>
 #include <jni.h>
 
 #include "dll.h"
 #define API
 #include "modules/javamodule/javamodule.h"
+#include "util.h"
 
 MODULE_NAME("javamodule");
 MODULE_AUTHOR("Dino Wernli");
@@ -32,7 +34,7 @@ MODULE_VERSION(0, 0, 1);
 MODULE_BCVERSION(0, 0, 1);
 MODULE_NODEPS;
 
-#define CLASSPATH_OPTION "-Djava.class.path=bin/release/java"
+#define CLASSPATH_OPTION_FMT "-Djava.class.path=%s/java"
 #define MODULE_MANAGER_CLASS_PATH "org/kalisko/core/ModuleManager"
 
 static JavaVM *java_vm;
@@ -41,12 +43,18 @@ static jobject module_manager;
 
 MODULE_INIT
 {
+	char *executablePath = getExecutablePath();
+	GString *classpath = g_string_new("");
+	g_string_append_printf(classpath, CLASSPATH_OPTION_FMT, executablePath);
+	logInfo("Using Java classpath option: %s", classpath->str);
+	free(executablePath);
+
 	JavaVMInitArgs vm_args;
 	vm_args.version = JNI_VERSION_1_6;
 	vm_args.ignoreUnrecognized = 1;
 
 	JavaVMOption options[1];
-	options[0].optionString = CLASSPATH_OPTION;
+	options[0].optionString = classpath->str;
 	vm_args.options = options;
 	vm_args.nOptions = 1;
 
@@ -78,6 +86,7 @@ MODULE_INIT
  	}
 
 	(*java_env)->DeleteLocalRef(java_env, module_manager_local);
+	g_string_free(classpath, true);
 	return true;
 }
 

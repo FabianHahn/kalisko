@@ -155,14 +155,15 @@ API int getTime()
 
 API char *getExecutableName()
 {
-	char *name = g_get_prgname();
-	if(name) {
+	const char *name = g_get_prgname();
+
+	if(name != NULL) {
 		return strdup(name);
 	} else {
 		char **argv = getArgv();
 		char *firstArg = argv[0];
 
-		if(!firstArg) {
+		if(firstArg == NULL) {
 			return strdup("[unknown]");
 		}
 
@@ -171,7 +172,7 @@ API char *getExecutableName()
 #else
 		char *nameStart = strrchr(firstArg, '/');
 #endif
-		if(!nameStart) {
+		if(nameStart == NULL) {
 			return strdup("[unknown]");
 		}
 

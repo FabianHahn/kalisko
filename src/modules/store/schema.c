@@ -28,7 +28,8 @@
 
 static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *typeStore);
 static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue *list);
-static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeSequence(Schema *schema, const char *name, GQueue *list);
+static SchemaType *parseSchemaTypeTuple(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeVariant(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeEnum(Schema *schema, const char *name, GQueue *list);
 static SchemaType *parseSchemaTypeStruct(Schema *schema, const char *name, GHashTable *array);
@@ -175,8 +176,10 @@ static SchemaType *parseSchemaType(Schema *schema, const char *name, Store *type
 
 			if(g_strcmp0(identifier->content.string, "array") == 0) {
 				type = parseSchemaTypeArray(schema, name, typeStore->content.list);
-			} else if(g_strcmp0(identifier->content.string, "list") == 0) {
-				type = parseSchemaTypeList(schema, name, typeStore->content.list);
+			} else if(g_strcmp0(identifier->content.string, "sequence") == 0) {
+				type = parseSchemaTypeSequence(schema, name, typeStore->content.list);
+			} else if(g_strcmp0(identifier->content.string, "tuple") == 0) {
+				type = parseSchemaTypeTuple(schema, name, typeStore->content.list);
 			} else if(g_strcmp0(identifier->content.string, "variant") == 0) {
 				type = parseSchemaTypeVariant(schema, name, typeStore->content.list);
 			} else if(g_strcmp0(identifier->content.string, "enum") == 0) {
@@ -242,14 +245,14 @@ static SchemaType *parseSchemaTypeArray(Schema *schema, const char *name, GQueue
 }
 
 /**
- * Parses an list schema type from its store representation
+ * Parses a sequence schema type from its store representation
  *
  * @param schema			the schema for which to parse the type
  * @param name				the name of the type to parse
- * @param typeStore			the store list representation of the list type
- * @result					the parsed list SchemaType or NULL if the parse failed
+ * @param list				the store list representation of the sequence type
+ * @result					the parsed sequence SchemaType or NULL if the parse failed
  */
-static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue *list)
+static SchemaType *parseSchemaTypeSequence(Schema *schema, const char *name, GQueue *list)
 {
 	if(list->head->next == NULL) {
 		return NULL; // invalid type
@@ -260,13 +263,41 @@ static SchemaType *parseSchemaTypeList(Schema *schema, const char *name, GQueue 
 	SchemaType *subtype = parseSchemaType(schema, NULL, subtypeStore);
 
 	if(subtype != NULL) {
-		SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_LIST);
+		SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_SEQUENCE);
 		type->data.subtype = subtype;
 
 		return type;
 	} else {
 		return NULL;
 	}
+}
+
+/**
+ * Parses a tuple schema type from its store representation
+ *
+ * @param schema			the schema for which to parse the type
+ * @param name				the name of the type to parse
+ * @param lsit				the store list representation of the tuple type
+ * @result					the parsed tuple SchemaType or NULL if the parse failed
+ */
+static SchemaType *parseSchemaTypeTuple(Schema *schema, const char *name, GQueue *list)
+{
+	SchemaType *type = createSchemaType(name, SCHEMA_TYPE_MODE_TUPLE);
+
+	for(GList *iter = list->head->next; iter != NULL; iter = iter->next) {
+		Store *subtypeStore = iter->data;
+
+		SchemaType *subtype = parseSchemaType(schema, NULL, subtypeStore);
+
+		if(subtype != NULL) {
+			g_queue_push_tail(type->data.subtypes, subtype);
+		} else {
+			freeSchemaType(type);
+			return NULL; // failed to parse subtype
+		}
+	}
+
+	return type;
 }
 
 /**
@@ -425,9 +456,10 @@ static SchemaType *createSchemaType(const char *name, SchemaTypeMode mode)
 			schemaType->data.structElements = g_hash_table_new_full(&g_str_hash, &g_str_equal, &free, &freeSchemaStructElement);
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
-		case SCHEMA_TYPE_MODE_LIST:
+		case SCHEMA_TYPE_MODE_SEQUENCE:
 			schemaType->data.subtype = NULL;
 		break;
+		case SCHEMA_TYPE_MODE_TUPLE:
 		case SCHEMA_TYPE_MODE_VARIANT:
 			schemaType->data.subtypes = g_queue_new();
 		break;
@@ -478,9 +510,10 @@ static void freeSchemaType(void *schemaType_p)
 			g_hash_table_destroy(schemaType->data.structElements);
 		break;
 		case SCHEMA_TYPE_MODE_ARRAY:
-		case SCHEMA_TYPE_MODE_LIST:
+		case SCHEMA_TYPE_MODE_SEQUENCE:
 			// only one type pointer, nothing to free...
 		break;
+		case SCHEMA_TYPE_MODE_TUPLE:
 		case SCHEMA_TYPE_MODE_VARIANT:
 			g_queue_free(schemaType->data.subtypes);
 		break;

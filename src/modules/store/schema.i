@@ -35,7 +35,8 @@ typedef enum {
 	SCHEMA_TYPE_MODE_STRING,
 	SCHEMA_TYPE_MODE_STRUCT,
 	SCHEMA_TYPE_MODE_ARRAY,
-	SCHEMA_TYPE_MODE_LIST,
+	SCHEMA_TYPE_MODE_SEQUENCE,
+	SCHEMA_TYPE_MODE_TUPLE,
 	SCHEMA_TYPE_MODE_VARIANT,
 	SCHEMA_TYPE_MODE_ALIAS,
 	SCHEMA_TYPE_MODE_ENUM
@@ -47,9 +48,9 @@ typedef enum {
 typedef union {
 	/** Hash table connecting string keys to SchemaStructElement objects for struct mode */
 	GHashTable *structElements;
-	/** Subtype for array and list mode */
+	/** Subtype for array and sequence mode */
 	struct SchemaTypeStruct *subtype;
-	/** Subtype list for variant mode */
+	/** Subtype list for tuple and variant mode */
 	GQueue *subtypes;
 	/** Aliased type name for alias mode */
 	char *alias;

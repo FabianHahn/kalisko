@@ -31,7 +31,8 @@ static bool validateSchemaTypeFloat(Schema *schema, const char *typeName, Store 
 static bool validateSchemaTypeString(Schema *schema, const char *typeName, Store *store, const char *storePath, GString *errorString);
 static bool validateSchemaTypeStruct(Schema *schema, const char *typeName, GHashTable *structElementTable, Store *store, const char *storePath, GString *errorString);
 static bool validateSchemaTypeArray(Schema *schema, const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString);
-static bool validateSchemaTypeList(Schema *schema, const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeSequence(Schema *schema, const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString);
+static bool validateSchemaTypeTuple(Schema *schema, const char *typeName, GQueue *subtype, Store *store, const char *storePath, GString *errorString);
 static bool validateSchemaTypeVariant(Schema *schema, const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString);
 static bool validateSchemaTypeAlias(Schema *schema, const char *typeName, char *alias, Store *store, const char *storePath, GString *errorString);
 static bool validateSchemaTypeEnum(Schema *schema, const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString);
@@ -97,8 +98,11 @@ static bool validateSchemaType(Schema *schema, SchemaType *type, Store *store, c
 		case SCHEMA_TYPE_MODE_ARRAY:
 			validation &= validateSchemaTypeArray(schema, type->name, type->data.subtype, store, storePath, errorString);
 		break;
-		case SCHEMA_TYPE_MODE_LIST:
-			validation &= validateSchemaTypeList(schema, type->name, type->data.subtype, store, storePath, errorString);
+		case SCHEMA_TYPE_MODE_SEQUENCE:
+			validation &= validateSchemaTypeSequence(schema, type->name, type->data.subtype, store, storePath, errorString);
+		break;
+		case SCHEMA_TYPE_MODE_TUPLE:
+			validation &= validateSchemaTypeTuple(schema, type->name, type->data.subtypes, store, storePath, errorString);
 		break;
 		case SCHEMA_TYPE_MODE_VARIANT:
 			validation &= validateSchemaTypeVariant(schema, type->name, type->data.subtypes, store, storePath, errorString);
@@ -261,20 +265,20 @@ static bool validateSchemaTypeArray(Schema *schema, const char *typeName, Schema
 }
 
 /**
- * Validate a list type within a schema against a given store
+ * Validate a sequence type within a schema against a given store
  *
  * @param schema				the schema that we are validating
  * @param typeName				the name of the type we are validating
- * @param subtype				the subtype of the schema list type which we want to validate
+ * @param subtype				the subtype of the sequence schema type which we want to validate
  * @param store					the store we are validating
  * @param storePath				path location whithin the store we are validating
  * @param errorString			error string into which parse errors are accumulated
  * @result true					true if validation passes
  */
-static bool validateSchemaTypeList(Schema *schema, const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString)
+static bool validateSchemaTypeSequence(Schema *schema, const char *typeName, SchemaType *subtype, Store *store, const char *storePath, GString *errorString)
 {
 	if(store->type != STORE_LIST) {
-		g_string_append_printf(errorString, "\nStore element at '%s' is not a list, but should be of list type '%s'", storePath, typeName);
+		g_string_append_printf(errorString, "\nStore element at '%s' is not a list, but should be of sequence type '%s'", storePath, typeName);
 		return false;
 	}
 
@@ -290,6 +294,52 @@ static bool validateSchemaTypeList(Schema *schema, const char *typeName, SchemaT
 		g_string_free(storePathAppended, true);
 
 		if(!validated) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Validate a tuple type within a schema against a given store
+ *
+ * @param schema				the schema that we are validating
+ * @param typeName				the name of the type we are validating
+ * @param subtypes				the subtype list of the tuple schema type which we want to validate
+ * @param store					the store we are validating
+ * @param storePath				path location whithin the store we are validating
+ * @param errorString			error string into which parse errors are accumulated
+ * @result true					true if validation passes
+ */
+static bool validateSchemaTypeTuple(Schema *schema, const char *typeName, GQueue *subtypes, Store *store, const char *storePath, GString *errorString)
+{
+	if(store->type != STORE_LIST) {
+		g_string_append_printf(errorString, "\nStore element at '%s' is not a list, but should be of tuple type '%s'", storePath, typeName);
+		return false;
+	}
+
+	GList *storeIter = store->content.list->head;
+	int i = 0;
+
+	for(GList *subtypeIter = subtypes->head; subtypeIter != NULL; subtypeIter = subtypeIter->next, storeIter = storeIter->next, i++) {
+		SchemaType *subtype = subtypeIter->data;
+
+		if(storeIter == NULL) {
+			g_string_append_printf(errorString, "\nStore element at '%s/%d' not set, but should be of tuple type '%s' subtype '%s'", storePath, i, typeName, subtype->name);
+			return false;
+		}
+
+		Store *tupleElement = storeIter->data;
+
+		GString *storePathAppended = g_string_new(storePath);
+		g_string_append_printf(storePathAppended, "/%d", i);
+
+		bool validated = validateSchemaType(schema, subtype, tupleElement, storePathAppended->str, errorString);
+		g_string_free(storePathAppended, true);
+
+		if(!validated) {
+			g_string_append_printf(errorString, "\nStore element at '%s/%d' should be of tuple type '%s' subtype '%s'", storePath, i, typeName, subtype->name);
 			return false;
 		}
 	}

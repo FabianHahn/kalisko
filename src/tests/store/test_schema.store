@@ -1,16 +1,16 @@
 types = {
 	Scene = {
-		primitives = (required PrimitiveArray)
-		textures = (optional TextureArray)
-		parameters = (optional ParameterArray)
-		materials = (required MaterialArray)
-		models = (required ModelArray)
+		primitives = (required (array Primitive))
+		textures = (optional (array Texture))
+		parameters = (optional (array Parameter))
+		materials = (required (array Material))
+		models = (required (array Model))
 	}
 	
 	Material = {
 		vertexShader = (required string)
 		fragmentShader = (required string)
-		uniforms = (optional StringArray)
+		uniforms = (optional Uniforms)
 	}
 	
 	Model = {
@@ -25,17 +25,18 @@ types = {
 		rotationZ = (optional float)
 	}
 	
-	Primitive = { }
-	Texture = { }
+	Primitive = {
+		type = (required (enum mesh particles heightmap landscape))
+	}
 	
-	StringArray = (array string)
-	PrimitiveArray = (array Primitive)
-	TextureArray = (array Texture)
-	ParameterArray = (array Parameter)
-	MaterialArray = (array Material)
-	ModelArray = (array Model)
-	Vector = (list float)
-	Matrix = (list Vector)
+	Texture = {
+		type = (required (enum file imagesynth array))
+	}
+	
+	Uniforms = { }
+	
+	Vector = (sequence float)
+	Matrix = (sequence Vector)
 	Parameter = (variant int float Vector Matrix)
 }
 

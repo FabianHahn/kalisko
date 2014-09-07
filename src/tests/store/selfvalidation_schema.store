@@ -1,14 +1,18 @@
 types = {
-	Specification = (list string)
-	StructSpecification = (array Specification)
+	RequiredOptionalSwitch = (enum required optional)
+	StructSpecificationItem = (tuple RequiredOptionalSwitch Type)
+	StructSpecification = (array StructSpecificationItem)
 	
-	StringList = (list string)
-		
-	Type = (variant StringList StructSpecification)
-	TypeArray = (array Type)
+	ArrayType = (tuple (enum array) Type)
+	SequenceType = (tuple (enum sequence) Type)
+	TupleType = (tuple (enum tuple) Type)
+	VariantType = (tuple (enum variant) Type)
+	EnumType = (tuple (enum enum) string)
+	
+	Type = (variant string ArrayType SequenceType TupleType VariantType EnumType StructSpecification)
 }
 
 layout = {
-	types = (optional TypeArray)
+	types = (optional (array Type))
 	layout = (required StructSpecification)
 }

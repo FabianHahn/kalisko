@@ -65,8 +65,8 @@ static void _storeStringUnread(void *store, char c);
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 6, 0);
-MODULE_BCVERSION(0, 6, 0);
+MODULE_VERSION(0, 6, 1);
+MODULE_BCVERSION(0, 6, 1);
 MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 12, 0));
 
 TEST_SUITE_BEGIN(store)
@@ -320,10 +320,14 @@ TEST(schema_crossvalidation)
 	Store *schemaStore = parseStoreFile(schemapath->str);
 	g_string_free(schemapath, true);
 
+	TEST_ASSERT(schemaStore != NULL);
+
 	GString *testpath = g_string_new(execpath);
 	g_string_append(testpath, "/tests/store/test_schema.store");
 	Store *testStore = parseStoreFile(testpath->str);
 	g_string_free(testpath, true);
+
+	TEST_ASSERT(testStore != NULL);
 
 	free(execpath);
 

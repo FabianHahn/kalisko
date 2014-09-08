@@ -33,8 +33,8 @@
 MODULE_NAME("test_xcall_irc_parser");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the xcall_irc_parser module");
-MODULE_VERSION(0, 1, 5);
-MODULE_BCVERSION(0, 1, 4);
+MODULE_VERSION(0, 1, 6);
+MODULE_BCVERSION(0, 1, 6);
 MODULE_DEPENDS(MODULE_DEPENDENCY("xcall", 0, 2, 3), MODULE_DEPENDENCY("store", 0, 5, 3), MODULE_DEPENDENCY("xcall_irc_parser", 0, 2, 0));
 
 TEST(xcall_irc_parse);
@@ -55,11 +55,20 @@ TEST(xcall_irc_parse)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":irc.gamesurge.net            366           Gregor          @         #php.de         :    Do         something!\r\n\"; xcall = { function = \"parseIrcMessage\" }");
 
-	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 1);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/prefix")->content.string, "irc.gamesurge.net") == 0);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/command")->content.string, "366") == 0);
-	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "ircMessage/params_count")->content.integer == 3);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircMessage/params/0")->content.string, "Gregor") == 0);
+	TEST_ASSERT(getStorePath(retStore, "success") != NULL);
+	TEST_ASSERT(getStorePath(retStore, "success")->content.integer == 1);
+
+	TEST_ASSERT(getStorePath(retStore, "ircMessage/prefix") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircMessage/prefix")->content.string, "irc.gamesurge.net") == 0);
+
+	TEST_ASSERT(getStorePath(retStore, "ircMessage/command") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircMessage/command")->content.string, "366") == 0);
+
+	TEST_ASSERT(getStorePath(retStore, "ircMessage/params_count") != NULL);
+	TEST_ASSERT(getStorePath(retStore, "ircMessage/params_count")->content.integer == 3);
+
+	TEST_ASSERT(getStorePath(retStore, "ircMessage/params/0") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircMessage/params/0")->content.string, "Gregor") == 0);
 
 	$(void, store, freeStore)(retStore);
 }
@@ -68,9 +77,14 @@ TEST(xcall_irc_parse_user_mask)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("prefix = \"Gregor!kalisko@kalisko.org\"; xcall = { function = \"parseIrcUserMask\" }");
 
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/nick")->content.string, "Gregor") == 0);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/user")->content.string, "kalisko") == 0);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "ircUserMask/host")->content.string, "kalisko.org") == 0);
+	TEST_ASSERT(getStorePath(retStore, "ircUserMask/nick") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircUserMask/nick")->content.string, "Gregor") == 0);
+
+	TEST_ASSERT(getStorePath(retStore, "ircUserMask/user") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircUserMask/user")->content.string, "kalisko") == 0);
+
+	TEST_ASSERT(getStorePath(retStore, "ircUserMask/host") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "ircUserMask/host")->content.string, "kalisko.org") == 0);
 
 	$(void, store, freeStore)(retStore);
 }
@@ -80,8 +94,11 @@ TEST(xcall_irc_parse_error)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("message = \":nothing\"; xcall = { function = \"parseIrcMessage\" }");
 
-	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
-	TEST_ASSERT(strcmp($(Store *, store, getStorePath)(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);
+	TEST_ASSERT(getStorePath(retStore, "success") != NULL);
+	TEST_ASSERT(getStorePath(retStore, "success")->content.integer == 0);
+
+	TEST_ASSERT(getStorePath(retStore, "error/id") != NULL);
+	TEST_ASSERT(strcmp(getStorePath(retStore, "error/id")->content.string, "irc_parser.irc_message.parse_not_possible") == 0);
 
 	$(void, store, freeStore)(retStore);
 }
@@ -90,7 +107,8 @@ TEST(xcall_irc_parse_no_message)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcMessage\" }");
 
-	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
+	TEST_ASSERT(getStorePath(retStore, "success") != NULL);
+	TEST_ASSERT(getStorePath(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
 }
@@ -99,7 +117,8 @@ TEST(xcall_irc_parse_user_mask_no_prefix)
 {
 	Store *retStore = $(Store *, xcall, invokeXCallByString)("xcall = { function = \"parseIrcUserMask\" }");
 
-	TEST_ASSERT($(Store *, store, getStorePath)(retStore, "success")->content.integer == 0);
+	TEST_ASSERT(getStorePath(retStore, "success") != NULL);
+	TEST_ASSERT(getStorePath(retStore, "success")->content.integer == 0);
 
 	$(void, store, freeStore)(retStore);
 }

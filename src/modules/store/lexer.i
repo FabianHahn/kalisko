@@ -53,4 +53,12 @@ API GString *lexStoreString(char *string);
  */
 API GString *lexStoreFile(char *filename);
 
+/**
+ * Checks if a string can only be expressed in delimited form within a store
+ *
+ * @param string		the string to test
+ * @result				true if the string can only be expressed in delimited form within a store
+ */
+API bool checkIfStoreStringDelimited(const char *string);
+
 #endif

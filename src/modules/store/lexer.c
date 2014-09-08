@@ -33,15 +33,8 @@
 #include "parser.h"
 #include "lexer.h"
 
-/**
- * Is the char a delimiter?
- *
- * @param C		the char to check
- * @result		true if the char is a delimiter
- */
-#define IS_DELIMITER(C) (isspace(c) || c == ';' || c == ',')
-
 static GString *dumpLex(StoreParser *parser) G_GNUC_WARN_UNUSED_RESULT;
+static bool checkIfCharDelimiter(char c);
 
 void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error); // this can't go into a header because it doesn't have an API export
 
@@ -148,7 +141,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 					yyerror(lloc, parser, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
 					g_string_free(assemble, true);
 					return 0; // error
-				} else if(IS_DELIMITER(c)) { // end of non delimited string reached
+				} else if(checkIfCharDelimiter(c)) { // end of non delimited string reached
 					lval->string = assemble->str;
 					g_string_free(assemble, false);
 
@@ -164,7 +157,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 				} else {
 					numeric_is_float = true;
 				}
-			} else if(IS_DELIMITER(c)) { // whitespace, end of number
+			} else if(checkIfCharDelimiter(c)) { // whitespace, end of number
 				if(numeric_is_float) {
 					lval->float_number = atof(assemble->str);
 					g_string_free(assemble, true);
@@ -198,7 +191,7 @@ API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
 				continue;
 			}
 
-			if(IS_DELIMITER(c)) { // whitespace
+			if(checkIfCharDelimiter(c)) { // whitespace
 				continue; // just ignore it
 			} else if(isdigit(c) || c == '-') { // reading an int or a float number
 				reading_numeric = true;
@@ -255,6 +248,17 @@ API GString *lexStoreFile(char *filename)
 	return ret;
 }
 
+API bool checkIfStoreStringDelimited(const char *string)
+{
+	for(const char *iter = string; *iter != '\0'; ++iter) {
+		if(checkIfCharDelimiter(*iter)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Lexes a store and dumps the result
  *
@@ -295,4 +299,15 @@ static GString *dumpLex(StoreParser *parser)
 	}
 
 	return ret;
+}
+
+/**
+ * Checks whether a char is a delimiter
+ *
+ * @param c		the char to test
+ * @result		true if the char is a delimiter
+ */
+static bool checkIfCharDelimiter(char c)
+{
+	return (isspace(c) || c == ';' || c == ',' || c == '{' || c == '}' || c == '(' || c == ')' || c ==  '=' || c == '"' || c == '\\');
 }

@@ -33,8 +33,8 @@
 MODULE_NAME("test_lua");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the lua module");
-MODULE_VERSION(0, 4, 2);
-MODULE_BCVERSION(0, 4, 2);
+MODULE_VERSION(0, 4, 3);
+MODULE_BCVERSION(0, 4, 3);
 MODULE_DEPENDS(MODULE_DEPENDENCY("lua", 0, 8, 0), MODULE_DEPENDENCY("xcall", 0, 2, 2), MODULE_DEPENDENCY("store", 0, 6, 3));
 
 TEST(lua2store);
@@ -162,6 +162,8 @@ TEST(xcall_invoke)
 	char *ret = $(char *, lua, popLuaString)();
 
 	Store *retstore = $(Store *, store, parseStoreString)(ret);
+
+	TEST_ASSERT(retstore != NULL);
 
 	Store *error;
 	TEST_ASSERT((error = $(Store *, store, getStorePath)(retstore, "xcall/error")) != NULL);

@@ -27,6 +27,7 @@
 #include "log.h"
 
 #define API
+#include "lexer.h"
 #include "store.h"
 #include "write.h"
 
@@ -147,11 +148,13 @@ static void dumpStore(Store *value, StoreDumpContext *context)
 
 	switch (value->type) {
 		case STORE_STRING:
-			escaped = escapeStoreString(value->content.string);
-
-			DUMP("\"%s\"", escaped->str);
-
-			g_string_free(escaped, TRUE);
+			if(checkSimpleStoreStringCapability(value->content.string)) {
+				DUMP("%s", value->content.string);
+			} else {
+				escaped = escapeStoreString(value->content.string);
+				DUMP("\"%s\"", escaped->str);
+				g_string_free(escaped, true);
+			}
 		break;
 		case STORE_INTEGER:
 			DUMP("%d", value->content.integer);
@@ -219,11 +222,13 @@ static void dumpStoreNode(void *key_p, void *value_p, void *data)
 		DUMP("\t");
 	}
 
-	GString *escaped = escapeStoreString(key);
-
-	DUMP("\"%s\" = ", escaped->str);
-
-	g_string_free(escaped, TRUE);
+	if(checkSimpleStoreStringCapability(key)) {
+		DUMP("%s = ", key);
+	} else {
+		GString *escaped = escapeStoreString(key);
+		DUMP("\"%s\" = ", escaped->str);
+		g_string_free(escaped, true);
+	}
 
 	dumpStore(value, context);
 }

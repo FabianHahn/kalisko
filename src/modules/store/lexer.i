@@ -26,6 +26,34 @@
 #include "parse.h"
 #include "parser.h"
 
+typedef enum {
+	/** Delimiters are the characters that are also grammar elements : '(', ')', '{', '}', '=' */
+	STORE_LEX_CHAR_TYPE_DELIMITER,
+	/** Spaces separate different grammer elements, but have no grammar meaning of their own */
+	STORE_LEX_CHAR_TYPE_SPACE,
+	/** The quotation character '"' is used to define extended strings */
+	STORE_LEX_CHAR_TYPE_QUOTATION,
+	/** The characters '/' and '#' are used to begin comments */
+	STORE_LEX_CHAR_TYPE_COMMENT,
+	/** The character '\\' is used to escape other characters whithin extended strings */
+	STORE_LEX_CHAR_TYPE_ESCAPE,
+	/** The decimal mark '.' is used to define floating point numbers */
+	STORE_LEX_CHAR_TYPE_DECIMAL,
+	/** The characters '\0' and EOF denote the end of the input */
+	STORE_LEX_CHAR_TYPE_END,
+	/** Digits and '-' are used to define numbers */
+	STORE_LEX_CHAR_TYPE_DIGIT,
+	/** Everything else is considered a letter in a string */
+	STORE_LEX_CHAR_TYPE_LETTER
+} StoreLexCharType;
+
+/**
+ * Returns the store lexing character type for a char
+ *
+ * @param c			the int-valued char to analyze
+ * @result			the lexing character type of c
+ */
+API StoreLexCharType getStoreLexCharType(int c);
 
 /**
  * Lexes a token from a store

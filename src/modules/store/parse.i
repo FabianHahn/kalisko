@@ -47,7 +47,7 @@ typedef char ( StoreReader)(void *parser);
  * A store unreader to push back characters into a source
  * Note: The first param has only type void * and not StoreParser to get around C's single pass compilation restrictions
  */
-typedef void ( StoreUnreader)(void *parser, char c);
+typedef void ( StoreUnreader)(void *parser, int c);
 
 /**
  * Struct to represent a store
@@ -99,7 +99,7 @@ API char storeFileRead(void *parser_p);
  * @param parser_p		the parser to to unread to
  * @param c				the character to unread
  */
-API void storeFileUnread(void *parser_p, char c);
+API void storeFileUnread(void *parser_p, int c);
 
 /**
  * A StoreReader function for strings
@@ -115,6 +115,6 @@ API char storeStringRead(void *parser_p);
  * @param parser_p		the parser to to unread to
  * @param c				the character to unread
  */
-API void storeStringUnread(void *parser_p, char c);
+API void storeStringUnread(void *parser_p, int c);
 
 #endif

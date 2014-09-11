@@ -43,16 +43,16 @@
 	void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error);
 %}
 
-%token <string> STRING
-%token <integer> INTEGER
-%token <float_number> FLOAT_NUMBER
+%token <string> STORE_TOKEN_STRING
+%token <integer> STORE_TOKEN_INTEGER
+%token <float_number> STORE_TOKEN_FLOAT_NUMBER
 %type <value> array
 %type <value> list
 %type <value> value
 %type <node> node
 %destructor { freeStore($$); } array list value
 %destructor { freeStore($$->value); free($$->key); free($$); } node
-%destructor { free($$); } STRING
+%destructor { free($$); } STORE_TOKEN_STRING
 
 %%
 root:		// empty string
@@ -67,7 +67,7 @@ root:		// empty string
 			}
 ;
 
-node:	STRING '=' value
+node:	STORE_TOKEN_STRING '=' value
 		{
 			@$.last_line = @1.last_line;
 			@$.last_column = @1.last_column;
@@ -77,20 +77,20 @@ node:	STRING '=' value
 		}
 ;
 
-value:		STRING
+value:		STORE_TOKEN_STRING
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
 				$$ = createStoreStringValue($1);
 				free($1);
 			}
-		|	INTEGER
+		|	STORE_TOKEN_INTEGER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;
 				$$ = createStoreIntegerValue($1);
 			}
-		|	FLOAT_NUMBER
+		|	STORE_TOKEN_FLOAT_NUMBER
 			{
 				@$.last_line = @1.last_line;
 				@$.last_column = @1.last_column;

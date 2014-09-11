@@ -33,196 +33,357 @@
 #include "parser.h"
 #include "lexer.h"
 
+typedef enum {
+	LEXER_STATE_START,
+	LEXER_STATE_COMMENTING,
+	LEXER_STATE_READING_STRING_SIMPLE,
+	LEXER_STATE_READING_STRING_EXTENDED,
+	LEXER_STATE_READING_STRING_EXTENDED_ESCAPING,
+	LEXER_STATE_READING_NUMBER_INT,
+	LEXER_STATE_READING_NUMBER_FLOAT
+} LexerState;
+
+typedef struct {
+	int c;
+	StoreLexCharType type;
+	LexerState state;
+	GString *assemble;
+	int token;
+} LexerStruct;
+
+typedef enum {
+	LEXER_ACTION_REPEAT,
+	LEXER_ACTION_CONSUME,
+	LEXER_ACTION_SKIP,
+	LEXER_ACTION_RETURN,
+	LEXER_ACTION_PUSHBACK_RETURN
+} LexerAction;
+
+static LexerAction lexStateStart(LexerStruct *lex);
+static LexerAction lexStateCommenting(LexerStruct *lex);
+static LexerAction lexStateReadingStringSimple(LexerStruct *lex);
+static LexerAction lexStateReadingStringExtended(LexerStruct *lex);
+static LexerAction lexStateReadingStringExtendedEscaping(LexerStruct *lex);
+static LexerAction lexStateReadingNumberInt(LexerStruct *lex);
+static LexerAction lexStateReadingNumberFloat(LexerStruct *lex);
+
 static GString *dumpLex(StoreParser *parser) G_GNUC_WARN_UNUSED_RESULT;
-static bool checkIfCharDelimiter(char c);
 
 void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error); // this can't go into a header because it doesn't have an API export
 
-API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
+API StoreLexCharType getStoreLexCharType(int c)
 {
-	int c;
-	bool escaping = false;
-	bool reading_string = false;
-	bool string_is_delimited = false;
-	bool reading_numeric = false;
-	bool numeric_is_float = false;
-	int commenting = 0;
-	GString *assemble = g_string_new("");
-	int i = 0;
-
-	while(true) {
-		c = parser->read(parser);
-		lloc->last_column++;
-
-		if(c == '\n') {
-			lloc->last_line++;
-			lloc->last_column = 1;
-			commenting = 0;
-		} else if(commenting >= 2) {
-			if(c != '\0' || c != EOF) {
-				continue; // we're inside a comment
-			}
-		}
-
-		switch(c) {
-			case EOF:
-			case '\0':
-			case '{':
-			case '}':
-			case '(':
-			case ')':
-			case '=':
-				if(reading_string) {
-					if(!string_is_delimited) { // end of undelimited string reached
-						lval->string = assemble->str;
-						g_string_free(assemble, false);
-
-						if(c != EOF) {
-							parser->unread(parser, c); // push back to stream
-							lloc->last_column--;
-						}
-						return STRING;
-					} // else just continue reading
-				} else if(reading_numeric) {
-					if(numeric_is_float) { // end of float reached
-						lval->float_number = atof(assemble->str);
-						g_string_free(assemble, true);
-
-						if(c != EOF) {
-							parser->unread(parser, c); // push back to stream
-							lloc->last_column--;
-						}
-						return FLOAT_NUMBER;
-					} else { // end of int reached
-						lval->integer = atoi(assemble->str);
-						g_string_free(assemble, true);
-
-						if(c != EOF) {
-							parser->unread(parser, c); // push back to stream
-							lloc->last_column--;
-						}
-						return INTEGER;
-					}
-				} else {
-					if(c == EOF) {
-						g_string_free(assemble, true);
-						return 0;
-					} else {
-						g_string_free(assemble, true);
-						return c;
-					}
-				}
-			break;
-		}
-
-		// Any used non-value token will arrive here iff we're reading a delimited string
-
-		if(reading_string) {
-			if(string_is_delimited) {
-				if(c == '"') {
-					if(escaping) { // delimiter is escaped
-						escaping = false;
-					} else { // end of delimited string reached
-						lval->string = assemble->str;
-						g_string_free(assemble, false);
-
-						return STRING;
-					}
-				} else if(c == '\\') { // escape character
-					if(escaping) { // escape character is escaped itself
-						escaping = false;
-					} else { // starting to escape
-						escaping = true;
-						continue;
-					}
-				} // else just continue reading
-			} else {
-				if(c == '"' || c == '\\') { // delimiter or escape character not allowed in non-delimited string
-					yyerror(lloc, parser, "Delimiter '\"' or escape character '\\' not allowed in non-delimited string");
-					g_string_free(assemble, true);
-					return 0; // error
-				} else if(checkIfCharDelimiter(c)) { // end of non delimited string reached
-					lval->string = assemble->str;
-					g_string_free(assemble, false);
-
-					return STRING;
-				}
-			}
-		} else if(reading_numeric) {
-			if(c == '.') { // delimiter
-				if(numeric_is_float) {
-					yyerror(lloc, parser, "Multiple occurences of delimiter '.' in numeric value");
-					g_string_free(assemble, true);
-					return 0; // error
-				} else {
-					numeric_is_float = true;
-				}
-			} else if(checkIfCharDelimiter(c)) { // whitespace, end of number
-				if(numeric_is_float) {
-					lval->float_number = atof(assemble->str);
-					g_string_free(assemble, true);
-
-					return FLOAT_NUMBER;
-				} else {
-					lval->integer = atoi(assemble->str);
-					g_string_free(assemble, true);
-
-					return INTEGER;
-				}
-			} else if(!isdigit(c)) { // we're actually reading a non-delimited string
-				reading_numeric = false;
-				reading_string = true;
-				parser->unread(parser, c); // push back to stream
-				lloc->last_column--;
-				continue;
-			}
-		} else { // We're starting to read now!
-			if(c == '/') {
-				commenting++;
-				continue;
-			} else if(commenting == 1) { // #1418: We thought we were beginning to read a comment, but it's actually the beginning of an undelimited string
-				g_string_append_c(assemble, '/'); // insert a compensating slash
-				i++;
-
-				commenting = 0;
-				reading_string = true;
-				string_is_delimited = false;
-				parser->unread(parser, c); // push back to stream
-				continue;
-			}
-
-			if(checkIfCharDelimiter(c)) { // whitespace
-				continue; // just ignore it
-			} else if(isdigit(c) || c == '-') { // reading an int or a float number
-				reading_numeric = true;
-			} else { // reading a string
-				reading_string = true;
-
-				if(c == '"') { // starting a delimited string
-					string_is_delimited = true;
-					continue;
-				} else if(c == '\\') {
-					yyerror(lloc, parser, "Escape character '\\' not allowed in non-delimited string");
-					g_string_free(assemble, true);
-					return 0; // error
-				} // else just continue reading the non-delimited string
-			}
-		}
-
-		if(escaping) { // escape character wasn't used
-			yyerror(lloc, parser, "Unused escape character '\\'");
-			g_string_free(assemble, true);
-			return 0; // error
-		}
-
-		g_string_append_c(assemble, c);
-		i++;
+	if(isspace(c)) {
+		return STORE_LEX_CHAR_TYPE_SPACE;
 	}
 
-	// this should never happen...
-	assert(false);
-	g_string_free(assemble, true);
+	if(isdigit(c)) {
+		return STORE_LEX_CHAR_TYPE_DIGIT;
+	}
+
+	switch(c) {
+		case EOF:
+		case '\0':
+			return STORE_LEX_CHAR_TYPE_END;
+		case '.':
+			return STORE_LEX_CHAR_TYPE_DECIMAL;
+		case '"':
+			return STORE_LEX_CHAR_TYPE_QUOTATION;
+		case '\\':
+			return STORE_LEX_CHAR_TYPE_ESCAPE;
+		case '/':
+		case '#':
+			return STORE_LEX_CHAR_TYPE_COMMENT;
+		case '(':
+		case ')':
+		case '{':
+		case '}':
+		case '=':
+			return STORE_LEX_CHAR_TYPE_DELIMITER;
+		case ';':
+		case ',':
+			return STORE_LEX_CHAR_TYPE_SPACE;
+		case '-':
+			return STORE_LEX_CHAR_TYPE_DIGIT;
+		default:
+			return STORE_LEX_CHAR_TYPE_LETTER;
+	}
+}
+
+API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser)
+{
+	LexerStruct lex;
+	lex.c = EOF;
+	lex.type = STORE_LEX_CHAR_TYPE_END;
+	lex.state = LEXER_STATE_START;
+	lex.assemble = g_string_new("");
+	lex.token = 0;
+
+	while(true) {
+		lex.c = parser->read(parser);
+		lex.type = getStoreLexCharType(lex.c);
+
+		lloc->last_column++;
+
+		if(lex.c == '\n') {
+			lloc->last_line++;
+			lloc->last_column = 1;
+		}
+
+		LexerAction action = LEXER_ACTION_RETURN;
+
+		switch(lex.state) {
+			case LEXER_STATE_START:
+				action = lexStateStart(&lex);
+				break;
+			case LEXER_STATE_COMMENTING:
+				action = lexStateCommenting(&lex);
+				break;
+			case LEXER_STATE_READING_STRING_SIMPLE:
+				action = lexStateReadingStringSimple(&lex);
+				break;
+			case LEXER_STATE_READING_STRING_EXTENDED:
+				action = lexStateReadingStringExtended(&lex);
+				break;
+			case LEXER_STATE_READING_STRING_EXTENDED_ESCAPING:
+				action = lexStateReadingStringExtendedEscaping(&lex);
+				break;
+			case LEXER_STATE_READING_NUMBER_INT:
+				action = lexStateReadingNumberInt(&lex);
+				break;
+			case LEXER_STATE_READING_NUMBER_FLOAT:
+				action = lexStateReadingNumberFloat(&lex);
+				break;
+		}
+
+		switch(action) {
+			case LEXER_ACTION_REPEAT:
+				parser->unread(parser, lex.c);
+				lloc->last_column--;
+				break;
+			case LEXER_ACTION_CONSUME:
+				g_string_append_c(lex.assemble, lex.c);
+				break;
+			case LEXER_ACTION_SKIP:
+				break;
+			case LEXER_ACTION_RETURN:
+			case LEXER_ACTION_PUSHBACK_RETURN:
+			{
+				if(action == LEXER_ACTION_PUSHBACK_RETURN) {
+					parser->unread(parser, lex.c);
+					lloc->last_column--;
+				}
+
+				bool freeAssemble = true;
+
+				switch(lex.token) {
+					case -1:
+						yyerror(lloc, parser, lex.assemble->str);
+					case STORE_TOKEN_STRING:
+						freeAssemble = false;
+						lval->string = lex.assemble->str;
+						break;
+					case STORE_TOKEN_INTEGER:
+						lval->integer = atoi(lex.assemble->str);
+						break;
+					case STORE_TOKEN_FLOAT_NUMBER:
+						lval->float_number = atof(lex.assemble->str);
+						break;
+					default:
+						// nothing to do
+						break;
+				}
+
+				g_string_free(lex.assemble, freeAssemble);
+				return lex.token;
+			} break;
+		}
+	}
+
+	assert(false); // this should never be reached
 	return 0;
+}
+
+static LexerAction lexStateStart(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+			lex->token = lex->c;
+			return LEXER_ACTION_RETURN;
+		case STORE_LEX_CHAR_TYPE_SPACE:
+			return LEXER_ACTION_SKIP;
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+			lex->state = LEXER_STATE_READING_STRING_EXTENDED;
+			return LEXER_ACTION_SKIP;
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+			lex->state = LEXER_STATE_COMMENTING;
+			return LEXER_ACTION_SKIP;
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+			lex->state = LEXER_STATE_READING_STRING_SIMPLE;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+			lex->state = LEXER_STATE_READING_NUMBER_FLOAT;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_END:
+			return LEXER_ACTION_RETURN;
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+			lex->state = LEXER_STATE_READING_NUMBER_INT;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			lex->state = LEXER_STATE_READING_STRING_SIMPLE;
+			return LEXER_ACTION_CONSUME;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateCommenting(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			if(lex->c == '\n') {
+				lex->state = LEXER_STATE_START;
+			}
+			return LEXER_ACTION_SKIP;
+		case STORE_LEX_CHAR_TYPE_END:
+			return LEXER_ACTION_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateReadingStringSimple(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_END:
+			lex->token = STORE_TOKEN_STRING;
+			return LEXER_ACTION_PUSHBACK_RETURN;
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			return LEXER_ACTION_CONSUME;
+			return LEXER_ACTION_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateReadingStringExtended(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+			lex->token = STORE_TOKEN_STRING;
+			return LEXER_ACTION_RETURN;
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+			lex->state = LEXER_STATE_READING_STRING_EXTENDED_ESCAPING;
+			return LEXER_ACTION_SKIP;
+		case STORE_LEX_CHAR_TYPE_END:
+			lex->token = -1;
+			g_string_assign(lex->assemble, "Unexpected end when reading extended string");
+			return LEXER_ACTION_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateReadingStringExtendedEscaping(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+			lex->state = LEXER_STATE_READING_STRING_EXTENDED;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+		case STORE_LEX_CHAR_TYPE_END:
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			lex->token = -1;
+			g_string_assign(lex->assemble, "Unexpected escape character without following character to be escaped when reading extended string");
+			return LEXER_ACTION_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateReadingNumberInt(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+			// actually reading a float, we just didn't know yet
+			lex->state = LEXER_STATE_READING_NUMBER_FLOAT;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			// actually reading a simple string, we just didn't know yet
+			lex->state = LEXER_STATE_READING_STRING_SIMPLE;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+		case STORE_LEX_CHAR_TYPE_END:
+			lex->token = STORE_TOKEN_INTEGER;
+			return LEXER_ACTION_PUSHBACK_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
+}
+
+static LexerAction lexStateReadingNumberFloat(LexerStruct *lex)
+{
+	switch(lex->type) {
+		case STORE_LEX_CHAR_TYPE_DIGIT:
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DECIMAL:
+			lex->token = -1;
+			g_string_assign(lex->assemble, "Encountered double decimal mark when reading float number");
+			return LEXER_ACTION_RETURN;
+		case STORE_LEX_CHAR_TYPE_LETTER:
+			// actually reading a simple string, we just didn't know yet
+			lex->state = LEXER_STATE_READING_STRING_SIMPLE;
+			return LEXER_ACTION_CONSUME;
+		case STORE_LEX_CHAR_TYPE_DELIMITER:
+		case STORE_LEX_CHAR_TYPE_SPACE:
+		case STORE_LEX_CHAR_TYPE_QUOTATION:
+		case STORE_LEX_CHAR_TYPE_COMMENT:
+		case STORE_LEX_CHAR_TYPE_ESCAPE:
+		case STORE_LEX_CHAR_TYPE_END:
+			lex->token = STORE_TOKEN_FLOAT_NUMBER;
+			return LEXER_ACTION_PUSHBACK_RETURN;
+	}
+
+	assert(false); // this should never be reached
+	return LEXER_ACTION_RETURN;
 }
 
 API GString *lexStoreString(char *string)
@@ -251,9 +412,9 @@ API GString *lexStoreFile(char *filename)
 API bool checkIfStoreStringDelimited(const char *string)
 {
 	for(const char *iter = string; *iter != '\0'; ++iter) {
-		if(checkIfCharDelimiter(*iter)) {
+		//if(checkIfCharDelimiter(*iter)) {
 			return true;
-		}
+		//}
 	}
 
 	return false;
@@ -278,13 +439,13 @@ static GString *dumpLex(StoreParser *parser)
 
 	while((lexx = yylex(&val, &loc, parser)) != 0) {
 		switch(lexx) {
-			case STRING:
+			case STORE_TOKEN_STRING:
 				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);
 			break;
-			case INTEGER:
+			case STORE_TOKEN_INTEGER:
 				g_string_append_printf(ret, "<integer=%d> ", val.integer);
 			break;
-			case FLOAT_NUMBER:
+			case STORE_TOKEN_FLOAT_NUMBER:
 				g_string_append_printf(ret, "<float=%f> ", val.float_number);
 			break;
 			case '\n':
@@ -299,15 +460,4 @@ static GString *dumpLex(StoreParser *parser)
 	}
 
 	return ret;
-}
-
-/**
- * Checks whether a char is a delimiter
- *
- * @param c		the char to test
- * @result		true if the char is a delimiter
- */
-static bool checkIfCharDelimiter(char c)
-{
-	return (isspace(c) || c == ';' || c == ',' || c == '{' || c == '}' || c == '(' || c == ')' || c ==  '=' || c == '"' || c == '\\');
 }

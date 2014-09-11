@@ -77,11 +77,13 @@ API char storeFileRead(void *parser_p)
 	return fgetc(parser->resource);
 }
 
-API void storeFileUnread(void *parser_p, char c)
+API void storeFileUnread(void *parser_p, int c)
 {
 	StoreParser *parser = parser_p;
 
-	ungetc(c, parser->resource);
+	if(c != EOF) {
+		ungetc(c, parser->resource);
+	}
 }
 
 API char storeStringRead(void *parser_p)
@@ -91,7 +93,7 @@ API char storeStringRead(void *parser_p)
 	return *((char *) parser->const_resource++);
 }
 
-API void storeStringUnread(void *parser_p, char c)
+API void storeStringUnread(void *parser_p, int c)
 {
 	StoreParser *parser = parser_p;
 

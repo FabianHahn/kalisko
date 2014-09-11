@@ -66,8 +66,7 @@ static LexerAction lexStateReadingStringExtended(LexerStruct *lex);
 static LexerAction lexStateReadingStringExtendedEscaping(LexerStruct *lex);
 static LexerAction lexStateReadingNumberInt(LexerStruct *lex);
 static LexerAction lexStateReadingNumberFloat(LexerStruct *lex);
-
-static GString *dumpLex(StoreParser *parser) G_GNUC_WARN_UNUSED_RESULT;
+static void freeStoreLexResult(void *result_p);
 
 void yyerror(YYLTYPE *lloc, StoreParser *parser, char *error); // this can't go into a header because it doesn't have an API export
 
@@ -386,26 +385,57 @@ static LexerAction lexStateReadingNumberFloat(LexerStruct *lex)
 	return LEXER_ACTION_RETURN;
 }
 
-API GString *lexStoreString(char *string)
+static void freeStoreLexResult(void *result_p)
+{
+	StoreLexResult *result = (StoreLexResult *) result_p;
+
+	if(result->token == STORE_TOKEN_STRING) {
+		free(result->value.string);
+	}
+
+	free(result);
+}
+
+API GPtrArray *lexStore(StoreParser *parser)
+{
+	GPtrArray *results = g_ptr_array_new_with_free_func(&freeStoreLexResult);
+
+	YYSTYPE value;
+	YYLTYPE loc;
+	int token;
+
+	while((token = yylex(&value, &loc, parser)) != 0) {
+		StoreLexResult *result = ALLOCATE_OBJECT(StoreLexResult);
+		result->token = token;
+		result->value = value;
+
+		g_ptr_array_add(results, result);
+	}
+
+	return results;
+}
+
+API GPtrArray *lexStoreString(char *string)
 {
 	StoreParser parser;
 	parser.resource = string;
 	parser.read = &storeStringRead;
 	parser.unread = &storeStringUnread;
 
-	return dumpLex(&parser);
+	return lexStore(&parser);
 }
 
-API GString *lexStoreFile(char *filename)
+API GPtrArray *lexStoreFile(char *filename)
 {
 	StoreParser parser;
 	parser.resource = fopen(filename, "r");
 	parser.read = &storeFileRead;
 	parser.unread = &storeFileUnread;
 
-	GString *ret = dumpLex(&parser);
+	GPtrArray *ret = lexStore(&parser);
 
 	fclose(parser.resource);
+
 	return ret;
 }
 
@@ -420,44 +450,31 @@ API bool checkIfStoreStringDelimited(const char *string)
 	return false;
 }
 
-/**
- * Lexes a store and dumps the result
- *
- * @param parser	the store parser context to lex and dump
- * @result			the store's lexer dump as a string, must be freed with g_string_free afterwards
- */
-static GString *dumpLex(StoreParser *parser)
+API char *dumpLexResults(GPtrArray *results)
 {
-	int lexx;
-	YYSTYPE val;
-	YYLTYPE loc;
-
 	GString *ret = g_string_new("");
-	g_string_append_printf(ret, "Lexer dump:\n");
 
-	memset(&val, 0, sizeof(YYSTYPE));
+	for(int i = 0; i < results->len; i++) {
+		StoreLexResult *result = (StoreLexResult *) results->pdata[i];
 
-	while((lexx = yylex(&val, &loc, parser)) != 0) {
-		switch(lexx) {
+		switch(result->token) {
 			case STORE_TOKEN_STRING:
-				g_string_append_printf(ret, "<string=\"%s\"> ", val.string);
+				g_string_append_printf(ret, "<string=\"%s\"> ", result->value.string);
 			break;
 			case STORE_TOKEN_INTEGER:
-				g_string_append_printf(ret, "<integer=%d> ", val.integer);
+				g_string_append_printf(ret, "<integer=%d> ", result->value.integer);
 			break;
 			case STORE_TOKEN_FLOAT_NUMBER:
-				g_string_append_printf(ret, "<float=%f> ", val.float_number);
-			break;
-			case '\n':
-				g_string_append(ret, "'\\n' ");
+				g_string_append_printf(ret, "<float=%f> ", result->value.float_number);
 			break;
 			default:
-				g_string_append_printf(ret, "'%c' ", lexx);
+				g_string_append_printf(ret, "'%c' ", result->token);
 			break;
 		}
-
-		memset(&val, 0, sizeof(YYSTYPE));
 	}
 
-	return ret;
+	char *dump = ret->str;
+	g_string_free(ret, false);
+
+	return dump;
 }

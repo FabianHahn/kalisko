@@ -47,6 +47,11 @@ typedef enum {
 	STORE_LEX_CHAR_TYPE_LETTER
 } StoreLexCharType;
 
+typedef struct {
+	int token;
+	YYSTYPE value;
+} StoreLexResult;
+
 /**
  * Returns the store lexing character type for a char
  *
@@ -66,20 +71,36 @@ API StoreLexCharType getStoreLexCharType(int c);
 API int yylex(YYSTYPE *lval, YYLTYPE *lloc, StoreParser *parser);
 
 /**
- * Lexes a store string and dumps the result
+ * Lexes a store and returns the sequence of results
  *
- * @param string		the store string to lex and dump
- * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
+ * @param parser		the parser struct supplying the store to lex
+ * @result				an array of StoreLexResult objects that must be freed by the caller
  */
-API GString *lexStoreString(char *string);
+API GPtrArray *lexStore(StoreParser *parser);
 
 /**
- * Lexes a store file and dumps the result
+ * Lexes a store string and returns the sequence of results
+ *
+ * @param string		the store string to lex and dump
+ * @result				an array of StoreLexResult objects that must be freed by the caller
+ */
+API GPtrArray *lexStoreString(char *string);
+
+/**
+ * Lexes a store file and returns the sequence of results
  *
  * @param filename		the store file to lex and dump
- * @result				the store's lexer dump as a string, must be freed with g_string_free afterwards
+ * @result				an array of StoreLexResult objects that must be freed by the caller
  */
-API GString *lexStoreFile(char *filename);
+API GPtrArray *lexStoreFile(char *filename);
+
+/**
+ * Dumps the results of a lexing run into a string
+ *
+ * @param results		a GPtrArray of StoreLexResult objects that should be dumped
+ * @result				string with the dumped results, must be freed by the caller
+ */
+API char *dumpLexResults(GPtrArray *results);
 
 /**
  * Checks if a string can only be expressed in delimited form within a store

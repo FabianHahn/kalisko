@@ -84,7 +84,7 @@ API GPtrArray *lexStore(StoreParser *parser);
  * @param string		the store string to lex and dump
  * @result				an array of StoreLexResult objects that must be freed by the caller
  */
-API GPtrArray *lexStoreString(char *string);
+API GPtrArray *lexStoreString(const char *string);
 
 /**
  * Lexes a store file and returns the sequence of results
@@ -92,7 +92,7 @@ API GPtrArray *lexStoreString(char *string);
  * @param filename		the store file to lex and dump
  * @result				an array of StoreLexResult objects that must be freed by the caller
  */
-API GPtrArray *lexStoreFile(char *filename);
+API GPtrArray *lexStoreFile(const char *filename);
 
 /**
  * Dumps the results of a lexing run into a string
@@ -103,11 +103,11 @@ API GPtrArray *lexStoreFile(char *filename);
 API char *dumpLexResults(GPtrArray *results);
 
 /**
- * Checks if a string can only be expressed in delimited form within a store
+ * Checks if a string can be expressed in simple form within a store
  *
  * @param string		the string to test
- * @result				true if the string can only be expressed in delimited form within a store
+ * @result				true if the string can be expressed in simple form
  */
-API bool checkIfStoreStringDelimited(const char *string);
+API bool checkSimpleStoreStringCapability(const char *string);
 
 #endif

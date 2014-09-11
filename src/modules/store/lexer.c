@@ -415,17 +415,17 @@ API GPtrArray *lexStore(StoreParser *parser)
 	return results;
 }
 
-API GPtrArray *lexStoreString(char *string)
+API GPtrArray *lexStoreString(const char *string)
 {
 	StoreParser parser;
-	parser.resource = string;
+	parser.resource = (char *) string;
 	parser.read = &storeStringRead;
 	parser.unread = &storeStringUnread;
 
 	return lexStore(&parser);
 }
 
-API GPtrArray *lexStoreFile(char *filename)
+API GPtrArray *lexStoreFile(const char *filename)
 {
 	StoreParser parser;
 	parser.resource = fopen(filename, "r");
@@ -439,15 +439,29 @@ API GPtrArray *lexStoreFile(char *filename)
 	return ret;
 }
 
-API bool checkIfStoreStringDelimited(const char *string)
+API bool checkSimpleStoreStringCapability(const char *string)
 {
-	for(const char *iter = string; *iter != '\0'; ++iter) {
-		//if(checkIfCharDelimiter(*iter)) {
-			return true;
-		//}
+	GPtrArray *results = lexStoreString(string);
+
+	if(results->len != 1) {
+		g_ptr_array_free(results, true);
+		return false;
 	}
 
-	return false;
+	StoreLexResult *result = (StoreLexResult *) results->pdata[0];
+
+	if(result->token != STORE_TOKEN_STRING) {
+		g_ptr_array_free(results, true);
+		return false;
+	}
+
+	if(g_strcmp0(result->value.string, string) != 0) {
+		g_ptr_array_free(results, true);
+		return false;
+	}
+
+	g_ptr_array_free(results, true);
+	return true;
 }
 
 API char *dumpLexResults(GPtrArray *results)

@@ -43,13 +43,12 @@ TEST(path_modify);
 TEST(path_create);
 TEST(path_split);
 TEST(merge);
-TEST(parse_path);
 TEST(schema_parse);
 TEST(schema_selfvalidation);
 TEST(schema_crossvalidation);
 
-static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey=\"some\\\\[other \\\"value//}\"\nnumber = -42\nfloat  = -3.14159265";
-static int lexer_test_solution_tokens[] = {STRING, '=', STRING, STRING, '=', STRING, STRING, '=', INTEGER, STRING, '=', FLOAT_NUMBER};
+static char *lexer_test_input = "  \t \nsomekey = 1337somevalue // comment that is hopefully ignored\nsomeotherkey = \"some\\\\[other \\\"value//}\"\nnumber = -42\nfloat  = -3.14159265";
+static int lexer_test_solution_tokens[] = {STORE_TOKEN_STRING, '=', STORE_TOKEN_STRING, STORE_TOKEN_STRING, '=', STORE_TOKEN_STRING, STORE_TOKEN_STRING, '=', STORE_TOKEN_INTEGER, STORE_TOKEN_STRING, '=', STORE_TOKEN_FLOAT_NUMBER};
 static YYSTYPE lexer_test_solution_values[] = {{"somekey"}, {NULL}, {"1337somevalue"}, {"someotherkey"}, {NULL}, {"some\\[other \"value//}"}, {"number"}, {NULL}, {.integer = -42}, {"float"}, {NULL}, {.float_number = -3.14159265}};
 
 static char *parser_test_input = "foo = \"//bar//\" // comment that is hopefully ignored \nsomevalue = (13, 18.34, {bird = word, foo = bar})";
@@ -60,14 +59,14 @@ static char *path_split_input = "this/is a \"difficult\"/path\\\\to/split\\/:)";
 static char *path_split_solution[] = {"this", "is a \"difficult\"", "path\\to", "split/:)"};
 
 static char _storeStringRead(void *store);
-static void _storeStringUnread(void *store, char c);
+static void _storeStringUnread(void *store, int c);
 
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 7, 0);
-MODULE_BCVERSION(0, 7, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 14, 0));
+MODULE_VERSION(0, 8, 0);
+MODULE_BCVERSION(0, 8, 0);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 15, 0));
 
 TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(lexer);
@@ -77,7 +76,6 @@ TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(path_create);
 	ADD_SIMPLE_TEST(path_split);
 	ADD_SIMPLE_TEST(merge);
-	ADD_SIMPLE_TEST(parse_path);
 	ADD_SIMPLE_TEST(schema_parse);
 	ADD_SIMPLE_TEST(schema_selfvalidation);
 	ADD_SIMPLE_TEST(schema_crossvalidation);
@@ -96,30 +94,41 @@ TEST(lexer)
 	parser.read = &_storeStringRead;
 	parser.unread = &_storeStringUnread;
 
+	int n = sizeof(lexer_test_solution_tokens) / sizeof(lexer_test_solution_tokens[0]);
 	solution_tokens = lexer_test_solution_tokens;
 	solution_values = lexer_test_solution_values;
 
 	memset(&val, 0, sizeof(YYSTYPE));
 
-	while((lexx = $(int, store, yylex)(&val, &loc, &parser)) != 0) {
+	int i = 0;
+
+	GString *lexed = lexStoreString(lexer_test_input);
+	logNotice(lexed->str);
+	g_string_free(lexed, true);
+
+	while((lexx = yylex(&val, &loc, &parser)) != 0) {
 		TEST_ASSERT(lexx == *(solution_tokens++));
 
 		switch(lexx) {
-			case STRING:
+			case STORE_TOKEN_STRING:
 				TEST_ASSERT(strcmp(val.string, solution_values->string) == 0);
 				free(val.string);
 			break;
-			case INTEGER:
+			case STORE_TOKEN_INTEGER:
 				TEST_ASSERT(val.integer == solution_values->integer);
 			break;
-			case FLOAT_NUMBER:
+			case STORE_TOKEN_FLOAT_NUMBER:
 				TEST_ASSERT(val.float_number == solution_values->float_number);
 			break;
 		}
 
 		memset(&val, 0, sizeof(YYSTYPE));
 		solution_values++;
+
+		i++;
 	}
+
+	TEST_ASSERT(i == n);
 }
 
 TEST(parser_longstring)
@@ -250,21 +259,6 @@ TEST(merge)
 	$(void, store, freeStore)(solution);
 }
 
-/**
- * Test case for ticket #1418: Store ignores trailing slashes in implicit string values
- */
-TEST(parse_path)
-{
-	Store *s;
-	TEST_ASSERT((s = $(Store *, store, parseStoreString)("path = /home/user/file.cfg")) != NULL);
-	Store *path;
-	TEST_ASSERT((path = $(Store *, store, getStorePath)(s, "path")) != NULL);
-	TEST_ASSERT(path->type == STORE_STRING);
-	TEST_ASSERT(g_strcmp0(path->content.string, "/home/user/file.cfg") == 0);
-
-	$(void, store, freeStore)(s);
-}
-
 TEST(schema_parse)
 {
 	char *execpath = getExecutablePath();
@@ -355,7 +349,7 @@ static char _storeStringRead(void *store)
  * @param store		the store to to read from
  * @param c			the read character
  */
-static void _storeStringUnread(void *store, char c)
+static void _storeStringUnread(void *store, int c)
 {
 	return $(void, store, storeStringUnread)(store, c);
 }

@@ -58,15 +58,12 @@ static char *path_test_input = "somekey=(foo bar {foo=bar subarray={bird=word an
 static char *path_split_input = "this/is a \"difficult\"/path\\\\to/split\\/:)";
 static char *path_split_solution[] = {"this", "is a \"difficult\"", "path\\to", "split/:)"};
 
-static char _storeStringRead(void *store);
-static void _storeStringUnread(void *store, int c);
-
 MODULE_NAME("test_store");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the store module");
-MODULE_VERSION(0, 8, 0);
-MODULE_BCVERSION(0, 8, 0);
-MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 15, 0));
+MODULE_VERSION(0, 8, 1);
+MODULE_BCVERSION(0, 8, 1);
+MODULE_DEPENDS(MODULE_DEPENDENCY("store", 0, 16, 0));
 
 TEST_SUITE_BEGIN(store)
 	ADD_SIMPLE_TEST(lexer);
@@ -83,52 +80,38 @@ TEST_SUITE_END
 
 TEST(lexer)
 {
-	int *solution_tokens;
-	YYSTYPE *solution_values;
-	int lexx;
-	YYSTYPE val;
-	YYLTYPE loc;
-
-	StoreParser parser;
-	parser.resource = lexer_test_input;
-	parser.read = &_storeStringRead;
-	parser.unread = &_storeStringUnread;
-
 	int n = sizeof(lexer_test_solution_tokens) / sizeof(lexer_test_solution_tokens[0]);
-	solution_tokens = lexer_test_solution_tokens;
-	solution_values = lexer_test_solution_values;
 
-	memset(&val, 0, sizeof(YYSTYPE));
+	GPtrArray *results = lexStoreString(lexer_test_input);
 
-	int i = 0;
+	char *resultsDump = dumpLexResults(results);
+	logNotice("lexer test case dump: %s", resultsDump);
+	free(resultsDump);
 
-	GString *lexed = lexStoreString(lexer_test_input);
-	logNotice(lexed->str);
-	g_string_free(lexed, true);
+	TEST_ASSERT(results->len == n);
 
-	while((lexx = yylex(&val, &loc, &parser)) != 0) {
-		TEST_ASSERT(lexx == *(solution_tokens++));
+	for(int i = 0; i < n; i++) {
+		StoreLexResult *result = (StoreLexResult *) results->pdata[i];
 
-		switch(lexx) {
+		TEST_ASSERT(result->token == lexer_test_solution_tokens[i]);
+
+		switch(result->token) {
 			case STORE_TOKEN_STRING:
-				TEST_ASSERT(strcmp(val.string, solution_values->string) == 0);
-				free(val.string);
+				logNotice("testing string: %s vs %s", result->value.string, lexer_test_solution_values[i].string);
+				TEST_ASSERT(g_strcmp0(result->value.string, lexer_test_solution_values[i].string) == 0);
 			break;
 			case STORE_TOKEN_INTEGER:
-				TEST_ASSERT(val.integer == solution_values->integer);
+				logNotice("testing int: %d vs %d", result->value.integer, lexer_test_solution_values[i].integer);
+				TEST_ASSERT(result->value.integer == lexer_test_solution_values[i].integer);
 			break;
 			case STORE_TOKEN_FLOAT_NUMBER:
-				TEST_ASSERT(val.float_number == solution_values->float_number);
+				logNotice("testing float: %f vs %f", result->value.float_number, lexer_test_solution_values[i].float_number);
+				TEST_ASSERT(result->value.float_number == lexer_test_solution_values[i].float_number);
 			break;
 		}
-
-		memset(&val, 0, sizeof(YYSTYPE));
-		solution_values++;
-
-		i++;
 	}
 
-	TEST_ASSERT(i == n);
+	g_ptr_array_free(results, true);
 }
 
 TEST(parser_longstring)
@@ -330,26 +313,4 @@ TEST(schema_crossvalidation)
 
 	freeStore(schemaStore);
 	freeStore(testStore);
-}
-
-/**
- * A local wrapper around storeStringRead
- *
- * @param store		the store to to read from
- * @result			the read character
- */
-static char _storeStringRead(void *store)
-{
-	return $(char, store, storeStringRead)(store);
-}
-
-/**
- * A local wrapper around storeStringUnread
- *
- * @param store		the store to to read from
- * @param c			the read character
- */
-static void _storeStringUnread(void *store, int c)
-{
-	return $(void, store, storeStringUnread)(store, c);
 }

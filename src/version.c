@@ -24,7 +24,7 @@
 #include "version.h"
 #include "memory_alloc.h"
 
-API Version *createVersion(int major, int minor, int patch, int revision)
+API Version *createVersion(int major, int minor, int patch, const char *revision)
 {
 	Version *ver = allocateMemory(sizeof(Version));
 	ver->major = major;
@@ -51,11 +51,7 @@ API int compareVersions(Version *a, Version *b)
 	if(a->major == b->major) {
 		if(a->minor == b->minor) {
 			if(a->patch == b->patch) {
-				if(a->revision == b->revision) {
-					return 0;
-				} else {
-					return a->revision - b->revision;
-				}
+				return 0;
 			} else {
 				return a->patch - b->patch;
 			}
@@ -70,6 +66,6 @@ API int compareVersions(Version *a, Version *b)
 API GString *dumpVersion(Version *version)
 {
 	GString *string = g_string_new("");
-	g_string_append_printf(string, "%d.%d.%d-%d", version->major, version->minor, version->patch, version->revision);
+	g_string_append_printf(string, "%d.%d.%d-%s", version->major, version->minor, version->patch, version->revision);
 	return string;
 }

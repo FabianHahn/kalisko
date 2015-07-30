@@ -232,10 +232,13 @@ API void *getLibraryFunctionByName(char *module_name, char *function_name);
 #define MODULE_INITIALIZER_FUNC "module_init"
 #define MODULE_FINALIZER_FUNC "module_finalize"
 
+#define MODULE_STRINGIFY(x) #x
+#define MODULE_TOSTRING(x) MODULE_STRINGIFY(x)
+
 #define MODULE_NAME(NAME) API char *module_name() { return NAME; }
 #define MODULE_AUTHOR(AUTHOR) API char *module_author() { return AUTHOR; }
 #define MODULE_DESCRIPTION(DESC) API char *module_description() { return DESC; }
-#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, "SRC_REVISION"}; \
+#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, MODULE_TOSTRING(SRC_REVISION)}; \
 	API Version *module_version() { return &_module_version; }
 #define MODULE_BCVERSION(MAJOR, MINOR, PATCH) static Version _module_bcversion = {MAJOR, MINOR, PATCH, "0"}; \
 	API Version *module_bcversion() { return &_module_bcversion; }

@@ -28,7 +28,7 @@ typedef struct {
 	int major;
 	int minor;
 	int patch;
-	int revision;
+	const char *revision;
 } Version;
 
 
@@ -38,10 +38,10 @@ typedef struct {
  * @param major		the version's major number
  * @param minor		the version's minor number
  * @param patch		the version's patch number
- * @param revision	the version's revision number
+ * @param revision	the version's revision number as a static string
  * @result			the created version
  */
-API Version *createVersion(int major, int minor, int patch, int revision);
+API Version *createVersion(int major, int minor, int patch, const char *revision);
 
 /**
  * Creates a copy of a version

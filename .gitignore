@@ -1,8 +1,6 @@
 # ignore SCons log
 config.log
 
-syntax: glob
-
 # ignore dot files
 .*
 
@@ -23,7 +21,7 @@ bin/*
 *.pyc
 *.o
 *.exe
-kic/kic
+util/kic/kic
 
 # ignore compiled headers
 *.h

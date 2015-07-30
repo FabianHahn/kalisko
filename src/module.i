@@ -232,20 +232,23 @@ API void *getLibraryFunctionByName(char *module_name, char *function_name);
 #define MODULE_INITIALIZER_FUNC "module_init"
 #define MODULE_FINALIZER_FUNC "module_finalize"
 
+#define MODULE_STRINGIFY(x) #x
+#define MODULE_TOSTRING(x) MODULE_STRINGIFY(x)
+
 #define MODULE_NAME(NAME) API char *module_name() { return NAME; }
 #define MODULE_AUTHOR(AUTHOR) API char *module_author() { return AUTHOR; }
 #define MODULE_DESCRIPTION(DESC) API char *module_description() { return DESC; }
-#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, SRC_REVISION}; \
+#define MODULE_VERSION(MAJOR, MINOR, PATCH) static Version _module_version = {MAJOR, MINOR, PATCH, MODULE_TOSTRING(SRC_REVISION)}; \
 	API Version *module_version() { return &_module_version; }
-#define MODULE_BCVERSION(MAJOR, MINOR, PATCH) static Version _module_bcversion = {MAJOR, MINOR, PATCH, 0}; \
+#define MODULE_BCVERSION(MAJOR, MINOR, PATCH) static Version _module_bcversion = {MAJOR, MINOR, PATCH, "0"}; \
 	API Version *module_bcversion() { return &_module_bcversion; }
 
-#define MODULE_NODEPS static ModuleDependency _module_dependencies[] = {{NULL,{-1,-1,-1,-1}}}; \
+#define MODULE_NODEPS static ModuleDependency _module_dependencies[] = {{NULL,{-1,-1,-1,"0"}}}; \
 	API ModuleDependency *module_depends() { return _module_dependencies; }
-#define MODULE_DEPENDS(...) static ModuleDependency _module_dependencies[] = {__VA_ARGS__, {NULL,{-1,-1,-1,-1}}}; \
+#define MODULE_DEPENDS(...) static ModuleDependency _module_dependencies[] = {__VA_ARGS__, {NULL,{-1,-1,-1,"0"}}}; \
 	API ModuleDependency *module_depends() { return _module_dependencies; }
 
-#define MODULE_DEPENDENCY(NAME, MAJOR, MINOR, PATCH) {NAME, {MAJOR, MINOR, PATCH, 0}}
+#define MODULE_DEPENDENCY(NAME, MAJOR, MINOR, PATCH) {NAME, {MAJOR, MINOR, PATCH, "0"}}
 
 #define MODULE_INIT API bool module_init()
 #define MODULE_FINALIZE API void module_finalize()

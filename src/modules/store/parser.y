@@ -55,7 +55,7 @@
 %destructor { free($$); } STORE_TOKEN_STRING
 
 %%
-root:		// empty string
+root:		%empty // empty string
 			{
 				parser->store = createStoreArrayValue(NULL);
 			}

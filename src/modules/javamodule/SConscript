@@ -21,8 +21,9 @@ import os
 Import('module')    # The environment for this module.
 Import('custom_tests')
 
-module.Append(CPPPATH = [os.environ['JAVA_HOME'] + '/include'])
-module.Append(LIBPATH = [os.environ['JAVA_HOME'] + '/jre/lib/amd64/server'])
+if 'JAVA_HOME' in os.environ:
+	module.Append(CPPPATH = [os.environ['JAVA_HOME'] + '/include'])
+	module.Append(LIBPATH = [os.environ['JAVA_HOME'] + '/jre/lib/amd64/server'])
 
 conf = Configure(module, custom_tests)
 check = True

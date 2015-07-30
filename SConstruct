@@ -73,10 +73,8 @@ if env['force_zero_revision']:
 	srcversion = '0'
 else:
 	# Fetch current hg revision
-	cmd = os.popen('hg summary')
-	srcversion = cmd.read()
-	matches = re.search('^.*: (\d+):', srcversion)
-	srcversion = matches.group(1)
+	cmd = os.popen('git rev-parse HEAD')
+	srcversion = cmd.read().rstrip()
 
 env.Append(CPPDEFINES = [('SRC_REVISION', srcversion)])
 

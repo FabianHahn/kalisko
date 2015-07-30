@@ -33,8 +33,8 @@ TEST(module_failure);
 MODULE_NAME("test_core");
 MODULE_AUTHOR("The Kalisko team");
 MODULE_DESCRIPTION("Test suite for the Kalisko core");
-MODULE_VERSION(0, 1, 1);
-MODULE_BCVERSION(0, 1, 1);
+MODULE_VERSION(0, 1, 2);
+MODULE_BCVERSION(0, 1, 2);
 MODULE_NODEPS;
 
 TEST_SUITE_BEGIN(core)
@@ -44,11 +44,11 @@ TEST_SUITE_END
 
 TEST(version_compare)
 {
-	Version *a = $$(Version *, createVersion)(1, 2, 3, 4);
+	Version *a = $$(Version *, createVersion)(1, 2, 3, "0");
 
 	TEST_ASSERT($$(int, compareVersions)(a, a) == 0);
 
-	Version *b = $$(Version *, createVersion)(1, 2, 3, 5);
+	Version *b = $$(Version *, createVersion)(1, 2, 4, "0");
 
 	TEST_ASSERT($$(int, compareVersions)(a, b) < 0);
 

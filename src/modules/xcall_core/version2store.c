@@ -33,7 +33,7 @@ API Store *version2Store(Version *version)
 	$(bool, store, setStorePath)(ret, "major", $(Store *, store, createStoreIntegerValue)(version->major));
 	$(bool, store, setStorePath)(ret, "minor", $(Store *, store, createStoreIntegerValue)(version->minor));
 	$(bool, store, setStorePath)(ret, "patch", $(Store *, store, createStoreIntegerValue)(version->patch));
-	$(bool, store, setStorePath)(ret, "revision", $(Store *, store, createStoreIntegerValue)(version->revision));
+	$(bool, store, setStorePath)(ret, "revision", $(Store *, store, createStoreStringValue)(version->revision));
 
 	GString *string = $$(GString *, dumpVersion)(version);
 	$(bool, store, setStorePath)(ret, "string", $(Store *, store, createStoreStringValue)(string->str));

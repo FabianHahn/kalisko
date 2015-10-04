@@ -143,6 +143,8 @@ requested_modules = env['modules']
 requested_test_modules = env['test_modules']
 if env['expand_module_deps']:
 	requested_modules = module_analyzer.ExpandRuntimeDeps(requested_modules)
+        # The module_perform module is always required to load more modules, add it explicitly.
+        requested_modules.update('module_perform')
 	print('Expanded module deps to', requested_modules)
 
 	requested_test_modules = module_analyzer.ExpandRuntimeDeps(requested_test_modules)

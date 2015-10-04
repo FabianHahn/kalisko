@@ -67,6 +67,10 @@ To select names of test suites to run, pass '-t <test_suite_name>'
 
 $ ./kalisko_test -t http_server
 
+To run the unit tests for Kalisko's python utilities:
+
+$ ./run_python_tests.py
+
 ---------
  Usage
 ---------

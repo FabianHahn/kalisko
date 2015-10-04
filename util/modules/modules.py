@@ -92,4 +92,4 @@ class ModuleAnalyzer(object):
 				with open(path) as f:
 					if line in f.readlines():
 						return path
-		raise ValueError('Unable to find main module source file for module: ', module_name)
+		raise ValueError('Unable to find main module source file for module: ' + module_name)

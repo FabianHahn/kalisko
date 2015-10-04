@@ -20,6 +20,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import re
 from util.kic import kic
+from util.modules.modules import ModuleAnalyzer
 
 def CheckPKGConfig(context, name):
      context.Message( 'Checking pkg-config for %s... ' % name )
@@ -31,9 +32,15 @@ ABSOLUTE_PATH = os.getcwd()
 custom_tests = {'CheckPKGConfig' : CheckPKGConfig}
 src_path = os.path.join(ABSOLUTE_PATH, 'src')
 
+module_root_path = os.path.join(src_path, 'modules')
+module_analyzer = ModuleAnalyzer(module_root_path)
+all_modules = module_analyzer.All()
+
+test_module_root_path = os.path.join(src_path, 'tests')
+test_module_analyzer = ModuleAnalyzer(test_module_root_path)
+all_test_modules = test_module_analyzer.All()
+
 kic.buildInterfaces(os.path.join(ABSOLUTE_PATH, 'util', 'kic'), src_path)
-modules = os.listdir(os.path.join(src_path, 'modules'))
-test_modules = os.listdir(os.path.join(src_path, 'tests'))
 
 vars = Variables()
 vars.Add(BoolVariable('verbose', 'Show command line invocations', 0))
@@ -42,10 +49,11 @@ vars.Add(BoolVariable('debug', 'Set to build debug target', 0))
 vars.Add(BoolVariable('trace', 'Set to compile trace debug statements', 0))
 vars.Add(BoolVariable('force_zero_revision', 'Force Mercurial revision to zero to prevent rebuilds after committing when developing', 0))
 vars.Add(BoolVariable('build_java', 'Set to build the Kalisko java source tree', 0))
-vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], modules))
-vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], test_modules))
-vars.Add(ListVariable('exclude', 'Prevents the selected modules from being built', [], modules))
-vars.Add(ListVariable('test_exclude', 'Prevents the selected unit test modules from being built', [], test_modules))
+vars.Add(BoolVariable('expand_module_deps', 'Set to build all runtime dependencies of the passed modules', 0))
+vars.Add(ListVariable('modules', 'Attempts to build the selected modules', [], all_modules))
+vars.Add(ListVariable('test_modules', 'Attempts to build the selected unit test modules', [], all_test_modules))
+vars.Add(ListVariable('exclude', 'Prevents the selected modules from being built', [], all_modules))
+vars.Add(ListVariable('test_exclude', 'Prevents the selected unit test modules from being built', [], all_test_modules))
 vars.Add('define', 'Custom defines to be passed to the compiler as DEFINE1[:VALUE1],DEFINE2[:VALUE2],...', '')
 vars.Add('cflags_release', 'Flags to be passed to the compiler when compiling the release target', '-pipe -Os')
 vars.Add('cflags_debug', 'Flags to be passed to the compiler when compiling the debug target', '-pipe -g')
@@ -130,10 +138,20 @@ if env['debug']:
 if env['build_java']:
 	tenv.Java(source = os.path.join(src_path, 'java'), target = os.path.join(tdir, 'java'))
 
+# Possibly expand the dependencies of the requested modules.
+requested_modules = env['modules']
+requested_test_modules = env['test_modules']
+if env['expand_module_deps']:
+	requested_modules = module_analyzer.ExpandRuntimeDeps(requested_modules)
+	print('Expanded module deps to', requested_modules)
+
+	requested_test_modules = module_analyzer.ExpandRuntimeDeps(requested_test_modules)
+	print('Expanded test module deps to', requested_test_modules)
+
 for prefix, env in targets:
 	# Build modules
-	for moddir in modules:
-		if os.path.isdir(os.path.join('src/modules', moddir)) and moddir in env['modules'] and not moddir in env['exclude']:
+	for moddir in all_modules:
+		if module_analyzer.Exists(moddir) and moddir in requested_modules and not moddir in env['exclude']:
 			if os.path.isfile(os.path.join('src/modules', moddir, 'SConscript')):
 				# Build module
 				module = env.Clone()
@@ -141,8 +159,8 @@ for prefix, env in targets:
 				SConscript(os.path.join(prefix, 'modules', moddir, 'SConscript'), ['module', 'custom_tests'])
 
 	# Build test modules
-	for testdir in test_modules:
-		if os.path.isdir(os.path.join('src', 'tests', testdir)) and testdir in env['test_modules'] and not testdir in env['test_exclude']:
+	for testdir in all_test_modules:
+		if test_module_analyzer.Exists(testdir) and testdir in requested_test_modules and not testdir in env['test_exclude']:
 			if os.path.isfile(os.path.join('src', 'tests', testdir, 'SConscript')):
 				# Build test module
 				test = env.Clone()

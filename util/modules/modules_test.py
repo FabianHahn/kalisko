@@ -24,33 +24,16 @@ import unittest
 
 from .modules import ModuleAnalyzer
 
-FOO_CC_CONTENTS = """
-MODULE_NAME("foo");
-MODULE_DEPENDS(MODULE_DEPENDENCY("wiggle", 0, 7, 0), MODULE_DEPENDENCY("nabble", 0, 1, 2));
-"""
-
-BAR_CC_CONTENTS = """
-MODULE_NAME("bar");
-"""
-
 class ModuleAnalyzerTest(unittest.TestCase):
 	def setUp(self):
 		self.test_dir = tempfile.mkdtemp()
 
-		# Make the analyzer believe that socket and event exist.
 		self._CreateFakeModule('wiggle')
 		self._CreateFakeModule('nabble')
 		self._CreateFakeModule('sibble')
 
-		# Create a foo module with deps.
-		os.mkdir(os.path.join(self.test_dir, 'foo'))
-		with open(os.path.join(self.test_dir, 'foo', 'foo.cc'), 'w') as f:
-			f.write(FOO_CC_CONTENTS)
-
-		# Create a baz module without deps.
-		os.mkdir(os.path.join(self.test_dir, 'bar'))
-		with open(os.path.join(self.test_dir, 'bar', 'bar.cc'), 'w') as f:
-			f.write(BAR_CC_CONTENTS)
+		self._CreateFakeModule('foo', ['wiggle', 'nabble'])
+		self._CreateFakeModule('bar')
 
 		self.analyzer = ModuleAnalyzer(self.test_dir)
 
@@ -69,7 +52,11 @@ class ModuleAnalyzerTest(unittest.TestCase):
 		self.assertTrue(self.analyzer.Exists('foo'))
 		self.assertFalse(self.analyzer.Exists('asdf'))
 
-	def _CreateFakeModule(self, module_name):
+	def _CreateFakeModule(self, module_name, module_deps = []):
 		os.mkdir(os.path.join(self.test_dir, module_name))
 		with open(os.path.join(self.test_dir, module_name, '%s.cc' % module_name), 'w') as f:
 			f.write('MODULE_NAME("%s");\n' % module_name)
+			if len(module_deps) > 0:
+				dep_declarations = map(lambda d: 'MODULE_DEPENDENCY("%s", 0, 7, 0)' % d, module_deps)
+				f.write('MODULE_DEPENDS(%s)' % ','.join(dep_declarations))
+

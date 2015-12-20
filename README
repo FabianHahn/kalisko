@@ -46,6 +46,10 @@ You can exclude certain modules with the 'exclude' statement, e.g.:
 
 $ scons modules=all exclude=lang_php
 
+You can also compile all modules necessary to run a particular module, e.g.,:
+
+$ scons modules=http_server_demo expand_module_deps=1
+
 For a complete list of build options run:
 
 $ scons -h
@@ -66,6 +70,10 @@ $ ./kalisko_test
 To select names of test suites to run, pass '-t <test_suite_name>'
 
 $ ./kalisko_test -t http_server
+
+To run the unit tests for Kalisko's python utilities:
+
+$ ./run_python_tests.py
 
 ---------
  Usage
